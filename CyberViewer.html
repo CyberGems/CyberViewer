@@ -1962,17 +1962,18 @@ $('btn-crop-confirm').onclick = async () => {
     $('crop-overlay').classList.remove('active');
     $('kbd-hint').classList.remove('hud-hidden');
     
-    // Resetear transformaciones visuales para la nueva imagen
-    state.currentRotation = 0;
-    state.panX = 0;
-    state.panY = 0;
-    mainImg.style.transform = 'none';
-    
     // Recargar con cache-buster
     mainImg.src = `file://${fpath}?t=${Date.now()}`;
     
     // Esperar a que la imagen cargue para actualizar HUD y dimensiones en el estado
     mainImg.onload = () => {
+      // RESETEAR TRANSFORMACIONES SOLO CUANDO LA IMAGEN ESTÁ LISTA
+      state.currentRotation = 0;
+      state.panX = 0;
+      state.panY = 0;
+      mainImg.style.transition = 'none';
+      mainImg.style.transform = 'none';
+
       im.w = mainImg.naturalWidth;
       im.h = mainImg.naturalHeight;
       state.hasChanges = false;
@@ -1981,6 +1982,12 @@ $('btn-crop-confirm').onclick = async () => {
       updateFileStats();
       // Auto-fit de la nueva imagen con dimensiones reales
       fitToWindow(im.w, im.h);
+      
+      // Restaurar transición suave después de un frame
+      requestAnimationFrame(() => {
+        mainImg.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+      });
+
       mainImg.onload = null; // Limpiar listener
     };
   } else {
@@ -2036,32 +2043,33 @@ async function saveCurrent() {
     });
 
     if (result.success) {
-      state.currentRotation = 0;
-      state.hasChanges = false;
-      mainImg.style.transition = 'none'; // Desactivar transición para evitar tirones
-      mainImg.style.transform = 'none';
-      updateSaveButton();
-      updateHUDStates();
-      
       const safePath = fpath.replace(/\\/g, '/');
       
       // Escuchar el load de la nueva imagen para actualizar dimensiones en el estado
       mainImg.onload = () => {
+        // RESETEAR TRANSFORMACIONES SOLO CUANDO LA IMAGEN ESTÁ LISTA
+        state.currentRotation = 0;
+        state.hasChanges = false;
+        mainImg.style.transition = 'none';
+        mainImg.style.transform = 'none';
+
         im.w = mainImg.naturalWidth;
         im.h = mainImg.naturalHeight;
+        updateSaveButton();
         updateHUDStates();
         updateFileStats();
         fitToWindow(im.w, im.h);
+
+        // Restaurar transición suave después de un frame
+        requestAnimationFrame(() => {
+          mainImg.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+        });
+
         mainImg.onload = null;
       };
 
       mainImg.src = 'file:///' + safePath + '?t=' + Date.now();
       showToast('CAMBIOS GUARDADOS', 'success');
-      
-      // Rehabilitar transición tras un breve delay
-      setTimeout(() => {
-        mainImg.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-      }, 50);
     } else {
       showToast(result.error || 'ERROR AL GUARDAR', 'error');
     }
