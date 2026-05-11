@@ -1,0 +1,101 @@
+{
+  "name": "cyberviewer",
+  "version": "1.0.0",
+  "description": "CyberViewer — Visor de imágenes ultraligero por CiberCR",
+  "main": "main.js",
+  "author": "CiberCR <info@cibercr.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64",
+    "build:portable": "electron-builder --win portable --x64"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.cibercr.cyberviewer",
+    "productName": "CyberViewer",
+    "copyright": "© 2025 CiberCR",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "CyberViewer.html",
+      "main.js",
+      "preload.js",
+      "assets/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "fileAssociations": [
+        {
+          "ext": [
+            "jpg",
+            "jpeg"
+          ],
+          "name": "JPEG Image",
+          "role": "Viewer"
+        },
+        {
+          "ext": [
+            "png"
+          ],
+          "name": "PNG Image",
+          "role": "Viewer"
+        },
+        {
+          "ext": [
+            "gif"
+          ],
+          "name": "GIF Image",
+          "role": "Viewer"
+        },
+        {
+          "ext": [
+            "webp"
+          ],
+          "name": "WebP Image",
+          "role": "Viewer"
+        },
+        {
+          "ext": [
+            "bmp"
+          ],
+          "name": "BMP Image",
+          "role": "Viewer"
+        },
+        {
+          "ext": [
+            "tiff",
+            "tif"
+          ],
+          "name": "TIFF Image",
+          "role": "Viewer"
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "CyberViewer"
+    }
+  }
+}

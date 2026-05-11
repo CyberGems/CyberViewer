@@ -1,0 +1,2743 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' blob: data: file:; connect-src 'self' blob: file:;">
+<title>CyberViewer — CiberCR</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700&display=swap');
+
+  :root {
+    --cyber-black: #080a0e;
+    --cyber-dark: #0d1117;
+    --cyber-panel: #111620;
+    --cyber-border: #1e2a3a;
+    --cyber-accent: #00d4ff;
+    --cyber-accent-rgb: 0, 212, 255;
+    --cyber-accent2: #ff2d78;
+    --cyber-accent2-rgb: 255, 45, 120;
+    --cyber-accent3: #a8ff3e;
+    --cyber-accent3-rgb: 168, 255, 62;
+    --cyber-dim: #1a2535;
+    --cyber-text: #c8d8e8;
+    --cyber-muted: #4a6080;
+    --thumb-w: 88px;
+    --thumb-h: 66px;
+    --panel-w: 108px;
+    --transition: 320ms cubic-bezier(.4,0,.2,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--cyber-black);
+    font-family: 'Exo 2', sans-serif;
+    color: var(--cyber-text);
+    overflow: hidden;
+    user-select: none;
+  }
+
+  #app {
+    width: 100vw;
+    height: 100vh;
+    background: var(--cyber-black);
+    overflow: hidden;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 100;
+  }
+
+  #topbar { 
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 48px !important;
+    z-index: 999999 !important;
+    display: flex !important;
+    align-items: center;
+    background: var(--cyber-panel) !important;
+    border-bottom: 1px solid var(--cyber-accent) !important;
+    user-select: none;
+    backdrop-filter: blur(10px);
+    padding: 0 10px;
+  }
+
+  #topbar::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyber-accent), transparent);
+    box-shadow: 0 0 10px var(--cyber-accent);
+  }
+
+  #topbar button, #topbar input { -webkit-app-region: no-drag; }
+
+  #main {
+    position: absolute !important;
+    top: 48px !important;
+    bottom: 28px !important;
+    left: 0 !important;
+    right: 0 !important;
+    display: flex !important;
+    overflow: hidden !important;
+    background: var(--cyber-black) !important;
+  }
+
+  #statusbar {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 36px !important;
+    z-index: 999999 !important;
+    display: flex !important;
+    align-items: center;
+    background: var(--cyber-panel) !important;
+    border-top: 1px solid var(--cyber-border);
+    padding: 0 20px;
+    gap: 0;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important, opacity 0.4s ease !important;
+    will-change: transform, opacity;
+  }
+  #topbar {
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important, opacity 0.4s ease !important;
+  }
+
+  .status-sep {
+    width: 1px;
+    height: 14px;
+    background: var(--cyber-border);
+    opacity: 0.5;
+  }
+
+  #st-size {
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--cyber-accent) !important;
+    font-weight: bold;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-shadow: 0 0 5px rgba(var(--cyber-accent-rgb), 0.5);
+    margin-left: auto;
+    margin-right: 20px;
+  }
+  
+  .bulb {
+    width: 8px;
+    height: 8px;
+    background: #aaff00;
+    border-radius: 50%;
+    box-shadow: 0 0 6px rgba(170,255,0,0.4);
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 8px;
+    opacity: 0.8;
+    will-change: opacity;
+    animation: bulb-breathe 4s ease-in-out infinite;
+  }
+  @keyframes bulb-breathe {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+  
+  #footer-radar, #footer-size, #footer-zoom, #btn-center {
+    font-family: 'JetBrains Mono', 'Roboto Mono', monospace !important;
+    font-size: 13px !important;
+    letter-spacing: 1px;
+  }
+  
+  #btn-center {
+    padding: 4px 12px !important;
+    height: 28px !important;
+    text-transform: uppercase;
+  }
+  
+  body.ghost-mode #topbar,
+  body.ghost-mode #statusbar { 
+    display: none !important;
+  }
+  body.ghost-mode #app #main {
+    top: 0 !important;
+    bottom: 0 !important;
+  }
+  body.ghost-mode #sidebar { display: none !important; }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    -webkit-app-region: no-drag;
+  }
+  .logo-img {
+    height: 22px;
+    filter: drop-shadow(0 0 5px var(--cyber-accent));
+    transition: filter 0.3s ease;
+  }
+  .logo:hover .logo-img {
+    filter: drop-shadow(0 0 10px var(--cyber-accent));
+  }
+  .logo-text {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .sep { width: 1px; height: 20px; background: var(--cyber-border); margin: 0 2px; flex-shrink: 0; }
+
+  #file-info {
+    font-size: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--cyber-accent);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    -webkit-app-region: drag;
+    margin-left: 20px;
+    letter-spacing: 0.5px;
+    filter: drop-shadow(0 0 5px rgba(0,212,255,0.3));
+  }
+
+  #img-counter {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: var(--cyber-accent);
+    margin-right: 25px;
+    -webkit-app-region: drag;
+  }
+
+  .top-btn {
+    background: none;
+    border: 1px solid var(--cyber-border);
+    color: var(--cyber-muted);
+    cursor: pointer;
+    padding: 5px 11px;
+    font-size: 12px;
+    font-family: 'Exo 2', sans-serif;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border-radius: 3px;
+    transition: all var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    -webkit-app-region: no-drag;
+    line-height: 1;
+  }
+
+  .kbd-btn.active {
+    color: var(--cyber-accent3) !important;
+    border-color: var(--cyber-accent3) !important;
+    box-shadow: 0 0 15px rgba(170,255,0,0.4) !important;
+    background: #0a0e14 !important; /* FONDO SÓLIDO OPACO */
+    z-index: 100;
+  }
+  
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+  }
+  .rotate-row {
+    display: flex;
+    gap: 4px;
+  }
+
+  .top-btn.active {
+    border-color: var(--cyber-accent2);
+    color: var(--cyber-accent2);
+    background: rgba(255,45,120,0.08);
+  }
+
+  /* ── BOTONES DE VENTANA ── */
+  .win-btn {
+    background: none;
+    border: 1px solid var(--cyber-border);
+    color: var(--cyber-muted);
+    cursor: pointer;
+    width: 32px;
+    height: 28px;
+    font-size: 14px;
+    font-family: 'Exo 2', sans-serif;
+    font-weight: 700;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition);
+    -webkit-app-region: no-drag;
+    flex-shrink: 0;
+    padding: 0;
+  }
+
+  .win-btn:hover { border-color: var(--cyber-accent); color: var(--cyber-accent); background: rgba(0,212,255,0.08); }
+  #win-close:hover { border-color: var(--cyber-accent2); color: var(--cyber-accent2); background: rgba(255,45,120,0.12); }
+  #win-max.maximized { color: var(--cyber-accent3); border-color: var(--cyber-accent3); }
+  .win-sep { width: 1px; height: 20px; background: var(--cyber-border); margin: 0 4px; flex-shrink: 0; }
+
+  /* ── SIDEBAR THUMBNAILS ── */
+
+  /* ── SIDEBAR THUMBNAILS ── */
+  #topbar, #kbd-hint {
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+    will-change: transform, opacity;
+  }
+  .hud-hidden-top { transform: translateY(-100%) !important; opacity: 0 !important; pointer-events: none; }
+  .hud-hidden-bottom { transform: translateY(100%) !important; opacity: 0 !important; pointer-events: none; }
+  .hud-hidden-fade { opacity: 0 !important; pointer-events: none; }
+  #sidebar {
+    width: var(--panel-w);
+    background: var(--cyber-panel);
+    border-right: 1px solid var(--cyber-border);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 10;
+    overflow: hidden; /* El scroll lo maneja el hijo */
+  }
+  
+  #sidebar-scroll {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--cyber-dim) transparent;
+  }
+
+  #sidebar-scroll::-webkit-scrollbar-thumb { background: var(--cyber-dim); border-radius: 2px; }
+
+  #sidebar-inner {
+    display: flex;
+    flex-direction: column;
+    padding: calc(50vh - 100px) 4px 60px 4px; /* 60px extra para que el último thumb no se tape */
+  }
+  
+  #sidebar-controls {
+    background: var(--cyber-panel);
+    border-top: 1px solid var(--cyber-border);
+    padding: 12px;
+    display: flex;
+    justify-content: center;
+    z-index: 20;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+    flex-shrink: 0;
+    height: 60px; /* Suficiente para el botón */
+    align-items: center;
+  }
+
+  .thumb-item {
+    width: 100%;
+    height: 50px;
+    margin-bottom: 8px;
+    position: relative;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    background: rgba(0,0,0,0.3);
+    flex-shrink: 0;
+    opacity: 0.7;
+  }
+
+  .thumb-item:hover { opacity: 1; border-color: rgba(var(--cyber-accent-rgb), 0.4); }
+
+  .thumb-item.active {
+    border: 2px solid var(--cyber-accent);
+    opacity: 1;
+    box-shadow: 0 0 15px rgba(var(--cyber-accent-rgb), 0.4);
+    transform: scale(1.02);
+    z-index: 5;
+  }
+
+  .thumb-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    background: var(--cyber-dim);
+  }
+
+  .thumb-item .idx {
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+    font-size: 9px;
+    color: var(--cyber-dim);
+    font-family: 'Share Tech Mono', monospace;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .thumb-loading {
+    width: 100%;
+    height: 100%;
+    background: var(--cyber-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── VIEWER ── */
+  #viewer-wrap {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: var(--cyber-black);
+    cursor: grab;
+  }
+
+  #viewer-wrap.dragging { cursor: grabbing; }
+
+  #viewer-wrap::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 50%, rgba(0,212,255,0.03) 0%, transparent 70%),
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(0,212,255,0.025) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(0,212,255,0.025) 40px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #canvas-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    will-change: transform;
+  }
+
+  #main-img {
+    max-width: none;
+    max-height: none;
+    display: block;
+    border-radius: 2px;
+    pointer-events: none;
+    box-shadow: 0 0 40px rgba(0,0,0,0.8), 0 0 2px rgba(var(--cyber-accent-rgb), 0.3);
+    opacity: 0;
+    transition: opacity 200ms ease;
+  }
+
+  #main-img.loaded { opacity: 1; }
+
+  /* transition classes */
+  #main-img.slide-out-left {
+    animation: slideOutLeft 90ms ease forwards;
+  }
+  #main-img.slide-out-right {
+    animation: slideOutRight 90ms ease forwards;
+  }
+  #main-img.slide-in-left {
+    animation: slideInLeft 130ms cubic-bezier(.25,.46,.45,.94) forwards;
+  }
+  #main-img.slide-in-right {
+    animation: slideInRight 130ms cubic-bezier(.25,.46,.45,.94) forwards;
+  }
+
+  @keyframes slideOutLeft {
+    to { opacity: 0; transform: translateX(-40px) scale(0.97); }
+  }
+  @keyframes slideOutRight {
+    to { opacity: 0; transform: translateX(40px) scale(0.97); }
+  }
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(50px) scale(0.97); }
+    to   { opacity: 1; transform: translateX(0) scale(1); }
+  }
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(-50px) scale(0.97); }
+    to   { opacity: 1; transform: translateX(0) scale(1); }
+  }
+
+  /* ── DROP ZONE ── */
+  #drop-zone {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .drop-frame {
+    border: 1px solid var(--cyber-border);
+    padding: 48px 64px;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    background: rgba(13,17,23,0.9);
+    position: relative;
+  }
+
+  .drop-corner {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-color: var(--cyber-accent);
+    border-style: solid;
+  }
+  .drop-corner.tl { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+  .drop-corner.tr { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+  .drop-corner.bl { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
+  .drop-corner.br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+  .drop-icon {
+    font-size: 48px;
+    color: var(--cyber-accent);
+    opacity: 0.4;
+    line-height: 1;
+  }
+
+  .drop-title {
+    font-family: 'Exo 2', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--cyber-accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .drop-sub {
+    font-size: 11px;
+    font-family: 'Exo 2', sans-serif;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--cyber-muted);
+    text-align: center;
+  }
+
+  .drop-btn {
+    margin-top: 8px;
+    background: none;
+    border: 1px solid var(--cyber-accent);
+    color: var(--cyber-accent);
+    padding: 8px 24px;
+    font-family: 'Exo 2', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all var(--transition);
+  }
+
+  .drop-btn:hover {
+    background: rgba(0,212,255,0.1);
+    box-shadow: 0 0 20px rgba(0,212,255,0.2);
+  }
+
+  /* drag over */
+  #app.drag-over #drop-zone .drop-frame {
+    border-color: var(--cyber-accent);
+    box-shadow: 0 0 30px rgba(0,212,255,0.2);
+  }
+
+  /* ── NAV ARROWS ── */
+  .nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
+    background: rgba(13,17,23,0.85);
+    border: 1px solid var(--cyber-border);
+    color: var(--cyber-muted);
+    width: 40px;
+    height: 64px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-family: 'Share Tech Mono', monospace;
+    border-radius: 3px;
+    transition: all var(--transition);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #viewer-wrap:hover .nav-btn {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .nav-btn:hover {
+    border-color: var(--cyber-accent);
+    color: var(--cyber-accent);
+    background: rgba(0,212,255,0.08);
+  }
+
+  #btn-prev { left: 12px; }
+  #btn-next { right: 12px; }
+
+  /* ── LOGO ── */
+
+  .cyber-status-btn {
+    background: rgba(var(--cyber-accent-rgb), 0.1);
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.3);
+    color: var(--cyber-accent);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    padding: 3px 12px;
+    border-radius: 2px;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cyber-status-btn:hover {
+    background: rgba(var(--cyber-accent-rgb), 0.2);
+    border-color: var(--cyber-accent);
+    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.3);
+    color: #fff;
+  }
+
+  .status-percent {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: #aaff00;
+    text-shadow: 0 0 5px rgba(170, 255, 0, 0.4);
+    margin-left: 8px;
+    letter-spacing: 1px;
+  }
+
+  .status-item { display: flex; align-items: center; gap: 5px; }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #aaff00;
+    box-shadow: 0 0 6px #aaff00;
+    flex-shrink: 0;
+  }
+
+  /* ── ZOOM HUD ── */
+  #zoom-hud {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 6;
+    background: rgba(13,17,23,0.9);
+    border: 1px solid var(--cyber-border);
+    border-radius: 3px;
+    padding: 6px 10px;
+    font-family: 'Exo 2', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--cyber-accent);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 300ms ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  #zoom-hud.visible { opacity: 1; }
+
+  /* ── KEYBOARD HINT ── */
+  #kbd-hint {
+    position: absolute;
+    bottom: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    gap: 12px;
+    opacity: 1;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    pointer-events: auto;
+  }
+  #kbd-hint.hud-hidden {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+    pointer-events: none;
+  }
+
+  .kbd {
+    background: rgba(8, 10, 14, 0.9);
+    border: 1px solid var(--cyber-accent);
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--cyber-accent);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 0 15px rgba(var(--cyber-accent-rgb), 0.2);
+    backdrop-filter: blur(8px);
+  }
+
+  .kbd-btn {
+    background: rgba(8, 10, 14, 0.9);
+    border: 1px solid var(--cyber-accent);
+    border-radius: 4px;
+    padding: 8px 14px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--cyber-accent);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.1);
+    -webkit-app-region: no-drag;
+  }
+  
+  /* ── CROP UI PRO ── */
+  #crop-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 2000;
+    display: none;
+    cursor: crosshair;
+    background: rgba(0,0,0,0.4);
+  }
+  #crop-overlay.active { display: block; }
+  
+  #crop-rect {
+    position: absolute;
+    border: 1px solid var(--cyber-accent);
+    box-shadow: 0 0 20px var(--cyber-accent), inset 0 0 10px rgba(0,255,255,0.2);
+    box-sizing: border-box;
+    cursor: move;
+    min-width: 50px;
+    min-height: 50px;
+  }
+  
+  .crop-handle {
+    position: absolute;
+    width: 12px; height: 12px;
+    background: var(--cyber-accent);
+    border: 1px solid #000;
+    box-shadow: 0 0 8px var(--cyber-accent);
+  }
+  /* Esquinas */
+  .ch-tl { top: -6px; left: -6px; cursor: nw-resize; }
+  .ch-tr { top: -6px; right: -6px; cursor: ne-resize; }
+  .ch-bl { bottom: -6px; left: -6px; cursor: sw-resize; }
+  .ch-br { bottom: -6px; right: -6px; cursor: se-resize; }
+  /* Bordes */
+  .ch-t { top: -6px; left: calc(50% - 6px); cursor: n-resize; }
+  .ch-b { bottom: -6px; left: calc(50% - 6px); cursor: s-resize; }
+  .ch-l { left: -6px; top: calc(50% - 6px); cursor: w-resize; }
+  .ch-r { right: -6px; top: calc(50% - 6px); cursor: e-resize; }
+  
+  #crop-actions {
+    position: absolute;
+    bottom: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    background: var(--cyber-panel);
+    padding: 8px 16px;
+    border: 1px solid var(--cyber-border);
+    border-radius: 4px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.8);
+    white-space: nowrap;
+    z-index: 2100;
+  }
+  #crop-actions .top-btn {
+    font-size: 14px !important;
+    padding: 8px 16px !important;
+    height: auto !important;
+    min-width: 120px;
+  }
+  .kbd-btn:hover {
+    background: var(--cyber-accent);
+    color: var(--cyber-black);
+    box-shadow: 0 0 20px rgba(var(--cyber-accent-rgb), 0.4);
+    transform: translateY(-2px);
+  }
+  .kbd-btn:active { transform: translateY(0); }
+  .kbd-sep { width: 1px; height: 20px; background: rgba(var(--cyber-accent-rgb), 0.3); align-self: center; }
+  
+  .save-btn {
+    border-color: var(--cyber-accent2);
+    color: var(--cyber-accent2);
+    box-shadow: 0 0 15px rgba(255, 45, 120, 0.2);
+    /* ARMADURA DE POSICIÓN: Siempre ocupa espacio */
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .save-btn.active {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .save-btn:hover {
+    background: var(--cyber-accent2);
+    color: white;
+    box-shadow: 0 0 25px rgba(255, 45, 120, 0.5);
+  }
+
+  .kbd-key {
+    background: var(--cyber-accent);
+    color: var(--cyber-black);
+    padding: 1px 4px;
+    border-radius: 2px;
+    margin: 0 1px;
+  }
+
+  /* ── MODALS ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(8,10,14,0.9);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .modal-overlay.active { display: flex; }
+
+  .modal-box {
+    background: var(--cyber-panel);
+    border: 1px solid var(--cyber-border);
+    width: 100%;
+    max-width: 500px;
+    border-radius: 8px;
+    position: relative;
+    box-shadow: 0 0 40px rgba(0,0,0,0.6);
+    overflow: hidden;
+    animation: modal-in 300ms cubic-bezier(.4,0,.2,1);
+  }
+
+  @keyframes modal-in {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--cyber-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255,255,255,0.02);
+  }
+
+  .modal-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 16px;
+    color: var(--cyber-accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .modal-body {
+    padding: 24px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  .modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--cyber-border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  /* ── CONFIG GROUPS ── */
+  .config-section { margin-bottom: 24px; }
+  .config-section:last-child { margin-bottom: 0; }
+  .config-label {
+    display: block;
+    font-size: 11px;
+    color: var(--cyber-muted);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    font-weight: 700;
+  }
+
+  .config-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(30,42,58,0.4);
+  }
+
+  .config-info { flex: 1; }
+  .config-name { font-size: 14px; font-weight: 600; color: var(--cyber-text); }
+  .config-desc { font-size: 12px; color: var(--cyber-muted); margin-top: 2px; }
+
+  /* ── SWITCH ── */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 34px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: var(--cyber-dim);
+    transition: .4s;
+    border-radius: 18px;
+    border: 1px solid var(--cyber-border);
+  }
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 12px; width: 12px;
+    left: 2px; bottom: 2px;
+    background: var(--cyber-muted);
+    transition: .4s;
+    border-radius: 50%;
+  }
+  input:checked + .slider { border-color: var(--cyber-accent); }
+  input:checked + .slider:before { transform: translateX(16px); background: var(--cyber-accent); box-shadow: 0 0 8px var(--cyber-accent); }
+
+  /* ── COLOR PICKER ── */
+  .color-grid { display: flex; gap: 10px; }
+  .color-opt {
+    width: 24px; height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 200ms;
+  }
+  .color-opt:hover { transform: scale(1.1); }
+  .color-opt.active { border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.3); }
+
+  /* ── CONTEXT MENU ── */
+  #ctx-menu {
+    position: fixed;
+    z-index: 2000;
+    background: var(--cyber-panel);
+    border: 1px solid var(--cyber-border);
+    border-radius: 4px;
+    min-width: 180px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    padding: 6px 0;
+    display: none;
+    font-family: 'Exo 2', sans-serif;
+  }
+
+  .ctx-item {
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--cyber-text);
+    transition: background 200ms;
+  }
+
+  .ctx-item:hover { background: rgba(var(--cyber-accent-rgb), 0.1); color: var(--cyber-accent); }
+  .ctx-sep { height: 1px; background: var(--cyber-border); margin: 6px 0; }
+  .ctx-hint { margin-left: auto; color: var(--cyber-muted); font-size: 10px; font-family: 'Share Tech Mono', monospace; }
+
+  /* ── LOADING SPINNER ── */
+  #spinner {
+    position: absolute;
+    z-index: 8;
+    width: 36px;
+    height: 36px;
+    display: none;
+  }
+
+  #spinner.active { display: block; }
+
+  .spinner-ring {
+    fill: none;
+    stroke: var(--cyber-accent);
+    stroke-width: 2;
+    stroke-dasharray: 80;
+    stroke-dashoffset: 80;
+    animation: spin-draw 800ms linear infinite;
+    transform-origin: 18px 18px;
+  }
+
+  @keyframes spin-draw {
+    0%   { stroke-dashoffset: 80; transform: rotate(0deg); }
+    50%  { stroke-dashoffset: 20; }
+    100% { stroke-dashoffset: 80; transform: rotate(360deg); }
+  }
+
+  /* ── FULLSCREEN INDICATOR ── */
+  #fs-badge {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    background: rgba(0,0,0,0.8);
+    border: 1px solid var(--cyber-accent2);
+    color: var(--cyber-accent2);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 3px;
+    letter-spacing: 2px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 300ms ease;
+  }
+  #fs-badge.show { opacity: 1; }
+
+  /* ── DRAG OVER OVERLAY ── */
+  #drag-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    background: rgba(0,212,255,0.04);
+    border: 2px dashed var(--cyber-accent);
+    border-radius: 4px;
+    pointer-events: none;
+  }
+
+  #app.drag-over #drag-overlay { display: block; }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--cyber-black); }
+  ::-webkit-scrollbar-thumb { background: var(--cyber-dim); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div id="topbar" style="position:fixed;top:0;left:0;width:100%;height:48px;z-index:999999;display:flex;align-items:center;background:var(--cyber-panel);border-bottom:1px solid var(--cyber-accent);">
+  <div class="logo" id="logo-trigger">
+    <img src="assets/icon.png" class="logo-img" alt="CyberViewer Logo">
+    <div class="logo-text">CYBER<span style="color:var(--cyber-accent3)">VIEWER</span></div>
+  </div>
+  <div class="sep"></div>
+  <span id="file-info">— sin imágenes —</span>
+  <div style="flex:1;-webkit-app-region:drag"></div>
+  <span id="img-counter"></span>
+  <div class="top-hints" style="margin-right:20px">
+    <span>[ <span style="color:var(--cyber-accent)">&larr;&rarr;</span> NAVEGAR ]</span>
+    <span>[ <span style="color:var(--cyber-accent)">SCROLL</span> ZOOM ]</span>
+    <span>[ <span style="color:var(--cyber-accent)">DRAG</span> PAN ]</span>
+  </div>
+  <div class="win-sep"></div>
+  <button class="top-btn active" id="btn-sidebar" title="Panel lateral" style="margin: 0 5px">&#9776; Panel</button>
+  <div class="win-sep"></div>
+  <button class="win-btn" id="btn-config" title="Configuración" style="margin-left:5px">&#9881;</button>
+  <button class="win-btn" id="btn-about" title="Acerca de CyberViewer">&#9432;</button>
+  <div class="win-sep"></div>
+  <button class="win-btn" id="win-min" title="Minimizar">&#8722;</button>
+  <button class="win-btn" id="win-max" title="Maximizar">&#9633;</button>
+  <button class="win-btn" id="win-close" title="Cerrar">&#10005;</button>
+</div>
+<div id="app">
+
+  <!-- MAIN -->
+  <div id="main">
+
+    <!-- SIDEBAR -->
+    <div id="sidebar">
+      <div id="sidebar-scroll">
+        <div id="sidebar-inner"></div>
+      </div>
+      <div id="sidebar-controls">
+        <button class="kbd-btn" id="btn-center" style="width:100%; font-size:11px; height: 32px">CENTRAR</button>
+      </div>
+    </div>
+
+    <!-- VIEWER -->
+    <div id="viewer-wrap">
+      <div id="canvas-layer">
+        <img id="main-img" alt="Imagen principal">
+        <svg id="spinner" viewBox="0 0 36 36">
+          <circle class="spinner-ring" cx="18" cy="18" r="14"/>
+        </svg>
+
+      </div>
+
+      <!-- CROP OVERLAY (Saliendo de la matriz para escala fija) -->
+      <div id="crop-overlay">
+        <div id="crop-rect">
+          <div class="crop-handle ch-tl"></div>
+          <div class="crop-handle ch-tr"></div>
+          <div class="crop-handle ch-bl"></div>
+          <div class="crop-handle ch-br"></div>
+          <div class="crop-handle ch-t"></div>
+          <div class="crop-handle ch-b"></div>
+          <div class="crop-handle ch-l"></div>
+          <div class="crop-handle ch-r"></div>
+          <div id="crop-actions">
+            <button class="top-btn active" id="btn-crop-confirm">RECORTAR Y GUARDAR</button>
+            <button class="top-btn" id="btn-crop-cancel" style="border-color:var(--cyber-accent2); color:var(--cyber-accent2)">CANCELAR</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- DROP ZONE -->
+      <div id="drop-zone">
+        <div class="drop-frame">
+          <div class="drop-corner tl"></div>
+          <div class="drop-corner tr"></div>
+          <div class="drop-corner bl"></div>
+          <div class="drop-corner br"></div>
+          <div class="drop-icon">&#9707;</div>
+          <div class="drop-title">CYBERVIEWER</div>
+          <div class="drop-sub">Arrastra imágenes aquí<br>o haz clic para seleccionar</div>
+          <button class="drop-btn" id="btn-drop-open">Seleccionar archivos</button>
+        </div>
+      </div>
+
+      <div id="drag-overlay"></div>
+
+      <!-- NAV -->
+      <button class="nav-btn" id="btn-prev">&#8249;</button>
+      <button class="nav-btn" id="btn-next">&#8250;</button>
+
+      <!-- ZOOM HUD -->
+      <div id="zoom-hud">&#9741; <span id="zoom-val">100%</span></div>
+
+      <!-- INTERACTIVE HUD -->
+      <div id="kbd-hint">
+        <button class="kbd-btn" id="btn-open-hud" title="Abrir (Ctrl+O)">&#128193; ABRIR</button>
+        <div class="kbd-sep"></div>
+        <button class="kbd-btn" id="btn-fit-hud" title="Ajustar (F)">AJUSTAR</button>
+        <button class="kbd-btn" id="btn-orig-hud" title="Original (1)">1:1</button>
+        <button class="kbd-btn" id="btn-fs-hud" title="Full (Enter)">PANTALLA</button>
+        <div class="kbd-sep"></div>
+        <div class="control-group">
+          <button class="kbd-btn save-btn" id="btn-save" title="Guardar cambios (Ctrl+S)" style="width: 100%; height: 22px; font-size: 10px; padding: 0">GUARDAR</button>
+          <div class="rotate-row">
+            <button class="kbd-btn" id="btn-rot-l" title="Rotar Izquierda (L)">&#8634;</button>
+            <button class="kbd-btn" id="btn-rot-r" title="Rotar Derecha (R)">&#8635;</button>
+          </div>
+        </div>
+        <div class="kbd-sep"></div>
+        <button class="kbd-btn" id="btn-crop" title="Recortar (C)">&#9986;</button>
+        <div class="kbd-sep"></div>
+        <button class="kbd-btn" id="btn-ghost" title="Modo Ghost (G)">&#128065;</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="statusbar">
+    <div class="footer-center" id="footer-radar" style="justify-content: flex-start; margin-right: 40px">
+      <span class="bulb"></span>
+      <span style="opacity:0.8">RADAR:</span> 
+      <span id="radar-pct">0%</span> 
+      <span id="radar-count" style="color:var(--cyber-accent); margin-left: 5px"> [0/0] </span>
+    </div>
+
+    <div class="footer-sep" style="height: 18px; opacity: 0.8"></div>
+
+    <div class="footer-right" id="footer-size" style="margin-left: 40px; margin-right: 40px">
+      <span class="bulb" style="background: var(--cyber-accent2); box-shadow: 0 0 6px rgba(255,45,120,0.4);"></span>
+      <span id="img-dims">0 x 0px</span> 
+      <span style="margin: 0 15px; opacity: 0.3">|</span>
+      <span id="img-weight" style="color:var(--cyber-accent)">0 KB</span>
+    </div>
+
+    <div class="footer-sep" style="height: 18px; opacity: 0.8"></div>
+
+    <div class="footer-right" id="footer-zoom" style="margin-left: 40px; margin-right: 10px">
+      <span class="bulb" style="background: var(--cyber-accent3); box-shadow: 0 0 6px rgba(170,255,0,0.4);"></span>
+      <span style="opacity:0.8">ZOOM:</span>
+      <span id="zoom-pct" style="margin-left: 5px">100%</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- FILE INPUT -->
+<input type="file" id="file-input" accept="image/*" multiple style="display:none">
+<div id="fs-badge">FULLSCREEN</div>
+
+<!-- MODAL: CONFIG -->
+<div id="modal-config" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">[CYBERVIEWER CONFIG]</div>
+      <button class="win-btn" onclick="closeModal('modal-config')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      
+      <div class="config-section">
+        <label class="config-label">Personalización</label>
+        <div class="config-row">
+          <div class="config-info">
+            <div class="config-name">Color de Acento</div>
+            <div class="config-desc">Define el color principal de la interfaz neon.</div>
+          </div>
+          <div class="color-grid">
+            <div class="color-opt active" style="background:#00d4ff" data-color="#00d4ff"></div>
+            <div class="color-opt" style="background:#ff2d78" data-color="#ff2d78"></div>
+            <div class="color-opt" style="background:#a8ff3e" data-color="#a8ff3e"></div>
+            <div class="color-opt" style="background:#ffae00" data-color="#ffae00"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <label class="config-label">Interfaz</label>
+        <div class="config-row">
+          <div class="config-info">
+            <div class="config-name">Panel Lateral</div>
+            <div class="config-desc">Mostrar miniaturas al iniciar.</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="cfg-sidebar" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="config-row">
+          <div class="config-info">
+            <div class="config-name">Barra de Estado</div>
+            <div class="config-desc">Mostrar información técnica inferior.</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="cfg-statusbar" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <label class="config-label">Sistema</label>
+        <div class="config-row">
+          <div class="config-info">
+            <div class="config-name">Cerrar a la Bandeja</div>
+            <div class="config-desc">La app seguirá corriendo en segundo plano.</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="cfg-tray">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="config-row">
+          <div class="config-info">
+            <div class="config-name">Inicio Automático</div>
+            <div class="config-desc">Arrancar con Windows (minimizado).</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="cfg-autostart">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="config-row">
+          <div class="config-info">
+            <div class="config-name">Monitor de Apertura</div>
+            <div class="config-desc">Forzar apertura en una pantalla específica.</div>
+          </div>
+          <select id="cfg-monitor" class="cfg-select" style="background:#080a0e;color:var(--cyber-accent);border:1px solid var(--cyber-dim);padding:4px;font-family:monospace;font-size:11px;width:120px">
+            <option value="auto">Automático</option>
+          </select>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="top-btn" onclick="closeModal('modal-config')">Cancelar</button>
+      <button class="top-btn active" id="btn-save-config">Guardar Cambios</button>
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+// ── BASE CONSTANTS & ELECTRON BRIDGE ──
+const isElectron = (typeof window.electronAPI !== 'undefined');
+const $ = id => document.getElementById(id);
+
+const ZOOM_MIN = 0.05;
+const ZOOM_MAX = 20;
+const PRELOAD_RANGE = 2;
+
+// ── ELEMENTS ──
+const app        = $('app');
+const sidebar    = $('sidebar');
+const viewerWrap = $('viewer-wrap');
+const canvasL    = $('canvas-layer');
+const mainImg    = $('main-img');
+const spinner    = $('spinner');
+const dropZone   = $('drop-zone');
+const fileInput  = $('file-input');
+const zoomHud    = $('zoom-hud');
+const zoomVal    = $('zoom-val');
+const fsBadge    = $('fs-badge');
+const btnOpen    = $('btn-open');
+const btnConfig  = $('btn-config');
+const btnAbout   = $('btn-about');
+
+// ── STATE ──
+let thumbObserver = null;
+const state = {
+  images: [],          // {file, url, w, h, loaded}
+  currentIdx: -1,
+  zoom: 1,
+  panX: 0,
+  panY: 0,
+  dragging: false,
+  dragStartX: 0,
+  dragStartY: 0,
+  panStartX: 0,
+  panStartY: 0,
+  transitioning: false,
+  sidebarOpen: true,
+  scanInProgress: false,
+  preloadCache: new Map(),
+  currentRotation: 0,
+  hasChanges: false,
+  isCropping: false,
+  isGhost: false,
+  zoomTimer: null,
+  settings: { 
+    app: { 
+      sidebarOpen: true, 
+      statusbarVisible: true, 
+      closeToTray: false, 
+      autoStart: false, 
+      accentColor: '#00d4ff' 
+    } 
+  },
+};
+
+// ── FILE HANDLING ──
+function loadFiles(files, initialIdx = 0) {
+  const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif'];
+  const imgs = Array.from(files).filter(f => {
+    if (f.type.startsWith('image/')) return true;
+    const ext = f.name.split('.').pop().toLowerCase();
+    return allowedExts.includes(ext);
+  });
+  
+  if (!imgs.length) {
+    console.warn('No se encontraron imágenes válidas.');
+    return;
+  }
+
+  // Revoke old URLs
+  state.images.forEach(im => { if (im.url) URL.revokeObjectURL(im.url); });
+  state.preloadCache.clear();
+  state.images = imgs.map(f => ({ file: f, url: null, w: 0, h: 0, loaded: false, size: f.size }));
+
+  state.currentIdx = initialIdx;
+  console.log('Archivos cargados:', state.images.length);
+  dropZone.style.display = 'none';
+  buildSidebar();
+  // Forzar centrado absoluto SOLO en la carga inicial
+  showImage(initialIdx, null, true); 
+  startBackgroundScan();
+}
+
+async function scanFolder(filePath) {
+  if (!isElectron || !filePath) return;
+  const neighbors = await window.electronAPI.scanFolder(filePath);
+  if (neighbors.length > 0) {
+    const files = neighbors.map(p => {
+      const name = p.split(/[\\/]/).pop();
+      return { name, path: p, size: 0, type: '' };
+    });
+    const targetIdx = neighbors.findIndex(p => p.toLowerCase() === filePath.toLowerCase());
+    loadFiles(files, targetIdx !== -1 ? targetIdx : 0);
+  } else {
+    const name = filePath.split(/[\\/]/).pop();
+    loadFiles([{ name, path: filePath, size: 0, type: '' }]);
+  }
+}
+
+async function startBackgroundScan() {
+  const total = state.images.length;
+  if (total === 0) return;
+  
+  let processed = 0;
+  state.scanInProgress = true;
+  
+  // ORDEN DE ESCANEO: Empezar desde el actual y expandirse (prioridad de cercanía)
+  const start = state.currentIdx;
+  const order = [];
+  for (let i = 0; i < total; i++) {
+    const idx = (start + i) % total;
+    order.push(idx);
+  }
+
+  for (const idx of order) {
+    if (!state.scanInProgress || !state.sidebarOpen) {
+      updateThumbProgress(processed, total, true);
+      break;
+    }
+    const im = state.images[idx];
+    if (im.hidden) continue; // Saltar si está oculto
+    
+    await window.electronAPI.getThumbnail(im.file.path);
+    processed++;
+    updateThumbProgress(processed, total);
+    
+    // Si la imagen está a la vista, cargar el thumb ahora mismo
+    const imgEl = sidebar.querySelector(`.thumb-item[data-index="${idx}"] img`);
+    if (imgEl && imgEl.style.opacity === '0') {
+      loadThumb(idx, imgEl);
+    }
+  }
+}
+
+// ── SIDEBAR ──
+function buildSidebar() {
+  const container = $('sidebar-inner');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (thumbObserver) thumbObserver.disconnect();
+  thumbObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const idx = parseInt(entry.target.dataset.index);
+        const img = entry.target.querySelector('img');
+        if (img && img.style.opacity === '0') loadThumb(idx, img);
+      }
+    });
+  }, { root: $('sidebar-scroll'), rootMargin: '400px' });
+
+  state.images.forEach((im, i) => {
+    if (im.hidden) return; // No renderizar si está oculto
+
+    const item = document.createElement('div');
+    item.className = 'thumb-item' + (i === state.currentIdx ? ' active' : '');
+    item.dataset.index = i;
+
+    const img = document.createElement('img');
+    img.alt = '';
+    img.style.opacity = '0';
+    img.style.transition = 'opacity 200ms ease';
+    img.draggable = false; // Bloquear drag nativo
+
+    const idx = document.createElement('span');
+    idx.className = 'thumb-idx';
+    idx.textContent = i + 1;
+
+    item.appendChild(img);
+    item.appendChild(idx);
+
+    thumbObserver.observe(item);
+
+      item.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const hiddenCount = state.images.filter(im => im.hidden).length;
+        window.electronAPI.showContextMenu({ 
+          type: 'thumb', 
+          path: im.file.path,
+          index: i,
+          hiddenCount: hiddenCount
+        });
+      });
+
+    item.addEventListener('click', () => {
+      if (state.transitioning) return;
+      const dir = i > state.currentIdx ? 'left' : 'right';
+      showImage(i, dir);
+    });
+
+    container.appendChild(item);
+  });
+}
+
+// ── CONTEXT MENU ──
+window.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  
+  if (e.target.closest('.thumb-item')) return;
+
+  const isInsideViewer = e.target.closest('#viewer-wrap');
+  if (isInsideViewer && state.images.length > 0) {
+    const hiddenCount = state.images.filter(im => im.hidden).length;
+    window.electronAPI.showContextMenu({ 
+      type: 'main-image', 
+      path: state.images[state.currentIdx]?.file.path,
+      index: state.currentIdx,
+      hiddenCount: hiddenCount
+    });
+  } else {
+    window.electronAPI.showContextMenu({ type: 'empty' });
+  }
+});
+
+if (isElectron) {
+  window.electronAPI.onMenuAction((data) => {
+    switch (data.action) {
+      case 'remove-from-list':
+        if (data.index !== undefined) {
+          const removed = state.images[data.index];
+          removed.hidden = true;
+          
+          const visible = state.images.filter(im => !im.hidden);
+          if (visible.length === 0) {
+            location.reload();
+          } else {
+            // Buscar siguiente visible
+            let next = data.index;
+            while(next < state.images.length && state.images[next].hidden) next++;
+            if (next >= state.images.length) {
+               next = data.index;
+               while(next >= 0 && state.images[next].hidden) next--;
+            }
+            
+            buildSidebar();
+            showImage(next, null);
+            showToast(`Oculto: ${removed.file.name}`);
+          }
+        }
+        break;
+      case 'restore-hidden':
+        state.images.forEach(im => im.hidden = false);
+        buildSidebar();
+        showToast('Imágenes restauradas');
+        break;
+      case 'go-start':
+        showImage(0, 'right', true);
+        break;
+      case 'go-end':
+        showImage(state.images.length - 1, 'left', true);
+        break;
+      case 'open-dir':
+        btnOpen.click();
+        break;
+      case 'show-config':
+        btnConfig.click();
+        break;
+      case 'show-about':
+        btnAbout.click();
+        break;
+    }
+  });
+}
+
+async function loadThumb(i, imgEl) {
+  if (!state.sidebarOpen) return; 
+  const im = state.images[i];
+  
+  if (isElectron && im.file.path) {
+    const thumbUrl = await window.electronAPI.getThumbnail(im.file.path);
+    if (thumbUrl) {
+      imgEl.onload = () => { imgEl.style.opacity = '1'; };
+      imgEl.src = thumbUrl;
+      return;
+    }
+  }
+
+  const url = getUrl(i);
+  imgEl.onload = () => { imgEl.style.opacity = '1'; };
+  imgEl.src = url;
+}
+
+function updateThumbProgress(p, t, paused = false) {
+  const total = t !== undefined ? t : state.images.length;
+  const pct = total > 0 ? Math.round((p / total) * 100) : 0;
+  $('radar-pct').textContent = pct + '%';
+  $('radar-count').textContent = `[${p}/${total}]`;
+}
+
+function getUrl(i) {
+  const im = state.images[i];
+  if (im.url) return im.url;
+  
+  if (im.file.path) {
+    // CARGA DIRECTA file:// (Máxima velocidad sin protocolos custom)
+    const safePath = im.file.path.replace(/\\/g, '/');
+    im.url = 'file:///' + safePath + '?t=' + Date.now();
+  } else {
+    im.url = URL.createObjectURL(im.file);
+  }
+  return im.url;
+}
+
+function updateSidebarActive() {
+  const items = sidebar.querySelectorAll('.thumb-item');
+  items.forEach((el, i) => {
+    el.classList.toggle('active', i === state.current);
+  });
+  // Scroll into view
+  const active = sidebar.querySelector('.thumb-item.active');
+  if (active) active.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── SHOW IMAGE ──
+// ── UI STABILIZER (LEVEL 9 NUCLEAR) ──
+function stabilizeUI() {
+  const tb = $('topbar');
+  const sb = $('statusbar');
+  const app = $('app');
+  if (tb) {
+    tb.style.display = 'flex';
+    tb.style.height = '48px';
+    tb.style.background = 'var(--cyber-panel)';
+  }
+  if (sb) {
+    sb.style.display = 'flex';
+    sb.style.height = '28px';
+  }
+}
+window.addEventListener('load', stabilizeUI);
+setInterval(stabilizeUI, 3000);
+
+function showImage(idx, direction, isInitial = false) {
+  if (idx < 0 || idx >= state.images.length) return;
+  if (state.transitioning && direction !== null) return;
+
+  state.transitioning = true;
+
+  const doLoad = () => {
+    state.current = idx;
+    updateSidebarActive();
+    updateCounter();
+    updateFileStats();
+
+    // Reset rotation al cambiar
+    state.currentRotation = 0;
+    state.hasChanges = false;
+    updateSaveButton();
+
+    // Clear transform
+    state.zoom = 1;
+    state.panX = 0;
+    state.panY = 0;
+    mainImg.style.transform = `rotate(0deg)`; // Limpiar rotación visual
+    applyTransform(false);
+
+    spinner.classList.add('active');
+    mainImg.classList.remove('loaded', 'slide-in-left', 'slide-in-right', 'slide-out-left', 'slide-out-right');
+    state.currentIdx = idx;
+    
+    // Scroll inteligente: 'center' para carga inicial/manual, 'nearest' para navegación
+    const activeThumb = sidebar.querySelector(`.thumb-item[data-index="${idx}"]`);
+    if (activeThumb) {
+      activeThumb.scrollIntoView({ 
+        behavior: isInitial ? 'auto' : 'smooth', 
+        block: isInitial ? 'center' : 'nearest' 
+      });
+    }
+
+    const url = getUrl(idx);
+    const im = state.images[idx];
+    
+    // Update filename info
+    $('file-info').textContent = im.file.name;
+    if (im.file.path) {
+      $('file-info').title = im.file.path; // Tooltip con la ruta completa
+    }
+
+    if (im.loaded) {
+      displayImage(url, im.w, im.h, direction);
+    } else {
+      const tmp = new Image();
+      tmp.onload = () => {
+        im.loaded = true;
+        im.w = tmp.naturalWidth;
+        im.h = tmp.naturalHeight;
+        displayImage(url, im.w, im.h, direction);
+      };
+      tmp.onerror = () => {
+        spinner.classList.remove('active');
+        state.transitioning = false;
+      };
+      tmp.src = url;
+    }
+
+    // Preload adjacent
+    setTimeout(() => preloadAdjacent(idx), 80);
+  };
+
+  // Animate OUT current image
+  if (direction && mainImg.classList.contains('loaded')) {
+    const outClass = direction === 'left' ? 'slide-out-left' : 'slide-out-right';
+    mainImg.classList.add(outClass);
+    setTimeout(doLoad, 80);
+  } else {
+    mainImg.style.opacity = '1';
+    mainImg.style.transition = 'none'; // Sin transición para máxima velocidad inicial
+    doLoad();
+  }
+}
+
+function displayImage(url, w, h, direction) {
+  spinner.classList.remove('active');
+  mainImg.src = url;
+  mainImg.classList.remove('slide-in-left', 'slide-in-right', 'slide-out-left', 'slide-out-right');
+
+  fitToWindow(w, h);
+
+  if (direction) {
+    const inClass = direction === 'left' ? 'slide-in-left' : 'slide-in-right';
+    mainImg.style.opacity = ''; // Limpiar opacidad inline para dejar que el CSS actúe
+    mainImg.classList.add('loaded', inClass);
+    mainImg.addEventListener('animationend', () => {
+      mainImg.classList.remove('slide-in-left', 'slide-in-right');
+      state.transitioning = false;
+    }, { once: true });
+  } else {
+    mainImg.style.opacity = ''; // Limpiar opacidad inline
+    mainImg.classList.add('loaded');
+    state.transitioning = false;
+  }
+}
+
+// ── PRELOAD ──
+function preloadAdjacent(idx) {
+  for (let d = 1; d <= PRELOAD_RANGE; d++) {
+    [idx + d, idx - d].forEach(i => {
+      if (i >= 0 && i < state.images.length && !state.images[i].loaded) {
+        const url = getUrl(i);
+        const tmp = new Image();
+        tmp.onload = () => {
+          state.images[i].loaded = true;
+          state.images[i].w = tmp.naturalWidth;
+          state.images[i].h = tmp.naturalHeight;
+        };
+        tmp.src = url;
+      }
+    });
+  }
+}
+// ── IMAGE ROTATION & SAVE ──
+function rotate(deg) {
+  if (state.current === -1) return;
+  
+  // Seguridad: Si estamos recortando, cancelar recorte antes de rotar
+  if (state.isCropping) {
+    state.isCropping = false;
+    $('crop-overlay').classList.remove('active');
+  }
+
+  state.currentRotation = (state.currentRotation + deg) % 360;
+  if (state.currentRotation < 0) state.currentRotation += 360;
+  
+  mainImg.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+  mainImg.style.transform = `rotate(${state.currentRotation}deg)`;
+  state.hasChanges = true;
+  updateSaveButton();
+  updateHUDStates();
+}
+
+function updateSaveButton() {
+  const btn = $('btn-save');
+  if (!btn) return;
+  if (state.hasChanges || state.isCropping) btn.classList.add('active');
+  else btn.classList.remove('active');
+}
+
+// ── CROP LOGIC PRO ──
+let cropState = {
+  active: false,
+  x: 50, y: 50, w: 200, h: 200,
+  isResizing: false,
+  isMoving: false,
+  handle: null,
+  startX: 0, startY: 0,
+  startRect: {}
+};
+
+function startCrop() {
+  if (state.current === -1) return;
+  if (!mainImg.complete || mainImg.naturalWidth === 0) {
+    showToast('Preparando motor de imagen...', 'warning');
+    return;
+  }
+  
+  // FOCUS FOR CROP: Centrado y zoom panorámico (80% del visor)
+  const vw = viewerWrap.clientWidth, vh = viewerWrap.clientHeight;
+  const iw = mainImg.naturalWidth, ih = mainImg.naturalHeight;
+  const isVert = state.currentRotation === 90 || state.currentRotation === 270;
+  const curW = isVert ? ih : iw;
+  const curH = isVert ? iw : ih;
+  
+  state.zoom = Math.min((vw * 0.8) / curW, (vh * 0.8) / curH, 1);
+  state.panX = 0;
+  state.panY = 0;
+  applyTransform(true);
+  
+  showToast('ENFOCANDO ÁREA DE TRABAJO...');
+  
+  // Pausa para que el navegador aplique el transform antes de medir
+  setTimeout(() => { calibrateAndShowCrop(); }, 250);
+}
+
+function calibrateAndShowCrop() {
+  // DETECCIÓN POR CONTACTO FÍSICO
+  const imgB = mainImg.getBoundingClientRect();
+  const wrapB = viewerWrap.getBoundingClientRect();
+  
+  const realX = imgB.left - wrapB.left;
+  const realY = imgB.top - wrapB.top;
+  const realW = imgB.width;
+  const realH = imgB.height;
+
+  cropState.active = true;
+  state.isCropping = true;
+  $('crop-overlay').classList.add('active');
+  
+  // El marco nace ABRAZANDO los bordes reales
+  cropState.x = realX;
+  cropState.y = realY;
+  cropState.w = realW;
+  cropState.h = realH;
+  
+  // Guardamos la referencia base para el cálculo de píxeles
+  cropState.imgRealRect = { x: realX, y: realY, w: realW, h: realH };
+  
+  updateCropUI();
+  updateSaveButton();
+  updateHUDStates();
+}
+
+function updateCropUI() {
+  const rect = $('crop-rect');
+  rect.style.left = cropState.x + 'px';
+  rect.style.top = cropState.y + 'px';
+  rect.style.width = cropState.w + 'px';
+  rect.style.height = cropState.h + 'px';
+}
+
+$('btn-crop').onclick = startCrop;
+$('btn-crop-cancel').onclick = () => {
+  cropState.active = false;
+  state.isCropping = false;
+  $('crop-overlay').classList.remove('active');
+  updateSaveButton();
+  updateHUDStates();
+};
+
+$('crop-rect').onmousedown = (e) => {
+  if (!cropState.active) return;
+  e.stopPropagation();
+  
+  if (e.target.classList.contains('crop-handle')) {
+    cropState.isResizing = true;
+    cropState.handle = e.target.className.split(' ').find(c => c.startsWith('ch-'));
+  } else {
+    cropState.isMoving = true;
+  }
+  
+  cropState.startX = e.clientX;
+  cropState.startY = e.clientY;
+  cropState.startRect = { x: cropState.x, y: cropState.y, w: cropState.w, h: cropState.h };
+};
+
+window.addEventListener('mousemove', (e) => {
+  if (!cropState.active) return;
+  if (!cropState.isMoving && !cropState.isResizing) return;
+  
+  const dx = e.clientX - cropState.startX;
+  const dy = e.clientY - cropState.startY;
+  
+  if (cropState.isMoving) {
+    cropState.x = cropState.startRect.x + dx;
+    cropState.y = cropState.startRect.y + dy;
+  } else if (cropState.isResizing) {
+    const h = cropState.handle;
+    const r = cropState.startRect;
+    
+    if (h.includes('-r')) cropState.w = Math.max(50, r.w + dx);
+    if (h.includes('-b')) cropState.h = Math.max(50, r.h + dy);
+    if (h.includes('-l')) {
+      const newW = Math.max(50, r.w - dx);
+      if (newW > 50) { cropState.x = r.x + dx; cropState.w = newW; }
+    }
+    if (h.includes('-t')) {
+      const newH = Math.max(50, r.h - dy);
+      if (newH > 50) { cropState.y = r.y + dy; cropState.h = newH; }
+    }
+    // Caso especial tiradores puros (t, b, l, r)
+    if (h === 'ch-t') { cropState.y = r.y + dy; cropState.h = Math.max(50, r.h - dy); }
+    if (h === 'ch-b') { cropState.h = Math.max(50, r.h + dy); }
+    if (h === 'ch-l') { cropState.x = r.x + dx; cropState.w = Math.max(50, r.w - dx); }
+    if (h === 'ch-r') { cropState.w = Math.max(50, r.w + dx); }
+  }
+  
+  updateCropUI();
+});
+
+window.addEventListener('mouseup', () => {
+  cropState.isMoving = false;
+  cropState.isResizing = false;
+});
+
+$('btn-crop-confirm').onclick = async () => {
+  showToast('RECORTANDO Y GUARDANDO...');
+  
+  // 1. Extraer el ratio de escala respecto a los píxeles originales
+  const isVert = state.currentRotation === 90 || state.currentRotation === 270;
+  const origW = isVert ? mainImg.naturalHeight : mainImg.naturalWidth;
+  const origH = isVert ? mainImg.naturalWidth : mainImg.naturalHeight;
+  
+  const scale = origW / cropState.imgRealRect.w;
+  
+  // 2. Renderizar imagen completa con rotación
+  const fullCanvas = document.createElement('canvas');
+  fullCanvas.width = origW;
+  fullCanvas.height = origH;
+  const fctx = fullCanvas.getContext('2d');
+  
+  fctx.translate(fullCanvas.width/2, fullCanvas.height/2);
+  fctx.rotate(state.currentRotation * Math.PI / 180);
+  fctx.drawImage(mainImg, -mainImg.naturalWidth/2, -mainImg.naturalHeight/2);
+  
+  // 3. Recorte preciso sobre el canvas rotado
+  // Usamos Math.round para evitar sangrado de píxeles
+  const relX = Math.round((cropState.x - cropState.imgRealRect.x) * scale);
+  const relY = Math.round((cropState.y - cropState.imgRealRect.y) * scale);
+  const finalW = Math.round(cropState.w * scale);
+  const finalH = Math.round(cropState.h * scale);
+  
+  // Validar dimensiones mínimas
+  if (finalW < 1 || finalH < 1) {
+    showToast('ÁREA DE RECORTE INVÁLIDA', 'error');
+    return;
+  }
+
+  const cropCanvas = document.createElement('canvas');
+  cropCanvas.width = finalW;
+  cropCanvas.height = finalH;
+  const cctx = cropCanvas.getContext('2d');
+  
+  cctx.drawImage(fullCanvas, relX, relY, finalW, finalH, 0, 0, finalW, finalH);
+  
+  const buffer = cropCanvas.toDataURL('image/jpeg', 0.95).split(',')[1];
+  const im = state.images[state.current];
+  const fpath = im.path || (im.file ? im.file.path : null);
+  
+  if (!fpath) {
+    showToast('ERROR: Ruta no encontrada', 'error');
+    return;
+  }
+
+  const result = await window.electronAPI.saveImage({
+    filePath: fpath,
+    buffer: buffer
+  });
+
+  if (result.success) {
+    showToast('RECORTE GUARDADO', 'success');
+    cropState.active = false;
+    state.isCropping = false;
+    $('crop-overlay').classList.remove('active');
+    
+    // Resetear transformaciones visuales para la nueva imagen
+    state.currentRotation = 0;
+    state.panX = 0;
+    state.panY = 0;
+    mainImg.style.transform = 'none';
+    
+    // Recargar con cache-buster
+    mainImg.src = `file://${fpath}?t=${Date.now()}`;
+    
+    // Esperar a que la imagen cargue para actualizar HUD y cambios
+    mainImg.onload = () => {
+      state.hasChanges = false;
+      updateSaveButton();
+      updateHUDStates();
+      // Auto-fit de la nueva imagen
+      fitToWindow(mainImg.naturalWidth, mainImg.naturalHeight);
+      mainImg.onload = null; // Limpiar listener
+    };
+  } else {
+    showToast('ERROR: ' + result.error, 'error');
+  }
+};
+
+async function saveCurrent() {
+  if (!state.hasChanges || state.current === -1) return;
+  const im = state.images[state.current];
+  const fpath = im.file ? im.file.path : null;
+  
+  if (!fpath) {
+    showToast('RUTA NO ENCONTRADA', 'error');
+    return;
+  }
+  if (!mainImg.complete || mainImg.naturalWidth === 0) {
+    showToast('La imagen no está lista para guardar', 'error');
+    return;
+  }
+
+  showToast('GUARDANDO...');
+
+  try {
+    // ── Renderizar imagen rotada en canvas ──
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const iw = mainImg.naturalWidth;
+    const ih = mainImg.naturalHeight;
+    const rotation = state.currentRotation;
+
+    if (rotation === 90 || rotation === 270) {
+      canvas.width = ih;
+      canvas.height = iw;
+    } else {
+      canvas.width = iw;
+      canvas.height = ih;
+    }
+
+    const rad = rotation * Math.PI / 180;
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(rad);
+    ctx.drawImage(mainImg, -iw / 2, -ih / 2);
+
+    // Exportar como PNG base64 (sin pérdida, preserva transparencia)
+    const dataUrl = canvas.toDataURL('image/png');
+    const base64Data = dataUrl.substring(dataUrl.indexOf(',') + 1);
+
+    const result = await window.electronAPI.saveImage({
+      filePath: fpath,
+      buffer: base64Data
+    });
+
+    if (result.success) {
+      state.currentRotation = 0;
+      state.hasChanges = false;
+      mainImg.style.transition = 'none'; // Desactivar transición para evitar tirones
+      mainImg.style.transform = 'none';
+      updateSaveButton();
+      updateHUDStates();
+      
+      const safePath = fpath.replace(/\\/g, '/');
+      mainImg.src = 'file:///' + safePath + '?t=' + Date.now();
+      showToast('CAMBIOS GUARDADOS', 'success');
+      
+      // Rehabilitar transición tras un breve delay
+      setTimeout(() => {
+        mainImg.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+      }, 50);
+    } else {
+      showToast(result.error || 'ERROR AL GUARDAR', 'error');
+    }
+  } catch (e) {
+    console.error('Error en saveCurrent:', e);
+    showToast('ERROR AL GUARDAR: ' + (e.message || 'Desconocido'), 'error');
+  }
+}
+
+// ── ZOOM & PAN ──
+function fitToWindow(w, h) {
+  const vw = viewerWrap.clientWidth - 24;
+  const vh = viewerWrap.clientHeight - 24;
+  if (!w || !h) { state.zoom = 1; return; }
+  const scale = Math.min(vw / w, vh / h, 1);
+  state.zoom = scale;
+  state.panX = 0;
+  state.panY = 0;
+  mainImg.style.width  = w + 'px';
+  mainImg.style.height = h + 'px';
+  applyTransform(false);
+}
+
+function applyTransform(animate) {
+  const t = `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom})`;
+  canvasL.style.transition = animate ? 'transform 200ms cubic-bezier(.25,.46,.45,.94)' : 'none';
+  canvasL.style.transform = t;
+  updateZoomHUD();
+}
+
+function updateZoomHUD() {
+  const pct = Math.round(state.zoom * 100);
+  zoomVal.textContent = pct + '%';
+  $('zoom-pct').textContent = pct + '%';
+  zoomHud.classList.add('visible');
+  clearTimeout(state.zoomTimer);
+  state.zoomTimer = setTimeout(() => zoomHud.classList.remove('visible'), 1200);
+}
+
+function updateFileStats() {
+  if (state.current === -1) return;
+  const im = state.images[state.current];
+  $('img-dims').innerText = `${im.w || mainImg.naturalWidth} x ${im.h || mainImg.naturalHeight}px`;
+  
+  let sizeText = '0 KB';
+  if (im.size) {
+    if (im.size > 1024 * 1024) {
+      sizeText = (im.size / (1024 * 1024)).toFixed(2) + ' MB';
+    } else {
+      sizeText = (im.size / 1024).toFixed(1) + ' KB';
+    }
+  }
+  $('img-weight').innerText = sizeText;
+}
+
+function zoomAt(delta, cx, cy) {
+  const rect = viewerWrap.getBoundingClientRect();
+  const ox = cx - rect.left - rect.width / 2;
+  const oy = cy - rect.top  - rect.height / 2;
+
+  const oldZoom = state.zoom;
+  let newZoom = state.zoom * (1 + delta * 0.001);
+  newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, newZoom));
+
+  const ratio = newZoom / oldZoom;
+  state.panX = ox + (state.panX - ox) * ratio;
+  state.panY = oy + (state.panY - oy) * ratio;
+  state.zoom = newZoom;
+  applyTransform(false);
+}
+
+// ── NAVIGATION ──
+function prev() {
+  if (state.images.length === 0 || state.transitioning) return;
+  const next = (state.current - 1 + state.images.length) % state.images.length;
+  showImage(next, 'right');
+}
+
+function next() {
+  if (state.images.length === 0 || state.transitioning) return;
+  const nxt = (state.current + 1) % state.images.length;
+  showImage(nxt, 'left');
+}
+
+// ── UI UPDATES ──
+function updateCounter() {
+  if (state.images.length === 0) {
+    $('img-counter').textContent = '';
+    return;
+  }
+  $('img-counter').textContent = (state.current + 1) + ' / ' + state.images.length;
+}
+
+// ── MOUSE / TOUCH ──
+viewerWrap.addEventListener('wheel', e => {
+  if (state.images.length === 0 || state.isCropping) return;
+  e.preventDefault();
+  const delta = -e.deltaY;
+  zoomAt(delta, e.clientX, e.clientY);
+}, { passive: false });
+
+viewerWrap.addEventListener('mousedown', e => {
+  if (e.button !== 0 || state.images.length === 0 || state.isCropping) return;
+  state.dragging = true;
+  state.dragStartX = e.clientX;
+  state.dragStartY = e.clientY;
+  state.panStartX  = state.panX;
+  state.panStartY  = state.panY;
+  viewerWrap.classList.add('dragging');
+});
+
+window.addEventListener('mousemove', e => {
+  if (!state.dragging) return;
+  state.panX = state.panStartX + (e.clientX - state.dragStartX);
+  state.panY = state.panStartY + (e.clientY - state.dragStartY);
+  applyTransform(false);
+});
+
+window.addEventListener('mouseup', () => {
+  state.dragging = false;
+  viewerWrap.classList.remove('dragging');
+});
+
+// Double click = fit or 1:1
+viewerWrap.addEventListener('dblclick', e => {
+  if (state.images.length === 0) return;
+  const im = state.images[state.current];
+  if (!im || !im.w) return;
+  const vw = viewerWrap.clientWidth, vh = viewerWrap.clientHeight;
+  const fitScale = Math.min((vw - 24) / im.w, (vh - 24) / im.h, 1);
+  if (Math.abs(state.zoom - 1) < 0.05) {
+    state.zoom = fitScale;
+    state.panX = 0;
+    state.panY = 0;
+  } else {
+    state.zoom = 1;
+    state.panX = 0;
+    state.panY = 0;
+  }
+  applyTransform(true);
+});
+
+// Touch pinch
+let lastPinchDist = 0;
+viewerWrap.addEventListener('touchstart', e => {
+  if (e.touches.length === 2) {
+    lastPinchDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+  } else if (e.touches.length === 1) {
+    state.dragging = true;
+    state.dragStartX = e.touches[0].clientX;
+    state.dragStartY = e.touches[0].clientY;
+    state.panStartX  = state.panX;
+    state.panStartY  = state.panY;
+  }
+});
+
+viewerWrap.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (e.touches.length === 2) {
+    const dist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    if (lastPinchDist > 0) {
+      const ratio = dist / lastPinchDist;
+      const rect = viewerWrap.getBoundingClientRect();
+      const ox = cx - rect.left - rect.width / 2;
+      const oy = cy - rect.top  - rect.height / 2;
+      const oldZoom = state.zoom;
+      const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, state.zoom * ratio));
+      const r = newZoom / oldZoom;
+      state.panX = ox + (state.panX - ox) * r;
+      state.panY = oy + (state.panY - oy) * r;
+      state.zoom = newZoom;
+      applyTransform(false);
+    }
+    lastPinchDist = dist;
+  } else if (e.touches.length === 1 && state.dragging) {
+    state.panX = state.panStartX + (e.touches[0].clientX - state.dragStartX);
+    state.panY = state.panStartY + (e.touches[0].clientY - state.dragStartY);
+    applyTransform(false);
+  }
+}, { passive: false });
+
+viewerWrap.addEventListener('touchend', e => {
+  if (e.touches.length < 2) lastPinchDist = 0;
+  if (e.touches.length === 0) state.dragging = false;
+});
+
+// ── KEYBOARD ──
+document.addEventListener('keydown', e => {
+  const isCtrl = e.ctrlKey || e.metaKey;
+
+  // Shortcuts globales
+  if (isCtrl) {
+    switch (e.key.toLowerCase()) {
+      case 'o': e.preventDefault(); $('btn-open-hud').click(); break;
+      case 's': e.preventDefault(); saveCurrent(); break;
+      case 'c': if (state.images.length) copyToClipboard(); break;
+      case ',': e.preventDefault(); openConfig(); break;
+      case 'f': e.preventDefault(); toggleFullscreen(); break;
+      case 'i': if (e.shiftKey) { e.preventDefault(); window.electronAPI.openDevTools(); } break;
+    }
+  }
+
+  switch (e.key.toLowerCase()) {
+    case 'arrowright': case 'arrowdown': case ' ': e.preventDefault(); next(); break;
+    case 'arrowleft':  case 'arrowup':   e.preventDefault(); prev(); break;
+    case 'l': rotate(-90); break;
+    case 'r': rotate(90); break;
+    case 'g': case 'G': document.body.classList.toggle('ghost-mode'); break;
+    case 'f': if (!isCtrl) $('btn-fit-hud').click(); break;
+    case '1': $('btn-orig-hud').click(); break;
+    case 'delete': 
+      if (state.images.length) removeCurrentImage();
+      break;
+    case 'escape':
+      if (document.fullscreenElement) document.exitFullscreen();
+      closeModal('modal-config');
+      break;
+    case 'enter':
+      e.preventDefault();
+      toggleFullscreen();
+      break;
+    case 'f': case 'F':
+      if (state.images.length) {
+        const im = state.images[state.current];
+        if (im && im.w) fitToWindow(im.w, im.h);
+      }
+      break;
+    case '1':
+      state.zoom = 1; state.panX = 0; state.panY = 0;
+      applyTransform(true);
+      break;
+    case '+': case '=':
+      zoomAt(150, viewerWrap.clientWidth/2, viewerWrap.clientHeight/2);
+      break;
+    case '-':
+      zoomAt(-150, viewerWrap.clientWidth/2, viewerWrap.clientHeight/2);
+      break;
+    case '0':
+      if (state.images.length) {
+        const im = state.images[state.current];
+        if (im && im.w) fitToWindow(im.w, im.h);
+      }
+      break;
+  }
+});
+
+function removeCurrentImage() {
+  if (state.current === -1) return;
+  const im = state.images[state.current];
+  if (im.url) URL.revokeObjectURL(im.url);
+  state.images.splice(state.current, 1);
+  
+  if (state.images.length === 0) {
+    state.current = -1;
+    mainImg.classList.remove('loaded');
+    mainImg.src = '';
+    dropZone.style.display = 'flex';
+    sidebar.innerHTML = '';
+  } else {
+    const nextIdx = Math.min(state.current, state.images.length - 1);
+    state.current = nextIdx;
+    buildSidebar();
+    showImage(nextIdx, null);
+  }
+  updateCounter();
+}
+
+async function copyToClipboard() {
+  if (state.current === -1) return;
+  const im = state.images[state.current];
+  try {
+    const response = await fetch(im.url);
+    const blob = await response.blob();
+    const item = new ClipboardItem({ [blob.type]: blob });
+    await navigator.clipboard.write([item]);
+    showToast('Imagen copiada al portapapeles');
+  } catch (err) { console.error('Error al copiar:', err); }
+}
+
+function showToast(txt) {
+  const t = document.createElement('div');
+  t.style.cssText = `
+    position:fixed;bottom:60px;left:50%;transform:translateX(-50%);
+    background:rgba(0,212,255,0.9);color:#000;padding:8px 24px;
+    border-radius:4px;font-family:'Share Tech Mono',monospace;
+    font-size:12px;font-weight:700;z-index:3000;
+    animation: toast-in 300ms ease, toast-out 300ms ease 2s forwards;
+  `;
+  t.textContent = txt;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes toast-in { from { opacity:0; transform:translateX(-50%) translateY(20px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+  @keyframes toast-out { to { opacity:0; transform:translateX(-50%) translateY(-20px); } }
+`;
+document.head.appendChild(style);
+
+// ── BUTTONS ──
+$('btn-open-hud').addEventListener('click', () => {
+  if (isElectron) {
+    window.electronAPI.openFile().then(path => { if (path) scanFolder(path); });
+  } else {
+    fileInput.click();
+  }
+});
+$('btn-drop-open').addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => loadFiles(e.target.files));
+
+$('btn-fit-hud').addEventListener('click', () => {
+  if (!state.images.length) return;
+  const im = state.images[state.current];
+  if (im && im.w) { state.panX=0; state.panY=0; fitToWindow(im.w, im.h); }
+});
+
+$('btn-orig-hud').addEventListener('click', () => {
+  state.zoom = 1; state.panX = 0; state.panY = 0;
+  applyTransform(true);
+});
+
+$('btn-fs-hud').addEventListener('click', toggleFullscreen);
+
+$('btn-rot-l').addEventListener('click', () => rotate(-90));
+$('btn-rot-r').addEventListener('click', () => rotate(90));
+$('btn-save').addEventListener('click', saveCurrent);
+
+// El evento btn-crop ahora se gestiona en el motor Pro
+
+$('btn-ghost').addEventListener('click', () => {
+  state.isGhost = !state.isGhost;
+  if (state.isGhost) state.isCropping = false; // AISLAMIENTO TOTAL
+  document.body.classList.toggle('ghost-mode', state.isGhost);
+  updateHUDStates();
+  setTimeout(() => {
+    const im = state.images[state.current];
+    if (im) fitToWindow(im.w, im.h);
+  }, 100);
+});
+
+$('btn-prev').addEventListener('click', prev);
+$('btn-next').addEventListener('click', next);
+
+$('btn-sidebar').addEventListener('click', () => {
+  state.sidebarOpen = !state.sidebarOpen;
+  sidebar.style.display = state.sidebarOpen ? '' : 'none';
+  $('btn-sidebar').classList.toggle('active', state.sidebarOpen);
+  
+  if (state.sidebarOpen) {
+    startBackgroundScan();
+  } else {
+    state.scanInProgress = false;
+    updateThumbProgress(0, 0, true);
+  }
+});
+
+// ── FULLSCREEN ──
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    app.requestFullscreen().then(() => {
+      showFsBadge();
+    });
+  } else {
+    document.exitFullscreen();
+  }
+}
+
+function showFsBadge() {
+  fsBadge.classList.add('show');
+  setTimeout(() => fsBadge.classList.remove('show'), 1500);
+}
+
+document.addEventListener('fullscreenchange', () => {
+  const isFs = !!document.fullscreenElement;
+  $('btn-fs').textContent = isFs ? '⊠ Salir' : '⊞ Fullscreen';
+});
+
+// ── DRAG & DROP ──
+let dragCount = 0;
+
+document.addEventListener('dragenter', e => {
+  if (e.dataTransfer.types.includes('Files')) {
+    e.preventDefault();
+    dragCount++;
+    app.classList.add('drag-over');
+  }
+});
+
+document.addEventListener('dragleave', () => {
+  dragCount--;
+  if (dragCount <= 0) { dragCount = 0; app.classList.remove('drag-over'); }
+});
+
+document.addEventListener('dragover', e => e.preventDefault());
+
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  dragCount = 0;
+  app.classList.remove('drag-over');
+  if (e.dataTransfer.files.length) loadFiles(e.dataTransfer.files);
+});
+
+// ── RESIZE ──
+window.addEventListener('resize', () => {
+  if (state.images.length && state.current >= 0) {
+    const im = state.images[state.current];
+    if (im && im.w) fitToWindow(im.w, im.h);
+  }
+});
+
+// ── MODAL HELPERS ──
+function openModal(id) { $(id).classList.add('active'); }
+function closeModal(id) { $(id).classList.remove('active'); }
+
+// ── CONFIG LOGIC ──
+function openConfig() {
+  if (!state.settings) return;
+  const s = state.settings.app;
+  $('cfg-sidebar').checked = s.sidebarOpen;
+  $('cfg-statusbar').checked = s.statusbarVisible;
+  $('cfg-tray').checked = s.closeToTray;
+  $('cfg-autostart').checked = s.autoStart;
+  
+  // Monitor selection
+  if (isElectron) {
+    window.electronAPI.getMonitors().then(displays => {
+      const select = $('cfg-monitor');
+      // Limpiar salvo el primero
+      while (select.options.length > 1) select.remove(1);
+      
+      displays.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d.id;
+        opt.textContent = d.label;
+        select.appendChild(opt);
+      });
+      select.value = s.preferredDisplayId || 'auto';
+    });
+  }
+
+  // Set active color
+  document.querySelectorAll('.color-opt').forEach(opt => {
+    opt.classList.toggle('active', opt.dataset.color === s.accentColor);
+  });
+  
+  openModal('modal-config');
+}
+
+document.querySelectorAll('.color-opt').forEach(opt => {
+  opt.addEventListener('click', () => {
+    document.querySelectorAll('.color-opt').forEach(o => o.classList.remove('active'));
+    opt.classList.add('active');
+  });
+});
+
+$('btn-save-config').addEventListener('click', () => {
+  const accentColor = document.querySelector('.color-opt.active').dataset.color;
+  const newSettings = {
+    sidebarOpen: $('cfg-sidebar').checked,
+    statusbarVisible: $('cfg-statusbar').checked,
+    closeToTray: $('cfg-tray').checked,
+    autoStart: $('cfg-autostart').checked,
+    preferredDisplayId: $('cfg-monitor').value,
+    accentColor: accentColor
+  };
+  
+  state.settings.app = newSettings;
+  applySettings();
+  if (isElectron) window.electronAPI.saveSettings(newSettings);
+  closeModal('modal-config');
+  showToast('Configuración guardada');
+});
+
+function applySettings() {
+  const s = state.settings.app;
+  
+  // Accent color
+  document.documentElement.style.setProperty('--cyber-accent', s.accentColor);
+  // Convert hex to RGB for variables
+  const r = parseInt(s.accentColor.slice(1,3), 16);
+  const g = parseInt(s.accentColor.slice(3,5), 16);
+  const b = parseInt(s.accentColor.slice(5,7), 16);
+  document.documentElement.style.setProperty('--cyber-accent-rgb', `${r}, ${g}, ${b}`);
+  
+  // Visibility
+  state.sidebarOpen = s.sidebarOpen;
+  if (s.preferredDisplayId) $('cfg-monitor').value = s.preferredDisplayId;
+  sidebar.style.display = s.sidebarOpen ? '' : 'none';
+  $('btn-sidebar').classList.toggle('active', s.sidebarOpen);
+  $('statusbar').style.display = s.statusbarVisible ? '' : 'none';
+}
+
+
+
+// ── ELECTRON WINDOW CONTROLS ──
+
+
+if (isElectron) {
+  $('win-min').addEventListener('click', () => window.electronAPI.minimize());
+  $('win-max').addEventListener('click', () => window.electronAPI.maximize());
+  $('win-close').addEventListener('click', () => window.electronAPI.close());
+
+  window.electronAPI.onWinState(state => {
+    const btn = $('win-max');
+    if (state === 'maximized') {
+      btn.classList.add('maximized');
+      btn.title = 'Restaurar';
+      btn.innerHTML = '&#9635;';
+    } else {
+      btn.classList.remove('maximized');
+      btn.title = 'Maximizar';
+      btn.innerHTML = '&#9633;';
+    }
+  });
+
+  window.electronAPI.onOpenFile(async path => {
+    // 1. Escanear la carpeta para obtener vecinos
+    const neighbors = await window.electronAPI.scanFolder(path);
+    
+    if (neighbors.length > 0) {
+      const files = neighbors.map(n => {
+        const name = n.path.split(/[\\/]/).pop();
+        return { name, path: n.path, size: n.size, type: '' };
+      });
+      
+      const targetIdx = neighbors.findIndex(n => n.path.toLowerCase() === path.toLowerCase());
+      loadFiles(files, targetIdx !== -1 ? targetIdx : 0);
+    } else {
+      // Fallback: cargar solo el archivo original
+      const name = path.split(/[\\/]/).pop();
+      const mockFile = { name, path: path, size: 0, type: '' }; 
+      loadFiles([mockFile]);
+    }
+  });
+
+  // Load settings from Electron
+  window.electronAPI.getSettings().then(s => {
+    if (s && s.app) {
+      state.settings.app = { ...state.settings.app, ...s.app };
+      applySettings();
+    }
+  }).catch(err => console.error('Error cargando settings:', err));
+} else {
+  // Modo browser
+  applySettings();
+}
+
+// ── HUD SYNC ──
+function updateHUDStates() {
+  const rotL = $('btn-rot-l');
+  const rotR = $('btn-rot-r');
+  const crop = $('btn-crop');
+  const ghost = $('btn-ghost');
+  const save = $('btn-save');
+
+  const hasChanges = (state.currentRotation !== 0);
+
+  // ROTACIÓN / GUARDAR
+  if (hasChanges) {
+    if (rotL) rotL.classList.add('active');
+    if (rotR) rotR.classList.add('active');
+    if (save) save.classList.add('active');
+  } else {
+    if (rotL) rotL.classList.remove('active');
+    if (rotR) rotR.classList.remove('active');
+    if (save) save.classList.remove('active');
+  }
+
+  // RECORTE
+  if (state.isCropping) {
+    if (crop) crop.classList.add('active');
+  } else {
+    if (crop) crop.classList.remove('active');
+  }
+
+  // GHOST
+  if (state.isGhost) {
+    if (ghost) ghost.classList.add('active');
+  } else {
+    if (ghost) ghost.classList.remove('active');
+  }
+}
+
+$('btn-center').addEventListener('click', () => {
+  const scrollArea = $('sidebar-scroll');
+  const activeThumb = sidebar.querySelector('.thumb-item.active');
+  if (activeThumb && scrollArea) {
+    activeThumb.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+});
+
+// Modificar confirmCrop y cancelCrop para limpiar
+// (Ya gestionado por listeners directos arriba)
+
+// ── ABOUT MODAL ──
+(function() {
+  const overlay = document.createElement('div');
+  overlay.id = 'about-overlay';
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-box" style="max-width:360px">
+      <div class="modal-header">
+        <div class="modal-title">[ACERCA DE]</div>
+        <button class="win-btn" id="about-close-btn">&#10005;</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size:18px;color:var(--cyber-accent);letter-spacing:3px;margin-bottom:4px">
+          [CYBER<span style="color:var(--cyber-accent3)">VIEWER</span>]
+        </div>
+        <div style="font-size:11px;color:var(--cyber-muted);margin-bottom:20px">v1.1.0 — Visor Pro</div>
+        <img src="assets/icon.png" style="width:64px;height:64px;margin-bottom:20px;filter:drop-shadow(0 0 10px var(--cyber-accent))" alt="Logo">
+        <div style="font-size:12px;color:var(--cyber-text);line-height:1.8">
+          Desarrollado por<br>
+          <span style="color:var(--cyber-accent)">CiberCR</span> · Costa Rica<br>
+          <span style="color:var(--cyber-muted);font-size:11px">High Performance Image Engine</span>
+        </div>
+        <div style="margin-top:20px;font-size:11px;color:var(--cyber-muted)">
+          Formatos: JPG · PNG · GIF · WEBP · BMP · TIFF<br>
+          Electron · Hardware Accelerated
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-console" class="top-btn" style="border-color:var(--cyber-accent2);color:var(--cyber-accent2)">ABRIR CONSOLA</button>
+        <button id="about-close" class="top-btn active">ENTENDIDO</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  function openAbout() { overlay.classList.add('active'); }
+  function closeAbout() { overlay.classList.remove('active'); }
+
+  overlay.querySelector('#about-close').addEventListener('click', closeAbout);
+  overlay.querySelector('#about-close-btn').addEventListener('click', closeAbout);
+  overlay.querySelector('#btn-console').addEventListener('click', () => {
+    window.electronAPI.openDevTools();
+    closeAbout();
+  });
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeAbout(); });
+  $('btn-about').addEventListener('click', openAbout);
+  $('logo-trigger').addEventListener('click', openAbout);
+})();
+
+$('btn-config').addEventListener('click', openConfig);
+
+// ── HUD AUTO-HIDE (Sincronizado) ──
+let hudTimer = null;
+const elementsToHide = [
+  { el: $('topbar'), hideClass: 'hud-hidden-top' },
+  { el: $('statusbar'), hideClass: 'hud-hidden-bottom' },
+  { el: $('kbd-hint'), hideClass: 'hud-hidden-fade' }
+];
+
+function resetHudTimer() {
+  elementsToHide.forEach(item => {
+    if (item.el) item.el.classList.remove(item.hideClass);
+  });
+  
+  clearTimeout(hudTimer);
+  
+  // No ocultar si estamos en medio de un recorte o si el ratón está sobre el HUD
+  const isHovering = elementsToHide.some(item => item.el && item.el.matches(':hover'));
+  if (state.isCropping || isHovering) return;
+
+  hudTimer = setTimeout(() => {
+    if (state.images.length > 0) {
+      elementsToHide.forEach(item => {
+        if (item.el) item.el.classList.add(item.hideClass);
+      });
+    }
+  }, 2000); // 2 segundos de inactividad
+}
+
+window.addEventListener('mousemove', resetHudTimer);
+elementsToHide.forEach(item => {
+  if (item.el) {
+    item.el.addEventListener('mouseenter', () => clearTimeout(hudTimer));
+    item.el.addEventListener('mouseleave', resetHudTimer);
+  }
+});
+
+// ── INIT ──
+updateCounter();
+resetHudTimer();
+</script>
+</body>
+</html>
