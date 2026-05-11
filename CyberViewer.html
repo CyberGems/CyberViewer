@@ -1971,13 +1971,16 @@ $('btn-crop-confirm').onclick = async () => {
     // Recargar con cache-buster
     mainImg.src = `file://${fpath}?t=${Date.now()}`;
     
-    // Esperar a que la imagen cargue para actualizar HUD y cambios
+    // Esperar a que la imagen cargue para actualizar HUD y dimensiones en el estado
     mainImg.onload = () => {
+      im.w = mainImg.naturalWidth;
+      im.h = mainImg.naturalHeight;
       state.hasChanges = false;
       updateSaveButton();
       updateHUDStates();
-      // Auto-fit de la nueva imagen
-      fitToWindow(mainImg.naturalWidth, mainImg.naturalHeight);
+      updateFileStats();
+      // Auto-fit de la nueva imagen con dimensiones reales
+      fitToWindow(im.w, im.h);
       mainImg.onload = null; // Limpiar listener
     };
   } else {
@@ -2041,6 +2044,17 @@ async function saveCurrent() {
       updateHUDStates();
       
       const safePath = fpath.replace(/\\/g, '/');
+      
+      // Escuchar el load de la nueva imagen para actualizar dimensiones en el estado
+      mainImg.onload = () => {
+        im.w = mainImg.naturalWidth;
+        im.h = mainImg.naturalHeight;
+        updateHUDStates();
+        updateFileStats();
+        fitToWindow(im.w, im.h);
+        mainImg.onload = null;
+      };
+
       mainImg.src = 'file:///' + safePath + '?t=' + Date.now();
       showToast('CAMBIOS GUARDADOS', 'success');
       
