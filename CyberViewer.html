@@ -1812,6 +1812,7 @@ function calibrateAndShowCrop() {
   cropState.active = true;
   state.isCropping = true;
   $('crop-overlay').classList.add('active');
+  $('kbd-hint').classList.add('hud-hidden');
   
   // El marco nace ABRAZANDO los bordes reales
   cropState.x = realX;
@@ -1840,6 +1841,7 @@ $('btn-crop-cancel').onclick = () => {
   cropState.active = false;
   state.isCropping = false;
   $('crop-overlay').classList.remove('active');
+  $('kbd-hint').classList.remove('hud-hidden');
   updateSaveButton();
   updateHUDStates();
 };
@@ -1958,6 +1960,7 @@ $('btn-crop-confirm').onclick = async () => {
     cropState.active = false;
     state.isCropping = false;
     $('crop-overlay').classList.remove('active');
+    $('kbd-hint').classList.remove('hud-hidden');
     
     // Resetear transformaciones visuales para la nueva imagen
     state.currentRotation = 0;
@@ -2335,15 +2338,16 @@ async function copyToClipboard() {
 function showToast(txt) {
   const t = document.createElement('div');
   t.style.cssText = `
-    position:fixed;bottom:60px;left:50%;transform:translateX(-50%);
-    background:rgba(0,212,255,0.9);color:#000;padding:8px 24px;
+    position:fixed;bottom:120px;left:50%;transform:translateX(-50%);
+    background:rgba(0,212,255,0.95);color:#000;padding:8px 24px;
     border-radius:4px;font-family:'Share Tech Mono',monospace;
-    font-size:12px;font-weight:700;z-index:3000;
-    animation: toast-in 300ms ease, toast-out 300ms ease 2s forwards;
+    font-size:12px;font-weight:700;z-index:9000;
+    box-shadow: 0 0 20px rgba(0,212,255,0.4);
+    animation: toast-in 300ms ease, toast-out 300ms ease 2.2s forwards;
   `;
   t.textContent = txt;
   document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2500);
+  setTimeout(() => t.remove(), 2800);
 }
 
 const style = document.createElement('style');
@@ -2663,7 +2667,7 @@ $('btn-center').addEventListener('click', () => {
         <div style="font-size:18px;color:var(--cyber-accent);letter-spacing:3px;margin-bottom:4px">
           [CYBER<span style="color:var(--cyber-accent3)">VIEWER</span>]
         </div>
-        <div style="font-size:11px;color:var(--cyber-muted);margin-bottom:20px">v1.1.0 — Visor Pro</div>
+        <div style="font-size:11px;color:var(--cyber-muted);margin-bottom:20px">v1.1.2 — Visor Pro</div>
         <img src="assets/icon.png" style="width:64px;height:64px;margin-bottom:20px;filter:drop-shadow(0 0 10px var(--cyber-accent))" alt="Logo">
         <div style="font-size:12px;color:var(--cyber-text);line-height:1.8">
           Desarrollado por<br>
