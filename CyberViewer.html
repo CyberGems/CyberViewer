@@ -1522,14 +1522,14 @@ if (isElectron) {
             
             buildSidebar();
             showImage(next, null);
-            showToast(`Oculto: ${removed.file.name}`);
+            showToast(`OCULTO: ${removed.file.name.toUpperCase()}`);
           }
         }
         break;
       case 'restore-hidden':
         state.images.forEach(im => im.hidden = false);
         buildSidebar();
-        showToast('Imágenes restauradas');
+        showToast('IMÁGENES RESTAURADAS', 'success');
         break;
       case 'go-start':
         showImage(0, 'right', true);
@@ -1777,7 +1777,7 @@ let cropState = {
 function startCrop() {
   if (state.current === -1) return;
   if (!mainImg.complete || mainImg.naturalWidth === 0) {
-    showToast('Preparando motor de imagen...', 'warning');
+    showToast('INICIALIZANDO MOTOR', 'info');
     return;
   }
   
@@ -1793,7 +1793,7 @@ function startCrop() {
   state.panY = 0;
   applyTransform(true);
   
-  showToast('ENFOCANDO ÁREA DE TRABAJO...');
+  showToast('ENFOCANDO ÁREA DE TRABAJO');
   
   // Pausa para que el navegador aplique el transform antes de medir
   setTimeout(() => { calibrateAndShowCrop(); }, 250);
@@ -1902,7 +1902,7 @@ window.addEventListener('mouseup', () => {
 });
 
 $('btn-crop-confirm').onclick = async () => {
-  showToast('RECORTANDO Y GUARDANDO...');
+  showToast('GUARDANDO RECORTE', 'info');
   
   // 1. Extraer el ratio de escala respecto a los píxeles originales
   const isVert = state.currentRotation === 90 || state.currentRotation === 270;
@@ -1995,11 +1995,11 @@ async function saveCurrent() {
     return;
   }
   if (!mainImg.complete || mainImg.naturalWidth === 0) {
-    showToast('La imagen no está lista para guardar', 'error');
+    showToast('IMAGEN NO LISTA', 'error');
     return;
   }
 
-  showToast('GUARDANDO...');
+  showToast('GUARDANDO CAMBIOS', 'info');
 
   try {
     // ── Renderizar imagen rotada en canvas ──
@@ -2331,23 +2331,36 @@ async function copyToClipboard() {
     const blob = await response.blob();
     const item = new ClipboardItem({ [blob.type]: blob });
     await navigator.clipboard.write([item]);
-    showToast('Imagen copiada al portapapeles');
+    showToast('IMAGEN COPIADA', 'success');
   } catch (err) { console.error('Error al copiar:', err); }
 }
 
-function showToast(txt) {
+function showToast(txt, type = 'info') {
+  // Eliminar toasts previos para evitar solapamiento visual
+  const existing = document.querySelectorAll('.cyber-toast');
+  existing.forEach(el => el.remove());
+
   const t = document.createElement('div');
+  t.className = 'cyber-toast';
+  
+  let bg = 'rgba(0, 212, 255, 0.95)'; // Cyan por defecto (info)
+  if (type === 'error') bg = 'rgba(255, 80, 80, 0.95)';
+  if (type === 'success') bg = 'rgba(0, 255, 170, 0.95)';
+
   t.style.cssText = `
     position:fixed;bottom:120px;left:50%;transform:translateX(-50%);
-    background:rgba(0,212,255,0.95);color:#000;padding:8px 24px;
-    border-radius:4px;font-family:'Share Tech Mono',monospace;
+    background:${bg};color:#000;padding:8px 24px;
+    border-radius:2px;font-family:'Share Tech Mono',monospace;
     font-size:12px;font-weight:700;z-index:9000;
-    box-shadow: 0 0 20px rgba(0,212,255,0.4);
+    box-shadow: 0 0 20px ${bg.replace('0.95', '0.4')};
     animation: toast-in 300ms ease, toast-out 300ms ease 2.2s forwards;
+    pointer-events: none;
+    letter-spacing: 1px;
+    white-space: nowrap;
   `;
   t.textContent = txt;
   document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2800);
+  setTimeout(() => { if (t.parentNode) t.remove(); }, 2500);
 }
 
 const style = document.createElement('style');
@@ -2528,7 +2541,7 @@ $('btn-save-config').addEventListener('click', () => {
   applySettings();
   if (isElectron) window.electronAPI.saveSettings(newSettings);
   closeModal('modal-config');
-  showToast('Configuración guardada');
+  showToast('CONFIGURACIÓN GUARDADA', 'success');
 });
 
 function applySettings() {
