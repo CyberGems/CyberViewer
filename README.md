@@ -74,4 +74,4 @@ Sin íconos el build falla. Si no tienes uno aún, comenta la línea `"icon"` en
 
 ---
 
-**CiberCR © 2025**
+**CyberGems © 2026**

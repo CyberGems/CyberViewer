@@ -1,9 +1,9 @@
 {
   "name": "cyberviewer",
-  "version": "1.1.6",
-  "description": "CyberViewer — Visor de imágenes ultraligero por CiberCR",
+  "version": "1.2.0",
+  "description": "CyberViewer — Visor de imágenes ultraligero por CyberGems",
   "main": "main.js",
-  "author": "CiberCR <info@cibercr.com>",
+  "author": "CyberGems <info@cybergems.com>",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
@@ -15,9 +15,9 @@
     "electron-builder": "^24.0.0"
   },
   "build": {
-    "appId": "com.cibercr.cyberviewer",
+    "appId": "com.cybergems.cyberviewer",
     "productName": "CyberViewer",
-    "copyright": "© 2025 CiberCR",
+    "copyright": "© 2026 CyberGems",
     "directories": {
       "output": "dist"
     },

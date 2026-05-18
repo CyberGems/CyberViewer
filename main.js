@@ -27,7 +27,8 @@ function loadSettings() {
       accentColor: '#00d4ff',
       sidebarOpen: true,
       statusbarVisible: true,
-      preferredDisplayId: 'auto'
+      preferredDisplayId: 'auto',
+      language: 'en'
     }
   };
 }
@@ -35,7 +36,10 @@ function loadSettings() {
 function saveSettings(data) {
   try {
     const current = loadSettings();
-    const merged = { ...current, ...data };
+    const merged = {
+      window: { ...current.window, ...(data.window || {}) },
+      app: { ...current.app, ...(data.app || {}) }
+    };
     fs.writeFileSync(settingsPath, JSON.stringify(merged, null, 2));
   } catch (e) { console.error('Error guardando settings:', e); }
 }
@@ -111,11 +115,6 @@ function createWindow() {
     },
   });
 
-  win.maximize();
-  win.once('ready-to-show', () => {
-    win.show();
-  });
-
   // Guardar estado en tiempo real para no perder el monitor
   win.on('move', () => {
     if (!win.isMaximized()) saveSettings({ window: { bounds: win.getBounds(), maximized: false } });
@@ -133,10 +132,14 @@ function createWindow() {
 
   win.once('ready-to-show', () => {
     if (settings.window.maximized) win.maximize();
-    if (!settings.app.startMinimized) {
+    
+    const isStartupLaunch = process.argv.includes('--startup');
+    const shouldStartMinimized = settings.app.autoStart && isStartupLaunch;
+
+    if (!shouldStartMinimized) {
       win.show();
     } else {
-      // Si inicia minimizado, solo mostramos en el tray si está activo
+      // Si inicia minimizado por el sistema, creamos el tray si no existe
       if (!tray) createTray();
     }
   });
@@ -166,11 +169,17 @@ function createWindow() {
 
 function createTray() {
   if (tray) return;
+  const settings = loadSettings();
+  const lang = settings.app.language || 'en';
+  
+  const showLabel = lang === 'es' ? 'Mostrar CyberViewer' : 'Show CyberViewer';
+  const exitLabel = lang === 'es' ? 'Salir' : 'Exit';
+
   tray = new Tray(path.join(__dirname, 'assets', 'icon.png'));
   const contextMenu = Menu.buildFromTemplate([
-    { label: 'Mostrar CyberViewer', click: () => win.show() },
+    { label: showLabel, click: () => { win.show(); win.focus(); } },
     { type: 'separator' },
-    { label: 'Salir', click: () => { isQuitting = true; app.quit(); } }
+    { label: exitLabel, click: () => { isQuitting = true; app.quit(); } }
   ]);
   tray.setToolTip('CyberViewer');
   tray.setContextMenu(contextMenu);
@@ -353,7 +362,8 @@ ipcMain.on('save-settings', (event, newSettings) => {
   if (newSettings.autoStart !== undefined) {
     app.setLoginItemSettings({
       openAtLogin: newSettings.autoStart,
-      path: app.getPath('exe')
+      path: app.getPath('exe'),
+      args: ['--startup']
     });
   }
 
@@ -362,28 +372,66 @@ ipcMain.on('save-settings', (event, newSettings) => {
   } else if (!newSettings.closeToTray && tray) {
     tray.destroy();
     tray = null;
+  } else if (tray) {
+    // Si cambia de idioma, recrear el tray para actualizar textos
+    tray.destroy();
+    tray = null;
+    createTray();
   }
 });
 
+const I18N_MAIN = {
+  en: {
+    copy_image: "Copy Image",
+    show_in_folder: "Show in Folder",
+    hide_session: "Hide from this session",
+    restore_hidden: "Restore hidden ({count})",
+    copy_original: "Copy Original",
+    go_start: "Go to Start",
+    go_end: "Go to End",
+    move_trash: "Move to Trash",
+    open_folder: "Open Folder",
+    config: "Configuration",
+    about: "About",
+  },
+  es: {
+    copy_image: "Copiar Imagen",
+    show_in_folder: "Mostrar en Carpeta",
+    hide_session: "Ocultar de esta sesión",
+    restore_hidden: "Restaurar ocultos ({count})",
+    copy_original: "Copiar Original",
+    go_start: "Ir al Principio",
+    go_end: "Ir al Final",
+    move_trash: "Mover a la Papelera",
+    open_folder: "Abrir Carpeta",
+    config: "Configuración",
+    about: "Acerca de",
+  }
+};
+
 // Menú contextual nativo para campos de texto
 ipcMain.on('show-context-menu', (event, props) => {
+  const settings = loadSettings();
+  const lang = settings.app.language || 'en';
+  const t = I18N_MAIN[lang] || I18N_MAIN.en;
+
   const win = BrowserWindow.fromWebContents(event.sender);
   let template = [];
 
   if (props.type === 'main-image') {
     template = [
       { 
-        label: 'Copiar Imagen', 
+        label: t.copy_image, 
         click: () => {
           const img = nativeImage.createFromPath(props.path);
           clipboard.writeImage(img);
         } 
       },
-      { label: 'Mostrar en Carpeta', click: () => shell.showItemInFolder(props.path) },
+      { label: t.show_in_folder, click: () => shell.showItemInFolder(props.path) },
       { type: 'separator' },
-      { label: 'Ocultar de esta sesión', click: () => event.sender.send('menu-action', { action: 'remove-from-list', index: props.index }) },
+      { label: t.hide_session, click: () => event.sender.send('menu-action', { action: 'remove-from-list', index: props.index }) },
       { 
-        label: `Restaurar ocultos (${props.hiddenCount || 0})`, 
+        label: t.restore_hidden.replace('{count}', props.hiddenCount || 0), 
         enabled: !!props.hiddenCount,
         visible: !!props.hiddenCount,
         click: () => event.sender.send('menu-action', { action: 'restore-hidden' }) 
@@ -392,27 +440,27 @@ ipcMain.on('show-context-menu', (event, props) => {
   } else if (props.type === 'thumb') {
     template = [
       { 
-        label: 'Copiar Original', 
+        label: t.copy_original, 
         click: () => {
           const img = nativeImage.createFromPath(props.path);
           clipboard.writeImage(img);
         } 
       },
-      { label: 'Mostrar en Carpeta', click: () => shell.showItemInFolder(props.path) },
+      { label: t.show_in_folder, click: () => shell.showItemInFolder(props.path) },
       { type: 'separator' },
-      { label: 'Ir al Principio', click: () => event.sender.send('menu-action', { action: 'go-start' }) },
-      { label: 'Ir al Final', click: () => event.sender.send('menu-action', { action: 'go-end' }) },
+      { label: t.go_start, click: () => event.sender.send('menu-action', { action: 'go-start' }) },
+      { label: t.go_end, click: () => event.sender.send('menu-action', { action: 'go-end' }) },
       { type: 'separator' },
-      { label: 'Ocultar de esta sesión', click: () => event.sender.send('menu-action', { action: 'remove-from-list', index: props.index }) },
+      { label: t.hide_session, click: () => event.sender.send('menu-action', { action: 'remove-from-list', index: props.index }) },
       { 
-        label: `Restaurar ocultos (${props.hiddenCount || 0})`, 
+        label: t.restore_hidden.replace('{count}', props.hiddenCount || 0), 
         enabled: !!props.hiddenCount,
         visible: !!props.hiddenCount,
         click: () => event.sender.send('menu-action', { action: 'restore-hidden' }) 
       },
       { type: 'separator' },
       { 
-        label: 'Mover a la Papelera', 
+        label: t.move_trash, 
         click: () => {
           shell.trashItem(props.path).then(() => {
             event.sender.send('menu-action', { action: 'file-deleted', index: props.index });
@@ -422,10 +470,10 @@ ipcMain.on('show-context-menu', (event, props) => {
     ];
   } else {
     template = [
-      { label: 'Abrir Carpeta', click: () => event.sender.send('menu-action', { action: 'open-dir' }) },
+      { label: t.open_folder, click: () => event.sender.send('menu-action', { action: 'open-dir' }) },
       { type: 'separator' },
-      { label: 'Configuración', click: () => event.sender.send('menu-action', { action: 'show-config' }) },
-      { label: 'Acerca de', click: () => event.sender.send('menu-action', { action: 'show-about' }) }
+      { label: t.config, click: () => event.sender.send('menu-action', { action: 'show-config' }) },
+      { label: t.about, click: () => event.sender.send('menu-action', { action: 'show-about' }) }
     ];
   }
 

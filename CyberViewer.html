@@ -64,6 +64,7 @@
     user-select: none;
     backdrop-filter: blur(10px);
     padding: 0 10px;
+    -webkit-app-region: drag;
   }
 
   #topbar::after {
@@ -77,12 +78,12 @@
     box-shadow: 0 0 10px var(--cyber-accent);
   }
 
-  #topbar button, #topbar input { -webkit-app-region: no-drag; }
+  #topbar button, #topbar input, .top-hints { -webkit-app-region: no-drag; }
 
   #main {
     position: absolute !important;
     top: 48px !important;
-    bottom: 28px !important;
+    bottom: 0 !important;
     left: 0 !important;
     right: 0 !important;
     display: flex !important;
@@ -99,22 +100,28 @@
     z-index: 999999 !important;
     display: flex !important;
     align-items: center;
+    justify-content: center !important;
+    gap: 30px !important;
     background: var(--cyber-panel) !important;
     border-top: 1px solid var(--cyber-border);
     padding: 0 20px;
-    gap: 0;
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease !important;
     will-change: transform, opacity;
+  }
+  body.sidebar-open #statusbar {
+    left: var(--panel-w) !important;
+    width: calc(100% - var(--panel-w)) !important;
   }
   #topbar {
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease !important;
   }
 
-  .status-sep {
+  .status-sep, .footer-sep {
     width: 1px;
-    height: 14px;
+    height: 18px;
     background: var(--cyber-border);
-    opacity: 0.5;
+    opacity: 0.6;
+    flex-shrink: 0;
   }
 
   #st-size {
@@ -146,7 +153,7 @@
     50% { opacity: 1; }
   }
   
-  #footer-radar, #footer-size, #footer-zoom, #btn-center {
+  #footer-radar, #footer-size, #footer-weight, #footer-zoom, #btn-center {
     font-family: 'JetBrains Mono', 'Roboto Mono', monospace !important;
     font-size: 13px !important;
     letter-spacing: 1px;
@@ -167,6 +174,103 @@
     bottom: 0 !important;
   }
   body.ghost-mode #sidebar { display: none !important; }
+  body.ghost-mode #zoom-hud {
+    top: 60px;
+  }
+
+  /* ── CYBER STATUSBAR TOOLTIPS ── */
+  .cyber-tooltip {
+    position: relative;
+  }
+
+  .cyber-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 34px;
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: rgba(8, 12, 18, 0.96);
+    color: #fff;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    font-weight: normal;
+    padding: 5px 10px;
+    border-radius: 3px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1), transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000000;
+    letter-spacing: 0.5px;
+    border: 1px solid var(--cyber-border);
+    box-shadow: 0 -4px 15px rgba(0,0,0,0.5);
+    text-transform: none;
+  }
+
+  .cyber-tooltip::before {
+    content: '';
+    position: absolute;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    border-width: 6px 6px 0;
+    border-style: solid;
+    border-color: var(--cyber-border) transparent transparent transparent;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1), transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000000;
+  }
+
+  .cyber-tooltip:hover::after,
+  .cyber-tooltip:hover::before {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Radar: Cyan glowing tooltip */
+  #footer-radar.cyber-tooltip::after {
+    left: 0;
+    transform: translateY(8px);
+    border-color: var(--cyber-accent);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.35);
+  }
+  #footer-radar.cyber-tooltip::before {
+    left: 15px; /* Aligned with the green bulb */
+    transform: translateY(8px);
+    border-color: var(--cyber-accent) transparent transparent transparent;
+  }
+  #footer-radar.cyber-tooltip:hover::after,
+  #footer-radar.cyber-tooltip:hover::before {
+    transform: translateY(0);
+  }
+
+  /* Size: Pink glowing tooltip */
+  #footer-size.cyber-tooltip::after {
+    border-color: var(--cyber-accent2);
+    box-shadow: 0 0 10px rgba(255, 45, 120, 0.35);
+  }
+  #footer-size.cyber-tooltip::before {
+    border-color: var(--cyber-accent2) transparent transparent transparent;
+  }
+
+  /* Weight: Cyan glowing tooltip */
+  #footer-weight.cyber-tooltip::after {
+    border-color: var(--cyber-accent);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.35);
+  }
+  #footer-weight.cyber-tooltip::before {
+    border-color: var(--cyber-accent) transparent transparent transparent;
+  }
+
+  /* Zoom: Lime glowing tooltip */
+  #footer-zoom.cyber-tooltip::after {
+    border-color: var(--cyber-accent3);
+    box-shadow: 0 0 10px rgba(170, 255, 0, 0.35);
+  }
+  #footer-zoom.cyber-tooltip::before {
+    border-color: var(--cyber-accent3) transparent transparent transparent;
+  }
 
   .logo {
     display: flex;
@@ -192,26 +296,47 @@
 
   .sep { width: 1px; height: 20px; background: var(--cyber-border); margin: 0 2px; flex-shrink: 0; }
 
-  #file-info {
-    font-size: 14px;
-    font-family: 'JetBrains Mono', monospace;
+  #viewer-filename {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 99999;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
     color: var(--cyber-accent);
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    -webkit-app-region: drag;
-    margin-left: 20px;
-    letter-spacing: 0.5px;
-    filter: drop-shadow(0 0 5px rgba(0,212,255,0.3));
+    background: rgba(10, 16, 26, 0.75);
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.3);
+    padding: 6px 14px;
+    border-radius: 4px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    pointer-events: none;
+    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.2);
+    backdrop-filter: blur(4px);
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    will-change: opacity, transform;
+  }
+  #viewer-filename.hud-hidden-fade {
+    opacity: 0 !important;
+    transform: translateX(-50%) translateY(-10px) !important;
+  }
+  body.ghost-mode #viewer-filename {
+    display: none !important;
+  }
+  #viewer-filename:empty {
+    display: none !important;
   }
 
   #img-counter {
     font-family: 'Share Tech Mono', monospace;
     font-size: 13px;
     color: var(--cyber-accent);
-    margin-right: 25px;
-    -webkit-app-region: drag;
+    text-shadow: 0 0 6px rgba(0, 212, 255, 0.4);
+    letter-spacing: 1px;
+    text-align: center;
+    margin-bottom: 8px;
   }
 
   .top-btn {
@@ -283,8 +408,9 @@
 
   .win-btn:hover { border-color: var(--cyber-accent); color: var(--cyber-accent); background: rgba(0,212,255,0.08); }
   #win-close:hover { border-color: var(--cyber-accent2); color: var(--cyber-accent2); background: rgba(255,45,120,0.12); }
-  #win-max.maximized { color: var(--cyber-accent3); border-color: var(--cyber-accent3); }
+  #win-max:hover { border-color: var(--cyber-accent3); color: var(--cyber-accent3); background: rgba(170,255,0,0.12); }
   .win-sep { width: 1px; height: 20px; background: var(--cyber-border); margin: 0 4px; flex-shrink: 0; }
+  #btn-config { font-size: 17px; }
 
   /* ── SIDEBAR THUMBNAILS ── */
 
@@ -296,6 +422,38 @@
   .hud-hidden-top { transform: translateY(-100%) !important; opacity: 0 !important; pointer-events: none; }
   .hud-hidden-bottom { transform: translateY(100%) !important; opacity: 0 !important; pointer-events: none; }
   .hud-hidden-fade { opacity: 0 !important; pointer-events: none; }
+  
+  #ghost-close {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    background: rgba(13, 17, 23, 0.85);
+    border: 1px solid var(--cyber-border);
+    color: var(--cyber-muted);
+    border-radius: 4px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    z-index: 999999;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease, border-color 0.2s ease, color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    will-change: transform, opacity;
+  }
+
+  body.ghost-mode #ghost-close {
+    display: flex;
+  }
+
+  #ghost-close:hover {
+    border-color: var(--cyber-accent2);
+    color: var(--cyber-accent2);
+    background: rgba(255, 45, 120, 0.12);
+    box-shadow: 0 0 15px rgba(255, 45, 120, 0.4);
+  }
   #sidebar {
     width: var(--panel-w);
     background: var(--cyber-panel);
@@ -329,12 +487,13 @@
     border-top: 1px solid var(--cyber-border);
     padding: 12px;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     z-index: 20;
     box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
     flex-shrink: 0;
-    height: 60px; /* Suficiente para el botón */
-    align-items: center;
+    height: auto;
+    align-items: stretch;
   }
 
   .thumb-item {
@@ -400,6 +559,9 @@
     overflow: hidden;
     background: var(--cyber-black);
     cursor: grab;
+  }
+  body.statusbar-visible:not(.ghost-mode) #viewer-wrap {
+    margin-bottom: 36px;
   }
 
   #viewer-wrap.dragging { cursor: grabbing; }
@@ -1038,9 +1200,42 @@
   #app.drag-over #drag-overlay { display: block; }
 
   /* scrollbar */
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: var(--cyber-black); }
-  ::-webkit-scrollbar-thumb { background: var(--cyber-dim); border-radius: 2px; }
+  /* Hotkey hints style */
+  .cyber-key {
+    background: rgba(var(--cyber-accent-rgb), 0.1);
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.4);
+    color: var(--cyber-accent);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    box-shadow: 0 0 5px rgba(var(--cyber-accent-rgb), 0.2);
+    margin-right: 4px;
+    display: inline-block;
+    vertical-align: middle;
+    line-height: 1;
+  }
+  .hint-group {
+    display: flex;
+    align-items: center;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 11px;
+    color: var(--cyber-muted);
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+  .hint-txt {
+    margin-left: 2px;
+    text-transform: uppercase;
+  }
+  .hint-sep {
+    color: var(--cyber-border);
+    opacity: 0.5;
+    font-family: monospace;
+    font-size: 14px;
+  }
 </style>
 </head>
 <body>
@@ -1049,24 +1244,32 @@
     <img src="assets/icon.png" class="logo-img" alt="CyberViewer Logo">
     <div class="logo-text">CYBER<span style="color:var(--cyber-accent3)">VIEWER</span></div>
   </div>
-  <div class="sep"></div>
-  <span id="file-info">— sin imágenes —</span>
   <div style="flex:1;-webkit-app-region:drag"></div>
-  <span id="img-counter"></span>
-  <div class="top-hints" style="margin-right:20px">
-    <span>[ <span style="color:var(--cyber-accent)">&larr;&rarr;</span> NAVEGAR ]</span>
-    <span>[ <span style="color:var(--cyber-accent)">SCROLL</span> ZOOM ]</span>
-    <span>[ <span style="color:var(--cyber-accent)">DRAG</span> PAN ]</span>
+  <div class="top-hints" id="top-hints" style="margin-right:20px; display:flex; align-items:center; gap:12px">
+    <div class="hint-group">
+      <kbd class="cyber-key">A</kbd><kbd class="cyber-key">D</kbd>
+      <span class="hint-txt" data-i18n="navigate_hint">NAVEGAR</span>
+    </div>
+    <div class="hint-sep">|</div>
+    <div class="hint-group">
+      <kbd class="cyber-key">Scroll</kbd><kbd class="cyber-key">+/-</kbd>
+      <span class="hint-txt" data-i18n="zoom_hint">ZOOM</span>
+    </div>
+    <div class="hint-sep">|</div>
+    <div class="hint-group">
+      <kbd class="cyber-key">Drag</kbd>
+      <span class="hint-txt" data-i18n="pan_hint">PAN</span>
+    </div>
   </div>
   <div class="win-sep"></div>
-  <button class="top-btn active" id="btn-sidebar" title="Panel lateral" style="margin: 0 5px">&#9776; Panel</button>
+  <button class="top-btn active" id="btn-sidebar" data-i18n-title="sidebar_title" title="Panel lateral" style="margin: 0 5px">&#9776; <span data-i18n="panel">Panel</span></button>
   <div class="win-sep"></div>
-  <button class="win-btn" id="btn-config" title="Configuración" style="margin-left:5px">&#9881;</button>
-  <button class="win-btn" id="btn-about" title="Acerca de CyberViewer">&#9432;</button>
+  <button class="win-btn" id="btn-config" data-i18n-title="config" title="Configuración" style="margin-left:5px">&#9881;&#xFE0E;</button>
+  <button class="win-btn" id="btn-about" data-i18n-title="about" title="Acerca de CyberViewer">&#9432;&#xFE0E;</button>
   <div class="win-sep"></div>
-  <button class="win-btn" id="win-min" title="Minimizar">&#8722;</button>
-  <button class="win-btn" id="win-max" title="Maximizar">&#9633;</button>
-  <button class="win-btn" id="win-close" title="Cerrar">&#10005;</button>
+  <button class="win-btn" id="win-min" data-i18n-title="minimize" title="Minimizar">&#8722;</button>
+  <button class="win-btn" id="win-max" data-i18n-title="maximize" title="Maximizar">&#9633;</button>
+  <button class="win-btn" id="win-close" data-i18n-title="close" title="Cerrar">&#10005;</button>
 </div>
 <div id="app">
 
@@ -1079,14 +1282,16 @@
         <div id="sidebar-inner"></div>
       </div>
       <div id="sidebar-controls">
-        <button class="kbd-btn" id="btn-center" style="width:100%; font-size:11px; height: 32px">CENTRAR</button>
+        <div id="img-counter"></div>
+        <button class="kbd-btn" id="btn-center" data-i18n="center" style="width:100%; font-size:11px; height: 32px">CENTRAR</button>
       </div>
     </div>
 
     <!-- VIEWER -->
     <div id="viewer-wrap">
+      <div id="viewer-filename" class="hud-hidden-fade"></div>
       <div id="canvas-layer">
-        <img id="main-img" alt="Imagen principal">
+        <img id="main-img" data-i18n-alt="main_img_alt" alt="Imagen principal">
         <svg id="spinner" viewBox="0 0 36 36">
           <circle class="spinner-ring" cx="18" cy="18" r="14"/>
         </svg>
@@ -1105,8 +1310,8 @@
           <div class="crop-handle ch-l"></div>
           <div class="crop-handle ch-r"></div>
           <div id="crop-actions">
-            <button class="top-btn active" id="btn-crop-confirm">RECORTAR Y GUARDAR</button>
-            <button class="top-btn" id="btn-crop-cancel" style="border-color:var(--cyber-accent2); color:var(--cyber-accent2)">CANCELAR</button>
+            <button class="top-btn active" id="btn-crop-confirm" data-i18n="crop_confirm">RECORTAR Y GUARDAR</button>
+            <button class="top-btn" id="btn-crop-cancel" style="border-color:var(--cyber-accent2); color:var(--cyber-accent2)" data-i18n="crop_cancel">CANCELAR</button>
           </div>
         </div>
       </div>
@@ -1119,9 +1324,9 @@
           <div class="drop-corner bl"></div>
           <div class="drop-corner br"></div>
           <div class="drop-icon">&#9707;</div>
-          <div class="drop-title">CYBERVIEWER</div>
-          <div class="drop-sub">Arrastra imágenes aquí<br>o haz clic para seleccionar</div>
-          <button class="drop-btn" id="btn-drop-open">Seleccionar archivos</button>
+          <div class="drop-title" data-i18n="drop_title">CYBERVIEWER</div>
+          <div class="drop-sub" data-i18n="drop_sub">Arrastra imágenes aquí<br>o haz clic para seleccionar</div>
+          <button class="drop-btn" id="btn-drop-open" data-i18n="drop_btn">Seleccionar archivos</button>
         </div>
       </div>
 
@@ -1136,50 +1341,57 @@
 
       <!-- INTERACTIVE HUD -->
       <div id="kbd-hint">
-        <button class="kbd-btn" id="btn-open-hud" title="Abrir (Ctrl+O)">&#128193; ABRIR</button>
+        <button class="kbd-btn" id="btn-open-hud" data-i18n-title="open_title" title="Abrir (Ctrl+O)">&#128193;&#xFE0E; <span data-i18n="open_dir">ABRIR</span></button>
         <div class="kbd-sep"></div>
-        <button class="kbd-btn" id="btn-fit-hud" title="Ajustar (F)">AJUSTAR</button>
-        <button class="kbd-btn" id="btn-orig-hud" title="Original (1)">1:1</button>
-        <button class="kbd-btn" id="btn-fs-hud" title="Full (Enter)">PANTALLA</button>
+        <button class="kbd-btn" id="btn-fit-hud" data-i18n-title="fit_title" title="Ajustar (F)"><span data-i18n="fit_to_window">AJUSTAR</span></button>
+        <button class="kbd-btn" id="btn-orig-hud" data-i18n-title="orig_title" title="Original (1)">1:1</button>
+        <button class="kbd-btn" id="btn-fs-hud" data-i18n-title="fs_title" title="Full (Enter)"><span data-i18n="fullscreen">PANTALLA</span></button>
         <div class="kbd-sep"></div>
         <div class="control-group">
-          <button class="kbd-btn save-btn" id="btn-save" title="Guardar cambios (Ctrl+S)" style="width: 100%; height: 22px; font-size: 10px; padding: 0">GUARDAR</button>
+          <button class="kbd-btn save-btn" id="btn-save" data-i18n-title="save_title" title="Guardar cambios (Ctrl+S)" style="width: 100%; height: 22px; font-size: 10px; padding: 0"><span data-i18n="save">GUARDAR</span></button>
           <div class="rotate-row">
-            <button class="kbd-btn" id="btn-rot-l" title="Rotar Izquierda (L)">&#8634;</button>
-            <button class="kbd-btn" id="btn-rot-r" title="Rotar Derecha (R)">&#8635;</button>
+            <button class="kbd-btn" id="btn-rot-l" data-i18n-title="rot_l_title" title="Rotar Izquierda (L)">&#8634;</button>
+            <button class="kbd-btn" id="btn-rot-r" data-i18n-title="rot_r_title" title="Rotar Derecha (R)">&#8635;</button>
           </div>
         </div>
         <div class="kbd-sep"></div>
-        <button class="kbd-btn" id="btn-crop" title="Recortar (C)">&#9986;</button>
+        <button class="kbd-btn" id="btn-crop" data-i18n-title="crop_title" title="Recortar (C)">&#9986;</button>
         <div class="kbd-sep"></div>
-        <button class="kbd-btn" id="btn-ghost" title="Modo Ghost (G)">&#128065;</button>
+        <button class="kbd-btn" id="btn-copy" data-i18n-title="copy_title" title="Copiar Imagen (Ctrl+C)">&#10697;</button>
+        <div class="kbd-sep"></div>
+        <button class="kbd-btn" id="btn-ghost" data-i18n-title="ghost_title" title="Modo Ghost (G)">&#128065;</button>
       </div>
     </div>
 
   </div>
 
   <div id="statusbar">
-    <div class="footer-center" id="footer-radar" style="justify-content: flex-start; margin-right: 40px">
+    <div class="footer-center cyber-tooltip" id="footer-radar" data-i18n-tooltip="radar_tooltip" data-tooltip="RADAR: Total de carpeta actual escaneado / Miniaturas en memoria">
       <span class="bulb"></span>
-      <span style="opacity:0.8">RADAR:</span> 
+      <span style="opacity:0.8" data-i18n="radar_lbl">RADAR:</span> 
       <span id="radar-pct">0%</span> 
       <span id="radar-count" style="color:var(--cyber-accent); margin-left: 5px"> [0/0] </span>
     </div>
 
-    <div class="footer-sep" style="height: 18px; opacity: 0.8"></div>
+    <div class="footer-sep"></div>
 
-    <div class="footer-right" id="footer-size" style="margin-left: 40px; margin-right: 40px">
+    <div class="footer-right cyber-tooltip" id="footer-size" data-i18n-tooltip="size_tooltip" data-tooltip="LIENZO: Resolución física en píxeles de la imagen">
       <span class="bulb" style="background: var(--cyber-accent2); box-shadow: 0 0 6px rgba(255,45,120,0.4);"></span>
-      <span id="img-dims">0 x 0px</span> 
-      <span style="margin: 0 15px; opacity: 0.3">|</span>
-      <span id="img-weight" style="color:var(--cyber-accent)">0 KB</span>
+      <span id="img-dims">0 x 0px</span>
     </div>
 
-    <div class="footer-sep" style="height: 18px; opacity: 0.8"></div>
+    <div class="footer-sep"></div>
 
-    <div class="footer-right" id="footer-zoom" style="margin-left: 40px; margin-right: 10px">
+    <div class="footer-right cyber-tooltip" id="footer-weight" data-i18n-tooltip="weight_tooltip" data-tooltip="PESO: Peso del archivo en disco">
+      <span class="bulb" style="background: var(--cyber-accent); box-shadow: 0 0 6px rgba(0,212,255,0.4);"></span>
+      <span id="img-weight">0 KB</span>
+    </div>
+
+    <div class="footer-sep"></div>
+
+    <div class="footer-right cyber-tooltip" id="footer-zoom" data-i18n-tooltip="zoom_tooltip" data-tooltip="ESCALA DE VISTA: Porcentaje de zoom aplicado en el visor">
       <span class="bulb" style="background: var(--cyber-accent3); box-shadow: 0 0 6px rgba(170,255,0,0.4);"></span>
-      <span style="opacity:0.8">ZOOM:</span>
+      <span style="opacity:0.8" data-i18n="zoom_lbl">ZOOM:</span>
       <span id="zoom-pct" style="margin-left: 5px">100%</span>
     </div>
   </div>
@@ -1188,23 +1400,24 @@
 
 <!-- FILE INPUT -->
 <input type="file" id="file-input" accept="image/*" multiple style="display:none">
-<div id="fs-badge">FULLSCREEN</div>
+<div id="fs-badge" data-i18n="fs_badge">FULLSCREEN</div>
+<button id="ghost-close" data-i18n-title="ghost_close_title" title="Cerrar CyberViewer (Vista Ghost)">&#10005;</button>
 
 <!-- MODAL: CONFIG -->
 <div id="modal-config" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
-      <div class="modal-title">[CYBERVIEWER CONFIG]</div>
+      <div class="modal-title" data-i18n="config_title">[CYBERVIEWER CONFIG]</div>
       <button class="win-btn" onclick="closeModal('modal-config')">&#10005;</button>
     </div>
     <div class="modal-body">
       
       <div class="config-section">
-        <label class="config-label">Personalización</label>
+        <label class="config-label" data-i18n="personalization">Personalización</label>
         <div class="config-row">
           <div class="config-info">
-            <div class="config-name">Color de Acento</div>
-            <div class="config-desc">Define el color principal de la interfaz neon.</div>
+            <div class="config-name" data-i18n="accent_color">Color de Acento</div>
+            <div class="config-desc" data-i18n="accent_desc">Define el color principal de la interfaz neon.</div>
           </div>
           <div class="color-grid">
             <div class="color-opt active" style="background:#00d4ff" data-color="#00d4ff"></div>
@@ -1216,11 +1429,11 @@
       </div>
 
       <div class="config-section">
-        <label class="config-label">Interfaz</label>
+        <label class="config-label" data-i18n="interface">Interfaz</label>
         <div class="config-row">
           <div class="config-info">
-            <div class="config-name">Panel Lateral</div>
-            <div class="config-desc">Mostrar miniaturas al iniciar.</div>
+            <div class="config-name" data-i18n="sidebar">Panel Lateral</div>
+            <div class="config-desc" data-i18n="sidebar_desc">Mostrar miniaturas al iniciar.</div>
           </div>
           <label class="switch">
             <input type="checkbox" id="cfg-sidebar" checked>
@@ -1229,8 +1442,8 @@
         </div>
         <div class="config-row">
           <div class="config-info">
-            <div class="config-name">Barra de Estado</div>
-            <div class="config-desc">Mostrar información técnica inferior.</div>
+            <div class="config-name" data-i18n="statusbar">Barra de Estado</div>
+            <div class="config-desc" data-i18n="statusbar_desc">Mostrar información técnica inferior.</div>
           </div>
           <label class="switch">
             <input type="checkbox" id="cfg-statusbar" checked>
@@ -1240,11 +1453,11 @@
       </div>
 
       <div class="config-section">
-        <label class="config-label">Sistema</label>
+        <label class="config-label" data-i18n="system">Sistema</label>
         <div class="config-row">
           <div class="config-info">
-            <div class="config-name">Cerrar a la Bandeja</div>
-            <div class="config-desc">La app seguirá corriendo en segundo plano.</div>
+            <div class="config-name" data-i18n="close_to_tray">Cerrar a la Bandeja</div>
+            <div class="config-desc" data-i18n="close_to_tray_desc">La app seguirá corriendo en segundo plano.</div>
           </div>
           <label class="switch">
             <input type="checkbox" id="cfg-tray">
@@ -1253,8 +1466,8 @@
         </div>
         <div class="config-row">
           <div class="config-info">
-            <div class="config-name">Inicio Automático</div>
-            <div class="config-desc">Arrancar con Windows (minimizado).</div>
+            <div class="config-name" data-i18n="auto_start">Inicio Automático</div>
+            <div class="config-desc" data-i18n="auto_start_desc">Arrancar con Windows (minimizado).</div>
           </div>
           <label class="switch">
             <input type="checkbox" id="cfg-autostart">
@@ -1263,19 +1476,29 @@
         </div>
         <div class="config-row">
           <div class="config-info">
-            <div class="config-name">Monitor de Apertura</div>
-            <div class="config-desc">Forzar apertura en una pantalla específica.</div>
+            <div class="config-name" data-i18n="language_label">Idioma</div>
+            <div class="config-desc" data-i18n="language_desc">Idioma de la interfaz de usuario.</div>
+          </div>
+          <select id="cfg-lang" class="cfg-select" style="background:#080a0e;color:var(--cyber-accent);border:1px solid var(--cyber-dim);padding:4px;font-family:monospace;font-size:11px;width:120px">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+          </select>
+        </div>
+        <div class="config-row">
+          <div class="config-info">
+            <div class="config-name" data-i18n="opening_monitor">Monitor de Apertura</div>
+            <div class="config-desc" data-i18n="opening_monitor_desc">Forzar apertura en una pantalla específica.</div>
           </div>
           <select id="cfg-monitor" class="cfg-select" style="background:#080a0e;color:var(--cyber-accent);border:1px solid var(--cyber-dim);padding:4px;font-family:monospace;font-size:11px;width:120px">
-            <option value="auto">Automático</option>
+            <option value="auto" data-i18n="monitor_auto">Automático</option>
           </select>
         </div>
       </div>
 
     </div>
     <div class="modal-footer">
-      <button class="top-btn" onclick="closeModal('modal-config')">Cancelar</button>
-      <button class="top-btn active" id="btn-save-config">Guardar Cambios</button>
+      <button class="top-btn" onclick="closeModal('modal-config')" data-i18n="config_cancel">Cancelar</button>
+      <button class="top-btn active" id="btn-save-config" data-i18n="save_config">Guardar Cambios</button>
     </div>
   </div>
 </div>
@@ -1335,10 +1558,228 @@ const state = {
       statusbarVisible: true, 
       closeToTray: false, 
       autoStart: false, 
-      accentColor: '#00d4ff' 
+      accentColor: '#00d4ff',
+      language: 'en'
     } 
   },
 };
+
+const I18N = {
+  en: {
+    no_images: "— no images —",
+    navigate_hint: "NAVIGATE",
+    zoom_hint: "ZOOM",
+    pan_hint: "PAN",
+    sidebar_title: "Sidebar",
+    panel: "Panel",
+    config: "Configuration",
+    about: "About",
+    minimize: "Minimize",
+    maximize: "Maximize",
+    close: "Close",
+    center: "CENTER",
+    main_img_alt: "Main Image",
+    crop_confirm: "CROP & SAVE",
+    crop_cancel: "CANCEL",
+    drop_title: "CYBERVIEWER",
+    drop_sub: "Drag images here<br>or click to select",
+    drop_btn: "Select Files",
+    open_dir: "OPEN",
+    fit_to_window: "FIT",
+    fullscreen: "FULLSCREEN",
+    save: "SAVE",
+    radar_tooltip: "RADAR: Total current folder scanned / Thumbnails in memory",
+    size_tooltip: "CANVAS: Physical resolution in pixels",
+    weight_tooltip: "WEIGHT: File weight on disk",
+    zoom_tooltip: "VIEW SCALE: Zoom percentage applied in the viewer",
+    radar_lbl: "RADAR:",
+    zoom_lbl: "ZOOM:",
+    fs_badge: "FULLSCREEN",
+    ghost_close_title: "Close CyberViewer (Ghost View)",
+    config_title: "[CYBERVIEWER CONFIG]",
+    personalization: "Personalization",
+    accent_color: "Accent Color",
+    accent_desc: "Define the primary neon accent color.",
+    interface: "Interface",
+    sidebar: "Sidebar",
+    sidebar_desc: "Show thumbnail sidebar on start.",
+    statusbar: "Status Bar",
+    statusbar_desc: "Show bottom technical information.",
+    system: "System",
+    close_to_tray: "Close to Tray",
+    close_to_tray_desc: "The app will keep running in the background.",
+    auto_start: "Auto Start",
+    auto_start_desc: "Launch with Windows (minimized).",
+    language_label: "Language",
+    language_desc: "User interface language.",
+    opening_monitor: "Target Monitor",
+    opening_monitor_desc: "Force open on a specific screen.",
+    monitor_auto: "Automatic",
+    config_cancel: "Cancel",
+    save_config: "Save Changes",
+    // Toasts
+    toast_saved: "SETTINGS SAVED",
+    toast_copied: "IMAGE COPIED TO CLIPBOARD",
+    toast_copy_error: "ERROR COPYING IMAGE",
+    toast_no_images: "NO IMAGES LOADED TO COPY",
+    toast_crop_confirm: "CROP APPLIED AND SAVED",
+    toast_crop_cancel: "CROP CANCELLED",
+    toast_hidden: "HIDDEN: ",
+    toast_restored: "IMAGES RESTORED",
+    // About Modal
+    about_title: "[ABOUT]",
+    about_subtitle: "v1.2.0 — Pro Viewer",
+    about_desc: "Copyright (C) 2026 By CyberGems<br><span style=\"color:var(--cyber-muted);font-size:11px\">High Performance Image Engine</span>",
+    about_formats: "Formats: JPG · PNG · GIF · WEBP · BMP · TIFF<br>Electron · Hardware Accelerated",
+    about_dev_tools: "OPEN DEVTOOLS",
+    about_understood: "UNDERSTOOD",
+    // Titles for HUD buttons
+    open_title: "Open Folder (Ctrl+O)",
+    fit_title: "Fit to Window (F)",
+    orig_title: "Original Size 1:1 (1)",
+    fs_title: "Fullscreen (Enter)",
+    save_title: "Save Changes (Ctrl+S)",
+    rot_l_title: "Rotate Left (L)",
+    rot_r_title: "Rotate Right (R)",
+    crop_title: "Crop (C)",
+    copy_title: "Copy Image (Ctrl+C)",
+    ghost_title: "Ghost Mode (G)",
+    // Additional toasts
+    toast_saving_crop: "SAVING CROP...",
+    toast_invalid_crop: "INVALID CROP AREA",
+    toast_crop_saved: "CROP SAVED",
+    toast_initializing_engine: "INITIALIZING ENGINE...",
+    toast_focusing_workspace: "FOCUSING WORKSPACE...",
+    toast_saving_changes: "SAVING CHANGES...",
+    toast_changes_saved: "CHANGES SAVED",
+    toast_path_not_found: "PATH NOT FOUND",
+    toast_image_not_ready: "IMAGE NOT READY"
+  },
+  es: {
+    no_images: "— sin imágenes —",
+    navigate_hint: "NAVEGAR",
+    zoom_hint: "ZOOM",
+    pan_hint: "PAN",
+    sidebar_title: "Panel lateral",
+    panel: "Panel",
+    config: "Configuración",
+    about: "Acerca de",
+    minimize: "Minimizar",
+    maximize: "Maximizar",
+    close: "Cerrar",
+    center: "CENTRAR",
+    main_img_alt: "Imagen principal",
+    crop_confirm: "RECORTAR Y GUARDAR",
+    crop_cancel: "CANCELAR",
+    drop_title: "CYBERVIEWER",
+    drop_sub: "Arrastra imágenes aquí<br>o haz clic para seleccionar",
+    drop_btn: "Seleccionar archivos",
+    open_dir: "ABRIR",
+    fit_to_window: "AJUSTAR",
+    fullscreen: "PANTALLA",
+    save: "GUARDAR",
+    radar_tooltip: "RADAR: Total de carpeta actual escaneado / Miniaturas en memoria",
+    size_tooltip: "LIENZO: Resolución física en píxeles",
+    weight_tooltip: "PESO: Peso del archivo en disco",
+    zoom_tooltip: "ESCALA DE VISTA: Porcentaje de zoom aplicado en el visor",
+    radar_lbl: "RADAR:",
+    zoom_lbl: "ZOOM:",
+    fs_badge: "PANTALLA COMPLETA",
+    ghost_close_title: "Cerrar CyberViewer (Vista Ghost)",
+    config_title: "[CYBERVIEWER CONFIG]",
+    personalization: "Personalización",
+    accent_color: "Color de Acento",
+    accent_desc: "Define el color principal de la interfaz neon.",
+    interface: "Interfaz",
+    sidebar: "Panel Lateral",
+    sidebar_desc: "Mostrar miniaturas al iniciar.",
+    statusbar: "Barra de Estado",
+    statusbar_desc: "Mostrar información técnica inferior.",
+    system: "Sistema",
+    close_to_tray: "Cerrar a la Bandeja",
+    close_to_tray_desc: "La app seguirá corriendo en segundo plano.",
+    auto_start: "Inicio Automático",
+    auto_start_desc: "Arrancar con Windows (minimizado).",
+    language_label: "Idioma",
+    language_desc: "Idioma de la interfaz de usuario.",
+    opening_monitor: "Monitor de Apertura",
+    opening_monitor_desc: "Forzar apertura en una pantalla específica.",
+    monitor_auto: "Automático",
+    config_cancel: "Cancelar",
+    save_config: "Guardar Cambios",
+    // Toasts
+    toast_saved: "CONFIGURACIÓN GUARDADA",
+    toast_copied: "IMAGEN COPIADA AL PORTAPAPELES",
+    toast_copy_error: "ERROR AL COPIAR IMAGEN",
+    toast_no_images: "NO HAY IMÁGENES PARA COPIAR",
+    toast_crop_confirm: "RECORTE APLICADO Y GUARDADO",
+    toast_crop_cancel: "RECORTE CANCELADO",
+    toast_hidden: "OCULTO: ",
+    toast_restored: "IMÁGENES RESTAURADAS",
+    // About Modal
+    about_title: "[ACERCA DE]",
+    about_subtitle: "v1.2.0 — Visor Pro",
+    about_desc: "Copyright (C) 2026 By CyberGems<br><span style=\"color:var(--cyber-muted);font-size:11px\">High Performance Image Engine</span>",
+    about_formats: "Formatos: JPG · PNG · GIF · WEBP · BMP · TIFF<br>Electron · Hardware Accelerated",
+    about_dev_tools: "ABRIR CONSOLA",
+    about_understood: "ENTENDIDO",
+    // Titles for HUD buttons
+    open_title: "Abrir carpeta (Ctrl+O)",
+    fit_title: "Ajustar a la ventana (F)",
+    orig_title: "Tamaño original 1:1 (1)",
+    fs_title: "Pantalla completa (Enter)",
+    save_title: "Guardar cambios (Ctrl+S)",
+    rot_l_title: "Rotar a la izquierda (L)",
+    rot_r_title: "Rotar a la derecha (R)",
+    crop_title: "Recortar (C)",
+    copy_title: "Copiar Imagen (Ctrl+C)",
+    ghost_title: "Modo Ghost (G)",
+    // Additional toasts
+    toast_saving_crop: "GUARDANDO RECORTE...",
+    toast_invalid_crop: "ÁREA DE RECORTE INVÁLIDA",
+    toast_crop_saved: "RECORTE GUARDADO",
+    toast_initializing_engine: "INICIALIZANDO MOTOR...",
+    toast_focusing_workspace: "ENFOCANDO ÁREA DE TRABAJO...",
+    toast_saving_changes: "GUARDANDO CAMBIOS...",
+    toast_changes_saved: "CAMBIOS GUARDADOS",
+    toast_path_not_found: "RUTA NO ENCONTRADA",
+    toast_image_not_ready: "IMAGEN NO LISTA"
+  }
+};
+
+function updateLanguage(lang = 'en') {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    if (I18N[lang] && I18N[lang][key] !== undefined) {
+      if (I18N[lang][key].includes('<')) {
+        el.innerHTML = I18N[lang][key];
+      } else {
+        el.textContent = I18N[lang][key];
+      }
+    }
+  });
+
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.dataset.i18nTitle;
+    if (I18N[lang] && I18N[lang][key] !== undefined) {
+      el.setAttribute('title', I18N[lang][key]);
+    }
+  });
+
+  document.querySelectorAll('[data-i18n-tooltip]').forEach(el => {
+    const key = el.dataset.i18nTooltip;
+    if (I18N[lang] && I18N[lang][key] !== undefined) {
+      el.setAttribute('data-tooltip', I18N[lang][key]);
+    }
+  });
+
+  document.querySelectorAll('[data-i18n-alt]').forEach(el => {
+    const key = el.dataset.i18nAlt;
+    if (I18N[lang] && I18N[lang][key] !== undefined) {
+      el.setAttribute('alt', I18N[lang][key]);
+    }
+  });
+}
 
 // ── FILE HANDLING ──
 function loadFiles(files, initialIdx = 0) {
@@ -1522,14 +1963,16 @@ if (isElectron) {
             
             buildSidebar();
             showImage(next, null);
-            showToast(`OCULTO: ${removed.file.name.toUpperCase()}`);
+            const lang = state.settings.app.language || 'en';
+            showToast((I18N[lang].toast_hidden || 'HIDDEN: ') + removed.file.name.toUpperCase());
           }
         }
         break;
       case 'restore-hidden':
         state.images.forEach(im => im.hidden = false);
         buildSidebar();
-        showToast('IMÁGENES RESTAURADAS', 'success');
+        const lang = state.settings.app.language || 'en';
+        showToast(I18N[lang].toast_restored, 'success');
         break;
       case 'go-start':
         showImage(0, 'right', true);
@@ -1659,9 +2102,12 @@ function showImage(idx, direction, isInitial = false) {
     const im = state.images[idx];
     
     // Update filename info
-    $('file-info').textContent = im.file.name;
-    if (im.file.path) {
-      $('file-info').title = im.file.path; // Tooltip con la ruta completa
+    const viewerFilename = $('viewer-filename');
+    if (viewerFilename) {
+      viewerFilename.textContent = im.file.name;
+      if (im.file.path) {
+        viewerFilename.title = im.file.path; // Tooltip con la ruta completa
+      }
     }
 
     if (im.loaded) {
@@ -1703,6 +2149,7 @@ function displayImage(url, w, h, direction) {
   mainImg.classList.remove('slide-in-left', 'slide-in-right', 'slide-out-left', 'slide-out-right');
 
   fitToWindow(w, h);
+  updateFileStats();
 
   if (direction) {
     const inClass = direction === 'left' ? 'slide-in-left' : 'slide-in-right';
@@ -1777,7 +2224,7 @@ let cropState = {
 function startCrop() {
   if (state.current === -1) return;
   if (!mainImg.complete || mainImg.naturalWidth === 0) {
-    showToast('INICIALIZANDO MOTOR', 'info');
+    showToast(I18N[state.settings.app.language || 'en'].toast_initializing_engine, 'info');
     return;
   }
   
@@ -1793,7 +2240,7 @@ function startCrop() {
   state.panY = 0;
   applyTransform(true);
   
-  showToast('ENFOCANDO ÁREA DE TRABAJO');
+  showToast(I18N[state.settings.app.language || 'en'].toast_focusing_workspace);
   
   // Pausa para que el navegador aplique el transform antes de medir
   setTimeout(() => { calibrateAndShowCrop(); }, 250);
@@ -1902,7 +2349,7 @@ window.addEventListener('mouseup', () => {
 });
 
 $('btn-crop-confirm').onclick = async () => {
-  showToast('GUARDANDO RECORTE', 'info');
+  showToast(I18N[state.settings.app.language || 'en'].toast_saving_crop, 'info');
   
   // 1. Extraer el ratio de escala respecto a los píxeles originales
   const isVert = state.currentRotation === 90 || state.currentRotation === 270;
@@ -1930,7 +2377,7 @@ $('btn-crop-confirm').onclick = async () => {
   
   // Validar dimensiones mínimas
   if (finalW < 1 || finalH < 1) {
-    showToast('ÁREA DE RECORTE INVÁLIDA', 'error');
+    showToast(I18N[state.settings.app.language || 'en'].toast_invalid_crop, 'error');
     return;
   }
 
@@ -1946,7 +2393,7 @@ $('btn-crop-confirm').onclick = async () => {
   const fpath = im.path || (im.file ? im.file.path : null);
   
   if (!fpath) {
-    showToast('ERROR: Ruta no encontrada', 'error');
+    showToast(I18N[state.settings.app.language || 'en'].toast_path_not_found, 'error');
     return;
   }
 
@@ -1956,7 +2403,7 @@ $('btn-crop-confirm').onclick = async () => {
   });
 
   if (result.success) {
-    showToast('RECORTE GUARDADO', 'success');
+    showToast(I18N[state.settings.app.language || 'en'].toast_crop_saved, 'success');
     cropState.active = false;
     state.isCropping = false;
     $('crop-overlay').classList.remove('active');
@@ -2001,15 +2448,15 @@ async function saveCurrent() {
   const fpath = im.file ? im.file.path : null;
   
   if (!fpath) {
-    showToast('RUTA NO ENCONTRADA', 'error');
+    showToast(I18N[state.settings.app.language || 'en'].toast_path_not_found, 'error');
     return;
   }
   if (!mainImg.complete || mainImg.naturalWidth === 0) {
-    showToast('IMAGEN NO LISTA', 'error');
+    showToast(I18N[state.settings.app.language || 'en'].toast_image_not_ready, 'error');
     return;
   }
 
-  showToast('GUARDANDO CAMBIOS', 'info');
+  showToast(I18N[state.settings.app.language || 'en'].toast_saving_changes, 'info');
 
   try {
     // ── Renderizar imagen rotada en canvas ──
@@ -2069,13 +2516,13 @@ async function saveCurrent() {
       };
 
       mainImg.src = 'file:///' + safePath + '?t=' + Date.now();
-      showToast('CAMBIOS GUARDADOS', 'success');
+      showToast(I18N[state.settings.app.language || 'en'].toast_changes_saved, 'success');
     } else {
-      showToast(result.error || 'ERROR AL GUARDAR', 'error');
+      showToast(result.error || 'ERROR', 'error');
     }
   } catch (e) {
     console.error('Error en saveCurrent:', e);
-    showToast('ERROR AL GUARDAR: ' + (e.message || 'Desconocido'), 'error');
+    showToast('ERROR: ' + (e.message || 'Desconocido'), 'error');
   }
 }
 
@@ -2266,6 +2713,7 @@ viewerWrap.addEventListener('touchend', e => {
 
 // ── KEYBOARD ──
 document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   const isCtrl = e.ctrlKey || e.metaKey;
 
   // Shortcuts globales
@@ -2281,11 +2729,20 @@ document.addEventListener('keydown', e => {
   }
 
   switch (e.key.toLowerCase()) {
-    case 'arrowright': case 'arrowdown': case ' ': e.preventDefault(); next(); break;
-    case 'arrowleft':  case 'arrowup':   e.preventDefault(); prev(); break;
+    case 'arrowright': case 'arrowdown': case ' ': case 'd': e.preventDefault(); next(); break;
+    case 'arrowleft':  case 'arrowup':   case 'a': e.preventDefault(); prev(); break;
+    case 'q': rotate(-90); break;
+    case 'e': rotate(90); break;
+    case 'c': 
+      if (!isCtrl) {
+        e.preventDefault();
+        const btn = $('btn-crop');
+        if (btn) btn.click();
+      }
+      break;
     case 'l': rotate(-90); break;
     case 'r': rotate(90); break;
-    case 'g': case 'G': document.body.classList.toggle('ghost-mode'); break;
+    case 'g': case 'G': $('btn-ghost').click(); break;
     case 'f': if (!isCtrl) $('btn-fit-hud').click(); break;
     case '1': $('btn-orig-hud').click(); break;
     case 'delete': 
@@ -2294,6 +2751,8 @@ document.addEventListener('keydown', e => {
     case 'escape':
       if (document.fullscreenElement) document.exitFullscreen();
       closeModal('modal-config');
+      const aboutOverlay = $('about-overlay');
+      if (aboutOverlay) aboutOverlay.classList.remove('active');
       break;
     case 'enter':
       e.preventDefault();
@@ -2336,6 +2795,8 @@ function removeCurrentImage() {
     mainImg.src = '';
     dropZone.style.display = 'flex';
     sidebar.innerHTML = '';
+    const viewerFilename = $('viewer-filename');
+    if (viewerFilename) viewerFilename.textContent = '';
   } else {
     const nextIdx = Math.min(state.current, state.images.length - 1);
     state.current = nextIdx;
@@ -2353,8 +2814,13 @@ async function copyToClipboard() {
     const blob = await response.blob();
     const item = new ClipboardItem({ [blob.type]: blob });
     await navigator.clipboard.write([item]);
-    showToast('IMAGEN COPIADA', 'success');
-  } catch (err) { console.error('Error al copiar:', err); }
+    const lang = state.settings.app.language || 'en';
+    showToast(I18N[lang].toast_copied, 'success');
+  } catch (err) {
+    console.error('Error al copiar:', err);
+    const lang = state.settings.app.language || 'en';
+    showToast(I18N[lang].toast_copy_error, 'error');
+  }
 }
 
 function showToast(txt, type = 'info') {
@@ -2420,6 +2886,10 @@ $('btn-rot-l').addEventListener('click', () => rotate(-90));
 $('btn-rot-r').addEventListener('click', () => rotate(90));
 $('btn-save').addEventListener('click', saveCurrent);
 
+$('btn-copy').addEventListener('click', () => {
+  if (state.images.length) copyToClipboard();
+});
+
 // El evento btn-crop ahora se gestiona en el motor Pro
 
 $('btn-ghost').addEventListener('click', () => {
@@ -2427,6 +2897,7 @@ $('btn-ghost').addEventListener('click', () => {
   if (state.isGhost) state.isCropping = false; // AISLAMIENTO TOTAL
   document.body.classList.toggle('ghost-mode', state.isGhost);
   updateHUDStates();
+  resetHudTimer();
   setTimeout(() => {
     const im = state.images[state.current];
     if (im) fitToWindow(im.w, im.h);
@@ -2439,6 +2910,7 @@ $('btn-next').addEventListener('click', next);
 $('btn-sidebar').addEventListener('click', () => {
   state.sidebarOpen = !state.sidebarOpen;
   sidebar.style.display = state.sidebarOpen ? '' : 'none';
+  document.body.classList.toggle('sidebar-open', state.sidebarOpen);
   $('btn-sidebar').classList.toggle('active', state.sidebarOpen);
   
   if (state.sidebarOpen) {
@@ -2515,6 +2987,7 @@ function openConfig() {
   $('cfg-statusbar').checked = s.statusbarVisible;
   $('cfg-tray').checked = s.closeToTray;
   $('cfg-autostart').checked = s.autoStart;
+  $('cfg-lang').value = s.language || 'en';
   
   // Monitor selection
   if (isElectron) {
@@ -2556,6 +3029,7 @@ $('btn-save-config').addEventListener('click', () => {
     closeToTray: $('cfg-tray').checked,
     autoStart: $('cfg-autostart').checked,
     preferredDisplayId: $('cfg-monitor').value,
+    language: $('cfg-lang').value,
     accentColor: accentColor
   };
   
@@ -2563,7 +3037,8 @@ $('btn-save-config').addEventListener('click', () => {
   applySettings();
   if (isElectron) window.electronAPI.saveSettings(newSettings);
   closeModal('modal-config');
-  showToast('CONFIGURACIÓN GUARDADA', 'success');
+  const lang = newSettings.language || 'en';
+  showToast(I18N[lang].toast_saved, 'success');
 });
 
 function applySettings() {
@@ -2581,8 +3056,14 @@ function applySettings() {
   state.sidebarOpen = s.sidebarOpen;
   if (s.preferredDisplayId) $('cfg-monitor').value = s.preferredDisplayId;
   sidebar.style.display = s.sidebarOpen ? '' : 'none';
+  document.body.classList.toggle('sidebar-open', s.sidebarOpen);
   $('btn-sidebar').classList.toggle('active', s.sidebarOpen);
   $('statusbar').style.display = s.statusbarVisible ? '' : 'none';
+  document.body.classList.toggle('statusbar-visible', s.statusbarVisible);
+
+  // Language
+  const lang = s.language || 'en';
+  updateLanguage(lang);
 }
 
 
@@ -2594,6 +3075,7 @@ if (isElectron) {
   $('win-min').addEventListener('click', () => window.electronAPI.minimize());
   $('win-max').addEventListener('click', () => window.electronAPI.maximize());
   $('win-close').addEventListener('click', () => window.electronAPI.close());
+  $('ghost-close').addEventListener('click', () => window.electronAPI.close());
 
   window.electronAPI.onWinState(state => {
     const btn = $('win-max');
@@ -2692,45 +3174,49 @@ $('btn-center').addEventListener('click', () => {
   const overlay = document.createElement('div');
   overlay.id = 'about-overlay';
   overlay.className = 'modal-overlay';
-  overlay.innerHTML = `
-    <div class="modal-box" style="max-width:360px">
-      <div class="modal-header">
-        <div class="modal-title">[ACERCA DE]</div>
-        <button class="win-btn" id="about-close-btn">&#10005;</button>
-      </div>
-      <div class="modal-body">
-        <div style="font-size:18px;color:var(--cyber-accent);letter-spacing:3px;margin-bottom:4px">
-          [CYBER<span style="color:var(--cyber-accent3)">VIEWER</span>]
-        </div>
-        <div style="font-size:11px;color:var(--cyber-muted);margin-bottom:20px">v1.1.2 — Visor Pro</div>
-        <img src="assets/icon.png" style="width:64px;height:64px;margin-bottom:20px;filter:drop-shadow(0 0 10px var(--cyber-accent))" alt="Logo">
-        <div style="font-size:12px;color:var(--cyber-text);line-height:1.8">
-          Desarrollado por<br>
-          <span style="color:var(--cyber-accent)">CiberCR</span> · Costa Rica<br>
-          <span style="color:var(--cyber-muted);font-size:11px">High Performance Image Engine</span>
-        </div>
-        <div style="margin-top:20px;font-size:11px;color:var(--cyber-muted)">
-          Formatos: JPG · PNG · GIF · WEBP · BMP · TIFF<br>
-          Electron · Hardware Accelerated
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button id="btn-console" class="top-btn" style="border-color:var(--cyber-accent2);color:var(--cyber-accent2)">ABRIR CONSOLA</button>
-        <button id="about-close" class="top-btn active">ENTENDIDO</button>
-      </div>
-    </div>
-  `;
   document.body.appendChild(overlay);
 
-  function openAbout() { overlay.classList.add('active'); }
+  function openAbout() {
+    const lang = state.settings.app.language || 'en';
+    const t = I18N[lang] || I18N.en;
+    
+    overlay.innerHTML = `
+      <div class="modal-box" style="max-width:360px">
+        <div class="modal-header">
+          <div class="modal-title">${t.about_title}</div>
+          <button class="win-btn" id="about-close-btn">&#10005;</button>
+        </div>
+        <div class="modal-body">
+          <div style="font-size:18px;color:var(--cyber-accent);letter-spacing:3px;margin-bottom:4px">
+            [CYBER<span style="color:var(--cyber-accent3)">VIEWER</span>]
+          </div>
+          <div style="font-size:11px;color:var(--cyber-muted);margin-bottom:20px">${t.about_subtitle}</div>
+          <img src="assets/icon.png" style="width:64px;height:64px;margin-bottom:20px;filter:drop-shadow(0 0 10px var(--cyber-accent))" alt="Logo">
+          <div style="font-size:12px;color:var(--cyber-text);line-height:1.8">
+            ${t.about_desc}
+          </div>
+          <div style="margin-top:20px;font-size:11px;color:var(--cyber-muted)">
+            ${t.about_formats}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-console" class="top-btn" style="border-color:var(--cyber-accent2);color:var(--cyber-accent2)">${t.about_dev_tools}</button>
+          <button id="about-close" class="top-btn active">${t.about_understood}</button>
+        </div>
+      </div>
+    `;
+
+    overlay.querySelector('#about-close').addEventListener('click', closeAbout);
+    overlay.querySelector('#about-close-btn').addEventListener('click', closeAbout);
+    overlay.querySelector('#btn-console').addEventListener('click', () => {
+      window.electronAPI.openDevTools();
+      closeAbout();
+    });
+    overlay.classList.add('active');
+  }
+
   function closeAbout() { overlay.classList.remove('active'); }
 
-  overlay.querySelector('#about-close').addEventListener('click', closeAbout);
-  overlay.querySelector('#about-close-btn').addEventListener('click', closeAbout);
-  overlay.querySelector('#btn-console').addEventListener('click', () => {
-    window.electronAPI.openDevTools();
-    closeAbout();
-  });
   overlay.addEventListener('click', e => { if (e.target === overlay) closeAbout(); });
   $('btn-about').addEventListener('click', openAbout);
   $('logo-trigger').addEventListener('click', openAbout);
@@ -2743,7 +3229,9 @@ let hudTimer = null;
 const elementsToHide = [
   { el: $('topbar'), hideClass: 'hud-hidden-top' },
   { el: $('statusbar'), hideClass: 'hud-hidden-bottom' },
-  { el: $('kbd-hint'), hideClass: 'hud-hidden-fade' }
+  { el: $('kbd-hint'), hideClass: 'hud-hidden-fade' },
+  { el: $('ghost-close'), hideClass: 'hud-hidden-fade' },
+  { el: $('viewer-filename'), hideClass: 'hud-hidden-fade' }
 ];
 
 function resetHudTimer() {
@@ -2760,6 +3248,10 @@ function resetHudTimer() {
   hudTimer = setTimeout(() => {
     if (state.images.length > 0) {
       elementsToHide.forEach(item => {
+        // En vista por defecto, no autoesconder topbar y statusbar, solo en Ghost Mode
+        const isTopbarOrStatusbar = (item.el.id === 'topbar' || item.el.id === 'statusbar');
+        if (isTopbarOrStatusbar && !state.isGhost) return;
+        
         if (item.el) item.el.classList.add(item.hideClass);
       });
     }
