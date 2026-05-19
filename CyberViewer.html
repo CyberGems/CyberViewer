@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' blob: data: file:; connect-src 'self' blob: file:;">
-<title>CyberViewer — CiberCR</title>
+<title>CyberViewer</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700&display=swap');
 
@@ -164,6 +164,13 @@
     height: 28px !important;
     text-transform: uppercase;
   }
+
+  #btn-fav.favorited, #btn-toggle-favs.active {
+    color: #ffb700 !important;
+    border-color: rgba(255, 183, 0, 0.5) !important;
+    box-shadow: 0 0 10px rgba(255, 183, 0, 0.4) !important;
+    text-shadow: 0 0 8px rgba(255, 183, 0, 0.6);
+  }
   
   body.ghost-mode #topbar,
   body.ghost-mode #statusbar { 
@@ -234,6 +241,10 @@
     transform: translateY(8px);
     border-color: var(--cyber-accent);
     box-shadow: 0 0 10px rgba(0, 212, 255, 0.35);
+    white-space: pre-wrap;
+    width: max-content;
+    max-width: 320px;
+    line-height: 1.5;
   }
   #footer-radar.cyber-tooltip::before {
     left: 15px; /* Aligned with the green bulb */
@@ -466,6 +477,43 @@
     overflow: hidden; /* El scroll lo maneja el hijo */
   }
   
+  #sidebar-handle {
+    position: absolute;
+    top: 120px;
+    left: var(--panel-w);
+    width: 14px;
+    height: 60px;
+    z-index: 999;
+    background: var(--cyber-panel);
+    border: 1px solid var(--cyber-border);
+    border-left: none;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.5);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--cyber-muted);
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, width 0.2s ease;
+    user-select: none;
+  }
+  #sidebar-handle:hover {
+    width: 17px;
+    background: var(--cyber-dim);
+    border-color: var(--cyber-accent);
+    color: var(--cyber-accent);
+    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.3);
+  }
+  #sidebar-handle-arrow {
+    display: inline-block;
+    transition: transform 0.2s ease;
+  }
+  #sidebar-handle:hover #sidebar-handle-arrow {
+    transform: scale(1.2);
+  }
+  
   #sidebar-scroll {
     flex: 1;
     overflow-y: auto;
@@ -596,10 +644,14 @@
     pointer-events: none;
     box-shadow: 0 0 40px rgba(0,0,0,0.8), 0 0 2px rgba(var(--cyber-accent-rgb), 0.3);
     opacity: 0;
-    transition: opacity 200ms ease;
+    visibility: hidden;
+    transition: opacity 200ms ease, visibility 200ms ease;
   }
 
-  #main-img.loaded { opacity: 1; }
+  #main-img.loaded {
+    opacity: 1;
+    visibility: visible;
+  }
 
   /* transition classes */
   #main-img.slide-out-left {
@@ -827,6 +879,25 @@
 
   #zoom-hud.visible { opacity: 1; }
 
+  #radar-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    max-width: 350px;
+    opacity: 1;
+    transform: translateX(0);
+    transition: max-width 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: visible;
+  }
+  body:not(.sidebar-open) #radar-wrapper {
+    max-width: 0;
+    opacity: 0;
+    transform: translateX(-40px);
+    margin-right: -30px; /* offsets the flex gap of statusbar */
+    pointer-events: none;
+    overflow: hidden;
+  }
+
   /* ── KEYBOARD HINT ── */
   #kbd-hint {
     position: absolute;
@@ -1033,6 +1104,20 @@
     overflow-y: auto;
   }
 
+  .modal-body::-webkit-scrollbar {
+    width: 6px;
+  }
+  .modal-body::-webkit-scrollbar-track {
+    background: var(--cyber-black);
+  }
+  .modal-body::-webkit-scrollbar-thumb {
+    background: var(--cyber-dim);
+    border-radius: 3px;
+  }
+  .modal-body::-webkit-scrollbar-thumb:hover {
+    background: var(--cyber-accent);
+  }
+
   .modal-footer {
     padding: 16px 24px;
     border-top: 1px solid var(--cyber-border);
@@ -1236,23 +1321,33 @@
     font-family: monospace;
     font-size: 14px;
   }
+  .top-hints {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    pointer-events: none;
+    z-index: 10;
+  }
 </style>
 </head>
 <body>
 <div id="topbar" style="position:fixed;top:0;left:0;width:100%;height:48px;z-index:999999;display:flex;align-items:center;background:var(--cyber-panel);border-bottom:1px solid var(--cyber-accent);">
   <div class="logo" id="logo-trigger">
     <img src="assets/icon.png" class="logo-img" alt="CyberViewer Logo">
-    <div class="logo-text">CYBER<span style="color:var(--cyber-accent3)">VIEWER</span></div>
+    <div class="logo-text">Cyber<span style="color:var(--cyber-accent3)">Viewer</span></div>
   </div>
   <div style="flex:1;-webkit-app-region:drag"></div>
-  <div class="top-hints" id="top-hints" style="margin-right:20px; display:flex; align-items:center; gap:12px">
+  <div class="top-hints" id="top-hints">
     <div class="hint-group">
       <kbd class="cyber-key">A</kbd><kbd class="cyber-key">D</kbd>
       <span class="hint-txt" data-i18n="navigate_hint">NAVEGAR</span>
     </div>
     <div class="hint-sep">|</div>
     <div class="hint-group">
-      <kbd class="cyber-key">Scroll</kbd><kbd class="cyber-key">+/-</kbd>
+      <kbd class="cyber-key">Scroll</kbd>
       <span class="hint-txt" data-i18n="zoom_hint">ZOOM</span>
     </div>
     <div class="hint-sep">|</div>
@@ -1260,9 +1355,22 @@
       <kbd class="cyber-key">Drag</kbd>
       <span class="hint-txt" data-i18n="pan_hint">PAN</span>
     </div>
+    <div class="hint-sep">|</div>
+    <div class="hint-group">
+      <kbd class="cyber-key">C</kbd>
+      <span class="hint-txt" data-i18n="crop_hint_txt">RECORTAR</span>
+    </div>
+    <div class="hint-sep">|</div>
+    <div class="hint-group">
+      <kbd class="cyber-key">R</kbd>
+      <span class="hint-txt" data-i18n="resize_hint_txt">REDIM</span>
+    </div>
+    <div class="hint-sep">|</div>
+    <div class="hint-group">
+      <kbd class="cyber-key">G</kbd>
+      <span class="hint-txt" data-i18n="ghost_hint_txt">GHOST</span>
+    </div>
   </div>
-  <div class="win-sep"></div>
-  <button class="top-btn active" id="btn-sidebar" data-i18n-title="sidebar_title" title="Panel lateral" style="margin: 0 5px">&#9776; <span data-i18n="panel">Panel</span></button>
   <div class="win-sep"></div>
   <button class="win-btn" id="btn-config" data-i18n-title="config" title="Configuración" style="margin-left:5px">&#9881;&#xFE0E;</button>
   <button class="win-btn" id="btn-about" data-i18n-title="about" title="Acerca de CyberViewer">&#9432;&#xFE0E;</button>
@@ -1281,11 +1389,17 @@
       <div id="sidebar-scroll">
         <div id="sidebar-inner"></div>
       </div>
-      <div id="sidebar-controls">
+      <div id="sidebar-controls" style="gap: 6px;">
         <div id="img-counter"></div>
-        <button class="kbd-btn" id="btn-center" data-i18n="center" style="width:100%; font-size:11px; height: 32px">CENTRAR</button>
+        <button class="kbd-btn" id="btn-center" data-i18n="center" style="width: 100%; font-size:11px; height: 28px; padding: 4px 12px !important">CENTRAR</button>
+        <button class="kbd-btn" id="btn-toggle-favs" title="Mostrar Favoritos" style="width: 100%; font-size:11px; height: 28px; padding: 4px 12px !important; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <span class="fav-star">&#9733;</span> <span class="fav-lbl" data-i18n="show_favorites_lbl">FAVORITOS</span>
+        </button>
       </div>
     </div>
+
+    <!-- HANDLE -->
+    <div id="sidebar-handle" data-i18n-title="sidebar_title" title="Panel lateral"><span id="sidebar-handle-arrow">◂</span></div>
 
     <!-- VIEWER -->
     <div id="viewer-wrap">
@@ -1342,6 +1456,7 @@
       <!-- INTERACTIVE HUD -->
       <div id="kbd-hint">
         <button class="kbd-btn" id="btn-open-hud" data-i18n-title="open_title" title="Abrir (Ctrl+O)">&#128193;&#xFE0E; <span data-i18n="open_dir">ABRIR</span></button>
+        <button class="kbd-btn" id="btn-show-folder" data-i18n-title="show_folder_title" title="Mostrar en Carpeta (Ctrl+Shift+O)">&#128194;&#xFE0E; <span data-i18n="show_folder">SHOW</span></button>
         <div class="kbd-sep"></div>
         <button class="kbd-btn" id="btn-fit-hud" data-i18n-title="fit_title" title="Ajustar (F)"><span data-i18n="fit_to_window">AJUSTAR</span></button>
         <button class="kbd-btn" id="btn-orig-hud" data-i18n-title="orig_title" title="Original (1)">1:1</button>
@@ -1354,11 +1469,13 @@
             <button class="kbd-btn" id="btn-rot-r" data-i18n-title="rot_r_title" title="Rotar Derecha (R)">&#8635;</button>
           </div>
         </div>
-        <div class="kbd-sep"></div>
         <button class="kbd-btn" id="btn-crop" data-i18n-title="crop_title" title="Recortar (C)">&#9986;</button>
+        <button class="kbd-btn" id="btn-resize" data-i18n-title="resize_title_btn" title="Redimensionar (R)">⇳</button>
         <div class="kbd-sep"></div>
         <button class="kbd-btn" id="btn-copy" data-i18n-title="copy_title" title="Copiar Imagen (Ctrl+C)">&#10697;</button>
+        <button class="kbd-btn" id="btn-trash" data-i18n-title="trash_title" title="Mover a la Papelera (Delete)" style="color:var(--cyber-accent2)">&#128465;&#xFE0E;</button>
         <div class="kbd-sep"></div>
+        <button class="kbd-btn" id="btn-fav" data-i18n-title="fav_title" title="Favorito (Ctrl+D)">&#9734;</button>
         <button class="kbd-btn" id="btn-ghost" data-i18n-title="ghost_title" title="Modo Ghost (G)">&#128065;</button>
       </div>
     </div>
@@ -1366,14 +1483,16 @@
   </div>
 
   <div id="statusbar">
-    <div class="footer-center cyber-tooltip" id="footer-radar" data-i18n-tooltip="radar_tooltip" data-tooltip="RADAR: Total de carpeta actual escaneado / Miniaturas en memoria">
-      <span class="bulb"></span>
-      <span style="opacity:0.8" data-i18n="radar_lbl">RADAR:</span> 
-      <span id="radar-pct">0%</span> 
-      <span id="radar-count" style="color:var(--cyber-accent); margin-left: 5px"> [0/0] </span>
-    </div>
+    <div id="radar-wrapper">
+      <div class="footer-center cyber-tooltip" id="footer-radar" data-i18n-tooltip="radar_tooltip" data-tooltip="RADAR: Total de carpeta actual escaneado / Miniaturas en memoria">
+        <span class="bulb"></span>
+        <span style="opacity:0.8" data-i18n="radar_lbl">RADAR:</span> 
+        <span id="radar-pct">0%</span> 
+        <span id="radar-count" style="color:var(--cyber-accent); margin-left: 5px"> [0/0] </span>
+      </div>
 
-    <div class="footer-sep"></div>
+      <div class="footer-sep"></div>
+    </div>
 
     <div class="footer-right cyber-tooltip" id="footer-size" data-i18n-tooltip="size_tooltip" data-tooltip="LIENZO: Resolución física en píxeles de la imagen">
       <span class="bulb" style="background: var(--cyber-accent2); box-shadow: 0 0 6px rgba(255,45,120,0.4);"></span>
@@ -1476,6 +1595,16 @@
         </div>
         <div class="config-row">
           <div class="config-info">
+            <div class="config-name" data-i18n="context_menu">Menú Contextual</div>
+            <div class="config-desc" data-i18n="context_menu_desc">Integrar CyberViewer en el menú de click derecho.</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="cfg-contextmenu">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="config-row">
+          <div class="config-info">
             <div class="config-name" data-i18n="language_label">Idioma</div>
             <div class="config-desc" data-i18n="language_desc">Idioma de la interfaz de usuario.</div>
           </div>
@@ -1499,6 +1628,85 @@
     <div class="modal-footer">
       <button class="top-btn" onclick="closeModal('modal-config')" data-i18n="config_cancel">Cancelar</button>
       <button class="top-btn active" id="btn-save-config" data-i18n="save_config">Guardar Cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: RESIZE -->
+<div id="modal-resize" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title" data-i18n="resize_title">[CYBERVIEWER RESIZE]</div>
+      <button class="win-btn" onclick="closeModal('modal-resize')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      
+      <div class="config-section">
+        <label class="config-label" data-i18n="resize_dimensions">Dimensiones Destino</label>
+        <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 16px;">
+          <div style="flex: 1;">
+            <label style="font-size: 11px; color: var(--cyber-muted); display: block; margin-bottom: 4px;" data-i18n="width">ANCHO (PX)</label>
+            <input type="number" id="resize-width" class="cfg-select" style="background:#080a0e; color:var(--cyber-accent); border:1px solid var(--cyber-dim); padding:8px; font-family:monospace; font-size:14px; width:100%; border-radius:3px;">
+          </div>
+          <button id="btn-aspect-lock" class="top-btn active" style="margin-top: 18px; padding: 10px;" title="Mantener Proporciones">
+            <span id="aspect-lock-icon">&#128279;</span>
+          </button>
+          <div style="flex: 1;">
+            <label style="font-size: 11px; color: var(--cyber-muted); display: block; margin-bottom: 4px;" data-i18n="height">ALTO (PX)</label>
+            <input type="number" id="resize-height" class="cfg-select" style="background:#080a0e; color:var(--cyber-accent); border:1px solid var(--cyber-dim); padding:8px; font-family:monospace; font-size:14px; width:100%; border-radius:3px;">
+          </div>
+        </div>
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 11px; color: var(--cyber-muted); display: block; margin-bottom: 8px;"><span data-i18n="resize_percentage">Porcentaje: </span><span id="resize-pct-val" style="color:var(--cyber-accent3)">100%</span></label>
+          <input type="range" id="resize-slider" min="10" max="400" value="100" style="width: 100%; accent-color: var(--cyber-accent);">
+        </div>
+      </div>
+
+      <div class="config-section">
+        <label class="config-label" data-i18n="resize_presets">Ajustes Rápidos (Presets)</label>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px;">
+          <button class="top-btn" onclick="applyResizePreset(1080, 1080)">1:1 (1080)</button>
+          <button class="top-btn" onclick="applyResizePreset(1280, 720)">16:9 (720p)</button>
+          <button class="top-btn" onclick="applyResizePreset(1920, 1080)">16:9 (1080p)</button>
+          <button class="top-btn" onclick="applyResizeScalePreset(0.25)">25%</button>
+          <button class="top-btn" onclick="applyResizeScalePreset(0.50)">50%</button>
+          <button class="top-btn" onclick="applyResizeScalePreset(2.00)">200%</button>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <label class="config-label" data-i18n="resampling_quality">Algoritmo de Remuestreo</label>
+        <div style="display: flex; gap: 8px;">
+          <button class="top-btn active" id="btn-algo-nearest" onclick="selectResampleAlgo('nearest')">Fast</button>
+          <button class="top-btn" id="btn-algo-bilinear" onclick="selectResampleAlgo('bilinear')">Bilinear</button>
+          <button class="top-btn" id="btn-algo-bicubic" onclick="selectResampleAlgo('bicubic')">Bicubic</button>
+        </div>
+      </div>
+
+      <div class="config-section" style="border-top: 1px solid var(--cyber-border); padding-top: 16px; margin-top: 16px;">
+        <div class="config-row" style="border-bottom: none; padding: 0;">
+          <div class="config-info">
+            <div class="config-name" data-i18n="resize_create_copy">Crear una copia</div>
+            <div class="config-desc" data-i18n="resize_create_copy_desc">Guardar como archivo nuevo sin sobrescribir el original.</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="cfg-resize-copy" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="config-section" style="border-top: 1px solid var(--cyber-border); padding-top: 16px; margin-top: 16px;">
+        <div style="display: flex; justify-content: space-between; font-family: 'Share Tech Mono', monospace; font-size: 12px;">
+          <div>Original: <span id="resize-orig-info" style="color: var(--cyber-muted)">0x0 px</span></div>
+          <div>Destino: <span id="resize-new-info" style="color: var(--cyber-accent3)">0x0 px</span></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="top-btn" onclick="closeModal('modal-resize')" data-i18n="config_cancel">Cancelar</button>
+      <button class="top-btn active" id="btn-confirm-resize" data-i18n="resize_apply">Redimensionar y Guardar</button>
     </div>
   </div>
 </div>
@@ -1535,6 +1743,8 @@ let thumbObserver = null;
 const state = {
   images: [],          // {file, url, w, h, loaded}
   currentIdx: -1,
+  current: -1,
+  viewMode: 'fit',     // 'fit', 'original', or 'custom'
   zoom: 1,
   panX: 0,
   panY: 0,
@@ -1552,6 +1762,9 @@ const state = {
   isCropping: false,
   isGhost: false,
   zoomTimer: null,
+  showingFavs: false,
+  nonFavImages: [],
+  nonFavCurrent: -1,
   settings: { 
     app: { 
       sidebarOpen: true, 
@@ -1559,7 +1772,8 @@ const state = {
       closeToTray: false, 
       autoStart: false, 
       accentColor: '#00d4ff',
-      language: 'en'
+      language: 'en',
+      favorites: []
     } 
   },
 };
@@ -1588,7 +1802,7 @@ const I18N = {
     fit_to_window: "FIT",
     fullscreen: "FULLSCREEN",
     save: "SAVE",
-    radar_tooltip: "RADAR: Total current folder scanned / Thumbnails in memory",
+    radar_tooltip: "RADAR: Total current folder scanned / Thumbnails in memory\nHint: Close the sidebar to PAUSE the Radar scan",
     size_tooltip: "CANVAS: Physical resolution in pixels",
     weight_tooltip: "WEIGHT: File weight on disk",
     zoom_tooltip: "VIEW SCALE: Zoom percentage applied in the viewer",
@@ -1610,6 +1824,8 @@ const I18N = {
     close_to_tray_desc: "The app will keep running in the background.",
     auto_start: "Auto Start",
     auto_start_desc: "Launch with Windows (minimized).",
+    context_menu: "Context Menu",
+    context_menu_desc: "Integrate CyberViewer into Windows right-click menu.",
     language_label: "Language",
     language_desc: "User interface language.",
     opening_monitor: "Target Monitor",
@@ -1644,6 +1860,7 @@ const I18N = {
     crop_title: "Crop (C)",
     copy_title: "Copy Image (Ctrl+C)",
     ghost_title: "Ghost Mode (G)",
+    trash_title: "Move to Trash (Delete)",
     // Additional toasts
     toast_saving_crop: "SAVING CROP...",
     toast_invalid_crop: "INVALID CROP AREA",
@@ -1653,7 +1870,29 @@ const I18N = {
     toast_saving_changes: "SAVING CHANGES...",
     toast_changes_saved: "CHANGES SAVED",
     toast_path_not_found: "PATH NOT FOUND",
-    toast_image_not_ready: "IMAGE NOT READY"
+    toast_image_not_ready: "IMAGE NOT READY",
+    resize_title: "[CYBERVIEWER RESIZE]",
+    resize_dimensions: "Target Dimensions",
+    width: "WIDTH (PX)",
+    height: "HEIGHT (PX)",
+    resize_percentage: "Percentage: ",
+    resize_presets: "Quick Presets",
+    resampling_quality: "Resampling Quality",
+    resize_apply: "Resize & Save",
+    resize_title_btn: "Resize Image (R)",
+    toast_resize_success: "IMAGE RESIZED AND SAVED",
+    toast_resize_error: "ERROR RESIZING IMAGE",
+    resize_create_copy: "Create a Copy",
+    resize_create_copy_desc: "Save as a new file without overwriting the original.",
+    show_folder: "SHOW",
+    show_folder_title: "Show in Folder (Ctrl+Shift+O)",
+    crop_hint_txt: "CROP",
+    resize_hint_txt: "RESIZE",
+    ghost_hint_txt: "GHOST",
+    fav_title: "Favorite (Ctrl+D)",
+    toast_load_image_first: "LOAD AN IMAGE FIRST",
+    show_favorites_lbl: "FAVORITES",
+    show_all_lbl: "ALL IMAGES"
   },
   es: {
     no_images: "— sin imágenes —",
@@ -1678,7 +1917,7 @@ const I18N = {
     fit_to_window: "AJUSTAR",
     fullscreen: "PANTALLA",
     save: "GUARDAR",
-    radar_tooltip: "RADAR: Total de carpeta actual escaneado / Miniaturas en memoria",
+    radar_tooltip: "RADAR: Total de carpeta actual escaneado / Miniaturas en memoria\nConsejo: Cierra la barra lateral para pausar el escaneo del Radar",
     size_tooltip: "LIENZO: Resolución física en píxeles",
     weight_tooltip: "PESO: Peso del archivo en disco",
     zoom_tooltip: "ESCALA DE VISTA: Porcentaje de zoom aplicado en el visor",
@@ -1700,6 +1939,8 @@ const I18N = {
     close_to_tray_desc: "La app seguirá corriendo en segundo plano.",
     auto_start: "Inicio Automático",
     auto_start_desc: "Arrancar con Windows (minimizado).",
+    context_menu: "Menú Contextual",
+    context_menu_desc: "Integrar CyberViewer en el menú de click derecho.",
     language_label: "Idioma",
     language_desc: "Idioma de la interfaz de usuario.",
     opening_monitor: "Monitor de Apertura",
@@ -1734,6 +1975,7 @@ const I18N = {
     crop_title: "Recortar (C)",
     copy_title: "Copiar Imagen (Ctrl+C)",
     ghost_title: "Modo Ghost (G)",
+    trash_title: "Mover a la Papelera (Delete)",
     // Additional toasts
     toast_saving_crop: "GUARDANDO RECORTE...",
     toast_invalid_crop: "ÁREA DE RECORTE INVÁLIDA",
@@ -1743,7 +1985,29 @@ const I18N = {
     toast_saving_changes: "GUARDANDO CAMBIOS...",
     toast_changes_saved: "CAMBIOS GUARDADOS",
     toast_path_not_found: "RUTA NO ENCONTRADA",
-    toast_image_not_ready: "IMAGEN NO LISTA"
+    toast_image_not_ready: "IMAGEN NO LISTA",
+    resize_title: "[CYBERVIEWER REDIMENSIONAR]",
+    resize_dimensions: "Dimensiones de Destino",
+    width: "ANCHO (PX)",
+    height: "ALTO (PX)",
+    resize_percentage: "Porcentaje: ",
+    resize_presets: "Ajustes Rápidos",
+    resampling_quality: "Calidad de Remuestreo",
+    resize_apply: "Redimensionar y Guardar",
+    resize_title_btn: "Redimensionar Imagen (R)",
+    toast_resize_success: "IMAGEN REDIMENSIONADA Y GUARDADA",
+    toast_resize_error: "ERROR AL REDIMENSIONAR LA IMAGEN",
+    resize_create_copy: "Crear una Copia",
+    resize_create_copy_desc: "Guardar como archivo nuevo sin sobrescribir el original.",
+    show_folder: "MOSTRAR",
+    show_folder_title: "Mostrar en Carpeta (Ctrl+Shift+O)",
+    crop_hint_txt: "RECORTAR",
+    resize_hint_txt: "REDIM",
+    ghost_hint_txt: "GHOST",
+    fav_title: "Favorito (Ctrl+D)",
+    toast_load_image_first: "CARGA UNA IMAGEN PRIMERO",
+    show_favorites_lbl: "FAVORITOS",
+    show_all_lbl: "TODAS"
   }
 };
 
@@ -1779,10 +2043,19 @@ function updateLanguage(lang = 'en') {
       el.setAttribute('alt', I18N[lang][key]);
     }
   });
+  if (typeof syncFavoritesToggleButtonState === 'function') {
+    syncFavoritesToggleButtonState(lang);
+  }
 }
 
 // ── FILE HANDLING ──
 function loadFiles(files, initialIdx = 0) {
+  if (state.showingFavs) {
+    state.showingFavs = false;
+    if (typeof syncFavoritesToggleButtonState === 'function') {
+      syncFavoritesToggleButtonState();
+    }
+  }
   const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif'];
   const imgs = Array.from(files).filter(f => {
     if (f.type.startsWith('image/')) return true;
@@ -1926,6 +2199,9 @@ window.addEventListener('contextmenu', (e) => {
   e.preventDefault();
   
   if (e.target.closest('.thumb-item')) return;
+  if (e.target.closest('#kbd-hint')) return; // Evitar menú en HUD
+  if (e.target.closest('#topbar')) return;    // Evitar menú en barra de título
+  if (e.target.closest('#sidebar')) return;   // Evitar menú en barra lateral
 
   const isInsideViewer = e.target.closest('#viewer-wrap');
   if (isInsideViewer && state.images.length > 0) {
@@ -1979,6 +2255,11 @@ if (isElectron) {
         break;
       case 'go-end':
         showImage(state.images.length - 1, 'left', true);
+        break;
+      case 'file-deleted':
+        if (data.index !== undefined) {
+          handleFileDeleted(data.index);
+        }
         break;
       case 'open-dir':
         btnOpen.click();
@@ -2072,18 +2353,14 @@ function showImage(idx, direction, isInitial = false) {
     updateSidebarActive();
     updateCounter();
     updateFileStats();
+    updateFavButtonState();
 
     // Reset rotation al cambiar
     state.currentRotation = 0;
     state.hasChanges = false;
     updateSaveButton();
 
-    // Clear transform
-    state.zoom = 1;
-    state.panX = 0;
-    state.panY = 0;
     mainImg.style.transform = `rotate(0deg)`; // Limpiar rotación visual
-    applyTransform(false);
 
     spinner.classList.add('active');
     mainImg.classList.remove('loaded', 'slide-in-left', 'slide-in-right', 'slide-out-left', 'slide-out-right');
@@ -2148,7 +2425,28 @@ function displayImage(url, w, h, direction) {
   mainImg.src = url;
   mainImg.classList.remove('slide-in-left', 'slide-in-right', 'slide-out-left', 'slide-out-right');
 
-  fitToWindow(w, h);
+  mainImg.style.width  = w + 'px';
+  mainImg.style.height = h + 'px';
+
+  if (state.viewMode === 'original') {
+    state.zoom = 1;
+    state.panX = 0;
+    state.panY = 0;
+  } else if (state.viewMode === 'custom') {
+    state.panX = 0;
+    state.panY = 0;
+  } else { // 'fit'
+    const vw = viewerWrap.clientWidth - 24;
+    const vh = viewerWrap.clientHeight - 24;
+    if (w && h) {
+      state.zoom = Math.min(vw / w, vh / h, 1);
+    } else {
+      state.zoom = 1;
+    }
+    state.panX = 0;
+    state.panY = 0;
+  }
+  applyTransform(false);
   updateFileStats();
 
   if (direction) {
@@ -2525,6 +2823,256 @@ async function saveCurrent() {
     showToast('ERROR: ' + (e.message || 'Desconocido'), 'error');
   }
 }
+// ── RESIZE MODAL LOGIC ──
+let resizeState = {
+  aspectRatio: 1,
+  lockAspect: true,
+  currentAlgo: 'nearest'
+};
+
+function openResizeModal() {
+  try {
+    const idx = state.current;
+    const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+    const i18nLang = I18N[lang] || I18N.en || {};
+
+    if (idx === undefined || idx === -1) {
+      showToast(i18nLang.toast_image_not_ready || 'IMAGE NOT READY', 'error');
+      return;
+    }
+    const im = state.images[idx];
+    if (!im || !im.w) {
+      showToast(i18nLang.toast_image_not_ready || 'IMAGE NOT READY', 'error');
+      return;
+    }
+    
+    const wInput = $('resize-width');
+    const hInput = $('resize-height');
+    const slider = $('resize-slider');
+    
+    wInput.value = im.w;
+    hInput.value = im.h;
+    slider.value = 100;
+    $('resize-pct-val').textContent = '100%';
+    
+    resizeState.aspectRatio = im.w / im.h;
+    resizeState.lockAspect = true;
+    updateAspectLockButton();
+    
+    selectResampleAlgo('nearest');
+    
+    $('resize-orig-info').textContent = `${im.w}x${im.h} px`;
+    updateResizeDestInfo();
+    
+    openModal('modal-resize');
+  } catch (e) {
+    console.error('Error opening resize modal:', e);
+    showToast('ERROR: ' + e.message, 'error');
+  }
+}
+
+function updateAspectLockButton() {
+  const btn = $('btn-aspect-lock');
+  if (resizeState.lockAspect) {
+    btn.classList.add('active');
+    $('aspect-lock-icon').innerHTML = '&#128279;';
+  } else {
+    btn.classList.remove('active');
+    $('aspect-lock-icon').innerHTML = '&#128280;';
+  }
+}
+
+$('btn-aspect-lock').addEventListener('click', () => {
+  resizeState.lockAspect = !resizeState.lockAspect;
+  updateAspectLockButton();
+  if (resizeState.lockAspect) {
+    const w = parseFloat($('resize-width').value) || 0;
+    if (w > 0) {
+      $('resize-height').value = Math.round(w / resizeState.aspectRatio);
+      updateResizeDestInfo();
+    }
+  }
+});
+
+$('resize-width').addEventListener('input', () => {
+  const w = parseFloat($('resize-width').value) || 0;
+  if (resizeState.lockAspect && w > 0) {
+    $('resize-height').value = Math.round(w / resizeState.aspectRatio);
+  }
+  $('resize-slider').value = 100;
+  $('resize-pct-val').textContent = '—';
+  updateResizeDestInfo();
+});
+
+$('resize-height').addEventListener('input', () => {
+  const h = parseFloat($('resize-height').value) || 0;
+  if (resizeState.lockAspect && h > 0) {
+    $('resize-width').value = Math.round(h * resizeState.aspectRatio);
+  }
+  $('resize-slider').value = 100;
+  $('resize-pct-val').textContent = '—';
+  updateResizeDestInfo();
+});
+
+$('resize-slider').addEventListener('input', (e) => {
+  const idx = state.current;
+  if (idx === undefined || idx === -1) return;
+  const im = state.images[idx];
+  if (!im) return;
+  const pct = parseInt(e.target.value);
+  $('resize-pct-val').textContent = `${pct}%`;
+  
+  $('resize-width').value = Math.round(im.w * (pct / 100));
+  $('resize-height').value = Math.round(im.h * (pct / 100));
+  updateResizeDestInfo();
+});
+
+function updateResizeDestInfo() {
+  const w = parseInt($('resize-width').value) || 0;
+  const h = parseInt($('resize-height').value) || 0;
+  $('resize-new-info').textContent = `${w}x${h} px`;
+}
+
+function applyResizePreset(w, h) {
+  $('resize-width').value = w;
+  if (resizeState.lockAspect) {
+    $('resize-height').value = Math.round(w / resizeState.aspectRatio);
+  } else {
+    $('resize-height').value = h;
+  }
+  $('resize-slider').value = 100;
+  $('resize-pct-val').textContent = '—';
+  updateResizeDestInfo();
+}
+
+function applyResizeScalePreset(scale) {
+  const idx = state.current;
+  if (idx === undefined || idx === -1) return;
+  const im = state.images[idx];
+  if (!im) return;
+  $('resize-width').value = Math.round(im.w * scale);
+  $('resize-height').value = Math.round(im.h * scale);
+  $('resize-slider').value = Math.round(scale * 100);
+  $('resize-pct-val').textContent = `${Math.round(scale * 100)}%`;
+  updateResizeDestInfo();
+}
+
+function selectResampleAlgo(algo) {
+  resizeState.currentAlgo = algo;
+  ['nearest', 'bilinear', 'bicubic'].forEach(a => {
+    $(`btn-algo-${a}`).classList.toggle('active', a === algo);
+  });
+}
+
+$('btn-resize').addEventListener('click', openResizeModal);
+
+$('btn-confirm-resize').addEventListener('click', async () => {
+  try {
+    const idx = state.current;
+    if (idx === undefined || idx === -1) return;
+    const im = state.images[idx];
+    if (!im) return;
+    const fpath = im.file ? im.file.path : null;
+    const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+    const i18nLang = I18N[lang] || I18N.en || {};
+
+    if (!fpath) {
+      showToast(i18nLang.toast_path_not_found || 'PATH NOT FOUND', 'error');
+      return;
+    }
+    
+    const targetW = parseInt($('resize-width').value) || 0;
+    const targetH = parseInt($('resize-height').value) || 0;
+    
+    if (targetW < 1 || targetH < 1) {
+      showToast(i18nLang.toast_invalid_crop || 'Dimensiones inválidas', 'error');
+      return;
+    }
+    
+    showToast(lang === 'es' ? 'REDIMENSIONANDO IMAGEN...' : 'RESIZING IMAGE...', 'info');
+    
+    // Realizar redimensión en un canvas offscreen
+    const canvas = document.createElement('canvas');
+    canvas.width = targetW;
+    canvas.height = targetH;
+    const ctx = canvas.getContext('2d');
+    
+    const algo = resizeState.currentAlgo;
+    if (algo === 'nearest') {
+      ctx.imageSmoothingEnabled = false;
+    } else if (algo === 'bilinear') {
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'medium';
+    } else { // bicubic
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+    }
+    
+    // Dibujar la imagen en las nuevas dimensiones
+    ctx.drawImage(mainImg, 0, 0, targetW, targetH);
+    
+    const buffer = canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
+    
+    const createCopy = $('cfg-resize-copy').checked;
+    
+    const result = await window.electronAPI.saveImage({
+      filePath: fpath,
+      buffer: buffer,
+      createCopy: createCopy
+    });
+    
+    if (result.success) {
+      showToast(i18nLang.toast_resize_success || 'IMAGEN REDIMENSIONADA', 'success');
+      closeModal('modal-resize');
+      
+      if (createCopy) {
+        // Generar objeto de nueva imagen
+        const newImg = {
+          file: {
+            name: result.filePath.split(/[\\/]/).pop(),
+            path: result.filePath,
+            size: 0
+          }
+        };
+        // Insertarla justo después de la actual
+        state.images.splice(idx + 1, 0, newImg);
+        
+        // Reconstruir la barra y mostrar la nueva imagen
+        buildSidebar();
+        showImage(idx + 1, null);
+      } else {
+        // Recargar imagen con cache-buster
+        mainImg.src = `file://${fpath}?t=${Date.now()}`;
+        
+        mainImg.onload = () => {
+          state.currentRotation = 0;
+          state.panX = 0;
+          state.panY = 0;
+          mainImg.style.transition = 'none';
+          mainImg.style.transform = 'none';
+          
+          im.w = mainImg.naturalWidth;
+          im.h = mainImg.naturalHeight;
+          state.hasChanges = false;
+          updateSaveButton();
+          updateHUDStates();
+          updateFileStats();
+          fitToWindow(im.w, im.h);
+          
+          requestAnimationFrame(() => {
+            mainImg.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+          });
+          mainImg.onload = null;
+        };
+      }
+    } else {
+      showToast('ERROR: ' + result.error, 'error');
+    }
+  } catch (e) {
+    console.error('Error confirming resize:', e);
+    showToast('ERROR: ' + e.message, 'error');
+  }
+});
 
 // ── ZOOM & PAN ──
 function fitToWindow(w, h) {
@@ -2573,6 +3121,7 @@ function updateFileStats() {
 }
 
 function zoomAt(delta, cx, cy) {
+  state.viewMode = 'custom';
   const rect = viewerWrap.getBoundingClientRect();
   const ox = cx - rect.left - rect.width / 2;
   const oy = cy - rect.top  - rect.height / 2;
@@ -2619,6 +3168,7 @@ viewerWrap.addEventListener('wheel', e => {
 }, { passive: false });
 
 viewerWrap.addEventListener('mousedown', e => {
+  if (e.target.closest('#kbd-hint') || e.target.closest('#topbar') || e.target.closest('#sidebar')) return;
   if (e.button !== 0 || state.images.length === 0 || state.isCropping) return;
   state.dragging = true;
   state.dragStartX = e.clientX;
@@ -2642,16 +3192,19 @@ window.addEventListener('mouseup', () => {
 
 // Double click = fit or 1:1
 viewerWrap.addEventListener('dblclick', e => {
+  if (e.target.closest('#kbd-hint') || e.target.closest('#topbar') || e.target.closest('#sidebar')) return;
   if (state.images.length === 0) return;
   const im = state.images[state.current];
   if (!im || !im.w) return;
   const vw = viewerWrap.clientWidth, vh = viewerWrap.clientHeight;
   const fitScale = Math.min((vw - 24) / im.w, (vh - 24) / im.h, 1);
   if (Math.abs(state.zoom - 1) < 0.05) {
+    state.viewMode = 'fit';
     state.zoom = fitScale;
     state.panX = 0;
     state.panY = 0;
   } else {
+    state.viewMode = 'original';
     state.zoom = 1;
     state.panX = 0;
     state.panY = 0;
@@ -2662,6 +3215,7 @@ viewerWrap.addEventListener('dblclick', e => {
 // Touch pinch
 let lastPinchDist = 0;
 viewerWrap.addEventListener('touchstart', e => {
+  if (e.target.closest('#kbd-hint') || e.target.closest('#topbar') || e.target.closest('#sidebar')) return;
   if (e.touches.length === 2) {
     lastPinchDist = Math.hypot(
       e.touches[0].clientX - e.touches[1].clientX,
@@ -2690,6 +3244,7 @@ viewerWrap.addEventListener('touchmove', e => {
       const rect = viewerWrap.getBoundingClientRect();
       const ox = cx - rect.left - rect.width / 2;
       const oy = cy - rect.top  - rect.height / 2;
+      state.viewMode = 'custom';
       const oldZoom = state.zoom;
       const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, state.zoom * ratio));
       const r = newZoom / oldZoom;
@@ -2719,78 +3274,115 @@ document.addEventListener('keydown', e => {
   // Shortcuts globales
   if (isCtrl) {
     switch (e.key.toLowerCase()) {
-      case 'o': e.preventDefault(); $('btn-open-hud').click(); break;
-      case 's': e.preventDefault(); saveCurrent(); break;
-      case 'c': if (state.images.length) copyToClipboard(); break;
+      case 'o': 
+        e.preventDefault(); 
+        if (e.shiftKey) {
+          if (checkImageLoaded()) $('btn-show-folder').click();
+        } else {
+          $('btn-open-hud').click();
+        }
+        break;
+      case 's': e.preventDefault(); if (checkImageLoaded()) saveCurrent(); break;
+      case 'c': e.preventDefault(); if (checkImageLoaded()) copyToClipboard(); break;
+      case 'd': e.preventDefault(); if (checkImageLoaded()) toggleFavorite(); break;
       case ',': e.preventDefault(); openConfig(); break;
-      case 'f': e.preventDefault(); toggleFullscreen(); break;
+      case 'f': e.preventDefault(); if (checkImageLoaded()) toggleFullscreen(); break;
       case 'i': if (e.shiftKey) { e.preventDefault(); window.electronAPI.openDevTools(); } break;
     }
   }
 
   switch (e.key.toLowerCase()) {
-    case 'arrowright': case 'arrowdown': case ' ': case 'd': e.preventDefault(); next(); break;
-    case 'arrowleft':  case 'arrowup':   case 'a': e.preventDefault(); prev(); break;
-    case 'q': rotate(-90); break;
-    case 'e': rotate(90); break;
+    case 'arrowright': case 'arrowdown': case ' ': case 'd': 
+      if (!isCtrl) { e.preventDefault(); next(); }
+      break;
+    case 'arrowleft':  case 'arrowup':   case 'a': 
+      if (!isCtrl) { e.preventDefault(); prev(); }
+      break;
+    case 'q': if (checkImageLoaded()) rotate(-90); break;
+    case 'e': if (checkImageLoaded()) rotate(90); break;
     case 'c': 
       if (!isCtrl) {
         e.preventDefault();
-        const btn = $('btn-crop');
-        if (btn) btn.click();
+        if (checkImageLoaded()) {
+          const btn = $('btn-crop');
+          if (btn) btn.click();
+        }
       }
       break;
-    case 'l': rotate(-90); break;
-    case 'r': rotate(90); break;
-    case 'g': case 'G': $('btn-ghost').click(); break;
-    case 'f': if (!isCtrl) $('btn-fit-hud').click(); break;
-    case '1': $('btn-orig-hud').click(); break;
+    case 'l': if (checkImageLoaded()) rotate(-90); break;
+    case 'r': 
+      if (!isCtrl) {
+        e.preventDefault();
+        if (checkImageLoaded()) {
+          const btn = $('btn-resize');
+          if (btn) btn.click();
+        }
+      }
+      break;
+    case 'g': case 'G': if (!isCtrl) $('btn-ghost').click(); break;
+    case 'f': if (!isCtrl && checkImageLoaded()) $('btn-fit-hud').click(); break;
+    case '1': if (!isCtrl && checkImageLoaded()) $('btn-orig-hud').click(); break;
     case 'delete': 
-      if (state.images.length) removeCurrentImage();
+      if (checkImageLoaded()) removeCurrentImage();
       break;
     case 'escape':
       if (document.fullscreenElement) document.exitFullscreen();
       closeModal('modal-config');
+      closeModal('modal-resize');
       const aboutOverlay = $('about-overlay');
       if (aboutOverlay) aboutOverlay.classList.remove('active');
       break;
     case 'enter':
       e.preventDefault();
-      toggleFullscreen();
-      break;
-    case 'f': case 'F':
-      if (state.images.length) {
-        const im = state.images[state.current];
-        if (im && im.w) fitToWindow(im.w, im.h);
-      }
-      break;
-    case '1':
-      state.zoom = 1; state.panX = 0; state.panY = 0;
-      applyTransform(true);
+      if (checkImageLoaded()) toggleFullscreen();
       break;
     case '+': case '=':
-      zoomAt(150, viewerWrap.clientWidth/2, viewerWrap.clientHeight/2);
+      if (checkImageLoaded()) zoomAt(150, viewerWrap.clientWidth/2, viewerWrap.clientHeight/2);
       break;
     case '-':
-      zoomAt(-150, viewerWrap.clientWidth/2, viewerWrap.clientHeight/2);
+      if (checkImageLoaded()) zoomAt(-150, viewerWrap.clientWidth/2, viewerWrap.clientHeight/2);
       break;
     case '0':
-      if (state.images.length) {
+      if (checkImageLoaded()) {
         const im = state.images[state.current];
-        if (im && im.w) fitToWindow(im.w, im.h);
+        if (im && im.w) { state.viewMode = 'fit'; fitToWindow(im.w, im.h); }
       }
       break;
   }
 });
 
-function removeCurrentImage() {
-  if (state.current === -1) return;
-  const im = state.images[state.current];
+function handleFileDeleted(index) {
+  if (index < 0 || index >= state.images.length) return;
+  const im = state.images[index];
+
+  if (im.file && im.file.path) {
+    const p = im.file.path;
+    const favs = state.settings.app.favorites || [];
+    const newFavs = favs.filter(x => x !== p);
+    if (newFavs.length !== favs.length) {
+      state.settings.app.favorites = newFavs;
+      if (isElectron) {
+        window.electronAPI.saveSettings(state.settings.app);
+      }
+    }
+    
+    if (state.showingFavs) {
+      const nidx = state.nonFavImages.findIndex(x => x.file && x.file.path === p);
+      if (nidx !== -1) {
+        state.nonFavImages.splice(nidx, 1);
+        if (state.nonFavCurrent >= state.nonFavImages.length) {
+          state.nonFavCurrent = state.nonFavImages.length - 1;
+        }
+      }
+    }
+  }
+
   if (im.url) URL.revokeObjectURL(im.url);
-  state.images.splice(state.current, 1);
+  state.images.splice(index, 1);
   
   if (state.images.length === 0) {
     state.current = -1;
+    state.currentIdx = -1;
     mainImg.classList.remove('loaded');
     mainImg.src = '';
     dropZone.style.display = 'flex';
@@ -2798,29 +3390,72 @@ function removeCurrentImage() {
     const viewerFilename = $('viewer-filename');
     if (viewerFilename) viewerFilename.textContent = '';
   } else {
-    const nextIdx = Math.min(state.current, state.images.length - 1);
+    const nextIdx = Math.min(index, state.images.length - 1);
     state.current = nextIdx;
+    state.currentIdx = nextIdx;
     buildSidebar();
     showImage(nextIdx, null);
   }
   updateCounter();
 }
 
-async function copyToClipboard() {
-  if (state.current === -1) return;
-  const im = state.images[state.current];
-  try {
-    const response = await fetch(im.url);
-    const blob = await response.blob();
-    const item = new ClipboardItem({ [blob.type]: blob });
-    await navigator.clipboard.write([item]);
-    const lang = state.settings.app.language || 'en';
-    showToast(I18N[lang].toast_copied, 'success');
-  } catch (err) {
-    console.error('Error al copiar:', err);
-    const lang = state.settings.app.language || 'en';
-    showToast(I18N[lang].toast_copy_error, 'error');
+async function trashCurrentImage() {
+  const idx = state.current;
+  if (idx === -1) return;
+  const im = state.images[idx];
+  if (!im) return;
+  
+  if (isElectron && im.file && im.file.path) {
+    try {
+      const result = await window.electronAPI.moveToTrash(im.file.path);
+      if (result && result.success) {
+        handleFileDeleted(idx);
+      }
+    } catch (err) {
+      console.error('Error al mover a la papelera:', err);
+    }
+  } else {
+    handleFileDeleted(idx);
   }
+}
+
+async function copyToClipboard() {
+  const idx = state.currentIdx;
+  if (idx === -1) return;
+  const im = state.images[idx];
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  const i18nLang = I18N[lang] || I18N.en || {};
+  
+  if (isElectron && im.file && im.file.path) {
+    try {
+      window.electronAPI.copyImage(im.file.path);
+      showToast(i18nLang.toast_copied || 'IMAGEN COPIADA', 'success');
+    } catch (err) {
+      console.error('Error al copiar por Electron:', err);
+      showToast(i18nLang.toast_copy_error || 'ERROR AL COPIAR', 'error');
+    }
+  } else {
+    try {
+      const response = await fetch(im.url);
+      const blob = await response.blob();
+      const item = new ClipboardItem({ [blob.type]: blob });
+      await navigator.clipboard.write([item]);
+      showToast(i18nLang.toast_copied || 'IMAGEN COPIADA', 'success');
+    } catch (err) {
+      console.error('Error al copiar:', err);
+      showToast(i18nLang.toast_copy_error || 'ERROR AL COPIAR', 'error');
+    }
+  }
+}
+
+function checkImageLoaded() {
+  if (state.current === -1 || !state.images.length) {
+    const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+    const msg = I18N[lang]?.toast_load_image_first || 'LOAD AN IMAGE FIRST';
+    showToast(msg, 'info');
+    return false;
+  }
+  return true;
 }
 
 function showToast(txt, type = 'info') {
@@ -2869,25 +3504,53 @@ $('btn-open-hud').addEventListener('click', () => {
 $('btn-drop-open').addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', e => loadFiles(e.target.files));
 
+$('btn-show-folder').addEventListener('click', () => {
+  if (!checkImageLoaded()) return;
+  const path = state.images[state.current].file.path;
+  if (path && isElectron) {
+    window.electronAPI.showItemInFolder(path);
+  }
+});
+
 $('btn-fit-hud').addEventListener('click', () => {
-  if (!state.images.length) return;
+  if (!checkImageLoaded()) return;
   const im = state.images[state.current];
-  if (im && im.w) { state.panX=0; state.panY=0; fitToWindow(im.w, im.h); }
+  if (im && im.w) { state.viewMode = 'fit'; state.panX=0; state.panY=0; fitToWindow(im.w, im.h); }
 });
 
 $('btn-orig-hud').addEventListener('click', () => {
+  if (!checkImageLoaded()) return;
+  state.viewMode = 'original';
   state.zoom = 1; state.panX = 0; state.panY = 0;
   applyTransform(true);
 });
 
-$('btn-fs-hud').addEventListener('click', toggleFullscreen);
+$('btn-fs-hud').addEventListener('click', () => {
+  if (!checkImageLoaded()) return;
+  toggleFullscreen();
+});
 
-$('btn-rot-l').addEventListener('click', () => rotate(-90));
-$('btn-rot-r').addEventListener('click', () => rotate(90));
-$('btn-save').addEventListener('click', saveCurrent);
+$('btn-rot-l').addEventListener('click', () => {
+  if (!checkImageLoaded()) return;
+  rotate(-90);
+});
+$('btn-rot-r').addEventListener('click', () => {
+  if (!checkImageLoaded()) return;
+  rotate(90);
+});
+$('btn-save').addEventListener('click', () => {
+  if (!checkImageLoaded()) return;
+  saveCurrent();
+});
 
 $('btn-copy').addEventListener('click', () => {
-  if (state.images.length) copyToClipboard();
+  if (!checkImageLoaded()) return;
+  copyToClipboard();
+});
+
+$('btn-trash').addEventListener('click', () => {
+  if (!checkImageLoaded()) return;
+  trashCurrentImage();
 });
 
 // El evento btn-crop ahora se gestiona en el motor Pro
@@ -2907,11 +3570,14 @@ $('btn-ghost').addEventListener('click', () => {
 $('btn-prev').addEventListener('click', prev);
 $('btn-next').addEventListener('click', next);
 
-$('btn-sidebar').addEventListener('click', () => {
+$('sidebar-handle').addEventListener('click', () => {
   state.sidebarOpen = !state.sidebarOpen;
   sidebar.style.display = state.sidebarOpen ? '' : 'none';
   document.body.classList.toggle('sidebar-open', state.sidebarOpen);
-  $('btn-sidebar').classList.toggle('active', state.sidebarOpen);
+  
+  const handle = $('sidebar-handle');
+  handle.style.left = state.sidebarOpen ? 'var(--panel-w)' : '0';
+  $('sidebar-handle-arrow').textContent = state.sidebarOpen ? '◂' : '▸';
   
   if (state.sidebarOpen) {
     startBackgroundScan();
@@ -2939,7 +3605,8 @@ function showFsBadge() {
 
 document.addEventListener('fullscreenchange', () => {
   const isFs = !!document.fullscreenElement;
-  $('btn-fs').textContent = isFs ? '⊠ Salir' : '⊞ Fullscreen';
+  const btn = $('btn-fs-hud');
+  if (btn) btn.textContent = isFs ? '⊠ Salir' : '⊞ Fullscreen';
 });
 
 // ── DRAG & DROP ──
@@ -2971,7 +3638,7 @@ document.addEventListener('drop', e => {
 window.addEventListener('resize', () => {
   if (state.images.length && state.current >= 0) {
     const im = state.images[state.current];
-    if (im && im.w) fitToWindow(im.w, im.h);
+    if (im && im.w && state.viewMode === 'fit') fitToWindow(im.w, im.h);
   }
 });
 
@@ -2987,6 +3654,7 @@ function openConfig() {
   $('cfg-statusbar').checked = s.statusbarVisible;
   $('cfg-tray').checked = s.closeToTray;
   $('cfg-autostart').checked = s.autoStart;
+  $('cfg-contextmenu').checked = s.contextMenuEnabled || false;
   $('cfg-lang').value = s.language || 'en';
   
   // Monitor selection
@@ -3021,8 +3689,9 @@ document.querySelectorAll('.color-opt').forEach(opt => {
   });
 });
 
-$('btn-save-config').addEventListener('click', () => {
+$('btn-save-config').addEventListener('click', async () => {
   const accentColor = document.querySelector('.color-opt.active').dataset.color;
+  const contextMenuEnabled = $('cfg-contextmenu').checked;
   const newSettings = {
     sidebarOpen: $('cfg-sidebar').checked,
     statusbarVisible: $('cfg-statusbar').checked,
@@ -3030,8 +3699,18 @@ $('btn-save-config').addEventListener('click', () => {
     autoStart: $('cfg-autostart').checked,
     preferredDisplayId: $('cfg-monitor').value,
     language: $('cfg-lang').value,
-    accentColor: accentColor
+    accentColor: accentColor,
+    contextMenuEnabled: contextMenuEnabled
   };
+  
+  if (isElectron) {
+    const lang = newSettings.language || 'en';
+    window.electronAPI.registerContextMenu(contextMenuEnabled, lang).then(res => {
+      if (res && !res.success) {
+        showToast(lang === 'es' ? 'AVISO: ' + res.error : 'WARNING: ' + res.error, 'warning');
+      }
+    }).catch(err => console.error('Error saving context menu:', err));
+  }
   
   state.settings.app = newSettings;
   applySettings();
@@ -3057,7 +3736,11 @@ function applySettings() {
   if (s.preferredDisplayId) $('cfg-monitor').value = s.preferredDisplayId;
   sidebar.style.display = s.sidebarOpen ? '' : 'none';
   document.body.classList.toggle('sidebar-open', s.sidebarOpen);
-  $('btn-sidebar').classList.toggle('active', s.sidebarOpen);
+  const handle = $('sidebar-handle');
+  if (handle) {
+    handle.style.left = s.sidebarOpen ? 'var(--panel-w)' : '0';
+    $('sidebar-handle-arrow').textContent = s.sidebarOpen ? '◂' : '▸';
+  }
   $('statusbar').style.display = s.statusbarVisible ? '' : 'none';
   document.body.classList.toggle('statusbar-visible', s.statusbarVisible);
 
@@ -3108,6 +3791,10 @@ if (isElectron) {
       const mockFile = { name, path: path, size: 0, type: '' }; 
       loadFiles([mockFile]);
     }
+  });
+
+  window.electronAPI.onOpenSettings(() => {
+    openConfig();
   });
 
   // Load settings from Electron
@@ -3188,7 +3875,7 @@ $('btn-center').addEventListener('click', () => {
         </div>
         <div class="modal-body">
           <div style="font-size:18px;color:var(--cyber-accent);letter-spacing:3px;margin-bottom:4px">
-            [CYBER<span style="color:var(--cyber-accent3)">VIEWER</span>]
+            [Cyber<span style="color:var(--cyber-accent3)">Viewer</span>]
           </div>
           <div style="font-size:11px;color:var(--cyber-muted);margin-bottom:20px">${t.about_subtitle}</div>
           <img src="assets/icon.png" style="width:64px;height:64px;margin-bottom:20px;filter:drop-shadow(0 0 10px var(--cyber-accent))" alt="Logo">
@@ -3265,6 +3952,181 @@ elementsToHide.forEach(item => {
     item.el.addEventListener('mouseleave', resetHudTimer);
   }
 });
+
+// ── FAVORITES SYSTEM ──
+function toggleFavorite() {
+  const idx = state.current;
+  if (idx === -1) return;
+  const im = state.images[idx];
+  if (!im || !im.file || !im.file.path) return;
+  
+  const path = im.file.path;
+  let favs = state.settings.app.favorites || [];
+  const index = favs.indexOf(path);
+  
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  
+  if (index === -1) {
+    favs.push(path);
+    showToast(lang === 'es' ? 'AÑADIDO A FAVORITOS' : 'ADDED TO FAVORITES', 'success');
+  } else {
+    favs.splice(index, 1);
+    showToast(lang === 'es' ? 'ELIMINADO DE FAVORITOS' : 'REMOVED FROM FAVORITES', 'info');
+  }
+  
+  state.settings.app.favorites = favs;
+  if (isElectron) {
+    window.electronAPI.saveSettings(state.settings.app);
+  }
+  
+  updateFavButtonState();
+}
+
+function updateFavButtonState() {
+  const btn = $('btn-fav');
+  if (!btn) return;
+  
+  const idx = state.current;
+  if (idx === -1) {
+    btn.classList.remove('favorited');
+    btn.innerHTML = '&#9734;';
+    return;
+  }
+  const im = state.images[idx];
+  if (!im || !im.file || !im.file.path) {
+    btn.classList.remove('favorited');
+    btn.innerHTML = '&#9734;';
+    return;
+  }
+  
+  const favs = state.settings.app.favorites || [];
+  const isFav = favs.includes(im.file.path);
+  if (isFav) {
+    btn.classList.add('favorited');
+    btn.innerHTML = '&#9733;';
+  } else {
+    btn.classList.remove('favorited');
+    btn.innerHTML = '&#9734;';
+  }
+}
+
+function syncFavoritesToggleButtonState(lang) {
+  const btn = $('btn-toggle-favs');
+  if (!btn) return;
+  if (!lang) {
+    lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  }
+  const favLbl = btn.querySelector('.fav-lbl');
+  const favStar = btn.querySelector('.fav-star');
+  
+  if (state.showingFavs) {
+    btn.classList.add('active');
+    btn.title = lang === 'es' ? 'Mostrar galería completa' : 'Show full gallery';
+    if (favLbl) favLbl.textContent = lang === 'es' ? 'TODAS' : 'ALL IMAGES';
+    if (favStar) favStar.innerHTML = '&#9734;';
+  } else {
+    btn.classList.remove('active');
+    btn.title = lang === 'es' ? 'Mostrar Favoritos' : 'Show Favorites';
+    if (favLbl) favLbl.textContent = lang === 'es' ? 'FAVORITOS' : 'FAVORITES';
+    if (favStar) favStar.innerHTML = '&#9733;';
+  }
+}
+
+async function toggleFavoritesView() {
+  const btn = $('btn-toggle-favs');
+  if (!btn) return;
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  
+  if (!state.showingFavs) {
+    const favs = state.settings.app.favorites || [];
+    if (favs.length === 0) {
+      showToast(lang === 'es' ? 'No hay favoritos guardados' : 'No favorites saved', 'info');
+      return;
+    }
+    
+    if (isElectron) {
+      const validFavs = await window.electronAPI.validatePaths(favs);
+      if (validFavs.length !== favs.length) {
+        state.settings.app.favorites = validFavs;
+        window.electronAPI.saveSettings(state.settings.app);
+      }
+      
+      if (validFavs.length === 0) {
+        showToast(lang === 'es' ? 'No hay favoritos guardados en disco' : 'No favorites found on disk', 'info');
+        return;
+      }
+      
+      state.nonFavImages = [...state.images];
+      state.nonFavCurrent = state.current;
+      
+      const mapped = validFavs.map(p => {
+        const name = p.split(/[\\/]/).pop();
+        return {
+          file: { name, path: p, size: 0, type: '' },
+          url: 'cyber://' + p,
+          loaded: false,
+          w: 0,
+          h: 0
+        };
+      });
+      
+      state.showingFavs = true;
+      syncFavoritesToggleButtonState(lang);
+      
+      state.images = mapped;
+      buildSidebar();
+      showImage(0, null, true);
+      showToast(lang === 'es' ? 'VISTA DE FAVORITOS ACTIVA' : 'FAVORITES VIEW ACTIVE', 'success');
+    } else {
+      state.nonFavImages = [...state.images];
+      state.nonFavCurrent = state.current;
+      
+      const mapped = favs.map(p => {
+        const name = p.split(/[\\/]/).pop();
+        return {
+          file: { name, path: p, size: 0, type: '' },
+          url: p,
+          loaded: false,
+          w: 0,
+          h: 0
+        };
+      });
+      
+      state.showingFavs = true;
+      syncFavoritesToggleButtonState(lang);
+      
+      state.images = mapped;
+      buildSidebar();
+      showImage(0, null, true);
+      showToast(lang === 'es' ? 'VISTA DE FAVORITOS ACTIVA' : 'FAVORITES VIEW ACTIVE', 'success');
+    }
+  } else {
+    state.showingFavs = false;
+    syncFavoritesToggleButtonState(lang);
+    
+    state.images = [...state.nonFavImages];
+    buildSidebar();
+    if (state.nonFavCurrent !== -1 && state.nonFavCurrent < state.images.length) {
+      showImage(state.nonFavCurrent, null, true);
+    } else if (state.images.length > 0) {
+      showImage(0, null, true);
+    } else {
+      state.current = -1;
+      state.currentIdx = -1;
+      mainImg.classList.remove('loaded');
+      mainImg.src = '';
+      dropZone.style.display = 'flex';
+      sidebar.innerHTML = '';
+      const viewerFilename = $('viewer-filename');
+      if (viewerFilename) viewerFilename.textContent = '';
+      updateCounter();
+    }
+    showToast(lang === 'es' ? 'GALERÍA COMPLETA RESTAURADA' : 'FULL GALLERY RESTORED', 'info');
+  }
+}
+
+$('btn-fav').addEventListener('click', toggleFavorite);
+$('btn-toggle-favs').addEventListener('click', toggleFavoritesView);
 
 // ── INIT ──
 updateCounter();

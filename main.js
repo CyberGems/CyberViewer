@@ -28,7 +28,8 @@ function loadSettings() {
       sidebarOpen: true,
       statusbarVisible: true,
       preferredDisplayId: 'auto',
-      language: 'en'
+      language: 'en',
+      contextMenuEnabled: false
     }
   };
 }
@@ -130,17 +131,29 @@ function createWindow() {
   const htmlPath = path.join(__dirname, 'CyberViewer.html');
   win.loadURL(`file://${htmlPath}?v=${Date.now()}`);
 
+  let wasMaximizedOnStart = settings.window.maximized;
+
   win.once('ready-to-show', () => {
-    if (settings.window.maximized) win.maximize();
-    
     const isStartupLaunch = process.argv.includes('--startup');
     const shouldStartMinimized = settings.app.autoStart && isStartupLaunch;
 
     if (!shouldStartMinimized) {
-      win.show();
+      if (wasMaximizedOnStart) {
+        win.maximize();
+        wasMaximizedOnStart = false;
+      } else {
+        win.show();
+      }
     } else {
       // Si inicia minimizado por el sistema, creamos el tray si no existe
       if (!tray) createTray();
+    }
+  });
+
+  win.on('show', () => {
+    if (wasMaximizedOnStart) {
+      wasMaximizedOnStart = false;
+      win.maximize();
     }
   });
 
@@ -173,11 +186,13 @@ function createTray() {
   const lang = settings.app.language || 'en';
   
   const showLabel = lang === 'es' ? 'Mostrar CyberViewer' : 'Show CyberViewer';
+  const settingsLabel = lang === 'es' ? 'Configuración' : 'Settings';
   const exitLabel = lang === 'es' ? 'Salir' : 'Exit';
 
   tray = new Tray(path.join(__dirname, 'assets', 'icon.png'));
   const contextMenu = Menu.buildFromTemplate([
     { label: showLabel, click: () => { win.show(); win.focus(); } },
+    { label: settingsLabel, click: () => { win.show(); win.focus(); win.webContents.send('open-settings'); } },
     { type: 'separator' },
     { label: exitLabel, click: () => { isQuitting = true; app.quit(); } }
   ]);
@@ -283,7 +298,7 @@ ipcMain.handle('get-thumbnail', async (event, filePath) => {
     return null;
   }
 });
-ipcMain.handle('save-image', async (event, { filePath, rotation, buffer }) => {
+ipcMain.handle('save-image', async (event, { filePath, rotation, buffer, createCopy }) => {
   try {
     if (!filePath) return { success: false, error: 'Ruta no proporcionada' };
 
@@ -294,7 +309,22 @@ ipcMain.handle('save-image', async (event, { filePath, rotation, buffer }) => {
     if (process.platform === 'win32' && cleanPath.startsWith('/')) cleanPath = cleanPath.substring(1);
     cleanPath = path.resolve(cleanPath);
 
-    console.log(`[LEVEL-20-GHOST] Procesando: ${cleanPath}`);
+    let targetPath = cleanPath;
+    if (createCopy) {
+      const dir = path.dirname(cleanPath);
+      const ext = path.extname(cleanPath);
+      const base = path.basename(cleanPath, ext);
+      
+      let candidate = path.join(dir, `${base}_resized${ext}`);
+      let counter = 1;
+      while (fs.existsSync(candidate)) {
+        counter++;
+        candidate = path.join(dir, `${base}_resized (${counter})${ext}`);
+      }
+      targetPath = candidate;
+    }
+
+    console.log(`[LEVEL-20-GHOST] Procesando: ${targetPath}`);
 
     let dataToWrite;
 
@@ -322,25 +352,25 @@ ipcMain.handle('save-image', async (event, { filePath, rotation, buffer }) => {
     }
 
     // ── ESCRITURA ATÓMICA: archivo temporal + rename ──
-    const tmpPath = cleanPath + '.cybertmp.' + Date.now();
+    const tmpPath = targetPath + '.cybertmp.' + Date.now();
 
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         // Verificar que el directorio padre es escribible
-        const dir = path.dirname(cleanPath);
+        const dir = path.dirname(targetPath);
         try { fs.accessSync(dir, fs.constants.W_OK); } catch (e) {
           return { success: false, error: `No hay permisos de escritura en: ${dir}` };
         }
 
         fs.writeFileSync(tmpPath, dataToWrite);
 
-        if (fs.existsSync(cleanPath)) {
-          fs.unlinkSync(cleanPath);
+        if (fs.existsSync(targetPath)) {
+          fs.unlinkSync(targetPath);
         }
-        fs.renameSync(tmpPath, cleanPath);
+        fs.renameSync(tmpPath, targetPath);
 
-        console.log('[LEVEL-20-GHOST] Guardado exitoso:', cleanPath);
-        return { success: true };
+        console.log('[LEVEL-20-GHOST] Guardado exitoso:', targetPath);
+        return { success: true, filePath: targetPath };
       } catch (e) {
         console.warn(`[LEVEL-20] Reintento ${attempt + 1} fallido:`, e.message);
         try { if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath); } catch (_) {}
@@ -351,6 +381,172 @@ ipcMain.handle('save-image', async (event, { filePath, rotation, buffer }) => {
     return { success: false, error: 'No se pudo escribir el archivo (archivo en uso o permisos insuficientes)' };
   } catch (e) {
     console.error('[LEVEL-20-GHOST] Error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
+ipcMain.on('copy-image', (event, filePath) => {
+  try {
+    let cleanPath = filePath;
+    if (cleanPath.startsWith('file:///')) cleanPath = cleanPath.substring(8);
+    else if (cleanPath.startsWith('file://')) cleanPath = cleanPath.substring(7);
+    cleanPath = decodeURIComponent(cleanPath);
+    if (process.platform === 'win32' && cleanPath.startsWith('/')) cleanPath = cleanPath.substring(1);
+    cleanPath = path.resolve(cleanPath);
+
+    fs.readFile(cleanPath, (err, data) => {
+      if (err) {
+        console.error('Failed to read file for clipboard:', err);
+        return;
+      }
+      const img = nativeImage.createFromBuffer(data);
+      if (!img.isEmpty()) {
+        clipboard.writeImage(img);
+      } else {
+        console.error('Failed to load image for clipboard:', cleanPath);
+      }
+    });
+  } catch (e) {
+    console.error('Error copying image to clipboard:', e);
+  }
+});
+
+ipcMain.handle('move-to-trash', async (event, filePath) => {
+  try {
+    const settings = loadSettings();
+    const lang = settings.app.language || 'en';
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const result = await dialog.showMessageBox(win, {
+      type: 'question',
+      buttons: [lang === 'es' ? 'Sí' : 'Yes', lang === 'es' ? 'No' : 'No'],
+      defaultId: 0,
+      title: lang === 'es' ? 'Mover a la papelera' : 'Move to Trash',
+      message: lang === 'es' ? '¿Estás seguro de que quieres mover esta imagen a la papelera de reciclaje?' : 'Are you sure you want to move this image to the Recycle Bin?',
+      detail: path.basename(filePath),
+      cancelId: 1
+    });
+
+    if (result.response === 0) {
+      await shell.trashItem(filePath);
+      return { success: true };
+    }
+    return { success: false, cancelled: true };
+  } catch (e) {
+    console.error('Error moving file to trash:', e);
+    return { success: false, error: e.message };
+  }
+});
+
+ipcMain.on('show-item-in-folder', (event, filePath) => {
+  try {
+    if (!filePath) return;
+    let cleanPath = filePath;
+    if (cleanPath.startsWith('file:///')) cleanPath = cleanPath.substring(8);
+    else if (cleanPath.startsWith('file://')) cleanPath = cleanPath.substring(7);
+    cleanPath = decodeURIComponent(cleanPath);
+    if (process.platform === 'win32' && cleanPath.startsWith('/')) cleanPath = cleanPath.substring(1);
+    cleanPath = path.resolve(cleanPath);
+
+    if (fs.existsSync(cleanPath)) {
+      shell.showItemInFolder(cleanPath);
+    }
+  } catch (e) {
+    console.error('Error showing item in folder:', e);
+  }
+});
+
+ipcMain.handle('validate-paths', (event, paths) => {
+  try {
+    if (!Array.isArray(paths)) return [];
+    return paths.filter(p => {
+      try {
+        let cleanPath = p;
+        if (cleanPath.startsWith('file:///')) cleanPath = cleanPath.substring(8);
+        else if (cleanPath.startsWith('file://')) cleanPath = cleanPath.substring(7);
+        cleanPath = decodeURIComponent(cleanPath);
+        if (process.platform === 'win32' && cleanPath.startsWith('/')) cleanPath = cleanPath.substring(1);
+        cleanPath = path.resolve(cleanPath);
+        return fs.existsSync(cleanPath);
+      } catch (e) {
+        return false;
+      }
+    });
+  } catch (e) {
+    console.error('Error validating paths:', e);
+    return [];
+  }
+});
+
+ipcMain.handle('register-context-menu', async (event, enable, lang) => {
+  try {
+    const isPackaged = app.isPackaged;
+    let exePath = process.execPath;
+    if (!isPackaged) {
+      exePath = path.join(app.getAppPath(), 'dist', 'win-unpacked', 'CyberViewer.exe');
+    }
+
+    const extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.tif'];
+    const progIds = ['BMP Image', 'GIF Image', 'JPEG Image', 'PNG Image', 'WebP Image', 'TIFF Image'];
+    const { exec } = require('child_process');
+
+    if (enable) {
+      if (!fs.existsSync(exePath)) {
+        return { success: false, error: 'No se encontró el ejecutable. Construye la app primero.' };
+      }
+
+      const label = lang === 'es' ? 'Ver con CyberViewer' : 'View with CyberViewer';
+      const assocLabel = lang === 'es' ? 'Abrir con CyberViewer' : 'Open with CyberViewer';
+
+      let commands = [];
+      for (const ext of extensions) {
+        const regPath = `HKCU\\Software\\Classes\\SystemFileAssociations\\${ext}\\shell\\CyberViewer`;
+        commands.push(`reg add "${regPath}" /ve /d "${label}" /f`);
+        commands.push(`reg add "${regPath}" /v Icon /d "\\"${exePath}\\"" /f`);
+        commands.push(`reg add "${regPath}\\command" /ve /d "\\"${exePath}\\" \\"%1\\"" /f`);
+      }
+
+      for (const progId of progIds) {
+        const regPath = `HKCU\\Software\\Classes\\${progId}\\shell\\open`;
+        commands.push(`reg add "${regPath}" /ve /d "${assocLabel}" /f`);
+        commands.push(`reg add "${regPath}" /v Icon /d "\\"${exePath}\\"" /f`);
+      }
+
+      const fullCommand = commands.join(' & ');
+
+      return new Promise((resolve) => {
+        exec(fullCommand, (err) => {
+          if (err) {
+            console.error('Error registering context menu:', err);
+            resolve({ success: false, error: err.message });
+          } else {
+            resolve({ success: true });
+          }
+        });
+      });
+    } else {
+      let commands = [];
+      for (const ext of extensions) {
+        const regPath = `HKCU\\Software\\Classes\\SystemFileAssociations\\${ext}\\shell\\CyberViewer`;
+        commands.push(`reg delete "${regPath}" /f`);
+      }
+
+      for (const progId of progIds) {
+        const regPath = `HKCU\\Software\\Classes\\${progId}\\shell\\open`;
+        commands.push(`reg add "${regPath}" /ve /d "Open with CyberViewer" /f`);
+        commands.push(`reg delete "${regPath}" /v Icon /f`);
+      }
+
+      const fullCommand = commands.join(' & ');
+
+      return new Promise((resolve) => {
+        exec(fullCommand, (err) => {
+          // Ignore error since keys might not exist
+          resolve({ success: true });
+        });
+      });
+    }
+  } catch (e) {
+    console.error('Error in register-context-menu handler:', e);
     return { success: false, error: e.message };
   }
 });
@@ -423,8 +619,12 @@ ipcMain.on('show-context-menu', (event, props) => {
       { 
         label: t.copy_image, 
         click: () => {
-          const img = nativeImage.createFromPath(props.path);
-          clipboard.writeImage(img);
+          fs.readFile(props.path, (err, data) => {
+            if (!err) {
+              const img = nativeImage.createFromBuffer(data);
+              clipboard.writeImage(img);
+            }
+          });
         } 
       },
       { label: t.show_in_folder, click: () => shell.showItemInFolder(props.path) },
@@ -435,6 +635,28 @@ ipcMain.on('show-context-menu', (event, props) => {
         enabled: !!props.hiddenCount,
         visible: !!props.hiddenCount,
         click: () => event.sender.send('menu-action', { action: 'restore-hidden' }) 
+      },
+      { type: 'separator' },
+      { 
+        label: t.move_trash, 
+        click: async () => {
+          const result = await dialog.showMessageBox(win, {
+            type: 'question',
+            buttons: [lang === 'es' ? 'Sí' : 'Yes', lang === 'es' ? 'No' : 'No'],
+            defaultId: 0,
+            title: lang === 'es' ? 'Mover a la papelera' : 'Move to Trash',
+            message: lang === 'es' ? '¿Estás seguro de que quieres mover esta imagen a la papelera de reciclaje?' : 'Are you sure you want to move this image to the Recycle Bin?',
+            detail: path.basename(props.path),
+            cancelId: 1
+          });
+          if (result.response === 0) {
+            shell.trashItem(props.path).then(() => {
+              event.sender.send('menu-action', { action: 'file-deleted', index: props.index });
+            }).catch(err => {
+              console.error(err);
+            });
+          }
+        }
       }
     ];
   } else if (props.type === 'thumb') {
@@ -442,8 +664,12 @@ ipcMain.on('show-context-menu', (event, props) => {
       { 
         label: t.copy_original, 
         click: () => {
-          const img = nativeImage.createFromPath(props.path);
-          clipboard.writeImage(img);
+          fs.readFile(props.path, (err, data) => {
+            if (!err) {
+              const img = nativeImage.createFromBuffer(data);
+              clipboard.writeImage(img);
+            }
+          });
         } 
       },
       { label: t.show_in_folder, click: () => shell.showItemInFolder(props.path) },
@@ -461,10 +687,23 @@ ipcMain.on('show-context-menu', (event, props) => {
       { type: 'separator' },
       { 
         label: t.move_trash, 
-        click: () => {
-          shell.trashItem(props.path).then(() => {
-            event.sender.send('menu-action', { action: 'file-deleted', index: props.index });
+        click: async () => {
+          const result = await dialog.showMessageBox(win, {
+            type: 'question',
+            buttons: [lang === 'es' ? 'Sí' : 'Yes', lang === 'es' ? 'No' : 'No'],
+            defaultId: 0,
+            title: lang === 'es' ? 'Mover a la papelera' : 'Move to Trash',
+            message: lang === 'es' ? '¿Estás seguro de que quieres mover esta imagen a la papelera de reciclaje?' : 'Are you sure you want to move this image to the Recycle Bin?',
+            detail: path.basename(props.path),
+            cancelId: 1
           });
+          if (result.response === 0) {
+            shell.trashItem(props.path).then(() => {
+              event.sender.send('menu-action', { action: 'file-deleted', index: props.index });
+            }).catch(err => {
+              console.error(err);
+            });
+          }
         }
       }
     ];

@@ -17,7 +17,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onMenuAction:   (cb) => ipcRenderer.on('menu-action', (e, data) => cb(data)),
   getMonitors:    () => ipcRenderer.invoke('get-monitors'),
   openFile:       () => ipcRenderer.invoke('open-file-dialog'),
-  saveImage:      (data) => ipcRenderer.invoke('save-image', data)
+  saveImage:      (data) => ipcRenderer.invoke('save-image', data),
+  copyImage:      (path) => ipcRenderer.send('copy-image', path),
+  moveToTrash:    (path) => ipcRenderer.invoke('move-to-trash', path),
+  onOpenSettings: (cb) => ipcRenderer.on('open-settings', () => cb()),
+  showItemInFolder: (path) => ipcRenderer.send('show-item-in-folder', path),
+  validatePaths:  (paths) => ipcRenderer.invoke('validate-paths', paths),
+  registerContextMenu: (enable, lang) => ipcRenderer.invoke('register-context-menu', enable, lang)
 });
 
 // Listener para el menú contextual nativo en campos de texto
