@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onWinState:     (cb) => ipcRenderer.on('win-state', (_, state) => cb(state)),
   
   getSettings:    () => ipcRenderer.invoke('get-settings'),
+  getVersion:     () => ipcRenderer.invoke('get-version'),
   saveSettings:   (settings) => ipcRenderer.send('save-settings', settings),
   
   showContextMenu: (props) => ipcRenderer.send('show-context-menu', props),
@@ -20,8 +21,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveImage:      (data) => ipcRenderer.invoke('save-image', data),
   copyImage:      (path) => ipcRenderer.send('copy-image', path),
   moveToTrash:    (path) => ipcRenderer.invoke('move-to-trash', path),
+  moveToTrashDirect: (path) => ipcRenderer.invoke('move-to-trash-direct', path),
   onOpenSettings: (cb) => ipcRenderer.on('open-settings', () => cb()),
   showItemInFolder: (path) => ipcRenderer.send('show-item-in-folder', path),
+  openNativeProperties: (path) => ipcRenderer.send('open-native-properties', path),
+  getFileInfo:    (path) => ipcRenderer.invoke('get-file-info', path),
   validatePaths:  (paths) => ipcRenderer.invoke('validate-paths', paths),
   registerContextMenu: (enable, lang) => ipcRenderer.invoke('register-context-menu', enable, lang)
 });

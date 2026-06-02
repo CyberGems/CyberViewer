@@ -135,18 +135,54 @@
     margin-right: 20px;
   }
   
-  .bulb {
-    width: 8px;
-    height: 8px;
-    background: #aaff00;
-    border-radius: 50%;
-    box-shadow: 0 0 6px rgba(170,255,0,0.4);
+  .footer-ico {
+    width: 14px;
+    height: 14px;
     display: inline-block;
     vertical-align: middle;
     margin-right: 8px;
-    opacity: 0.8;
-    will-change: opacity;
-    animation: bulb-breathe 4s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  /* Slider Zoom - invisible pero funcional */
+  #zoom-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 80px;
+    height: 2px;
+    background: rgba(var(--cyber-accent3-rgb), 0.25);
+    border-radius: 1px;
+    outline: none;
+    margin: 0 6px;
+    cursor: pointer;
+    vertical-align: middle;
+    padding: 0;
+    border: none;
+  }
+  #zoom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--cyber-accent3);
+    box-shadow: 0 0 6px rgba(var(--cyber-accent3-rgb), 0.6);
+    cursor: pointer;
+    border: none;
+  }
+  #zoom-slider::-moz-range-thumb {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--cyber-accent3);
+    box-shadow: 0 0 6px rgba(var(--cyber-accent3-rgb), 0.6);
+    cursor: pointer;
+    border: none;
+  }
+  #zoom-slider::-moz-range-track {
+    background: rgba(var(--cyber-accent3-rgb), 0.25);
+    height: 2px;
+    border: none;
   }
   @keyframes bulb-breathe {
     0%, 100% { opacity: 0.3; }
@@ -181,8 +217,9 @@
     bottom: 0 !important;
   }
   body.ghost-mode #sidebar { display: none !important; }
+  body.ghost-mode #sidebar-handle { display: none !important; }
   body.ghost-mode #zoom-hud {
-    top: 60px;
+    top: 120px;
   }
 
   /* ── CYBER STATUSBAR TOOLTIPS ── */
@@ -193,7 +230,7 @@
   .cyber-tooltip::after {
     content: attr(data-tooltip);
     position: absolute;
-    bottom: 34px;
+    bottom: 64px;
     left: 50%;
     transform: translateX(-50%) translateY(8px);
     background: rgba(8, 12, 18, 0.96);
@@ -209,20 +246,20 @@
     transition: opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1), transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1000000;
     letter-spacing: 0.5px;
-    border: 1px solid var(--cyber-border);
-    box-shadow: 0 -4px 15px rgba(0,0,0,0.5);
+    border: 1px solid var(--cyber-accent);
+    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.3);
     text-transform: none;
   }
 
   .cyber-tooltip::before {
     content: '';
     position: absolute;
-    bottom: 28px;
+    bottom: 58px;
     left: 50%;
     transform: translateX(-50%) translateY(8px);
     border-width: 6px 6px 0;
     border-style: solid;
-    border-color: var(--cyber-border) transparent transparent transparent;
+    border-color: var(--cyber-accent) transparent transparent transparent;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1), transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
@@ -235,21 +272,84 @@
     transform: translateX(-50%) translateY(0);
   }
 
-  /* Radar: Cyan glowing tooltip */
+  .cyber-tooltip:hover {
+    z-index: 1010000 !important;
+  }
+
+  /* Tooltip Bottom */
+  .cyber-tooltip.tooltip-bottom::after {
+    bottom: auto;
+    top: 64px;
+    transform: translateX(-50%) translateY(-8px) !important;
+  }
+  .cyber-tooltip.tooltip-bottom::before {
+    bottom: auto;
+    top: 58px;
+    transform: translateX(-50%) translateY(-8px) !important;
+    border-width: 0 6px 6px 6px;
+    border-color: transparent transparent var(--cyber-accent) transparent;
+  }
+  .cyber-tooltip.tooltip-bottom:hover::after,
+  .cyber-tooltip.tooltip-bottom:hover::before {
+    transform: translateX(-50%) translateY(0) !important;
+  }
+
+  /* Tooltip Left */
+  .cyber-tooltip.tooltip-left::after {
+    bottom: auto;
+    left: auto;
+    right: 58px;
+    top: 50%;
+    transform: translateY(-50%) translateX(8px) !important;
+  }
+  .cyber-tooltip.tooltip-left::before {
+    bottom: auto;
+    left: auto;
+    right: 52px;
+    top: 50%;
+    transform: translateY(-50%) translateX(8px) !important;
+    border-width: 6px 0 6px 6px;
+    border-color: transparent transparent transparent var(--cyber-accent);
+  }
+  .cyber-tooltip.tooltip-left:hover::after,
+  .cyber-tooltip.tooltip-left:hover::before {
+    transform: translateY(-50%) translateX(0) !important;
+  }
+
+  /* Tooltip Right */
+  .cyber-tooltip.tooltip-right::after {
+    bottom: auto;
+    left: 58px;
+    right: auto;
+    top: 50%;
+    transform: translateY(-50%) translateX(-8px) !important;
+  }
+  .cyber-tooltip.tooltip-right::before {
+    bottom: auto;
+    left: 52px;
+    right: auto;
+    top: 50%;
+    transform: translateY(-50%) translateX(-8px) !important;
+    border-width: 6px 6px 6px 0;
+    border-color: transparent var(--cyber-accent) transparent transparent;
+  }
+  .cyber-tooltip.tooltip-right:hover::after,
+  .cyber-tooltip.tooltip-right:hover::before {
+    transform: translateY(-50%) translateX(0) !important;
+  }
+
+  /* Radar specific positions */
   #footer-radar.cyber-tooltip::after {
     left: 0;
     transform: translateY(8px);
-    border-color: var(--cyber-accent);
-    box-shadow: 0 0 10px rgba(0, 212, 255, 0.35);
     white-space: pre-wrap;
     width: max-content;
     max-width: 320px;
     line-height: 1.5;
   }
   #footer-radar.cyber-tooltip::before {
-    left: 15px; /* Aligned with the green bulb */
+    left: 15px;
     transform: translateY(8px);
-    border-color: var(--cyber-accent) transparent transparent transparent;
   }
   #footer-radar.cyber-tooltip:hover::after,
   #footer-radar.cyber-tooltip:hover::before {
@@ -423,6 +523,100 @@
   .win-sep { width: 1px; height: 20px; background: var(--cyber-border); margin: 0 4px; flex-shrink: 0; }
   #btn-config { font-size: 17px; }
 
+  /* ── MAIN MENU (☰) ── */
+  .menu-wrap { position: relative; -webkit-app-region: no-drag; }
+  .menu-ico { width: 18px; height: 18px; display: block; }
+  #btn-menu.open { border-color: var(--cyber-accent); color: var(--cyber-accent); background: rgba(0,212,255,0.10); }
+
+  .menu-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 212px;
+    background: var(--cyber-panel);
+    border: 1px solid var(--cyber-accent);
+    border-radius: 6px;
+    box-shadow: 0 0 24px rgba(var(--cyber-accent-rgb), 0.22), 0 10px 34px rgba(0,0,0,0.6);
+    padding: 6px;
+    z-index: 1000000;
+    display: none;
+    font-family: 'Share Tech Mono', monospace;
+  }
+  .menu-panel.open { display: block; animation: menuIn 150ms cubic-bezier(.4,0,.2,1); }
+  @keyframes menuIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .menu-brand {
+    font-size: 10px;
+    letter-spacing: 2px;
+    font-weight: 700;
+    color: var(--cyber-muted);
+    padding: 6px 12px 9px;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(var(--cyber-accent-rgb), 0.15);
+    margin-bottom: 4px;
+  }
+
+  .menu-cat, .menu-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 10px;
+    padding: 7px 12px;
+    background: none;
+    border: 0;
+    border-radius: 4px;
+    color: var(--cyber-accent);
+    font: inherit;
+    font-size: 12px;
+    letter-spacing: .5px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 120ms ease, color 120ms ease;
+  }
+  .menu-cat .menu-label, .menu-item .menu-label { flex: 1; white-space: nowrap; }
+  .menu-arrow { color: var(--cyber-muted); font-size: 16px; line-height: 1; }
+  .menu-shortcut { color: var(--cyber-muted); font-size: 10px; letter-spacing: .5px; flex-shrink: 0; }
+
+  .menu-cat:hover, .menu-item:hover {
+    background: var(--cyber-accent);
+    color: var(--cyber-black);
+    box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.35);
+  }
+  .menu-cat:hover .menu-arrow,
+  .menu-cat:hover .menu-shortcut,
+  .menu-item:hover .menu-shortcut { color: var(--cyber-black); }
+  .menu-item.danger:hover { background: var(--cyber-accent2); box-shadow: 0 0 12px rgba(var(--cyber-accent2-rgb), 0.4); }
+
+  .menu-divider { height: 1px; margin: 5px 8px; background: rgba(var(--cyber-accent-rgb), 0.16); }
+
+  /* flyout submenu opens to the LEFT (button sits on the right edge) */
+  .menu-sub {
+    position: absolute;
+    top: -7px;
+    right: calc(100% + 4px);
+    min-width: 216px;
+    background: var(--cyber-panel);
+    border: 1px solid var(--cyber-accent);
+    border-radius: 6px;
+    box-shadow: 0 0 24px rgba(var(--cyber-accent-rgb), 0.22), 0 10px 34px rgba(0,0,0,0.6);
+    padding: 6px;
+    display: none;
+  }
+  .menu-cat:hover > .menu-sub,
+  .menu-cat:focus-within > .menu-sub { display: block; }
+  /* transparent bridge so hover survives the gap between cat and submenu */
+  .menu-cat[data-sub]::after { content: ''; position: absolute; top: 0; right: 100%; width: 8px; height: 100%; }
+
+  .menu-check { width: 13px; font-size: 11px; color: var(--cyber-accent3); flex-shrink: 0; }
+  .menu-item:not(.checked) .menu-check { visibility: hidden; }
+  .menu-item.checked:hover .menu-check { color: var(--cyber-black); }
+
+  .menu-item.disabled { opacity: .32; pointer-events: none; }
+
   /* ── SIDEBAR THUMBNAILS ── */
 
   /* ── SIDEBAR THUMBNAILS ── */
@@ -434,10 +628,15 @@
   .hud-hidden-bottom { transform: translateY(100%) !important; opacity: 0 !important; pointer-events: none; }
   .hud-hidden-fade { opacity: 0 !important; pointer-events: none; }
   
+  .no-hud-transition,
+  .no-hud-transition * {
+    transition: none !important;
+  }
+  
   #ghost-close {
     position: fixed;
-    top: 16px;
-    right: 16px;
+    top: 76px;
+    right: 32px;
     width: 32px;
     height: 32px;
     background: rgba(13, 17, 23, 0.85);
@@ -479,39 +678,44 @@
   
   #sidebar-handle {
     position: absolute;
-    top: 120px;
+    top: 0;
+    bottom: 0;
     left: var(--panel-w);
-    width: 14px;
-    height: 60px;
+    width: 6px;
     z-index: 999;
-    background: var(--cyber-panel);
-    border: 1px solid var(--cyber-border);
-    border-left: none;
-    border-radius: 0 4px 4px 0;
+    background: var(--cyber-border);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 2px 0 8px rgba(0,0,0,0.5);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 10px;
-    color: var(--cyber-muted);
-    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, width 0.2s ease;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
     user-select: none;
   }
   #sidebar-handle:hover {
-    width: 17px;
+    background: var(--cyber-accent);
+    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.5);
+  }
+  #sidebar-handle-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: var(--cyber-panel);
+    border: 1px solid var(--cyber-border);
+    border-radius: 50%;
+    font-size: 8px;
+    color: var(--cyber-muted);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+  #sidebar-handle:hover #sidebar-handle-arrow {
     background: var(--cyber-dim);
     border-color: var(--cyber-accent);
     color: var(--cyber-accent);
-    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.3);
-  }
-  #sidebar-handle-arrow {
-    display: inline-block;
-    transition: transform 0.2s ease;
-  }
-  #sidebar-handle:hover #sidebar-handle-arrow {
-    transform: scale(1.2);
+    box-shadow: 0 0 8px rgba(var(--cyber-accent-rgb), 0.5);
+    transform: scale(1.1);
   }
   
   #sidebar-scroll {
@@ -771,42 +975,49 @@
     box-shadow: 0 0 30px rgba(0,212,255,0.2);
   }
 
-  /* ── NAV ARROWS ── */
-  .nav-btn {
+  #nav-container {
     position: absolute;
     top: 50%;
+    right: 32px;
     transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     z-index: 5;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+    will-change: transform, opacity;
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  #nav-container.hud-hidden-fade {
+    opacity: 0 !important;
+    transform: translateY(-50%) translateX(20px) !important;
+    pointer-events: none !important;
+  }
+
+  .nav-btn {
     background: rgba(13,17,23,0.85);
     border: 1px solid var(--cyber-border);
     color: var(--cyber-muted);
-    width: 40px;
-    height: 64px;
+    width: 44px;
+    height: 44px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 26px;
+    font-size: 14px;
     font-family: 'Share Tech Mono', monospace;
-    border-radius: 3px;
+    border-radius: 4px;
     transition: all var(--transition);
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  #viewer-wrap:hover .nav-btn {
-    opacity: 1;
-    pointer-events: all;
   }
 
   .nav-btn:hover {
     border-color: var(--cyber-accent);
     color: var(--cyber-accent);
     background: rgba(0,212,255,0.08);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
   }
-
-  #btn-prev { left: 12px; }
-  #btn-next { right: 12px; }
 
   /* ── LOGO ── */
 
@@ -857,7 +1068,7 @@
   #zoom-hud {
     position: absolute;
     top: 12px;
-    right: 12px;
+    right: 32px;
     z-index: 6;
     background: rgba(13,17,23,0.9);
     border: 1px solid var(--cyber-border);
@@ -950,7 +1161,14 @@
     box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.1);
     -webkit-app-region: no-drag;
   }
-  
+  .kbd-ico {
+    width: 14px;
+    height: 14px;
+    vertical-align: -3px;
+    margin-right: 6px;
+    flex-shrink: 0;
+  }
+
   /* ── CROP UI PRO ── */
   #crop-overlay {
     position: absolute;
@@ -1126,6 +1344,137 @@
     gap: 12px;
   }
 
+  /* ── CUSTOM CONFIRM BOX ── */
+  .confirm-modal-box {
+    max-width: 420px;
+    border: 1px solid var(--cyber-accent2);
+    box-shadow: 0 0 25px rgba(255, 45, 120, 0.25);
+  }
+  
+  .confirm-content-layout {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+  }
+  
+  .confirm-icon-container {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    background: rgba(255, 45, 120, 0.1);
+    border: 1px solid rgba(255, 45, 120, 0.3);
+    color: var(--cyber-accent2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+    box-shadow: 0 0 10px rgba(255, 45, 120, 0.15);
+  }
+  
+  .confirm-text-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .confirm-message {
+    font-size: 13px;
+    color: #fff;
+    font-family: 'Share Tech Mono', monospace;
+    line-height: 1.4;
+  }
+  
+  .confirm-detail {
+    font-size: 11px;
+    color: var(--cyber-muted);
+    font-family: 'Share Tech Mono', monospace;
+    word-break: break-all;
+  }
+  
+  #btn-confirm-ok {
+    border-color: var(--cyber-accent2) !important;
+    color: var(--cyber-accent2) !important;
+  }
+  #btn-confirm-ok:hover {
+    background: rgba(255, 45, 120, 0.15) !important;
+    box-shadow: 0 0 12px rgba(255, 45, 120, 0.4) !important;
+  }
+
+  /* ── PROPERTIES PANEL ── */
+  .props-modal-box {
+    max-width: 460px;
+    border: 1px solid var(--cyber-border);
+    box-shadow: 0 0 30px rgba(0,0,0,0.6), 0 0 2px rgba(var(--cyber-accent-rgb), 0.3);
+    overflow: visible;
+  }
+  .props-layout { display: flex; gap: 18px; align-items: flex-start; }
+  .props-preview {
+    width: 96px; height: 96px; flex-shrink: 0;
+    border-radius: 6px;
+    border: 1px solid var(--cyber-border);
+    background: var(--cyber-black);
+    object-fit: contain;
+    box-shadow: 0 0 12px rgba(0,0,0,0.5);
+  }
+  .props-rows { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .props-row {
+    display: flex; justify-content: space-between; gap: 12px;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(30,42,58,0.4);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+  }
+  .props-row:last-child { border-bottom: none; }
+  .props-key {
+    color: var(--cyber-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  .props-val { color: var(--cyber-text); text-align: right; word-break: break-word; }
+  .props-path-row { flex-direction: column; gap: 4px; align-items: flex-start; }
+  .props-path-row .props-val {
+    text-align: left;
+    color: var(--cyber-accent);
+    font-size: 11px;
+    word-break: break-all;
+  }
+  .props-native-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--cyber-muted);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px; letter-spacing: 1px;
+    padding: 6px 8px; margin-right: auto;
+    display: inline-flex; align-items: center; gap: 6px;
+    border-radius: 4px;
+    transition: color 150ms, background 150ms;
+  }
+  .props-native-btn:hover {
+    color: var(--cyber-accent);
+    background: rgba(var(--cyber-accent-rgb), 0.08);
+  }
+  /* Tooltip del botón de propiedades nativas (reposicionado para no cortarse) */
+  #props-native-btn.cyber-tooltip::after {
+    bottom: calc(100% + 10px);
+    left: 0;
+    transform: translateX(0) translateY(8px);
+    white-space: normal;
+    max-width: 280px;
+    line-height: 1.4;
+    text-align: left;
+  }
+  #props-native-btn.cyber-tooltip::before {
+    bottom: calc(100% + 4px);
+    left: 20px;
+    transform: translateX(0) translateY(8px);
+  }
+  #props-native-btn.cyber-tooltip:hover::after,
+  #props-native-btn.cyber-tooltip:hover::before {
+    transform: translateX(0) translateY(0);
+  }
+
   /* ── CONFIG GROUPS ── */
   .config-section { margin-bottom: 24px; }
   .config-section:last-child { margin-bottom: 0; }
@@ -1249,26 +1598,7 @@
     100% { stroke-dashoffset: 80; transform: rotate(360deg); }
   }
 
-  /* ── FULLSCREEN INDICATOR ── */
-  #fs-badge {
-    position: fixed;
-    top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 100;
-    background: rgba(0,0,0,0.8);
-    border: 1px solid var(--cyber-accent2);
-    color: var(--cyber-accent2);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
-    padding: 4px 12px;
-    border-radius: 3px;
-    letter-spacing: 2px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 300ms ease;
-  }
-  #fs-badge.show { opacity: 1; }
+
 
   /* ── DRAG OVER OVERLAY ── */
   #drag-overlay {
@@ -1367,17 +1697,83 @@
     </div>
     <div class="hint-sep">|</div>
     <div class="hint-group">
-      <kbd class="cyber-key">G</kbd>
-      <span class="hint-txt" data-i18n="ghost_hint_txt">GHOST</span>
+      <kbd class="cyber-key">Enter</kbd>
+      <span class="hint-txt" data-i18n="fullscreen">PANTALLA</span>
     </div>
   </div>
+  <div class="menu-wrap">
+    <button class="win-btn tooltip-bottom" id="btn-menu" data-i18n-title="menu" title="Menú" style="margin-left:5px"><svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <div id="main-menu" class="menu-panel">
+      <div class="menu-brand">CYBER<span style="color:var(--cyber-accent3)">VIEWER</span></div>
+
+      <div class="menu-cat" data-sub>
+        <span class="menu-label" data-i18n="menu_file">ARCHIVO</span><span class="menu-arrow">&#8250;</span>
+        <div class="menu-sub">
+          <button class="menu-item" data-action="open-folder"><span class="menu-label" data-i18n="menu_open">Abrir imagen</span><span class="menu-shortcut">Ctrl+O</span></button>
+          <button class="menu-item" data-action="show-folder" data-needs-image><span class="menu-label" data-i18n="menu_show">Mostrar en explorador</span><span class="menu-shortcut">Ctrl+&#8679;O</span></button>
+          <div class="menu-divider"></div>
+          <button class="menu-item" data-action="save" data-needs-image><span class="menu-label" data-i18n="menu_save">Guardar</span><span class="menu-shortcut">Ctrl+S</span></button>
+          <button class="menu-item" data-action="copy" data-needs-image><span class="menu-label" data-i18n="menu_copy">Copiar imagen</span><span class="menu-shortcut">Ctrl+C</span></button>
+          <button class="menu-item" data-action="properties" data-needs-image><span class="menu-label" data-i18n="menu_props">Propiedades</span></button>
+          <div class="menu-divider"></div>
+          <button class="menu-item danger" data-action="trash" data-needs-image><span class="menu-label" data-i18n="menu_trash">Mover a papelera</span><span class="menu-shortcut">Del</span></button>
+        </div>
+      </div>
+
+      <div class="menu-cat" data-sub>
+        <span class="menu-label" data-i18n="menu_edit">EDITAR</span><span class="menu-arrow">&#8250;</span>
+        <div class="menu-sub">
+          <button class="menu-item" data-action="rotate-left" data-needs-image><span class="menu-label" data-i18n="menu_rotate_l">Rotar izquierda</span><span class="menu-shortcut">Q</span></button>
+          <button class="menu-item" data-action="rotate-right" data-needs-image><span class="menu-label" data-i18n="menu_rotate_r">Rotar derecha</span><span class="menu-shortcut">E</span></button>
+          <div class="menu-divider"></div>
+          <button class="menu-item" data-action="crop" data-needs-image><span class="menu-label" data-i18n="menu_crop">Recortar</span><span class="menu-shortcut">C</span></button>
+          <button class="menu-item" data-action="resize" data-needs-image><span class="menu-label" data-i18n="menu_resize">Redimensionar</span><span class="menu-shortcut">R</span></button>
+        </div>
+      </div>
+
+      <div class="menu-cat" data-sub>
+        <span class="menu-label" data-i18n="menu_view">VISTA</span><span class="menu-arrow">&#8250;</span>
+        <div class="menu-sub">
+          <button class="menu-item" data-action="fit" data-needs-image><span class="menu-label" data-i18n="menu_fit">Ajustar a ventana</span><span class="menu-shortcut">F</span></button>
+          <button class="menu-item" data-action="original" data-needs-image><span class="menu-label" data-i18n="menu_original">Tamaño real (1:1)</span><span class="menu-shortcut">1</span></button>
+          <button class="menu-item" data-action="fullscreen" data-needs-image><span class="menu-label" data-i18n="menu_fullscreen">Pantalla completa</span><span class="menu-shortcut">Enter</span></button>
+          <div class="menu-divider"></div>
+          <button class="menu-item" data-action="sidebar"><span class="menu-check">&#10003;</span><span class="menu-label" data-i18n="menu_sidebar">Barra lateral</span></button>
+          <button class="menu-item" data-action="autohide"><span class="menu-check">&#10003;</span><span class="menu-label" data-i18n="menu_autohide">Auto-ocultar HUD</span></button>
+        </div>
+      </div>
+
+      <div class="menu-cat" data-sub>
+        <span class="menu-label" data-i18n="menu_go">NAVEGAR</span><span class="menu-arrow">&#8250;</span>
+        <div class="menu-sub">
+          <button class="menu-item" data-action="next" data-needs-image><span class="menu-label" data-i18n="menu_next">Imagen siguiente</span><span class="menu-shortcut">D</span></button>
+          <button class="menu-item" data-action="prev" data-needs-image><span class="menu-label" data-i18n="menu_prev">Imagen anterior</span><span class="menu-shortcut">A</span></button>
+          <div class="menu-divider"></div>
+          <button class="menu-item" data-action="favorite" data-needs-image><span class="menu-label" data-i18n="menu_favorite">Favorito</span><span class="menu-shortcut">Ctrl+D</span></button>
+          <button class="menu-item" data-action="favorites-view"><span class="menu-label" data-i18n="menu_favs_view">Ver favoritos</span></button>
+        </div>
+      </div>
+
+      <div class="menu-divider"></div>
+      <button class="menu-item menu-flat" data-action="preferences"><span class="menu-label" data-i18n="menu_prefs">Preferencias</span><span class="menu-shortcut">Ctrl+,</span></button>
+
+      <div class="menu-cat" data-sub>
+        <span class="menu-label" data-i18n="menu_help">AYUDA</span><span class="menu-arrow">&#8250;</span>
+        <div class="menu-sub">
+          <button class="menu-item" data-action="about"><span class="menu-label" data-i18n="menu_about">Acerca de</span></button>
+          <button class="menu-item" data-action="check-updates"><span class="menu-label" data-i18n="menu_updates">Buscar actualizaciones</span></button>
+          <div class="menu-divider"></div>
+          <button class="menu-item" data-action="devtools"><span class="menu-label" data-i18n="menu_devtools">Herramientas de desarrollo</span><span class="menu-shortcut">Ctrl+&#8679;I</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <button class="win-btn tooltip-bottom" id="btn-config" data-i18n-title="config" title="Configuración" style="display:none">&#9881;&#xFE0E;</button>
+  <button class="win-btn tooltip-bottom" id="btn-about" data-i18n-title="about" title="Acerca de CyberViewer" style="display:none">&#9432;&#xFE0E;</button>
   <div class="win-sep"></div>
-  <button class="win-btn" id="btn-config" data-i18n-title="config" title="Configuración" style="margin-left:5px">&#9881;&#xFE0E;</button>
-  <button class="win-btn" id="btn-about" data-i18n-title="about" title="Acerca de CyberViewer">&#9432;&#xFE0E;</button>
-  <div class="win-sep"></div>
-  <button class="win-btn" id="win-min" data-i18n-title="minimize" title="Minimizar">&#8722;</button>
-  <button class="win-btn" id="win-max" data-i18n-title="maximize" title="Maximizar">&#9633;</button>
-  <button class="win-btn" id="win-close" data-i18n-title="close" title="Cerrar">&#10005;</button>
+  <button class="win-btn tooltip-bottom" id="win-min" data-i18n-title="minimize" title="Minimizar">&#8722;</button>
+  <button class="win-btn tooltip-bottom" id="win-max" data-i18n-title="maximize" title="Maximizar">&#9633;</button>
+  <button class="win-btn tooltip-bottom" id="win-close" data-i18n-title="close" title="Cerrar">&#10005;</button>
 </div>
 <div id="app">
 
@@ -1391,7 +1787,7 @@
       </div>
       <div id="sidebar-controls" style="gap: 6px;">
         <div id="img-counter"></div>
-        <button class="kbd-btn" id="btn-center" data-i18n="center" style="width: 100%; font-size:11px; height: 28px; padding: 4px 12px !important">CENTRAR</button>
+        <button class="kbd-btn" id="btn-center" data-i18n="center" data-i18n-title="center_title" style="width: 100%; font-size:11px; height: 28px; padding: 4px 12px !important">CENTRAR</button>
         <button class="kbd-btn" id="btn-toggle-favs" title="Mostrar Favoritos" style="width: 100%; font-size:11px; height: 28px; padding: 4px 12px !important; display: flex; align-items: center; justify-content: center; gap: 6px;">
           <span class="fav-star">&#9733;</span> <span class="fav-lbl" data-i18n="show_favorites_lbl">FAVORITOS</span>
         </button>
@@ -1399,7 +1795,7 @@
     </div>
 
     <!-- HANDLE -->
-    <div id="sidebar-handle" data-i18n-title="sidebar_title" title="Panel lateral"><span id="sidebar-handle-arrow">◂</span></div>
+    <div id="sidebar-handle" class="tooltip-right" data-i18n-title="sidebar_title" title="Panel lateral"><span id="sidebar-handle-arrow">◂</span></div>
 
     <!-- VIEWER -->
     <div id="viewer-wrap">
@@ -1447,16 +1843,18 @@
       <div id="drag-overlay"></div>
 
       <!-- NAV -->
-      <button class="nav-btn" id="btn-prev">&#8249;</button>
-      <button class="nav-btn" id="btn-next">&#8250;</button>
+      <div id="nav-container">
+        <button class="nav-btn cyber-tooltip tooltip-left" id="btn-prev" data-i18n-tooltip="prev_title">&#9650;</button>
+        <button class="nav-btn cyber-tooltip tooltip-left" id="btn-next" data-i18n-tooltip="next_title">&#9660;</button>
+      </div>
 
       <!-- ZOOM HUD -->
       <div id="zoom-hud">&#9741; <span id="zoom-val">100%</span></div>
 
       <!-- INTERACTIVE HUD -->
       <div id="kbd-hint">
-        <button class="kbd-btn" id="btn-open-hud" data-i18n-title="open_title" title="Abrir (Ctrl+O)">&#128193;&#xFE0E; <span data-i18n="open_dir">ABRIR</span></button>
-        <button class="kbd-btn" id="btn-show-folder" data-i18n-title="show_folder_title" title="Mostrar en Carpeta (Ctrl+Shift+O)">&#128194;&#xFE0E; <span data-i18n="show_folder">SHOW</span></button>
+        <button class="kbd-btn" id="btn-open-hud" data-i18n-title="open_title" title="Abrir (Ctrl+O)"><svg class="kbd-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/></svg><span data-i18n="open_dir">ABRIR</span></button>
+        <button class="kbd-btn" id="btn-show-folder" data-i18n-title="show_folder_title" title="Mostrar en Carpeta (Ctrl+Shift+O)"><svg class="kbd-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><path d="m9.5 14.5 5-5"/><path d="M11 9.5h3.5V13"/></svg><span data-i18n="show_folder">SHOW</span></button>
         <div class="kbd-sep"></div>
         <button class="kbd-btn" id="btn-fit-hud" data-i18n-title="fit_title" title="Ajustar (F)"><span data-i18n="fit_to_window">AJUSTAR</span></button>
         <button class="kbd-btn" id="btn-orig-hud" data-i18n-title="orig_title" title="Original (1)">1:1</button>
@@ -1476,7 +1874,6 @@
         <button class="kbd-btn" id="btn-trash" data-i18n-title="trash_title" title="Mover a la Papelera (Delete)" style="color:var(--cyber-accent2)">&#128465;&#xFE0E;</button>
         <div class="kbd-sep"></div>
         <button class="kbd-btn" id="btn-fav" data-i18n-title="fav_title" title="Favorito (Ctrl+D)">&#9734;</button>
-        <button class="kbd-btn" id="btn-ghost" data-i18n-title="ghost_title" title="Modo Ghost (G)">&#128065;</button>
       </div>
     </div>
 
@@ -1485,9 +1882,9 @@
   <div id="statusbar">
     <div id="radar-wrapper">
       <div class="footer-center cyber-tooltip" id="footer-radar" data-i18n-tooltip="radar_tooltip" data-tooltip="RADAR: Total de carpeta actual escaneado / Miniaturas en memoria">
-        <span class="bulb"></span>
-        <span style="opacity:0.8" data-i18n="radar_lbl">RADAR:</span> 
-        <span id="radar-pct">0%</span> 
+        <svg class="footer-ico" style="color:#aaff00" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+        <span style="opacity:0.8" data-i18n="radar_lbl">RADAR:</span>
+        <span id="radar-pct">0%</span>
         <span id="radar-count" style="color:var(--cyber-accent); margin-left: 5px"> [0/0] </span>
       </div>
 
@@ -1495,32 +1892,85 @@
     </div>
 
     <div class="footer-right cyber-tooltip" id="footer-size" data-i18n-tooltip="size_tooltip" data-tooltip="LIENZO: Resolución física en píxeles de la imagen">
-      <span class="bulb" style="background: var(--cyber-accent2); box-shadow: 0 0 6px rgba(255,45,120,0.4);"></span>
+      <svg class="footer-ico" style="color:var(--cyber-accent2)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>
       <span id="img-dims">0 x 0px</span>
     </div>
 
     <div class="footer-sep"></div>
 
     <div class="footer-right cyber-tooltip" id="footer-weight" data-i18n-tooltip="weight_tooltip" data-tooltip="PESO: Peso del archivo en disco">
-      <span class="bulb" style="background: var(--cyber-accent); box-shadow: 0 0 6px rgba(0,212,255,0.4);"></span>
+      <svg class="footer-ico" style="color:var(--cyber-accent)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
       <span id="img-weight">0 KB</span>
     </div>
 
     <div class="footer-sep"></div>
 
     <div class="footer-right cyber-tooltip" id="footer-zoom" data-i18n-tooltip="zoom_tooltip" data-tooltip="ESCALA DE VISTA: Porcentaje de zoom aplicado en el visor">
-      <span class="bulb" style="background: var(--cyber-accent3); box-shadow: 0 0 6px rgba(170,255,0,0.4);"></span>
-      <span style="opacity:0.8" data-i18n="zoom_lbl">ZOOM:</span>
-      <span id="zoom-pct" style="margin-left: 5px">100%</span>
+      <svg class="footer-ico" style="color:var(--cyber-accent3)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="range" id="zoom-slider" min="0" max="1000" value="500" step="1">
+      <span id="zoom-pct">100%</span>
     </div>
   </div>
 
 </div>
 
 <!-- FILE INPUT -->
-<input type="file" id="file-input" accept="image/*" multiple style="display:none">
-<div id="fs-badge" data-i18n="fs_badge">FULLSCREEN</div>
-<button id="ghost-close" data-i18n-title="ghost_close_title" title="Cerrar CyberViewer (Vista Ghost)">&#10005;</button>
+<input type="file" id="file-input" accept="image/*" style="display:none">
+<button id="ghost-close" class="tooltip-left" data-i18n-title="ghost_close_title" title="Salir de Pantalla Completa">&#10005;</button>
+
+<!-- MODAL: CONFIRM -->
+<div id="modal-cyber-confirm" class="modal-overlay">
+  <div class="modal-box confirm-modal-box">
+    <div class="modal-header confirm-modal-header">
+      <div class="modal-title" id="confirm-title">MOVER A LA PAPELERA</div>
+      <button class="win-btn" onclick="closeModal('modal-cyber-confirm')">&#10005;</button>
+    </div>
+    <div class="modal-body confirm-modal-body">
+      <div class="confirm-content-layout">
+        <div class="confirm-icon-container" id="confirm-icon-box">
+          <span id="confirm-icon">&#128465;&#xFE0E;</span>
+        </div>
+        <div class="confirm-text-container">
+          <div class="confirm-message" id="confirm-message">¿Estás seguro de que quieres mover esta imagen a la papelera de reciclaje?</div>
+          <div class="confirm-detail" id="confirm-detail">imagen.png</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer confirm-modal-footer">
+      <button id="btn-confirm-cancel" class="top-btn">CANCELAR</button>
+      <button id="btn-confirm-ok" class="top-btn active">CONFIRMAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PROPERTIES -->
+<div id="modal-properties" class="modal-overlay">
+  <div class="modal-box props-modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="props-title">PROPIEDADES</div>
+      <button class="win-btn" onclick="closeModal('modal-properties')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="props-layout">
+        <img id="props-preview" class="props-preview" alt="">
+        <div class="props-rows">
+          <div class="props-row"><span class="props-key" id="props-k-name">Nombre</span><span class="props-val" id="props-name">-</span></div>
+          <div class="props-row"><span class="props-key" id="props-k-format">Formato</span><span class="props-val" id="props-format">-</span></div>
+          <div class="props-row"><span class="props-key" id="props-k-dims">Dimensiones</span><span class="props-val" id="props-dims">-</span></div>
+          <div class="props-row"><span class="props-key" id="props-k-size">Tamaño</span><span class="props-val" id="props-size">-</span></div>
+          <div class="props-row"><span class="props-key" id="props-k-modified">Modificado</span><span class="props-val" id="props-modified">-</span></div>
+          <div class="props-row props-path-row"><span class="props-key" id="props-k-path">Ruta</span><span class="props-val" id="props-path">-</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="props-native-btn" id="props-native-btn">
+        <span style="font-size:13px">&#9881;&#xFE0E;</span> <span id="props-native-label">Propiedades de Windows</span>
+      </button>
+      <button class="top-btn active" id="props-close-btn" onclick="closeModal('modal-properties')">CERRAR</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL: CONFIG -->
 <div id="modal-config" class="modal-overlay">
@@ -1568,6 +2018,34 @@
             <input type="checkbox" id="cfg-statusbar" checked>
             <span class="slider"></span>
           </label>
+        </div>
+        <div class="config-row">
+          <div class="config-info">
+            <div class="config-name" data-i18n="cfg_hud_autohide">Ocultar barra automáticamente</div>
+            <div class="config-desc" data-i18n="cfg_hud_autohide_desc">Ocultar barra flotante tras inactividad.</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="cfg-hud-autohide">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="config-row">
+          <div class="config-info">
+            <div class="config-name" data-i18n="cfg_nav_autohide">Ocultar botones de navegación</div>
+            <div class="config-desc" data-i18n="cfg_nav_autohide_desc">Ocultar botones de navegación tras inactividad.</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="cfg-nav-autohide">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="config-row" id="cfg-hud-delay-row">
+          <div class="config-info">
+            <div class="config-name" data-i18n="cfg_hud_delay">Retraso de ocultación</div>
+            <div class="config-desc" id="cfg-hud-delay-val">2.0s</div>
+          </div>
+          <input type="range" id="cfg-hud-delay" min="500" max="10000" step="500" value="2000" style="width:120px;accent-color:var(--cyber-accent);background:var(--cyber-dim);height:4px;border-radius:2px;cursor:pointer;">
         </div>
       </div>
 
@@ -1718,6 +2196,14 @@
 const isElectron = (typeof window.electronAPI !== 'undefined');
 const $ = id => document.getElementById(id);
 
+function setCyberTooltip(el, text) {
+  if (typeof el === 'string') el = $(el);
+  if (!el) return;
+  el.setAttribute('data-tooltip', text);
+  el.removeAttribute('title');
+  el.classList.add('cyber-tooltip');
+}
+
 const ZOOM_MIN = 0.05;
 const ZOOM_MAX = 20;
 const PRELOAD_RANGE = 2;
@@ -1733,7 +2219,6 @@ const dropZone   = $('drop-zone');
 const fileInput  = $('file-input');
 const zoomHud    = $('zoom-hud');
 const zoomVal    = $('zoom-val');
-const fsBadge    = $('fs-badge');
 const btnOpen    = $('btn-open');
 const btnConfig  = $('btn-config');
 const btnAbout   = $('btn-about');
@@ -1809,7 +2294,7 @@ const I18N = {
     radar_lbl: "RADAR:",
     zoom_lbl: "ZOOM:",
     fs_badge: "FULLSCREEN",
-    ghost_close_title: "Close CyberViewer (Ghost View)",
+    ghost_close_title: "Exit Fullscreen",
     config_title: "[CYBERVIEWER CONFIG]",
     personalization: "Personalization",
     accent_color: "Accent Color",
@@ -1850,7 +2335,7 @@ const I18N = {
     about_dev_tools: "OPEN DEVTOOLS",
     about_understood: "UNDERSTOOD",
     // Titles for HUD buttons
-    open_title: "Open Folder (Ctrl+O)",
+    open_title: "Open (Ctrl+O)",
     fit_title: "Fit to Window (F)",
     orig_title: "Original Size 1:1 (1)",
     fs_title: "Fullscreen (Enter)",
@@ -1886,13 +2371,57 @@ const I18N = {
     resize_create_copy_desc: "Save as a new file without overwriting the original.",
     show_folder: "SHOW",
     show_folder_title: "Show in Folder (Ctrl+Shift+O)",
+    menu: "Menu",
+    menu_file: "FILE",
+    menu_edit: "EDIT",
+    menu_view: "VIEW",
+    menu_go: "GO",
+    menu_help: "HELP",
+    menu_open: "Open image",
+    menu_show: "Show in Explorer",
+    menu_save: "Save",
+    menu_copy: "Copy Image",
+    menu_props: "Properties",
+    menu_trash: "Move to Trash",
+    menu_rotate_l: "Rotate Left",
+    menu_rotate_r: "Rotate Right",
+    menu_crop: "Crop",
+    menu_resize: "Resize",
+    menu_fit: "Fit to Window",
+    menu_original: "Actual Size (1:1)",
+    menu_fullscreen: "Fullscreen",
+    menu_sidebar: "Sidebar",
+    menu_autohide: "Auto-hide HUD",
+    menu_next: "Next Image",
+    menu_prev: "Previous Image",
+    menu_favorite: "Favorite",
+    menu_favs_view: "Favorites View",
+    menu_prefs: "Preferences",
+    menu_about: "About",
+    menu_updates: "Check for Updates",
+    menu_devtools: "Developer Tools",
     crop_hint_txt: "CROP",
     resize_hint_txt: "RESIZE",
     ghost_hint_txt: "GHOST",
     fav_title: "Favorite (Ctrl+D)",
     toast_load_image_first: "LOAD AN IMAGE FIRST",
     show_favorites_lbl: "FAVORITES",
-    show_all_lbl: "ALL IMAGES"
+    show_all_lbl: "ALL IMAGES",
+    about_check_updates: "Check for Updates",
+    about_manual_only: "Manual check only",
+    about_checking: "Checking updates...",
+    about_up_to_date: "CyberViewer is up to date.",
+    about_update_avail: "New version available!",
+    about_update_err: "Could not check updates.",
+    cfg_hud_autohide: "Auto-hide Toolbar",
+    cfg_hud_autohide_desc: "Hide the floating toolbar after inactivity.",
+    cfg_nav_autohide: "Auto-hide Nav Buttons",
+    cfg_nav_autohide_desc: "Hide navigation buttons after inactivity.",
+    cfg_hud_delay: "Inactivity Hide Delay",
+    cfg_seconds: "{seconds}s",
+    prev_title: "Previous Image (ArrowLeft / A)",
+    next_title: "Next Image (ArrowRight / D / Space)",
+    center_title: "Center active thumbnail in sidebar"
   },
   es: {
     no_images: "— sin imágenes —",
@@ -1924,7 +2453,7 @@ const I18N = {
     radar_lbl: "RADAR:",
     zoom_lbl: "ZOOM:",
     fs_badge: "PANTALLA COMPLETA",
-    ghost_close_title: "Cerrar CyberViewer (Vista Ghost)",
+    ghost_close_title: "Salir de Pantalla Completa",
     config_title: "[CYBERVIEWER CONFIG]",
     personalization: "Personalización",
     accent_color: "Color de Acento",
@@ -1965,7 +2494,7 @@ const I18N = {
     about_dev_tools: "ABRIR CONSOLA",
     about_understood: "ENTENDIDO",
     // Titles for HUD buttons
-    open_title: "Abrir carpeta (Ctrl+O)",
+    open_title: "Abrir (Ctrl+O)",
     fit_title: "Ajustar a la ventana (F)",
     orig_title: "Tamaño original 1:1 (1)",
     fs_title: "Pantalla completa (Enter)",
@@ -2001,13 +2530,57 @@ const I18N = {
     resize_create_copy_desc: "Guardar como archivo nuevo sin sobrescribir el original.",
     show_folder: "MOSTRAR",
     show_folder_title: "Mostrar en Carpeta (Ctrl+Shift+O)",
+    menu: "Menú",
+    menu_file: "ARCHIVO",
+    menu_edit: "EDITAR",
+    menu_view: "VISTA",
+    menu_go: "NAVEGAR",
+    menu_help: "AYUDA",
+    menu_open: "Abrir imagen",
+    menu_show: "Mostrar en explorador",
+    menu_save: "Guardar",
+    menu_copy: "Copiar imagen",
+    menu_props: "Propiedades",
+    menu_trash: "Mover a papelera",
+    menu_rotate_l: "Rotar izquierda",
+    menu_rotate_r: "Rotar derecha",
+    menu_crop: "Recortar",
+    menu_resize: "Redimensionar",
+    menu_fit: "Ajustar a ventana",
+    menu_original: "Tamaño real (1:1)",
+    menu_fullscreen: "Pantalla completa",
+    menu_sidebar: "Barra lateral",
+    menu_autohide: "Auto-ocultar HUD",
+    menu_next: "Imagen siguiente",
+    menu_prev: "Imagen anterior",
+    menu_favorite: "Favorito",
+    menu_favs_view: "Ver favoritos",
+    menu_prefs: "Preferencias",
+    menu_about: "Acerca de",
+    menu_updates: "Buscar actualizaciones",
+    menu_devtools: "Herramientas de desarrollo",
     crop_hint_txt: "RECORTAR",
     resize_hint_txt: "REDIM",
     ghost_hint_txt: "GHOST",
     fav_title: "Favorito (Ctrl+D)",
     toast_load_image_first: "CARGA UNA IMAGEN PRIMERO",
     show_favorites_lbl: "FAVORITOS",
-    show_all_lbl: "TODAS"
+    show_all_lbl: "TODAS",
+    about_check_updates: "Buscar Actualizaciones",
+    about_manual_only: "Solo buscar manualmente",
+    about_checking: "Buscando actualizaciones...",
+    about_up_to_date: "CyberViewer está actualizado.",
+    about_update_avail: "¡Nueva versión disponible!",
+    about_update_err: "No se pudo buscar actualizaciones.",
+    cfg_hud_autohide: "Ocultar barra automáticamente",
+    cfg_hud_autohide_desc: "Ocultar la barra de herramientas tras inactividad.",
+    cfg_nav_autohide: "Ocultar botones de navegación",
+    cfg_nav_autohide_desc: "Ocultar botones de navegación tras inactividad.",
+    cfg_hud_delay: "Retraso de ocultación",
+    cfg_seconds: "{seconds}s",
+    prev_title: "Imagen Anterior (ArrowLeft / A)",
+    next_title: "Imagen Siguiente (ArrowRight / D / Space)",
+    center_title: "Centrar miniatura activa en el panel lateral"
   }
 };
 
@@ -2026,7 +2599,7 @@ function updateLanguage(lang = 'en') {
   document.querySelectorAll('[data-i18n-title]').forEach(el => {
     const key = el.dataset.i18nTitle;
     if (I18N[lang] && I18N[lang][key] !== undefined) {
-      el.setAttribute('title', I18N[lang][key]);
+      setCyberTooltip(el, I18N[lang][key]);
     }
   });
 
@@ -2050,6 +2623,8 @@ function updateLanguage(lang = 'en') {
 
 // ── FILE HANDLING ──
 function loadFiles(files, initialIdx = 0) {
+  // Cancelar cualquier scan previo antes de reemplazar datos
+  state.scanInProgress = false;
   if (state.showingFavs) {
     state.showingFavs = false;
     if (typeof syncFavoritesToggleButtonState === 'function') {
@@ -2087,10 +2662,10 @@ async function scanFolder(filePath) {
   const neighbors = await window.electronAPI.scanFolder(filePath);
   if (neighbors.length > 0) {
     const files = neighbors.map(p => {
-      const name = p.split(/[\\/]/).pop();
-      return { name, path: p, size: 0, type: '' };
+      const name = p.path.split(/[\\/]/).pop();
+      return { name, path: p.path, size: p.size, type: '' };
     });
-    const targetIdx = neighbors.findIndex(p => p.toLowerCase() === filePath.toLowerCase());
+    const targetIdx = neighbors.findIndex(p => p.path.toLowerCase() === filePath.toLowerCase());
     loadFiles(files, targetIdx !== -1 ? targetIdx : 0);
   } else {
     const name = filePath.split(/[\\/]/).pop();
@@ -2103,6 +2678,7 @@ async function startBackgroundScan() {
   if (total === 0) return;
   
   let processed = 0;
+  let completedAll = true;
   state.scanInProgress = true;
   
   // ORDEN DE ESCANEO: Empezar desde el actual y expandirse (prioridad de cercanía)
@@ -2116,10 +2692,11 @@ async function startBackgroundScan() {
   for (const idx of order) {
     if (!state.scanInProgress || !state.sidebarOpen) {
       updateThumbProgress(processed, total, true);
+      completedAll = false;
       break;
     }
     const im = state.images[idx];
-    if (im.hidden) continue; // Saltar si está oculto
+    if (im.hidden) continue;
     
     await window.electronAPI.getThumbnail(im.file.path);
     processed++;
@@ -2130,6 +2707,10 @@ async function startBackgroundScan() {
     if (imgEl && imgEl.style.opacity === '0') {
       loadThumb(idx, imgEl);
     }
+  }
+  
+  if (completedAll) {
+    state.scanInProgress = false;
   }
 }
 
@@ -2205,15 +2786,44 @@ window.addEventListener('contextmenu', (e) => {
 
   const isInsideViewer = e.target.closest('#viewer-wrap');
   if (isInsideViewer && state.images.length > 0) {
+    const rect = mainImg.getBoundingClientRect();
+    const onImage = (
+      e.clientX >= rect.left &&
+      e.clientX <= rect.right &&
+      e.clientY >= rect.top &&
+      e.clientY <= rect.bottom
+    );
     const hiddenCount = state.images.filter(im => im.hidden).length;
-    window.electronAPI.showContextMenu({ 
-      type: 'main-image', 
-      path: state.images[state.currentIdx]?.file.path,
-      index: state.currentIdx,
-      hiddenCount: hiddenCount
-    });
+    const isFav = state.settings.app.favorites && state.images[state.currentIdx]?.file?.path && state.settings.app.favorites.includes(state.images[state.currentIdx].file.path);
+    if (onImage) {
+      window.electronAPI.showContextMenu({ 
+        type: 'image', 
+        path: state.images[state.currentIdx]?.file.path,
+        index: state.currentIdx,
+        hiddenCount: hiddenCount,
+        hasChanges: state.hasChanges,
+        isFavorite: isFav
+      });
+    } else {
+      window.electronAPI.showContextMenu({ 
+        type: 'canvas',
+        hasImages: true,
+        hiddenCount: hiddenCount,
+        path: state.images[state.currentIdx]?.file.path,
+        hudAutoHide: state.settings.app.hudAutoHide,
+        navAutoHide: state.settings.app.navAutoHide !== false,
+        isFavorite: isFav
+      });
+    }
   } else {
-    window.electronAPI.showContextMenu({ type: 'empty' });
+    window.electronAPI.showContextMenu({ 
+      type: 'canvas',
+      hasImages: false,
+      hiddenCount: 0,
+      hudAutoHide: state.settings.app.hudAutoHide,
+      navAutoHide: state.settings.app.navAutoHide !== false,
+      isFavorite: false
+    });
   }
 });
 
@@ -2256,6 +2866,30 @@ if (isElectron) {
       case 'go-end':
         showImage(state.images.length - 1, 'left', true);
         break;
+      case 'request-delete':
+        if (data.index !== undefined && data.path) {
+          const name = data.path.split(/[\\/]/).pop();
+          const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+          showCyberConfirm({
+            title: lang === 'es' ? 'Mover a la papelera' : 'Move to Trash',
+            message: lang === 'es' 
+              ? '¿Estás seguro de que quieres mover esta imagen a la papelera de reciclaje?' 
+              : 'Are you sure you want to move this image to the Recycle Bin?',
+            detail: name,
+            danger: true,
+            onConfirm: async () => {
+              try {
+                const result = await window.electronAPI.moveToTrashDirect(data.path);
+                if (result && result.success) {
+                  handleFileDeleted(data.index);
+                }
+              } catch (err) {
+                console.error('Error al mover a la papelera:', err);
+              }
+            }
+          });
+        }
+        break;
       case 'file-deleted':
         if (data.index !== undefined) {
           handleFileDeleted(data.index);
@@ -2267,18 +2901,152 @@ if (isElectron) {
       case 'show-config':
         btnConfig.click();
         break;
+      case 'toggle-autohide':
+        state.settings.app.hudAutoHide = !state.settings.app.hudAutoHide;
+        if (isElectron) {
+          window.electronAPI.saveSettings(state.settings.app);
+        }
+        applySettings();
+        resetHudTimer();
+        break;
+      case 'toggle-autohide-nav':
+        state.settings.app.navAutoHide = !state.settings.app.navAutoHide;
+        if (isElectron) {
+          window.electronAPI.saveSettings(state.settings.app);
+        }
+        applySettings();
+        resetHudTimer();
+        break;
+      case 'rotate-r-save':
+        rotateAndSave(90);
+        break;
+      case 'rotate-l-save':
+        rotateAndSave(-90);
+        break;
+      case 'crop':
+        const btnCrop = $('btn-crop');
+        if (btnCrop) btnCrop.click();
+        break;
+      case 'resize':
+        const btnResize = $('btn-resize');
+        if (btnResize) btnResize.click();
+        break;
+      case 'toggle-favorite':
+        toggleFavorite();
+        break;
       case 'show-about':
         btnAbout.click();
+        break;
+      case 'fit-to-window': {
+        const im = state.images[state.current];
+        if (im && im.w) {
+          state.viewMode = 'fit';
+          fitToWindow(im.w, im.h);
+        }
+        break;
+      }
+      case 'reset-zoom': {
+        const im = state.images[state.current];
+        if (im && im.w) {
+          state.viewMode = 'original';
+          state.zoom = 1;
+          state.panX = 0;
+          state.panY = 0;
+          applyTransform(false);
+          updateFileStats();
+        }
+        break;
+      }
+      case 'save-changes':
+        saveCurrent();
+        break;
+      case 'save-as':
+        if (data.targetPath) {
+          saveAsPath(data.targetPath);
+        }
+        break;
+      case 'show-properties':
+        showPropertiesPanel(data.path);
         break;
     }
   });
 }
 
+async function saveAsPath(targetPath) {
+  if (state.current === -1) return;
+  const im = state.images[state.current];
+  if (!mainImg.complete || mainImg.naturalWidth === 0) {
+    const lang = state.settings.app.language || 'en';
+    showToast(I18N[lang].toast_image_not_ready, 'error');
+    return;
+  }
+
+  const lang = state.settings.app.language || 'en';
+  showToast(lang === 'es' ? 'GUARDANDO COPIA...' : 'SAVING COPIA...', 'info');
+
+  try {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const iw = mainImg.naturalWidth;
+    const ih = mainImg.naturalHeight;
+    const rotation = state.currentRotation;
+
+    if (rotation === 90 || rotation === 270) {
+      canvas.width = ih;
+      canvas.height = iw;
+    } else {
+      canvas.width = iw;
+      canvas.height = ih;
+    }
+
+    const rad = rotation * Math.PI / 180;
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(rad);
+    ctx.drawImage(mainImg, -iw / 2, -ih / 2);
+
+    const dataUrl = canvas.toDataURL('image/png');
+    const base64Data = dataUrl.substring(dataUrl.indexOf(',') + 1);
+
+    const result = await window.electronAPI.saveImage({
+      filePath: targetPath,
+      buffer: base64Data
+    });
+
+    if (result.success) {
+      const currentPath = im.file ? im.file.path : null;
+      if (currentPath) {
+        const currentDir = currentPath.substring(0, Math.max(currentPath.lastIndexOf('\\'), currentPath.lastIndexOf('/')));
+        const targetDir = targetPath.substring(0, Math.max(targetPath.lastIndexOf('\\'), targetPath.lastIndexOf('/')));
+        
+        if (currentDir && targetDir && currentDir.toLowerCase() === targetDir.toLowerCase()) {
+          const newImg = {
+            file: {
+              name: targetPath.split(/[\\/]/).pop(),
+              path: targetPath,
+              size: 0
+            }
+          };
+          state.images.splice(state.current + 1, 0, newImg);
+          buildSidebar();
+          showImage(state.current + 1, null);
+        }
+      }
+      showToast(lang === 'es' ? 'COPIA GUARDADA' : 'COPY SAVED', 'success');
+    } else {
+      showToast(result.error || 'ERROR', 'error');
+    }
+  } catch (e) {
+    console.error('Error in saveAsPath:', e);
+    showToast('ERROR: ' + (e.message || 'Desconocido'), 'error');
+  }
+}
+
 async function loadThumb(i, imgEl) {
-  if (!state.sidebarOpen) return; 
+  if (!state.sidebarOpen) return;
   const im = state.images[i];
   
-  if (isElectron && im.file.path) {
+  if (isElectron && im.file?.path) {
     const thumbUrl = await window.electronAPI.getThumbnail(im.file.path);
     if (thumbUrl) {
       imgEl.onload = () => { imgEl.style.opacity = '1'; };
@@ -2383,7 +3151,8 @@ function showImage(idx, direction, isInitial = false) {
     if (viewerFilename) {
       viewerFilename.textContent = im.file.name;
       if (im.file.path) {
-        viewerFilename.title = im.file.path; // Tooltip con la ruta completa
+        setCyberTooltip(viewerFilename, im.file.path);
+        viewerFilename.classList.add('tooltip-bottom');
       }
     }
 
@@ -2439,7 +3208,7 @@ function displayImage(url, w, h, direction) {
     const vw = viewerWrap.clientWidth - 24;
     const vh = viewerWrap.clientHeight - 24;
     if (w && h) {
-      state.zoom = Math.min(vw / w, vh / h, 1);
+      state.zoom = Math.min(vw / w, vh / h);
     } else {
       state.zoom = 1;
     }
@@ -2499,6 +3268,11 @@ function rotate(deg) {
   state.hasChanges = true;
   updateSaveButton();
   updateHUDStates();
+}
+
+async function rotateAndSave(deg) {
+  rotate(deg);
+  await saveCurrent();
 }
 
 function updateSaveButton() {
@@ -3079,7 +3853,7 @@ function fitToWindow(w, h) {
   const vw = viewerWrap.clientWidth - 24;
   const vh = viewerWrap.clientHeight - 24;
   if (!w || !h) { state.zoom = 1; return; }
-  const scale = Math.min(vw / w, vh / h, 1);
+  const scale = Math.min(vw / w, vh / h);
   state.zoom = scale;
   state.panX = 0;
   state.panY = 0;
@@ -3095,14 +3869,52 @@ function applyTransform(animate) {
   updateZoomHUD();
 }
 
+function sliderToZoom(val) {
+  const minL = Math.log10(ZOOM_MIN);
+  const maxL = Math.log10(ZOOM_MAX);
+  const t = Math.max(0, Math.min(1, val / 1000));
+  return Math.pow(10, minL + (maxL - minL) * t);
+}
+
+function zoomToSlider(zoom) {
+  const minL = Math.log10(ZOOM_MIN);
+  const maxL = Math.log10(ZOOM_MAX);
+  const t = (Math.log10(zoom) - minL) / (maxL - minL);
+  return Math.round(Math.max(0, Math.min(1000, t * 1000)));
+}
+
 function updateZoomHUD() {
   const pct = Math.round(state.zoom * 100);
   zoomVal.textContent = pct + '%';
   $('zoom-pct').textContent = pct + '%';
+  const slider = $('zoom-slider');
+  if (slider) slider.value = zoomToSlider(state.zoom);
   zoomHud.classList.add('visible');
   clearTimeout(state.zoomTimer);
   state.zoomTimer = setTimeout(() => zoomHud.classList.remove('visible'), 1200);
 }
+
+$('zoom-slider').addEventListener('input', (e) => {
+  if (state.images.length === 0) return;
+  const val = parseInt(e.target.value, 10);
+  const newZoom = sliderToZoom(val);
+  state.viewMode = 'custom';
+  state.zoom = newZoom;
+  state.panX = 0;
+  state.panY = 0;
+  applyTransform(true);
+});
+
+$('zoom-slider').addEventListener('wheel', (e) => {
+  if (state.images.length === 0) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const delta = e.deltaY < 0 ? -15 : 15;
+  let val = parseInt($('zoom-slider').value, 10) + delta;
+  val = Math.max(0, Math.min(1000, val));
+  $('zoom-slider').value = val;
+  $('zoom-slider').dispatchEvent(new Event('input'));
+}, { passive: false });
 
 function updateFileStats() {
   if (state.current === -1) return;
@@ -3319,16 +4131,17 @@ document.addEventListener('keydown', e => {
         }
       }
       break;
-    case 'g': case 'G': if (!isCtrl) $('btn-ghost').click(); break;
+    case 'g': case 'G': if (!isCtrl && checkImageLoaded()) toggleFullscreen(); break;
     case 'f': if (!isCtrl && checkImageLoaded()) $('btn-fit-hud').click(); break;
     case '1': if (!isCtrl && checkImageLoaded()) $('btn-orig-hud').click(); break;
     case 'delete': 
       if (checkImageLoaded()) removeCurrentImage();
       break;
     case 'escape':
-      if (document.fullscreenElement) document.exitFullscreen();
+      if (state.isGhost) toggleFullscreen();
       closeModal('modal-config');
       closeModal('modal-resize');
+      closeModal('modal-properties');
       const aboutOverlay = $('about-overlay');
       if (aboutOverlay) aboutOverlay.classList.remove('active');
       break;
@@ -3404,19 +4217,30 @@ async function trashCurrentImage() {
   if (idx === -1) return;
   const im = state.images[idx];
   if (!im) return;
-  
-  if (isElectron && im.file && im.file.path) {
-    try {
-      const result = await window.electronAPI.moveToTrash(im.file.path);
-      if (result && result.success) {
+
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  showCyberConfirm({
+    title: lang === 'es' ? 'Mover a la papelera' : 'Move to Trash',
+    message: lang === 'es' 
+      ? '¿Estás seguro de que quieres mover esta imagen a la papelera de reciclaje?' 
+      : 'Are you sure you want to move this image to the Recycle Bin?',
+    detail: im.file ? im.file.name : (im.url || ''),
+    danger: true,
+    onConfirm: async () => {
+      if (isElectron && im.file && im.file.path) {
+        try {
+          const result = await window.electronAPI.moveToTrashDirect(im.file.path);
+          if (result && result.success) {
+            handleFileDeleted(idx);
+          }
+        } catch (err) {
+          console.error('Error al mover a la papelera:', err);
+        }
+      } else {
         handleFileDeleted(idx);
       }
-    } catch (err) {
-      console.error('Error al mover a la papelera:', err);
     }
-  } else {
-    handleFileDeleted(idx);
-  }
+  });
 }
 
 async function copyToClipboard() {
@@ -3501,7 +4325,13 @@ $('btn-open-hud').addEventListener('click', () => {
     fileInput.click();
   }
 });
-$('btn-drop-open').addEventListener('click', () => fileInput.click());
+$('btn-drop-open').addEventListener('click', () => {
+  if (isElectron) {
+    window.electronAPI.openFile().then(path => { if (path) scanFolder(path); });
+  } else {
+    fileInput.click();
+  }
+});
 fileInput.addEventListener('change', e => loadFiles(e.target.files));
 
 $('btn-show-folder').addEventListener('click', () => {
@@ -3553,19 +4383,7 @@ $('btn-trash').addEventListener('click', () => {
   trashCurrentImage();
 });
 
-// El evento btn-crop ahora se gestiona en el motor Pro
 
-$('btn-ghost').addEventListener('click', () => {
-  state.isGhost = !state.isGhost;
-  if (state.isGhost) state.isCropping = false; // AISLAMIENTO TOTAL
-  document.body.classList.toggle('ghost-mode', state.isGhost);
-  updateHUDStates();
-  resetHudTimer();
-  setTimeout(() => {
-    const im = state.images[state.current];
-    if (im) fitToWindow(im.w, im.h);
-  }, 100);
-});
 
 $('btn-prev').addEventListener('click', prev);
 $('btn-next').addEventListener('click', next);
@@ -3589,25 +4407,34 @@ $('sidebar-handle').addEventListener('click', () => {
 
 // ── FULLSCREEN ──
 function toggleFullscreen() {
-  if (!document.fullscreenElement) {
-    app.requestFullscreen().then(() => {
-      showFsBadge();
-    });
-  } else {
-    document.exitFullscreen();
-  }
+  document.body.classList.add('no-hud-transition');
+  
+  state.isGhost = !state.isGhost;
+  if (state.isGhost) state.isCropping = false; // AISLAMIENTO TOTAL
+  document.body.classList.toggle('ghost-mode', state.isGhost);
+  updateHUDStates();
+  resetHudTimer();
+  
+  // Forzar reflow para aplicar los cambios de layout instantáneamente sin animación
+  document.body.offsetHeight;
+  
+  setTimeout(() => {
+    document.body.classList.remove('no-hud-transition');
+    const im = state.images[state.current];
+    if (im) {
+      if (state.viewMode === 'original') {
+        state.zoom = 1;
+        state.panX = 0;
+        state.panY = 0;
+        applyTransform(false);
+      } else if (state.viewMode === 'fit') {
+        fitToWindow(im.w, im.h);
+      } else {
+        applyTransform(false);
+      }
+    }
+  }, 100);
 }
-
-function showFsBadge() {
-  fsBadge.classList.add('show');
-  setTimeout(() => fsBadge.classList.remove('show'), 1500);
-}
-
-document.addEventListener('fullscreenchange', () => {
-  const isFs = !!document.fullscreenElement;
-  const btn = $('btn-fs-hud');
-  if (btn) btn.textContent = isFs ? '⊠ Salir' : '⊞ Fullscreen';
-});
 
 // ── DRAG & DROP ──
 let dragCount = 0;
@@ -3657,6 +4484,14 @@ function openConfig() {
   $('cfg-contextmenu').checked = s.contextMenuEnabled || false;
   $('cfg-lang').value = s.language || 'en';
   
+  // HUD Auto-hide settings
+  $('cfg-hud-autohide').checked = s.hudAutoHide;
+  $('cfg-nav-autohide').checked = s.navAutoHide !== false;
+  $('cfg-hud-delay').value = s.hudAutoHideDelay;
+  $('cfg-hud-delay-val').textContent = (s.hudAutoHideDelay / 1000).toFixed(1) + 's';
+  $('cfg-hud-delay').disabled = !s.hudAutoHide;
+  $('cfg-hud-delay-row').style.opacity = s.hudAutoHide ? '1' : '0.5';
+  
   // Monitor selection
   if (isElectron) {
     window.electronAPI.getMonitors().then(displays => {
@@ -3689,6 +4524,14 @@ document.querySelectorAll('.color-opt').forEach(opt => {
   });
 });
 
+$('cfg-hud-delay').addEventListener('input', (e) => {
+  $('cfg-hud-delay-val').textContent = (e.target.value / 1000).toFixed(1) + 's';
+});
+$('cfg-hud-autohide').addEventListener('change', (e) => {
+  $('cfg-hud-delay').disabled = !e.target.checked;
+  $('cfg-hud-delay-row').style.opacity = e.target.checked ? '1' : '0.5';
+});
+
 $('btn-save-config').addEventListener('click', async () => {
   const accentColor = document.querySelector('.color-opt.active').dataset.color;
   const contextMenuEnabled = $('cfg-contextmenu').checked;
@@ -3700,7 +4543,10 @@ $('btn-save-config').addEventListener('click', async () => {
     preferredDisplayId: $('cfg-monitor').value,
     language: $('cfg-lang').value,
     accentColor: accentColor,
-    contextMenuEnabled: contextMenuEnabled
+    contextMenuEnabled: contextMenuEnabled,
+    hudAutoHide: $('cfg-hud-autohide').checked,
+    navAutoHide: $('cfg-nav-autohide').checked,
+    hudAutoHideDelay: parseInt($('cfg-hud-delay').value, 10)
   };
   
   if (isElectron) {
@@ -3758,7 +4604,7 @@ if (isElectron) {
   $('win-min').addEventListener('click', () => window.electronAPI.minimize());
   $('win-max').addEventListener('click', () => window.electronAPI.maximize());
   $('win-close').addEventListener('click', () => window.electronAPI.close());
-  $('ghost-close').addEventListener('click', () => window.electronAPI.close());
+  $('ghost-close').addEventListener('click', () => toggleFullscreen());
 
   window.electronAPI.onWinState(state => {
     const btn = $('win-max');
@@ -3802,6 +4648,10 @@ if (isElectron) {
     if (s && s.app) {
       state.settings.app = { ...state.settings.app, ...s.app };
       applySettings();
+      // Silent automatic check for updates on startup if allowed
+      if (!state.settings.app.manualUpdateOnly && typeof checkUpdatesGlobal === 'function') {
+        setTimeout(() => checkUpdatesGlobal(false), 3000);
+      }
     }
   }).catch(err => console.error('Error cargando settings:', err));
 } else {
@@ -3814,7 +4664,7 @@ function updateHUDStates() {
   const rotL = $('btn-rot-l');
   const rotR = $('btn-rot-r');
   const crop = $('btn-crop');
-  const ghost = $('btn-ghost');
+  const fsBtn = $('btn-fs-hud');
   const save = $('btn-save');
 
   const hasChanges = (state.currentRotation !== 0);
@@ -3837,11 +4687,11 @@ function updateHUDStates() {
     if (crop) crop.classList.remove('active');
   }
 
-  // GHOST
+  // FULLSCREEN
   if (state.isGhost) {
-    if (ghost) ghost.classList.add('active');
+    if (fsBtn) fsBtn.classList.add('active');
   } else {
-    if (ghost) ghost.classList.remove('active');
+    if (fsBtn) fsBtn.classList.remove('active');
   }
 }
 
@@ -3863,9 +4713,69 @@ $('btn-center').addEventListener('click', () => {
   overlay.className = 'modal-overlay';
   document.body.appendChild(overlay);
 
-  function openAbout() {
+  window.checkUpdatesGlobal = async function(manual = true, statusEl = null) {
+    if (statusEl) {
+      const lang = state.settings.app.language || 'en';
+      statusEl.textContent = I18N[lang].about_checking;
+      statusEl.style.color = 'var(--cyber-muted)';
+    }
+    
+    try {
+      const response = await fetch('https://api.github.com/repos/Ciber-CR/CyberViewer/releases/latest');
+      if (!response.ok) throw new Error('API error');
+      
+      const data = await response.json();
+      const latestTag = data.tag_name;
+      const version = isElectron ? await window.electronAPI.getVersion() : '1.5.1';
+      
+      const cleanLatest = latestTag.replace(/^v/, '');
+      const cleanCurrent = version.replace(/^v/, '');
+      
+      const partsLatest = cleanLatest.split('.').map(Number);
+      const partsCurrent = cleanCurrent.split('.').map(Number);
+      
+      let isNewer = false;
+      for (let i = 0; i < 3; i++) {
+        const l = partsLatest[i] || 0;
+        const c = partsCurrent[i] || 0;
+        if (l > c) {
+          isNewer = true;
+          break;
+        } else if (l < c) {
+          break;
+        }
+      }
+      
+      const lang = state.settings.app.language || 'en';
+      if (isNewer) {
+        if (statusEl) {
+          statusEl.textContent = `${I18N[lang].about_update_avail} (${latestTag})`;
+          statusEl.style.color = 'var(--cyber-accent2)';
+        }
+        if (!manual) {
+          showToast(`${I18N[lang].about_update_avail} (${latestTag})`, 'info');
+        }
+      } else {
+        if (statusEl) {
+          statusEl.textContent = I18N[lang].about_up_to_date;
+          statusEl.style.color = 'var(--cyber-accent3)';
+        }
+      }
+    } catch (err) {
+      console.error('Error checking updates:', err);
+      const lang = state.settings.app.language || 'en';
+      if (statusEl) {
+        statusEl.textContent = I18N[lang].about_update_err;
+        statusEl.style.color = 'var(--cyber-accent2)';
+      }
+    }
+  };
+
+  async function openAbout() {
     const lang = state.settings.app.language || 'en';
     const t = I18N[lang] || I18N.en;
+    const version = isElectron ? await window.electronAPI.getVersion() : '1.5.1';
+    const subtitle = lang === 'es' ? `v${version} — Visor Pro` : `v${version} — Pro Viewer`;
     
     overlay.innerHTML = `
       <div class="modal-box" style="max-width:360px">
@@ -3877,13 +4787,31 @@ $('btn-center').addEventListener('click', () => {
           <div style="font-size:18px;color:var(--cyber-accent);letter-spacing:3px;margin-bottom:4px">
             [Cyber<span style="color:var(--cyber-accent3)">Viewer</span>]
           </div>
-          <div style="font-size:11px;color:var(--cyber-muted);margin-bottom:20px">${t.about_subtitle}</div>
+          <div style="font-size:11px;color:var(--cyber-muted);margin-bottom:20px">${subtitle}</div>
           <img src="assets/icon.png" style="width:64px;height:64px;margin-bottom:20px;filter:drop-shadow(0 0 10px var(--cyber-accent))" alt="Logo">
           <div style="font-size:12px;color:var(--cyber-text);line-height:1.8">
             ${t.about_desc}
           </div>
           <div style="margin-top:20px;font-size:11px;color:var(--cyber-muted)">
             ${t.about_formats}
+          </div>
+          
+          <div style="margin-top:20px; border-top: 1px solid var(--cyber-border); padding-top: 15px; text-align: left;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <span style="font-size:11px; color:var(--cyber-text); font-family:'Share Tech Mono', monospace; text-transform:uppercase;">
+                ${t.about_manual_only}
+              </span>
+              <label class="switch">
+                <input type="checkbox" id="about-manual-toggle" ${state.settings.app.manualUpdateOnly ? 'checked' : ''}>
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <button id="about-btn-update" class="top-btn" style="padding: 4px 12px; font-size:10px; border-color:var(--cyber-accent); color:var(--cyber-accent); cursor:pointer;">
+                ${t.about_check_updates}
+              </button>
+              <span id="about-update-status" style="font-size:10px; font-family:'Share Tech Mono', monospace; color:var(--cyber-muted);"></span>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
@@ -3899,6 +4827,21 @@ $('btn-center').addEventListener('click', () => {
       window.electronAPI.openDevTools();
       closeAbout();
     });
+    
+    const toggle = overlay.querySelector('#about-manual-toggle');
+    toggle.addEventListener('change', () => {
+      state.settings.app.manualUpdateOnly = toggle.checked;
+      if (isElectron) {
+        window.electronAPI.saveSettings(state.settings.app);
+      }
+    });
+
+    const updateBtn = overlay.querySelector('#about-btn-update');
+    const updateStatus = overlay.querySelector('#about-update-status');
+    updateBtn.addEventListener('click', () => {
+      window.checkUpdatesGlobal(true, updateStatus);
+    });
+
     overlay.classList.add('active');
   }
 
@@ -3911,6 +4854,103 @@ $('btn-center').addEventListener('click', () => {
 
 $('btn-config').addEventListener('click', openConfig);
 
+// ── MAIN MENU (☰) ──
+(function initMainMenu() {
+  const btn = $('btn-menu');
+  const panel = $('main-menu');
+  if (!btn || !panel) return;
+
+  function closeMenu() {
+    panel.classList.remove('open');
+    btn.classList.remove('open');
+    const a = document.activeElement;
+    if (a && panel.contains(a)) a.blur();
+  }
+  function refreshMenuState() {
+    const hasImg = state.current !== -1 && state.images && state.images.length > 0;
+    panel.querySelectorAll('[data-needs-image]').forEach(el => el.classList.toggle('disabled', !hasImg));
+    const ah = panel.querySelector('[data-action="autohide"]');
+    if (ah) ah.classList.toggle('checked', !!(state.settings && state.settings.app && state.settings.app.hudAutoHide));
+    const sb = panel.querySelector('[data-action="sidebar"]');
+    if (sb) sb.classList.toggle('checked', !!state.sidebarOpen);
+  }
+  function openMenu() { refreshMenuState(); panel.classList.add('open'); btn.classList.add('open'); }
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    panel.classList.contains('open') ? closeMenu() : openMenu();
+  });
+  document.addEventListener('click', e => {
+    if (panel.classList.contains('open') && !e.target.closest('.menu-wrap')) closeMenu();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && panel.classList.contains('open')) closeMenu();
+  });
+
+  function runAction(action) {
+    switch (action) {
+      case 'open-folder':    $('btn-open-hud').click(); break;
+      case 'show-folder':    $('btn-show-folder').click(); break;
+      case 'save':           saveCurrent(); break;
+      case 'copy':           copyToClipboard(); break;
+      case 'properties': {
+        const im = state.images[state.current];
+        const fpath = im && (im.path || (im.file ? im.file.path : null));
+        if (fpath) showPropertiesPanel(fpath);
+        break;
+      }
+      case 'trash':          removeCurrentImage(); break;
+      case 'rotate-left':    rotate(-90); break;
+      case 'rotate-right':   rotate(90); break;
+      case 'crop':           $('btn-crop').click(); break;
+      case 'resize':         $('btn-resize').click(); break;
+      case 'fit':            $('btn-fit-hud').click(); break;
+      case 'original':       $('btn-orig-hud').click(); break;
+      case 'fullscreen':     toggleFullscreen(); break;
+      case 'sidebar':        $('sidebar-handle').click(); break;
+      case 'autohide':
+        state.settings.app.hudAutoHide = !state.settings.app.hudAutoHide;
+        if (isElectron) window.electronAPI.saveSettings(state.settings.app);
+        applySettings();
+        if (typeof resetHudTimer === 'function') resetHudTimer();
+        break;
+      case 'next':           next(); break;
+      case 'prev':           prev(); break;
+      case 'favorite':       $('btn-fav').click(); break;
+      case 'favorites-view':
+        (async () => {
+          const wasShowing = state.showingFavs;
+          await toggleFavoritesView();
+          // entering favorites view shows the full list in the sidebar — expand it if collapsed
+          if (!wasShowing && state.showingFavs && !state.sidebarOpen) $('sidebar-handle').click();
+        })();
+        break;
+      case 'preferences':    $('btn-config').click(); break;
+      case 'about':          $('btn-about').click(); break;
+      case 'check-updates':
+        if (typeof window.checkUpdatesGlobal === 'function') {
+          // route the function's status text into toasts (it only writes to statusEl)
+          const sink = { style: {}, set textContent(v) { if (v) showToast(v, 'info'); } };
+          window.checkUpdatesGlobal(true, sink);
+        }
+        break;
+      case 'devtools':
+        if (isElectron && window.electronAPI.openDevTools) window.electronAPI.openDevTools();
+        break;
+    }
+  }
+
+  panel.querySelectorAll('.menu-item').forEach(item => {
+    item.addEventListener('click', e => {
+      e.stopPropagation();
+      if (item.classList.contains('disabled')) return;
+      const action = item.dataset.action;
+      runAction(action);
+      if (action === 'autohide' || action === 'sidebar') { item.blur(); refreshMenuState(); } else closeMenu();
+    });
+  });
+})();
+
 // ── HUD AUTO-HIDE (Sincronizado) ──
 let hudTimer = null;
 const elementsToHide = [
@@ -3918,7 +4958,8 @@ const elementsToHide = [
   { el: $('statusbar'), hideClass: 'hud-hidden-bottom' },
   { el: $('kbd-hint'), hideClass: 'hud-hidden-fade' },
   { el: $('ghost-close'), hideClass: 'hud-hidden-fade' },
-  { el: $('viewer-filename'), hideClass: 'hud-hidden-fade' }
+  { el: $('viewer-filename'), hideClass: 'hud-hidden-fade' },
+  { el: $('nav-container'), hideClass: 'hud-hidden-fade' }
 ];
 
 function resetHudTimer() {
@@ -3928,21 +4969,38 @@ function resetHudTimer() {
   
   clearTimeout(hudTimer);
   
+  const hudEnabled = state.settings?.app?.hudAutoHide !== false;
+  const navEnabled = state.settings?.app?.navAutoHide !== false;
+  
+  if (!hudEnabled && !navEnabled) {
+    return;
+  }
+  
   // No ocultar si estamos en medio de un recorte o si el ratón está sobre el HUD
   const isHovering = elementsToHide.some(item => item.el && item.el.matches(':hover'));
   if (state.isCropping || isHovering) return;
 
+  const delay = (state.settings && state.settings.app && state.settings.app.hudAutoHideDelay !== undefined)
+    ? state.settings.app.hudAutoHideDelay
+    : 2000;
+
   hudTimer = setTimeout(() => {
     if (state.images.length > 0) {
       elementsToHide.forEach(item => {
-        // En vista por defecto, no autoesconder topbar y statusbar, solo en Ghost Mode
-        const isTopbarOrStatusbar = (item.el.id === 'topbar' || item.el.id === 'statusbar');
-        if (isTopbarOrStatusbar && !state.isGhost) return;
-        
-        if (item.el) item.el.classList.add(item.hideClass);
+        if (item.el) {
+          if (item.el.id === 'nav-container') {
+            if (navEnabled) item.el.classList.add(item.hideClass);
+          } else {
+            if (hudEnabled) {
+              const isTopbarOrStatusbar = (item.el.id === 'topbar' || item.el.id === 'statusbar');
+              if (isTopbarOrStatusbar && !state.isGhost) return;
+              item.el.classList.add(item.hideClass);
+            }
+          }
+        }
       });
     }
-  }, 2000); // 2 segundos de inactividad
+  }, delay);
 }
 
 window.addEventListener('mousemove', resetHudTimer);
@@ -4021,12 +5079,12 @@ function syncFavoritesToggleButtonState(lang) {
   
   if (state.showingFavs) {
     btn.classList.add('active');
-    btn.title = lang === 'es' ? 'Mostrar galería completa' : 'Show full gallery';
+    setCyberTooltip(btn, lang === 'es' ? 'Mostrar galería completa' : 'Show full gallery');
     if (favLbl) favLbl.textContent = lang === 'es' ? 'TODAS' : 'ALL IMAGES';
     if (favStar) favStar.innerHTML = '&#9734;';
   } else {
     btn.classList.remove('active');
-    btn.title = lang === 'es' ? 'Mostrar Favoritos' : 'Show Favorites';
+    setCyberTooltip(btn, lang === 'es' ? 'Mostrar Favoritos' : 'Show Favorites');
     if (favLbl) favLbl.textContent = lang === 'es' ? 'FAVORITOS' : 'FAVORITES';
     if (favStar) favStar.innerHTML = '&#9733;';
   }
@@ -4063,7 +5121,7 @@ async function toggleFavoritesView() {
         const name = p.split(/[\\/]/).pop();
         return {
           file: { name, path: p, size: 0, type: '' },
-          url: 'cyber://' + p,
+          url: null,
           loaded: false,
           w: 0,
           h: 0
@@ -4075,6 +5133,7 @@ async function toggleFavoritesView() {
       
       state.images = mapped;
       buildSidebar();
+      dropZone.style.display = 'none';
       showImage(0, null, true);
       showToast(lang === 'es' ? 'VISTA DE FAVORITOS ACTIVA' : 'FAVORITES VIEW ACTIVE', 'success');
     } else {
@@ -4097,6 +5156,7 @@ async function toggleFavoritesView() {
       
       state.images = mapped;
       buildSidebar();
+      dropZone.style.display = 'none';
       showImage(0, null, true);
       showToast(lang === 'es' ? 'VISTA DE FAVORITOS ACTIVA' : 'FAVORITES VIEW ACTIVE', 'success');
     }
@@ -4116,7 +5176,7 @@ async function toggleFavoritesView() {
       mainImg.classList.remove('loaded');
       mainImg.src = '';
       dropZone.style.display = 'flex';
-      sidebar.innerHTML = '';
+      $('sidebar-inner').innerHTML = '';
       const viewerFilename = $('viewer-filename');
       if (viewerFilename) viewerFilename.textContent = '';
       updateCounter();
@@ -4127,6 +5187,132 @@ async function toggleFavoritesView() {
 
 $('btn-fav').addEventListener('click', toggleFavorite);
 $('btn-toggle-favs').addEventListener('click', toggleFavoritesView);
+
+// ── CUSTOM CONFIRMATION DIALOG ──
+let confirmCallback = null;
+
+$('btn-confirm-cancel').addEventListener('click', () => {
+  closeModal('modal-cyber-confirm');
+});
+$('btn-confirm-ok').addEventListener('click', () => {
+  closeModal('modal-cyber-confirm');
+  if (confirmCallback) confirmCallback();
+});
+
+function showCyberConfirm({ title, message, detail, danger = true, onConfirm }) {
+  $('confirm-title').textContent = title;
+  $('confirm-message').textContent = message;
+  $('confirm-detail').textContent = detail || '';
+  confirmCallback = onConfirm;
+  
+  const box = document.querySelector('.confirm-modal-box');
+  const iconBox = $('confirm-icon-box');
+  const okBtn = $('btn-confirm-ok');
+  
+  if (danger) {
+    box.style.borderColor = 'var(--cyber-accent2)';
+    box.style.boxShadow = '0 0 25px rgba(255, 45, 120, 0.25)';
+    iconBox.style.color = 'var(--cyber-accent2)';
+    iconBox.style.borderColor = 'rgba(255, 45, 120, 0.3)';
+    iconBox.style.background = 'rgba(255, 45, 120, 0.1)';
+    iconBox.innerHTML = '&#128465;&#xFE0E;'; // Trash bin icon
+    
+    okBtn.style.borderColor = 'var(--cyber-accent2)';
+    okBtn.style.color = 'var(--cyber-accent2)';
+  } else {
+    box.style.borderColor = 'var(--cyber-accent)';
+    box.style.boxShadow = '0 0 25px rgba(var(--cyber-accent-rgb), 0.25)';
+    iconBox.style.color = 'var(--cyber-accent)';
+    iconBox.style.borderColor = 'rgba(var(--cyber-accent-rgb), 0.3)';
+    iconBox.style.background = 'rgba(var(--cyber-accent-rgb), 0.1)';
+    iconBox.innerHTML = '&#9888;&#xFE0E;'; // Warning sign
+    
+    okBtn.style.borderColor = 'var(--cyber-accent)';
+    okBtn.style.color = 'var(--cyber-accent)';
+  }
+  
+  const lang = state.settings.app.language || 'en';
+  $('btn-confirm-cancel').textContent = lang === 'es' ? 'ABORTAR' : 'ABORT';
+  okBtn.textContent = lang === 'es' ? 'CONFIRMAR' : 'CONFIRM';
+  
+  openModal('modal-cyber-confirm');
+}
+
+// ── PROPERTIES PANEL ──
+function formatBytes(bytes) {
+  if (bytes === null || bytes === undefined) return '-';
+  if (bytes > 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  if (bytes > 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return bytes + ' B';
+}
+
+let propsNativePath = null;
+
+async function showPropertiesPanel(rawPath) {
+  const im = state.images[state.current];
+  if (!im) return;
+
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  const es = lang === 'es';
+
+  const fpath = (im.file && im.file.path) || im.path || rawPath || '';
+  const name = (im.file && im.file.name) || (fpath ? fpath.split(/[\\/]/).pop() : '-');
+  propsNativePath = fpath;
+
+  // Etiquetas i18n
+  $('props-title').textContent = es ? 'PROPIEDADES' : 'PROPERTIES';
+  $('props-k-name').textContent = es ? 'Nombre' : 'Name';
+  $('props-k-format').textContent = es ? 'Formato' : 'Format';
+  $('props-k-dims').textContent = es ? 'Dimensiones' : 'Dimensions';
+  $('props-k-size').textContent = es ? 'Tamaño' : 'Size';
+  $('props-k-modified').textContent = es ? 'Modificado' : 'Modified';
+  $('props-k-path').textContent = es ? 'Ruta' : 'Path';
+  $('props-native-label').textContent = es ? 'Propiedades de Windows' : 'Windows properties';
+  setCyberTooltip($('props-native-btn'), es
+    ? 'Abrir el diálogo nativo de Windows (puede tardar un par de segundos)'
+    : 'Open the native Windows dialog (may take a couple of seconds)');
+  $('props-close-btn').textContent = es ? 'CERRAR' : 'CLOSE';
+
+  // Datos disponibles al instante
+  $('props-name').textContent = name;
+  const ext = name.includes('.') ? name.split('.').pop().toUpperCase() : '';
+  $('props-format').textContent = ext || '-';
+  const w = im.w || mainImg.naturalWidth || 0;
+  const h = im.h || mainImg.naturalHeight || 0;
+  $('props-dims').textContent = (w && h) ? `${w} x ${h} px` : '-';
+  $('props-size').textContent = im.size ? formatBytes(im.size) : '…';
+  $('props-modified').textContent = '…';
+  $('props-path').textContent = fpath || '-';
+  setCyberTooltip($('props-path'), fpath || '');
+
+  // Vista previa (imagen ya cargada en memoria)
+  const preview = $('props-preview');
+  if (mainImg.src) { preview.src = mainImg.src; preview.style.display = ''; }
+  else { preview.style.display = 'none'; }
+
+  openModal('modal-properties');
+
+  // Tamaño y fecha frescos desde disco
+  let size = im.size, modified = null;
+  if (isElectron && fpath && window.electronAPI.getFileInfo) {
+    try {
+      const info = await window.electronAPI.getFileInfo(fpath);
+      if (info) { size = info.size; modified = info.modified; }
+    } catch (e) { /* se mantienen los valores de fallback */ }
+  }
+  // Evita pisar un panel ya cerrado o cambiado a otra imagen
+  if (!$('modal-properties').classList.contains('active') || propsNativePath !== fpath) return;
+  $('props-size').textContent = (size || size === 0) ? formatBytes(size) : '-';
+  $('props-modified').textContent = modified
+    ? new Date(modified).toLocaleString(es ? 'es-ES' : undefined)
+    : '-';
+}
+
+$('props-native-btn').addEventListener('click', () => {
+  if (propsNativePath && isElectron && window.electronAPI.openNativeProperties) {
+    window.electronAPI.openNativeProperties(propsNativePath);
+  }
+});
 
 // ── INIT ──
 updateCounter();

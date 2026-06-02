@@ -15,7 +15,13 @@ const settingsPath = path.join(app.getPath('userData'), 'settings.json');
 function loadSettings() {
   try { 
     if (fs.existsSync(settingsPath)) {
-      return JSON.parse(fs.readFileSync(settingsPath, 'utf8')); 
+      const data = JSON.parse(fs.readFileSync(settingsPath, 'utf8')); 
+      if (data && data.app) {
+        if (data.app.manualUpdateOnly === undefined) data.app.manualUpdateOnly = false;
+        if (data.app.hudAutoHide === undefined) data.app.hudAutoHide = true;
+        if (data.app.hudAutoHideDelay === undefined) data.app.hudAutoHideDelay = 2000;
+      }
+      return data;
     }
   } catch (e) { console.error('Error cargando settings:', e); }
   return {
@@ -29,7 +35,10 @@ function loadSettings() {
       statusbarVisible: true,
       preferredDisplayId: 'auto',
       language: 'en',
-      contextMenuEnabled: false
+      contextMenuEnabled: false,
+      manualUpdateOnly: false,
+      hudAutoHide: true,
+      hudAutoHideDelay: 2000
     }
   };
 }
@@ -139,6 +148,7 @@ function createWindow() {
 
     if (!shouldStartMinimized) {
       if (wasMaximizedOnStart) {
+        win.show();
         win.maximize();
         wasMaximizedOnStart = false;
       } else {
@@ -153,6 +163,7 @@ function createWindow() {
   win.on('show', () => {
     if (wasMaximizedOnStart) {
       wasMaximizedOnStart = false;
+      win.show();
       win.maximize();
     }
   });
@@ -191,6 +202,8 @@ function createTray() {
 
   tray = new Tray(path.join(__dirname, 'assets', 'icon.png'));
   const contextMenu = Menu.buildFromTemplate([
+    { label: `CyberViewer v${app.getVersion()}`, enabled: false },
+    { type: 'separator' },
     { label: showLabel, click: () => { win.show(); win.focus(); } },
     { label: settingsLabel, click: () => { win.show(); win.focus(); win.webContents.send('open-settings'); } },
     { type: 'separator' },
@@ -203,6 +216,7 @@ function createTray() {
       win.hide();
     } else {
       win.show();
+      win.maximize();
       win.focus();
     }
   });
@@ -212,12 +226,6 @@ function createTray() {
 ipcMain.on('win-minimize', () => win.minimize());
 ipcMain.on('win-maximize', () => win.isMaximized() ? win.unmaximize() : win.maximize());
 ipcMain.on('win-close', () => {
-  // Guardar estado antes de cerrar
-  if (win) {
-    const isMax = win.isMaximized();
-    const bounds = win.getBounds();
-    saveSettings({ window: { bounds, maximized: isMax } });
-  }
   win.close();
 });
 
@@ -237,6 +245,7 @@ ipcMain.handle('open-file-dialog', async () => {
 });
 
 ipcMain.handle('get-settings', () => loadSettings());
+ipcMain.handle('get-version', () => app.getVersion());
 ipcMain.handle('get-monitors', () => {
   return screen.getAllDisplays().map(d => ({
     id: d.id,
@@ -411,28 +420,14 @@ ipcMain.on('copy-image', (event, filePath) => {
   }
 });
 
-ipcMain.handle('move-to-trash', async (event, filePath) => {
-  try {
-    const settings = loadSettings();
-    const lang = settings.app.language || 'en';
-    const win = BrowserWindow.fromWebContents(event.sender);
-    const result = await dialog.showMessageBox(win, {
-      type: 'question',
-      buttons: [lang === 'es' ? 'Sí' : 'Yes', lang === 'es' ? 'No' : 'No'],
-      defaultId: 0,
-      title: lang === 'es' ? 'Mover a la papelera' : 'Move to Trash',
-      message: lang === 'es' ? '¿Estás seguro de que quieres mover esta imagen a la papelera de reciclaje?' : 'Are you sure you want to move this image to the Recycle Bin?',
-      detail: path.basename(filePath),
-      cancelId: 1
-    });
 
-    if (result.response === 0) {
-      await shell.trashItem(filePath);
-      return { success: true };
-    }
-    return { success: false, cancelled: true };
+
+ipcMain.handle('move-to-trash-direct', async (event, filePath) => {
+  try {
+    await shell.trashItem(filePath);
+    return { success: true };
   } catch (e) {
-    console.error('Error moving file to trash:', e);
+    console.error('Error moving file to trash directly:', e);
     return { success: false, error: e.message };
   }
 });
@@ -452,6 +447,71 @@ ipcMain.on('show-item-in-folder', (event, filePath) => {
     }
   } catch (e) {
     console.error('Error showing item in folder:', e);
+  }
+});
+
+// Normaliza una ruta entrante (file://, %20, barra inicial en win32) a ruta de sistema.
+function cleanFsPath(p) {
+  let cleanPath = p;
+  if (cleanPath.startsWith('file:///')) cleanPath = cleanPath.substring(8);
+  else if (cleanPath.startsWith('file://')) cleanPath = cleanPath.substring(7);
+  cleanPath = decodeURIComponent(cleanPath);
+  if (process.platform === 'win32' && cleanPath.startsWith('/')) cleanPath = cleanPath.substring(1);
+  return path.resolve(cleanPath);
+}
+
+// Abre el diálogo nativo de Propiedades de Windows para un archivo. El script
+// auxiliar (.wsf) se escribe una sola vez por sesión y se reutiliza, pasando
+// carpeta/archivo como WScript.Arguments para no reescribirlo en cada llamada.
+let propertiesScriptWritten = false;
+function openNativeProperties(rawPath) {
+  try {
+    const absolutePath = cleanFsPath(rawPath);
+    const folderPath = path.dirname(absolutePath).replace(/\//g, '\\');
+    const fileName = path.basename(absolutePath);
+    const propsWsfPath = path.join(app.getPath('temp'), 'cyberviewer_properties.wsf');
+    const wsfContent = `<?xml version="1.0" encoding="utf-8" ?>
+<package>
+   <job id="GetProperties">
+      <script language="VBScript">
+         <![CDATA[
+         If WScript.Arguments.Count >= 2 Then
+            Set objShell = CreateObject("Shell.Application")
+            Set objFolder = objShell.NameSpace(WScript.Arguments(0))
+            If Not objFolder Is Nothing Then
+               Set objFolderItem = objFolder.ParseName(WScript.Arguments(1))
+               If Not objFolderItem Is Nothing Then
+                  objFolderItem.InvokeVerb "Properties"
+                  WScript.Sleep 1800000 ' mantiene vivo el proceso mientras el diálogo está abierto
+               End If
+            End If
+         End If
+         ]]>
+      </script>
+   </job>
+</package>`;
+    if (!propertiesScriptWritten || !fs.existsSync(propsWsfPath)) {
+      fs.writeFileSync(propsWsfPath, wsfContent, 'utf-8');
+      propertiesScriptWritten = true;
+    }
+    require('child_process').execFile('wscript.exe', [propsWsfPath, folderPath, fileName]);
+  } catch (e) {
+    console.error('Error opening file properties via WSF:', e);
+  }
+}
+
+// Botón discreto "Propiedades de Windows" dentro del panel in-app.
+ipcMain.on('open-native-properties', (event, filePath) => {
+  if (filePath) openNativeProperties(filePath);
+});
+
+// Datos del archivo para el panel in-app (tamaño y fechas frescas desde disco).
+ipcMain.handle('get-file-info', (event, filePath) => {
+  try {
+    const stats = fs.statSync(cleanFsPath(filePath));
+    return { size: stats.size, modified: stats.mtimeMs, created: stats.birthtimeMs };
+  } catch (e) {
+    return null;
   }
 });
 
@@ -578,6 +638,10 @@ ipcMain.on('save-settings', (event, newSettings) => {
 
 const I18N_MAIN = {
   en: {
+    file: "File",
+    edit: "Edit",
+    view: "View",
+    navigate: "Navigate",
     copy_image: "Copy Image",
     show_in_folder: "Show in Folder",
     hide_session: "Hide from this session",
@@ -586,11 +650,33 @@ const I18N_MAIN = {
     go_start: "Go to Start",
     go_end: "Go to End",
     move_trash: "Move to Trash",
-    open_folder: "Open Folder",
+    open_folder: "Open image",
+    copy_path: "Copy Image Path",
     config: "Configuration",
     about: "About",
+    fit_window: "Fit to Window",
+    reset_zoom: "Original Size 1:1",
+    save_changes: "Save Changes",
+    save_as: "Save As...",
+    properties: "Properties",
+    quit: "Quit",
+    maximize: "Maximize",
+    restore: "Restore",
+    autohide_hud: "Auto-hide Toolbar",
+    autohide_nav: "Auto-hide Nav Buttons",
+    rotate: "Rotate",
+    rotate_r: "Rotate Right 90° (Autosave)",
+    rotate_l: "Rotate Left 90° (Autosave)",
+    crop: "Crop Image",
+    resize: "Resize Image",
+    favorite_add: "Add to Favorites",
+    favorite_remove: "Remove from Favorites",
   },
   es: {
+    file: "Archivo",
+    edit: "Editar",
+    view: "Ver",
+    navigate: "Navegar",
     copy_image: "Copiar Imagen",
     show_in_folder: "Mostrar en Carpeta",
     hide_session: "Ocultar de esta sesión",
@@ -599,9 +685,27 @@ const I18N_MAIN = {
     go_start: "Ir al Principio",
     go_end: "Ir al Final",
     move_trash: "Mover a la Papelera",
-    open_folder: "Abrir Carpeta",
+    open_folder: "Abrir imagen",
+    copy_path: "Copiar ruta de la imagen",
     config: "Configuración",
     about: "Acerca de",
+    fit_window: "Ajustar a la Ventana",
+    reset_zoom: "Tamaño Original 1:1",
+    save_changes: "Guardar Cambios",
+    save_as: "Guardar Como...",
+    properties: "Propiedades",
+    quit: "Salir",
+    maximize: "Maximizar",
+    restore: "Restaurar",
+    autohide_hud: "Ocultar barra automáticamente",
+    autohide_nav: "Ocultar botones de navegación",
+    rotate: "Rotar",
+    rotate_r: "Rotar 90° Derecha (Auto-guardar)",
+    rotate_l: "Rotar 90° Izquierda (Auto-guardar)",
+    crop: "Recortar Imagen",
+    resize: "Redimensionar Imagen",
+    favorite_add: "Añadir a Favoritos",
+    favorite_remove: "Quitar de Favoritos",
   }
 };
 
@@ -614,105 +718,229 @@ ipcMain.on('show-context-menu', (event, props) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   let template = [];
 
-  if (props.type === 'main-image') {
+  if (props.isEditable) {
     template = [
-      { 
-        label: t.copy_image, 
-        click: () => {
-          fs.readFile(props.path, (err, data) => {
-            if (!err) {
-              const img = nativeImage.createFromBuffer(data);
-              clipboard.writeImage(img);
+      { role: 'undo' },
+      { role: 'redo' },
+      { type: 'separator' },
+      { role: 'cut' },
+      { role: 'copy' },
+      { role: 'paste' },
+      { type: 'separator' },
+      { role: 'selectAll' }
+    ];
+  } else if (props.type === 'image' || props.type === 'main-image') {
+    template = [
+      {
+        label: t.file,
+        submenu: [
+          {
+            label: t.copy_image,
+            click: () => {
+              fs.readFile(props.path, (err, data) => {
+                if (!err) {
+                  const img = nativeImage.createFromBuffer(data);
+                  clipboard.writeImage(img);
+                }
+              });
             }
-          });
-        } 
+          },
+          {
+            label: t.save_changes,
+            enabled: !!props.hasChanges,
+            click: () => event.sender.send('menu-action', { action: 'save-changes' })
+          },
+          {
+            label: t.save_as,
+            click: async () => {
+              const ext = path.extname(props.path);
+              const result = await dialog.showSaveDialog(win, {
+                title: lang === 'es' ? 'Guardar como' : 'Save As',
+                defaultPath: path.join(path.dirname(props.path), path.basename(props.path, ext) + '_copy' + ext),
+                filters: [
+                  { name: 'Images', extensions: [ext.substring(1)] },
+                  { name: 'All Files', extensions: ['*'] }
+                ]
+              });
+              if (!result.canceled && result.filePath) {
+                event.sender.send('menu-action', { action: 'save-as', targetPath: result.filePath });
+              }
+            }
+          }
+        ]
       },
-      { label: t.show_in_folder, click: () => shell.showItemInFolder(props.path) },
+      {
+        label: t.edit,
+        submenu: [
+          {
+            label: t.rotate,
+            submenu: [
+              { label: t.rotate_r, click: () => event.sender.send('menu-action', { action: 'rotate-r-save' }) },
+              { label: t.rotate_l, click: () => event.sender.send('menu-action', { action: 'rotate-l-save' }) }
+            ]
+          },
+          { label: t.crop, click: () => event.sender.send('menu-action', { action: 'crop' }) },
+          { label: t.resize, click: () => event.sender.send('menu-action', { action: 'resize' }) },
+          {
+            label: props.isFavorite ? t.favorite_remove : t.favorite_add,
+            click: () => event.sender.send('menu-action', { action: 'toggle-favorite' })
+          }
+        ]
+      },
+      {
+        label: t.view,
+        submenu: [
+          { label: t.show_in_folder, click: () => shell.showItemInFolder(props.path) },
+          {
+            label: t.properties,
+            click: () => event.sender.send('menu-action', { action: 'show-properties', path: props.path })
+          }
+        ]
+      },
+      { type: 'separator' },
+      {
+        label: t.move_trash,
+        click: () => {
+          event.sender.send('menu-action', { action: 'request-delete', index: props.index, path: props.path });
+        }
+      },
       { type: 'separator' },
       { label: t.hide_session, click: () => event.sender.send('menu-action', { action: 'remove-from-list', index: props.index }) },
-      { 
-        label: t.restore_hidden.replace('{count}', props.hiddenCount || 0), 
+      {
+        label: t.restore_hidden.replace('{count}', props.hiddenCount || 0),
         enabled: !!props.hiddenCount,
         visible: !!props.hiddenCount,
-        click: () => event.sender.send('menu-action', { action: 'restore-hidden' }) 
+        click: () => event.sender.send('menu-action', { action: 'restore-hidden' })
       },
       { type: 'separator' },
-      { 
-        label: t.move_trash, 
-        click: async () => {
-          const result = await dialog.showMessageBox(win, {
-            type: 'question',
-            buttons: [lang === 'es' ? 'Sí' : 'Yes', lang === 'es' ? 'No' : 'No'],
-            defaultId: 0,
-            title: lang === 'es' ? 'Mover a la papelera' : 'Move to Trash',
-            message: lang === 'es' ? '¿Estás seguro de que quieres mover esta imagen a la papelera de reciclaje?' : 'Are you sure you want to move this image to the Recycle Bin?',
-            detail: path.basename(props.path),
-            cancelId: 1
-          });
-          if (result.response === 0) {
-            shell.trashItem(props.path).then(() => {
-              event.sender.send('menu-action', { action: 'file-deleted', index: props.index });
-            }).catch(err => {
-              console.error(err);
-            });
-          }
-        }
-      }
+      { label: t.quit, click: () => win.close() }
     ];
   } else if (props.type === 'thumb') {
     template = [
-      { 
-        label: t.copy_original, 
-        click: () => {
-          fs.readFile(props.path, (err, data) => {
-            if (!err) {
-              const img = nativeImage.createFromBuffer(data);
-              clipboard.writeImage(img);
+      {
+        label: t.file,
+        submenu: [
+          {
+            label: t.copy_original,
+            click: () => {
+              fs.readFile(props.path, (err, data) => {
+                if (!err) {
+                  const img = nativeImage.createFromBuffer(data);
+                  clipboard.writeImage(img);
+                }
+              });
             }
-          });
-        } 
+          },
+          { label: t.show_in_folder, click: () => shell.showItemInFolder(props.path) }
+        ]
       },
-      { label: t.show_in_folder, click: () => shell.showItemInFolder(props.path) },
-      { type: 'separator' },
-      { label: t.go_start, click: () => event.sender.send('menu-action', { action: 'go-start' }) },
-      { label: t.go_end, click: () => event.sender.send('menu-action', { action: 'go-end' }) },
+      {
+        label: t.navigate,
+        submenu: [
+          { label: t.go_start, click: () => event.sender.send('menu-action', { action: 'go-start' }) },
+          { label: t.go_end, click: () => event.sender.send('menu-action', { action: 'go-end' }) }
+        ]
+      },
       { type: 'separator' },
       { label: t.hide_session, click: () => event.sender.send('menu-action', { action: 'remove-from-list', index: props.index }) },
-      { 
-        label: t.restore_hidden.replace('{count}', props.hiddenCount || 0), 
+      {
+        label: t.restore_hidden.replace('{count}', props.hiddenCount || 0),
         enabled: !!props.hiddenCount,
         visible: !!props.hiddenCount,
-        click: () => event.sender.send('menu-action', { action: 'restore-hidden' }) 
+        click: () => event.sender.send('menu-action', { action: 'restore-hidden' })
       },
       { type: 'separator' },
-      { 
-        label: t.move_trash, 
-        click: async () => {
-          const result = await dialog.showMessageBox(win, {
-            type: 'question',
-            buttons: [lang === 'es' ? 'Sí' : 'Yes', lang === 'es' ? 'No' : 'No'],
-            defaultId: 0,
-            title: lang === 'es' ? 'Mover a la papelera' : 'Move to Trash',
-            message: lang === 'es' ? '¿Estás seguro de que quieres mover esta imagen a la papelera de reciclaje?' : 'Are you sure you want to move this image to the Recycle Bin?',
-            detail: path.basename(props.path),
-            cancelId: 1
-          });
-          if (result.response === 0) {
-            shell.trashItem(props.path).then(() => {
-              event.sender.send('menu-action', { action: 'file-deleted', index: props.index });
-            }).catch(err => {
-              console.error(err);
-            });
-          }
+      {
+        label: t.move_trash,
+        click: () => {
+          event.sender.send('menu-action', { action: 'request-delete', index: props.index, path: props.path });
         }
-      }
+      },
+      { type: 'separator' },
+      { label: t.quit, click: () => win.close() }
     ];
   } else {
+    // Canvas context menu
+    const hasImages = !!props.hiddenCount || (props.type === 'canvas' && props.hasImages);
     template = [
-      { label: t.open_folder, click: () => event.sender.send('menu-action', { action: 'open-dir' }) },
+      {
+        label: t.file,
+        submenu: [
+          { label: t.open_folder, click: () => event.sender.send('menu-action', { action: 'open-dir' }) },
+          {
+            label: t.copy_path,
+            enabled: hasImages && !!props.path,
+            click: () => {
+              if (props.path) {
+                clipboard.writeText(props.path);
+              }
+            }
+          }
+        ]
+      },
+      {
+        label: t.view,
+        submenu: [
+          {
+            label: t.fit_window,
+            enabled: hasImages,
+            click: () => event.sender.send('menu-action', { action: 'fit-to-window' })
+          },
+          {
+            label: t.reset_zoom,
+            enabled: hasImages,
+            click: () => event.sender.send('menu-action', { action: 'reset-zoom' })
+          },
+          { type: 'separator' },
+          {
+            label: t.autohide_hud,
+            type: 'checkbox',
+            checked: !!props.hudAutoHide,
+            click: () => event.sender.send('menu-action', { action: 'toggle-autohide' })
+          },
+          {
+            label: t.autohide_nav,
+            type: 'checkbox',
+            checked: !!props.navAutoHide,
+            click: () => event.sender.send('menu-action', { action: 'toggle-autohide-nav' })
+          }
+        ]
+      },
+      {
+        label: t.edit,
+        enabled: hasImages,
+        submenu: [
+          {
+            label: t.rotate,
+            submenu: [
+              { label: t.rotate_r, click: () => event.sender.send('menu-action', { action: 'rotate-r-save' }) },
+              { label: t.rotate_l, click: () => event.sender.send('menu-action', { action: 'rotate-l-save' }) }
+            ]
+          },
+          { label: t.crop, click: () => event.sender.send('menu-action', { action: 'crop' }) },
+          { label: t.resize, click: () => event.sender.send('menu-action', { action: 'resize' }) },
+          {
+            label: props.isFavorite ? t.favorite_remove : t.favorite_add,
+            click: () => event.sender.send('menu-action', { action: 'toggle-favorite' })
+          }
+        ]
+      },
       { type: 'separator' },
       { label: t.config, click: () => event.sender.send('menu-action', { action: 'show-config' }) },
-      { label: t.about, click: () => event.sender.send('menu-action', { action: 'show-about' }) }
+      { label: t.about, click: () => event.sender.send('menu-action', { action: 'show-about' }) },
+      { type: 'separator' },
+      {
+        label: win.isMaximized() ? t.restore : t.maximize,
+        click: () => {
+          if (win.isMaximized()) {
+            win.unmaximize();
+          } else {
+            win.maximize();
+          }
+        }
+      },
+      { type: 'separator' },
+      { label: t.quit, click: () => win.close() }
     ];
   }
 
