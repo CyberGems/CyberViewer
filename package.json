@@ -96,6 +96,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "CyberViewer"
+    },
+    "portable": {
+      "artifactName": "${productName} Portable ${version}.${ext}"
     }
   }
 }
