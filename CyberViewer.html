@@ -3450,6 +3450,14 @@ function showCustomContextMenu(e, type, data) {
   e.preventDefault();
   e.stopPropagation();
 
+  // Close main/burger menu if open
+  const mainMenu = $('main-menu');
+  const btnMenu = $('btn-menu');
+  if (mainMenu && mainMenu.classList.contains('open')) {
+    mainMenu.classList.remove('open');
+    if (btnMenu) btnMenu.classList.remove('open');
+  }
+
   const menu = $('custom-ctx-menu');
   if (!menu) return;
 
@@ -6018,11 +6026,17 @@ $('btn-center').addEventListener('click', () => {
     }
     
     try {
-      const response = await fetch('https://api.github.com/repos/CyberGems/CyberViewer/releases/latest');
-      if (!response.ok) throw new Error('HTTP ' + response.status);
-      
-      const data = await response.json();
-      const latestTag = data.tag_name;
+      let latestTag;
+      if (isElectron) {
+        const res = await window.electronAPI.checkUpdates();
+        if (!res.success) throw new Error(res.error);
+        latestTag = res.data.tag_name;
+      } else {
+        const response = await fetch('https://api.github.com/repos/CyberGems/CyberViewer/releases/latest');
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const data = await response.json();
+        latestTag = data.tag_name;
+      }
       const version = isElectron ? await window.electronAPI.getVersion() : '1.5.1';
       
       const cleanLatest = latestTag.replace(/^v/, '');
@@ -6173,7 +6187,12 @@ $('btn-config').addEventListener('click', openConfig);
     const th = panel.querySelector('[data-action="toggle-hints"]');
     if (th) th.classList.toggle('checked', !!(state.settings && state.settings.app && state.settings.app.showTopHints !== false));
   }
-  function openMenu() { refreshMenuState(); panel.classList.add('open'); btn.classList.add('open'); }
+  function openMenu() {
+    if (typeof hideCustomContextMenu === 'function') hideCustomContextMenu();
+    refreshMenuState();
+    panel.classList.add('open');
+    btn.classList.add('open');
+  }
 
   btn.addEventListener('click', e => {
     e.stopPropagation();

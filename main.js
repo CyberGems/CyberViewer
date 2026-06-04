@@ -251,6 +251,22 @@ ipcMain.handle('show-save-dialog', async (event, options) => {
   const result = await dialog.showSaveDialog(win, options);
   return result;
 });
+ipcMain.handle('check-updates', async () => {
+  try {
+    const response = await fetch('https://api.github.com/repos/CyberGems/CyberViewer/releases/latest', {
+      headers: {
+        'User-Agent': 'CyberViewer-App'
+      }
+    });
+    if (!response.ok) {
+      return { success: false, error: 'HTTP ' + response.status };
+    }
+    const data = await response.json();
+    return { success: true, data };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+});
 ipcMain.handle('get-monitors', () => {
   return screen.getAllDisplays().map(d => ({
     id: d.id,

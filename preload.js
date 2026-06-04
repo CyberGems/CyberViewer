@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getFileInfo:    (path) => ipcRenderer.invoke('get-file-info', path),
   validatePaths:  (paths) => ipcRenderer.invoke('validate-paths', paths),
   showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),
+  checkUpdates:   () => ipcRenderer.invoke('check-updates'),
   registerContextMenu: (enable, lang) => ipcRenderer.invoke('register-context-menu', enable, lang)
 });
 
