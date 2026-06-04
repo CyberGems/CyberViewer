@@ -561,6 +561,16 @@
     left: auto;
     right: calc(100% + 4px);
   }
+  .context-menu-panel .menu-cat[data-sub]::after {
+    right: auto;
+    left: 100%;
+    width: 8px;
+  }
+  .context-menu-panel.open-left .menu-cat[data-sub]::after {
+    left: auto;
+    right: 100%;
+    width: 8px;
+  }
   @keyframes menuIn {
     from { opacity: 0; transform: translateY(-6px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -3835,6 +3845,7 @@ function renderMenuTemplate(container, template) {
     if (item.isSub) {
       const cat = document.createElement('div');
       cat.className = 'menu-cat';
+      cat.setAttribute('data-sub', '');
       if (item.enabled === false) cat.classList.add('disabled');
 
       const label = document.createElement('span');
