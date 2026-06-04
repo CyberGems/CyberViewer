@@ -6037,7 +6037,7 @@ $('btn-center').addEventListener('click', () => {
         const data = await response.json();
         latestTag = data.tag_name;
       }
-      const version = isElectron ? await window.electronAPI.getVersion() : '1.5.1';
+      const version = isElectron ? await window.electronAPI.getVersion() : '1.6.0';
       
       const cleanLatest = latestTag.replace(/^v/, '');
       const cleanCurrent = version.replace(/^v/, '');
@@ -6085,7 +6085,7 @@ $('btn-center').addEventListener('click', () => {
   async function openAbout() {
     const lang = state.settings.app.language || 'en';
     const t = I18N[lang] || I18N.en;
-    const version = isElectron ? await window.electronAPI.getVersion() : '1.5.1';
+    const version = isElectron ? await window.electronAPI.getVersion() : '1.6.0';
     const subtitle = lang === 'es' ? `v${version} — Visor Pro` : `v${version} — Pro Viewer`;
     
     overlay.innerHTML = `
