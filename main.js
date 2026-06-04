@@ -38,7 +38,8 @@ function loadSettings() {
       contextMenuEnabled: false,
       manualUpdateOnly: false,
       hudAutoHide: true,
-      hudAutoHideDelay: 2000
+      hudAutoHideDelay: 2000,
+      showTopHints: true
     }
   };
 }
@@ -246,6 +247,10 @@ ipcMain.handle('open-file-dialog', async () => {
 
 ipcMain.handle('get-settings', () => loadSettings());
 ipcMain.handle('get-version', () => app.getVersion());
+ipcMain.handle('show-save-dialog', async (event, options) => {
+  const result = await dialog.showSaveDialog(win, options);
+  return result;
+});
 ipcMain.handle('get-monitors', () => {
   return screen.getAllDisplays().map(d => ({
     id: d.id,
@@ -651,6 +656,7 @@ const I18N_MAIN = {
     go_end: "Go to End",
     move_trash: "Move to Trash",
     open_folder: "Open image",
+    close_image: "Close Image",
     copy_path: "Copy Image Path",
     config: "Configuration",
     about: "About",
@@ -686,6 +692,7 @@ const I18N_MAIN = {
     go_end: "Ir al Final",
     move_trash: "Mover a la Papelera",
     open_folder: "Abrir imagen",
+    close_image: "Cerrar Imagen",
     copy_path: "Copiar ruta de la imagen",
     config: "Configuración",
     about: "Acerca de",
@@ -746,6 +753,15 @@ ipcMain.on('show-context-menu', (event, props) => {
             }
           },
           {
+            label: t.copy_path,
+            enabled: !!props.path,
+            click: () => {
+              if (props.path) {
+                clipboard.writeText(props.path);
+              }
+            }
+          },
+          {
             label: t.save_changes,
             enabled: !!props.hasChanges,
             click: () => event.sender.send('menu-action', { action: 'save-changes' })
@@ -766,6 +782,10 @@ ipcMain.on('show-context-menu', (event, props) => {
                 event.sender.send('menu-action', { action: 'save-as', targetPath: result.filePath });
               }
             }
+          },
+          {
+            label: t.close_image,
+            click: () => event.sender.send('menu-action', { action: 'close-image' })
           }
         ]
       },
@@ -867,6 +887,12 @@ ipcMain.on('show-context-menu', (event, props) => {
         label: t.file,
         submenu: [
           { label: t.open_folder, click: () => event.sender.send('menu-action', { action: 'open-dir' }) },
+          {
+            label: t.close_image,
+            enabled: hasImages,
+            visible: hasImages,
+            click: () => event.sender.send('menu-action', { action: 'close-image' })
+          },
           {
             label: t.copy_path,
             enabled: hasImages && !!props.path,

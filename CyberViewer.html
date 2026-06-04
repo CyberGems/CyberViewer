@@ -392,11 +392,11 @@
   }
   .logo-img {
     height: 22px;
-    filter: drop-shadow(0 0 5px var(--cyber-accent));
+    filter: drop-shadow(0 0 3px var(--cyber-accent));
     transition: filter 0.3s ease;
   }
   .logo:hover .logo-img {
-    filter: drop-shadow(0 0 10px var(--cyber-accent));
+    filter: drop-shadow(0 0 7px var(--cyber-accent));
   }
   .logo-text {
     font-size: 14px;
@@ -543,6 +543,24 @@
     font-family: 'Share Tech Mono', monospace;
   }
   .menu-panel.open { display: block; animation: menuIn 150ms cubic-bezier(.4,0,.2,1); }
+
+  .context-menu-panel {
+    position: fixed !important;
+    right: auto !important;
+    display: none;
+    animation: menuIn 150ms cubic-bezier(.4,0,.2,1);
+  }
+  .context-menu-panel.open {
+    display: block;
+  }
+  .context-menu-panel .menu-sub {
+    left: calc(100% + 4px);
+    right: auto;
+  }
+  .context-menu-panel.open-left .menu-sub {
+    left: auto;
+    right: calc(100% + 4px);
+  }
   @keyframes menuIn {
     from { opacity: 0; transform: translateY(-6px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -1654,12 +1672,17 @@
   .top-hints {
     position: absolute;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translate(-50%, 0);
     display: flex;
     align-items: center;
     gap: 12px;
     pointer-events: none;
     z-index: 10;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .top-hints.hidden {
+    opacity: 0;
+    transform: translate(-50%, -15px);
   }
 
   /* ── OVERRIDES & IMPROVEMENTS FOR MODAL RESIZE (CYBERPUNK AESTHETIC) ── */
@@ -2111,6 +2134,7 @@
         <span class="menu-label" data-i18n="menu_file">ARCHIVO</span><span class="menu-arrow">&#8250;</span>
         <div class="menu-sub">
           <button class="menu-item" data-action="open-folder"><span class="menu-label" data-i18n="menu_open">Abrir imagen</span><span class="menu-shortcut">Ctrl+O</span></button>
+          <button class="menu-item" data-action="close-image" data-needs-image><span class="menu-label" data-i18n="menu_close_image">Cerrar imagen</span></button>
           <button class="menu-item" data-action="show-folder" data-needs-image><span class="menu-label" data-i18n="menu_show">Mostrar en explorador</span><span class="menu-shortcut">Ctrl+&#8679;O</span></button>
           <div class="menu-divider"></div>
           <button class="menu-item" data-action="save" data-needs-image><span class="menu-label" data-i18n="menu_save">Guardar</span><span class="menu-shortcut">Ctrl+S</span></button>
@@ -2141,6 +2165,7 @@
           <div class="menu-divider"></div>
           <button class="menu-item" data-action="sidebar"><span class="menu-check">&#10003;</span><span class="menu-label" data-i18n="menu_sidebar">Barra lateral</span></button>
           <button class="menu-item" data-action="autohide"><span class="menu-check">&#10003;</span><span class="menu-label" data-i18n="menu_autohide">Auto-ocultar HUD</span></button>
+          <button class="menu-item" data-action="toggle-hints"><span class="menu-check">&#10003;</span><span class="menu-label" data-i18n="menu_show_hints">Atajos de teclado</span></button>
         </div>
       </div>
 
@@ -2254,7 +2279,7 @@
 
       <!-- INTERACTIVE HUD -->
       <div id="kbd-hint">
-        <button class="kbd-btn" id="btn-open-hud" data-i18n-title="open_title" title="Abrir (Ctrl+O)"><svg class="kbd-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/></svg><span data-i18n="open_dir">ABRIR</span></button>
+        <button class="kbd-btn" id="btn-open-hud" data-i18n-title="open_title" title="Abrir imagen (Ctrl+O)"><svg class="kbd-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/></svg><span data-i18n="open_dir">ABRIR</span></button>
         <button class="kbd-btn" id="btn-show-folder" data-i18n-title="show_folder_title" title="Mostrar en Carpeta (Ctrl+Shift+O)"><svg class="kbd-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><path d="m9.5 14.5 5-5"/><path d="M11 9.5h3.5V13"/></svg><span data-i18n="show_folder">SHOW</span></button>
         <div class="kbd-sep"></div>
         <button class="kbd-btn" id="btn-fit-hud" data-i18n-title="fit_title" title="Ajustar (F)"><span data-i18n="fit_to_window">AJUSTAR</span></button>
@@ -2437,6 +2462,16 @@
           </div>
           <label class="switch">
             <input type="checkbox" id="cfg-nav-autohide">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="config-row">
+          <div class="config-info">
+            <div class="config-name" data-i18n="cfg_show_hints">Atajos de Título</div>
+            <div class="config-desc" data-i18n="cfg_show_hints_desc">Mostrar atajos de teclado en la barra superior.</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="cfg-show-hints" checked>
             <span class="slider"></span>
           </label>
         </div>
@@ -2640,6 +2675,9 @@
   </div>
 </div>
 
+<!-- CUSTOM CONTEXT MENU -->
+<div id="custom-ctx-menu" class="menu-panel context-menu-panel"></div>
+
 
 
 <script>
@@ -2709,7 +2747,8 @@ const state = {
       autoStart: false, 
       accentColor: '#00d4ff',
       language: 'en',
-      favorites: []
+      favorites: [],
+      showTopHints: true
     } 
   },
 };
@@ -2786,7 +2825,7 @@ const I18N = {
     about_dev_tools: "OPEN DEVTOOLS",
     about_understood: "UNDERSTOOD",
     // Titles for HUD buttons
-    open_title: "Open (Ctrl+O)",
+    open_title: "Open image (Ctrl+O)",
     fit_title: "Fit to Window (F)",
     orig_title: "Original Size 1:1 (1)",
     fs_title: "Fullscreen (Enter)",
@@ -2856,7 +2895,21 @@ const I18N = {
     menu_go: "GO",
     menu_help: "HELP",
     menu_open: "Open image",
+    menu_close_image: "Close image",
     menu_show: "Show in Explorer",
+    menu_copy_original: "Copy Original",
+    menu_copy_path: "Copy Image Path",
+    menu_save_as: "Save As...",
+    menu_go_start: "Go to Start",
+    menu_go_end: "Go to End",
+    menu_hide_session: "Hide from this session",
+    menu_restore_hidden: "Restore hidden ({count})",
+    menu_maximize: "Maximize",
+    menu_restore: "Restore",
+    menu_quit: "Quit",
+    menu_autohide_nav: "Auto-hide Nav Buttons",
+    favorite_add: "Add to Favorites",
+    favorite_remove: "Remove from Favorites",
     menu_save: "Save",
     menu_copy: "Copy Image",
     menu_props: "Properties",
@@ -2870,6 +2923,7 @@ const I18N = {
     menu_fullscreen: "Fullscreen",
     menu_sidebar: "Sidebar",
     menu_autohide: "Auto-hide HUD",
+    menu_show_hints: "Keyboard Hints",
     menu_next: "Next Image",
     menu_prev: "Previous Image",
     menu_favorite: "Favorite",
@@ -2895,6 +2949,8 @@ const I18N = {
     cfg_hud_autohide_desc: "Hide the floating toolbar after inactivity.",
     cfg_nav_autohide: "Auto-hide Nav Buttons",
     cfg_nav_autohide_desc: "Hide navigation buttons after inactivity.",
+    cfg_show_hints: "Title Bar Hints",
+    cfg_show_hints_desc: "Show keyboard shortcuts in the title bar.",
     cfg_hud_delay: "Inactivity Hide Delay",
     cfg_seconds: "{seconds}s",
     prev_title: "Previous Image (ArrowLeft / A)",
@@ -2972,7 +3028,7 @@ const I18N = {
     about_dev_tools: "ABRIR CONSOLA",
     about_understood: "ENTENDIDO",
     // Titles for HUD buttons
-    open_title: "Abrir (Ctrl+O)",
+    open_title: "Abrir imagen (Ctrl+O)",
     fit_title: "Ajustar a la ventana (F)",
     orig_title: "Tamaño original 1:1 (1)",
     fs_title: "Pantalla completa (Enter)",
@@ -3042,7 +3098,21 @@ const I18N = {
     menu_go: "NAVEGAR",
     menu_help: "AYUDA",
     menu_open: "Abrir imagen",
+    menu_close_image: "Cerrar imagen",
     menu_show: "Mostrar en explorador",
+    menu_copy_original: "Copiar Original",
+    menu_copy_path: "Copiar ruta de la imagen",
+    menu_save_as: "Guardar Como...",
+    menu_go_start: "Ir al Principio",
+    menu_go_end: "Ir al Final",
+    menu_hide_session: "Ocultar de esta sesión",
+    menu_restore_hidden: "Restaurar ocultos ({count})",
+    menu_maximize: "Maximizar",
+    menu_restore: "Restaurar",
+    menu_quit: "Salir",
+    menu_autohide_nav: "Ocultar botones de navegación",
+    favorite_add: "Añadir a Favoritos",
+    favorite_remove: "Quitar de Favoritos",
     menu_save: "Guardar",
     menu_copy: "Copiar imagen",
     menu_props: "Propiedades",
@@ -3056,6 +3126,7 @@ const I18N = {
     menu_fullscreen: "Pantalla completa",
     menu_sidebar: "Barra lateral",
     menu_autohide: "Auto-ocultar HUD",
+    menu_show_hints: "Atajos de teclado",
     menu_next: "Imagen siguiente",
     menu_prev: "Imagen anterior",
     menu_favorite: "Favorito",
@@ -3081,6 +3152,8 @@ const I18N = {
     cfg_hud_autohide_desc: "Ocultar la barra de herramientas tras inactividad.",
     cfg_nav_autohide: "Ocultar botones de navegación",
     cfg_nav_autohide_desc: "Ocultar botones de navegación tras inactividad.",
+    cfg_show_hints: "Atajos de Título",
+    cfg_show_hints_desc: "Mostrar accesos rápidos de teclado en la barra superior.",
     cfg_hud_delay: "Retraso de ocultación",
     cfg_seconds: "{seconds}s",
     prev_title: "Imagen Anterior (ArrowLeft / A)",
@@ -3124,6 +3197,57 @@ function updateLanguage(lang = 'en') {
   if (typeof syncFavoritesToggleButtonState === 'function') {
     syncFavoritesToggleButtonState(lang);
   }
+}
+
+function closeImage() {
+  state.scanInProgress = false;
+  state.images.forEach(im => { if (im.url) URL.revokeObjectURL(im.url); });
+  state.preloadCache.clear();
+  state.images = [];
+  state.currentIdx = -1;
+  state.current = -1;
+  state.zoom = 1;
+  state.panX = 0;
+  state.panY = 0;
+  state.currentRotation = 0;
+  state.hasChanges = false;
+  state.isCropping = false;
+
+  updateSaveButton();
+  updateHUDStates();
+
+  dropZone.style.display = 'flex';
+
+  mainImg.src = '';
+  mainImg.classList.remove('loaded', 'slide-in-left', 'slide-in-right', 'slide-out-left', 'slide-out-right');
+  mainImg.removeAttribute('src');
+  
+  canvasL.style.transform = '';
+  canvasL.style.transition = '';
+
+  const viewerFilename = $('viewer-filename');
+  if (viewerFilename) {
+    viewerFilename.textContent = '';
+    viewerFilename.removeAttribute('data-tooltip');
+    viewerFilename.classList.remove('cyber-tooltip', 'tooltip-bottom');
+  }
+
+  buildSidebar();
+  updateCounter();
+  updateFileStats();
+
+  const radarPct = $('radar-pct');
+  if (radarPct) radarPct.textContent = '0%';
+  const radarCount = $('radar-count');
+  if (radarCount) radarCount.textContent = ' [0/0] ';
+
+  zoomVal.textContent = '100%';
+  const zoomPct = $('zoom-pct');
+  if (zoomPct) zoomPct.textContent = '100%';
+  const zoomSlider = $('zoom-slider');
+  if (zoomSlider) zoomSlider.value = 500;
+
+  updateFavButtonState();
 }
 
 // ── FILE HANDLING ──
@@ -3259,14 +3383,9 @@ function buildSidebar() {
     thumbObserver.observe(item);
 
       item.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const hiddenCount = state.images.filter(im => im.hidden).length;
-        window.electronAPI.showContextMenu({ 
-          type: 'thumb', 
+        showCustomContextMenu(e, 'thumb', { 
           path: im.file.path,
-          index: i,
-          hiddenCount: hiddenCount
+          index: i
         });
       });
 
@@ -3282,6 +3401,8 @@ function buildSidebar() {
 
 // ── CONTEXT MENU ──
 window.addEventListener('contextmenu', (e) => {
+  if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
+  
   e.preventDefault();
   
   if (e.target.closest('.thumb-item')) return;
@@ -3298,182 +3419,652 @@ window.addEventListener('contextmenu', (e) => {
       e.clientY >= rect.top &&
       e.clientY <= rect.bottom
     );
-    const hiddenCount = state.images.filter(im => im.hidden).length;
-    const isFav = state.settings.app.favorites && state.images[state.currentIdx]?.file?.path && state.settings.app.favorites.includes(state.images[state.currentIdx].file.path);
     if (onImage) {
-      window.electronAPI.showContextMenu({ 
-        type: 'image', 
+      showCustomContextMenu(e, 'image', { 
         path: state.images[state.currentIdx]?.file.path,
-        index: state.currentIdx,
-        hiddenCount: hiddenCount,
-        hasChanges: state.hasChanges,
-        isFavorite: isFav
+        index: state.currentIdx
       });
     } else {
-      window.electronAPI.showContextMenu({ 
-        type: 'canvas',
-        hasImages: true,
-        hiddenCount: hiddenCount,
-        path: state.images[state.currentIdx]?.file.path,
-        hudAutoHide: state.settings.app.hudAutoHide,
-        navAutoHide: state.settings.app.navAutoHide !== false,
-        isFavorite: isFav
+      showCustomContextMenu(e, 'canvas', { 
+        path: state.images[state.currentIdx]?.file.path
       });
     }
   } else {
-    window.electronAPI.showContextMenu({ 
-      type: 'canvas',
-      hasImages: false,
-      hiddenCount: 0,
-      hudAutoHide: state.settings.app.hudAutoHide,
-      navAutoHide: state.settings.app.navAutoHide !== false,
-      isFavorite: false
+    showCustomContextMenu(e, 'canvas', {
+      path: null
     });
   }
 });
 
-if (isElectron) {
-  window.electronAPI.onMenuAction((data) => {
-    switch (data.action) {
-      case 'remove-from-list':
-        if (data.index !== undefined) {
-          const removed = state.images[data.index];
-          removed.hidden = true;
-          
-          const visible = state.images.filter(im => !im.hidden);
-          if (visible.length === 0) {
-            location.reload();
-          } else {
-            // Buscar siguiente visible
-            let next = data.index;
-            while(next < state.images.length && state.images[next].hidden) next++;
-            if (next >= state.images.length) {
-               next = data.index;
-               while(next >= 0 && state.images[next].hidden) next--;
-            }
-            
-            buildSidebar();
-            showImage(next, null);
-            const lang = state.settings.app.language || 'en';
-            showToast((I18N[lang].toast_hidden || 'HIDDEN: ') + removed.file.name.toUpperCase());
+function showCustomContextMenu(e, type, data) {
+  e.preventDefault();
+  e.stopPropagation();
+
+  const menu = $('custom-ctx-menu');
+  if (!menu) return;
+
+  menu.innerHTML = '';
+  menu.className = 'menu-panel context-menu-panel';
+
+  const template = buildMenuTemplate(type, data);
+  if (!template || template.length === 0) return;
+
+  renderMenuTemplate(menu, template);
+
+  menu.style.display = 'block';
+  menu.style.visibility = 'hidden';
+
+  const menuW = menu.offsetWidth;
+  const menuH = menu.offsetHeight;
+
+  let x = e.clientX;
+  let y = e.clientY;
+
+  const winW = window.innerWidth;
+  const winH = window.innerHeight;
+
+  if (x + menuW > winW) {
+    x = winW - menuW - 10;
+  }
+  if (y + menuH > winH) {
+    y = winH - menuH - 10;
+  }
+  
+  x = Math.max(10, x);
+  y = Math.max(10, y);
+
+  const submenuW = 216;
+  if (x + menuW + submenuW > winW) {
+    menu.classList.add('open-left');
+  }
+
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+  menu.style.visibility = 'visible';
+  menu.classList.add('open');
+
+  const closeListener = (evt) => {
+    if (!menu.contains(evt.target)) {
+      hideCustomContextMenu();
+      document.removeEventListener('click', closeListener);
+      document.removeEventListener('contextmenu', closeListener);
+    }
+  };
+  
+  setTimeout(() => {
+    document.addEventListener('click', closeListener);
+    document.addEventListener('contextmenu', closeListener);
+  }, 50);
+}
+
+function hideCustomContextMenu() {
+  const menu = $('custom-ctx-menu');
+  if (menu) {
+    menu.style.display = 'none';
+    menu.classList.remove('open');
+  }
+}
+
+function buildMenuTemplate(type, data) {
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  const getTxt = (key, count) => {
+    let t = I18N[lang][key] || I18N.en[key] || '';
+    if (count !== undefined) t = t.replace('{count}', count);
+    return t;
+  };
+
+  const hasImages = state.images.length > 0;
+  const isFav = hasImages && state.settings.app.favorites && state.images[state.currentIdx]?.file?.path && state.settings.app.favorites.includes(state.images[state.currentIdx].file.path);
+
+  if (type === 'thumb') {
+    const hiddenCount = state.images.filter(im => im.hidden).length;
+    return [
+      {
+        label: getTxt('menu_file'),
+        isSub: true,
+        items: [
+          {
+            label: getTxt('menu_copy_original'),
+            action: () => window.electronAPI.copyImage(data.path)
+          },
+          {
+            label: getTxt('menu_show'),
+            action: () => window.electronAPI.showItemInFolder(data.path)
           }
-        }
-        break;
-      case 'restore-hidden':
-        state.images.forEach(im => im.hidden = false);
-        buildSidebar();
-        const lang = state.settings.app.language || 'en';
-        showToast(I18N[lang].toast_restored, 'success');
-        break;
-      case 'go-start':
-        showImage(0, 'right', true);
-        break;
-      case 'go-end':
-        showImage(state.images.length - 1, 'left', true);
-        break;
-      case 'request-delete':
-        if (data.index !== undefined && data.path) {
-          const name = data.path.split(/[\\/]/).pop();
-          const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
-          showCyberConfirm({
-            title: lang === 'es' ? 'Mover a la papelera' : 'Move to Trash',
-            message: lang === 'es' 
-              ? '¿Estás seguro de que quieres mover esta imagen a la papelera de reciclaje?' 
-              : 'Are you sure you want to move this image to the Recycle Bin?',
-            detail: name,
-            danger: true,
-            onConfirm: async () => {
-              try {
-                const result = await window.electronAPI.moveToTrashDirect(data.path);
-                if (result && result.success) {
-                  handleFileDeleted(data.index);
-                }
-              } catch (err) {
-                console.error('Error al mover a la papelera:', err);
+        ]
+      },
+      {
+        label: getTxt('menu_go'),
+        isSub: true,
+        items: [
+          {
+            label: getTxt('menu_go_start'),
+            action: () => showImage(0, 'right', true)
+          },
+          {
+            label: getTxt('menu_go_end'),
+            action: () => showImage(state.images.length - 1, 'left', true)
+          }
+        ]
+      },
+      { type: 'separator' },
+      {
+        label: getTxt('menu_hide_session'),
+        action: () => executeAction({ action: 'remove-from-list', index: data.index })
+      },
+      {
+        label: getTxt('menu_restore_hidden', hiddenCount),
+        enabled: hiddenCount > 0,
+        visible: hiddenCount > 0,
+        action: () => executeAction({ action: 'restore-hidden' })
+      },
+      { type: 'separator' },
+      {
+        label: getTxt('menu_trash'),
+        shortcut: 'Del',
+        danger: true,
+        action: () => executeAction({ action: 'request-delete', index: data.index, path: data.path })
+      },
+      { type: 'separator' },
+      {
+        label: getTxt('menu_quit'),
+        action: () => window.electronAPI.close()
+      }
+    ];
+  } else if (type === 'image') {
+    const hiddenCount = state.images.filter(im => im.hidden).length;
+    return [
+      {
+        label: getTxt('menu_file'),
+        isSub: true,
+        items: [
+          {
+            label: getTxt('menu_copy'),
+            shortcut: 'Ctrl+C',
+            action: () => copyToClipboard()
+          },
+          {
+            label: getTxt('menu_copy_path'),
+            action: () => {
+              if (data.path) {
+                navigator.clipboard.writeText(data.path);
+                showToast(lang === 'es' ? 'RUTA COPIADA' : 'PATH COPIED', 'success');
               }
             }
-          });
-        }
-        break;
-      case 'file-deleted':
-        if (data.index !== undefined) {
-          handleFileDeleted(data.index);
-        }
-        break;
-      case 'open-dir':
-        btnOpen.click();
-        break;
-      case 'show-config':
-        btnConfig.click();
-        break;
-      case 'toggle-autohide':
-        state.settings.app.hudAutoHide = !state.settings.app.hudAutoHide;
-        if (isElectron) {
-          window.electronAPI.saveSettings(state.settings.app);
-        }
-        applySettings();
-        resetHudTimer();
-        break;
-      case 'toggle-autohide-nav':
-        state.settings.app.navAutoHide = !state.settings.app.navAutoHide;
-        if (isElectron) {
-          window.electronAPI.saveSettings(state.settings.app);
-        }
-        applySettings();
-        resetHudTimer();
-        break;
-      case 'rotate-r-save':
-        rotateAndSave(90);
-        break;
-      case 'rotate-l-save':
-        rotateAndSave(-90);
-        break;
-      case 'crop':
-        const btnCrop = $('btn-crop');
-        if (btnCrop) btnCrop.click();
-        break;
-      case 'resize':
-        const btnResize = $('btn-resize');
-        if (btnResize) btnResize.click();
-        break;
-      case 'toggle-favorite':
-        toggleFavorite();
-        break;
-      case 'show-about':
-        btnAbout.click();
-        break;
-      case 'fit-to-window': {
-        const im = state.images[state.current];
-        if (im && im.w) {
-          state.viewMode = 'fit';
-          fitToWindow(im.w, im.h);
-        }
-        break;
+          },
+          {
+            label: getTxt('menu_save'),
+            shortcut: 'Ctrl+S',
+            enabled: state.hasChanges,
+            action: () => saveCurrent()
+          },
+          {
+            label: getTxt('menu_save_as'),
+            action: () => showSaveAsDialog(data.path)
+          },
+          {
+            label: getTxt('menu_close_image'),
+            action: () => closeImage()
+          }
+        ]
+      },
+      {
+        label: getTxt('menu_edit'),
+        isSub: true,
+        items: [
+          {
+            label: getTxt('menu_rotate_r'),
+            shortcut: 'E',
+            action: () => rotateAndSave(90)
+          },
+          {
+            label: getTxt('menu_rotate_l'),
+            shortcut: 'Q',
+            action: () => rotateAndSave(-90)
+          },
+          { type: 'separator' },
+          {
+            label: getTxt('menu_crop'),
+            shortcut: 'C',
+            action: () => $('btn-crop').click()
+          },
+          {
+            label: getTxt('menu_resize'),
+            shortcut: 'R',
+            action: () => $('btn-resize').click()
+          },
+          { type: 'separator' },
+          {
+            label: isFav ? getTxt('favorite_remove') : getTxt('favorite_add'),
+            shortcut: 'Ctrl+D',
+            action: () => toggleFavorite()
+          }
+        ]
+      },
+      {
+        label: getTxt('menu_view'),
+        isSub: true,
+        items: [
+          {
+            label: getTxt('menu_show'),
+            action: () => window.electronAPI.showItemInFolder(data.path)
+          },
+          {
+            label: getTxt('menu_props'),
+            action: () => showPropertiesPanel(data.path)
+          }
+        ]
+      },
+      { type: 'separator' },
+      {
+        label: getTxt('menu_trash'),
+        shortcut: 'Del',
+        danger: true,
+        action: () => executeAction({ action: 'request-delete', index: data.index, path: data.path })
+      },
+      { type: 'separator' },
+      {
+        label: getTxt('menu_hide_session'),
+        action: () => executeAction({ action: 'remove-from-list', index: data.index })
+      },
+      {
+        label: getTxt('menu_restore_hidden', hiddenCount),
+        enabled: hiddenCount > 0,
+        visible: hiddenCount > 0,
+        action: () => executeAction({ action: 'restore-hidden' })
+      },
+      { type: 'separator' },
+      {
+        label: getTxt('menu_quit'),
+        action: () => window.electronAPI.close()
       }
-      case 'reset-zoom': {
-        const im = state.images[state.current];
-        if (im && im.w) {
-          state.viewMode = 'original';
-          state.zoom = 1;
-          state.panX = 0;
-          state.panY = 0;
-          applyTransform(false);
-          updateFileStats();
+    ];
+  } else {
+    // Canvas context menu
+    const hiddenCount = state.images.filter(im => im.hidden).length;
+    return [
+      {
+        label: getTxt('menu_file'),
+        isSub: true,
+        items: [
+          {
+            label: getTxt('menu_open'),
+            shortcut: 'Ctrl+O',
+            action: () => $('btn-open-hud').click()
+          },
+          {
+            label: getTxt('menu_close_image'),
+            enabled: hasImages,
+            visible: hasImages,
+            action: () => closeImage()
+          },
+          {
+            label: getTxt('menu_copy_path'),
+            enabled: hasImages && !!data.path,
+            visible: hasImages,
+            action: () => {
+              if (data.path) {
+                navigator.clipboard.writeText(data.path);
+                showToast(lang === 'es' ? 'RUTA COPIADA' : 'PATH COPIED', 'success');
+              }
+            }
+          }
+        ]
+      },
+      {
+        label: getTxt('menu_view'),
+        isSub: true,
+        items: [
+          {
+            label: getTxt('menu_fit'),
+            shortcut: 'F',
+            enabled: hasImages,
+            action: () => $('btn-fit-hud').click()
+          },
+          {
+            label: getTxt('menu_original'),
+            shortcut: '1',
+            enabled: hasImages,
+            action: () => $('btn-orig-hud').click()
+          },
+          { type: 'separator' },
+          {
+            label: getTxt('menu_autohide'),
+            type: 'checkbox',
+            checked: !!state.settings.app.hudAutoHide,
+            action: () => {
+              state.settings.app.hudAutoHide = !state.settings.app.hudAutoHide;
+              if (isElectron) window.electronAPI.saveSettings(state.settings.app);
+              applySettings();
+              resetHudTimer();
+            }
+          },
+          {
+            label: getTxt('menu_autohide_nav'),
+            type: 'checkbox',
+            checked: state.settings.app.navAutoHide !== false,
+            action: () => {
+              state.settings.app.navAutoHide = !state.settings.app.navAutoHide;
+              if (isElectron) window.electronAPI.saveSettings(state.settings.app);
+              applySettings();
+              resetHudTimer();
+            }
+          },
+          {
+            label: getTxt('menu_show_hints'),
+            type: 'checkbox',
+            checked: state.settings.app.showTopHints !== false,
+            action: () => {
+              state.settings.app.showTopHints = (state.settings.app.showTopHints !== false) ? false : true;
+              if (isElectron) window.electronAPI.saveSettings(state.settings.app);
+              applySettings();
+            }
+          }
+        ]
+      },
+      {
+        label: getTxt('menu_edit'),
+        isSub: true,
+        enabled: hasImages,
+        items: [
+          {
+            label: getTxt('menu_rotate_r'),
+            shortcut: 'E',
+            action: () => rotateAndSave(90)
+          },
+          {
+            label: getTxt('menu_rotate_l'),
+            shortcut: 'Q',
+            action: () => rotateAndSave(-90)
+          },
+          { type: 'separator' },
+          {
+            label: getTxt('menu_crop'),
+            shortcut: 'C',
+            action: () => $('btn-crop').click()
+          },
+          {
+            label: getTxt('menu_resize'),
+            shortcut: 'R',
+            action: () => $('btn-resize').click()
+          },
+          { type: 'separator' },
+          {
+            label: isFav ? getTxt('favorite_remove') : getTxt('favorite_add'),
+            shortcut: 'Ctrl+D',
+            action: () => toggleFavorite()
+          }
+        ]
+      },
+      { type: 'separator' },
+      {
+        label: getTxt('config'),
+        action: () => openConfig()
+      },
+      {
+        label: getTxt('about'),
+        action: () => openAbout()
+      },
+      { type: 'separator' },
+      {
+        label: getTxt('menu_maximize'),
+        action: () => {
+          if (isElectron) window.electronAPI.maximize();
         }
-        break;
+      },
+      { type: 'separator' },
+      {
+        label: getTxt('menu_quit'),
+        action: () => window.electronAPI.close()
       }
-      case 'save-changes':
-        saveCurrent();
-        break;
-      case 'save-as':
-        if (data.targetPath) {
-          saveAsPath(data.targetPath);
-        }
-        break;
-      case 'show-properties':
-        showPropertiesPanel(data.path);
-        break;
+    ];
+  }
+}
+
+function renderMenuTemplate(container, template) {
+  template.forEach(item => {
+    if (item.type === 'separator') {
+      const sep = document.createElement('div');
+      sep.className = 'menu-divider';
+      container.appendChild(sep);
+      return;
     }
+
+    if (item.visible === false) return;
+
+    if (item.isSub) {
+      const cat = document.createElement('div');
+      cat.className = 'menu-cat';
+      if (item.enabled === false) cat.classList.add('disabled');
+
+      const label = document.createElement('span');
+      label.className = 'menu-label';
+      label.textContent = item.label;
+      cat.appendChild(label);
+
+      const arrow = document.createElement('span');
+      arrow.className = 'menu-arrow';
+      arrow.innerHTML = '&#8250;';
+      cat.appendChild(arrow);
+
+      const sub = document.createElement('div');
+      sub.className = 'menu-sub';
+      renderMenuTemplate(sub, item.items);
+      cat.appendChild(sub);
+
+      container.appendChild(cat);
+    } else {
+      const btn = document.createElement('button');
+      btn.className = 'menu-item';
+      if (item.enabled === false) btn.classList.add('disabled');
+      if (item.type === 'checkbox') {
+        const check = document.createElement('span');
+        check.className = 'menu-check';
+        check.innerHTML = '&#10003;';
+        btn.appendChild(check);
+        if (item.checked) btn.classList.add('checked');
+      }
+
+      const label = document.createElement('span');
+      label.className = 'menu-label';
+      label.textContent = item.label;
+      btn.appendChild(label);
+
+      if (item.shortcut) {
+        const shortcut = document.createElement('span');
+        shortcut.className = 'menu-shortcut';
+        shortcut.textContent = item.shortcut;
+        btn.appendChild(shortcut);
+      }
+
+      if (item.danger) {
+        btn.classList.add('danger');
+      }
+
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideCustomContextMenu();
+        if (item.action) item.action();
+      });
+
+      container.appendChild(btn);
+    }
+  });
+}
+
+async function showSaveAsDialog(filePath) {
+  if (!isElectron || !filePath) return;
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  
+  const ext = filePath.split('.').pop();
+  const options = {
+    title: lang === 'es' ? 'Guardar como' : 'Save As',
+    defaultPath: filePath.replace(new RegExp(`\\.${ext}$`), `_copy.${ext}`),
+    filters: [
+      { name: 'Images', extensions: [ext] },
+      { name: 'All Files', extensions: ['*'] }
+    ]
+  };
+  
+  const result = await window.electronAPI.showSaveDialog(options);
+  if (result && !result.canceled && result.filePath) {
+    saveAsPath(result.filePath);
+  }
+}
+
+function executeAction(data) {
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  switch (data.action) {
+    case 'remove-from-list':
+      if (data.index !== undefined) {
+        const removed = state.images[data.index];
+        removed.hidden = true;
+        
+        const visible = state.images.filter(im => !im.hidden);
+        if (visible.length === 0) {
+          location.reload();
+        } else {
+          // Buscar siguiente visible
+          let next = data.index;
+          while(next < state.images.length && state.images[next].hidden) next++;
+          if (next >= state.images.length) {
+             next = data.index;
+             while(next >= 0 && state.images[next].hidden) next--;
+          }
+          
+          buildSidebar();
+          showImage(next, null);
+          const lang = state.settings.app.language || 'en';
+          showToast((I18N[lang].toast_hidden || 'HIDDEN: ') + removed.file.name.toUpperCase());
+        }
+      }
+      break;
+    case 'restore-hidden':
+      state.images.forEach(im => im.hidden = false);
+      buildSidebar();
+      showToast(I18N[lang].toast_restored, 'success');
+      break;
+    case 'go-start':
+      showImage(0, 'right', true);
+      break;
+    case 'go-end':
+      showImage(state.images.length - 1, 'left', true);
+      break;
+    case 'request-delete':
+      if (data.index !== undefined && data.path) {
+        const name = data.path.split(/[\\/]/).pop();
+        showCyberConfirm({
+          title: lang === 'es' ? 'Mover a la papelera' : 'Move to Trash',
+          message: lang === 'es' 
+            ? '¿Estás seguro de que quieres mover esta imagen a la papelera de reciclaje?' 
+            : 'Are you sure you want to move this image to the Recycle Bin?',
+          detail: name,
+          danger: true,
+          onConfirm: async () => {
+            try {
+              const result = await window.electronAPI.moveToTrashDirect(data.path);
+              if (result && result.success) {
+                handleFileDeleted(data.index);
+              }
+            } catch (err) {
+              console.error('Error al mover a la papelera:', err);
+            }
+          }
+        });
+      }
+      break;
+    case 'file-deleted':
+      if (data.index !== undefined) {
+        handleFileDeleted(data.index);
+      }
+      break;
+    case 'open-dir':
+      btnOpen.click();
+      break;
+    case 'show-config':
+      btnConfig.click();
+      break;
+    case 'toggle-autohide':
+      state.settings.app.hudAutoHide = !state.settings.app.hudAutoHide;
+      if (isElectron) {
+        window.electronAPI.saveSettings(state.settings.app);
+      }
+      applySettings();
+      resetHudTimer();
+      break;
+    case 'toggle-autohide-nav':
+      state.settings.app.navAutoHide = !state.settings.app.navAutoHide;
+      if (isElectron) {
+        window.electronAPI.saveSettings(state.settings.app);
+      }
+      applySettings();
+      resetHudTimer();
+      break;
+    case 'rotate-r-save':
+      rotateAndSave(90);
+      break;
+    case 'rotate-l-save':
+      rotateAndSave(-90);
+      break;
+    case 'crop':
+      const btnCrop = $('btn-crop');
+      if (btnCrop) btnCrop.click();
+      break;
+    case 'resize':
+      const btnResize = $('btn-resize');
+      if (btnResize) btnResize.click();
+      break;
+    case 'toggle-favorite':
+      toggleFavorite();
+      break;
+    case 'show-about':
+      btnAbout.click();
+      break;
+    case 'fit-to-window': {
+      const im = state.images[state.current];
+      if (im && im.w) {
+        state.viewMode = 'fit';
+        fitToWindow(im.w, im.h);
+      }
+      break;
+    }
+    case 'reset-zoom': {
+      const im = state.images[state.current];
+      if (im && im.w) {
+        state.viewMode = 'original';
+        state.zoom = 1;
+        state.panX = 0;
+        state.panY = 0;
+        applyTransform(false);
+        updateFileStats();
+      }
+      break;
+    }
+    case 'save-changes':
+      saveCurrent();
+      break;
+    case 'save-as':
+      if (data.targetPath) {
+        saveAsPath(data.targetPath);
+      }
+      break;
+    case 'show-properties':
+      showPropertiesPanel(data.path);
+      break;
+    case 'close-image':
+      closeImage();
+      break;
+    case 'toggle-hints':
+      state.settings.app.showTopHints = (state.settings.app.showTopHints !== false) ? false : true;
+      if (isElectron) window.electronAPI.saveSettings(state.settings.app);
+      applySettings();
+      break;
+  }
+}
+
+if (isElectron) {
+  window.electronAPI.onMenuAction((data) => {
+    executeAction(data);
   });
 }
 
@@ -4599,7 +5190,11 @@ $('zoom-slider').addEventListener('wheel', (e) => {
 }, { passive: false });
 
 function updateFileStats() {
-  if (state.current === -1) return;
+  if (state.current === -1) {
+    $('img-dims').innerText = '0 x 0px';
+    $('img-weight').innerText = '0 KB';
+    return;
+  }
   const im = state.images[state.current];
   $('img-dims').innerText = `${im.w || mainImg.naturalWidth} x ${im.h || mainImg.naturalHeight}px`;
   
@@ -5169,6 +5764,7 @@ function openConfig() {
   // HUD Auto-hide settings
   $('cfg-hud-autohide').checked = s.hudAutoHide;
   $('cfg-nav-autohide').checked = s.navAutoHide !== false;
+  $('cfg-show-hints').checked = s.showTopHints !== false;
   $('cfg-hud-delay').value = s.hudAutoHideDelay;
   $('cfg-hud-delay-val').textContent = (s.hudAutoHideDelay / 1000).toFixed(1) + 's';
   $('cfg-hud-delay').disabled = !s.hudAutoHide;
@@ -5228,6 +5824,7 @@ $('btn-save-config').addEventListener('click', async () => {
     contextMenuEnabled: contextMenuEnabled,
     hudAutoHide: $('cfg-hud-autohide').checked,
     navAutoHide: $('cfg-nav-autohide').checked,
+    showTopHints: $('cfg-show-hints').checked,
     hudAutoHideDelay: parseInt($('cfg-hud-delay').value, 10)
   };
   
@@ -5271,6 +5868,13 @@ function applySettings() {
   }
   $('statusbar').style.display = s.statusbarVisible ? '' : 'none';
   document.body.classList.toggle('statusbar-visible', s.statusbarVisible);
+
+  // Title bar hints visibility
+  const showHints = s.showTopHints !== false;
+  const hintsEl = $('top-hints');
+  if (hintsEl) {
+    hintsEl.classList.toggle('hidden', !showHints);
+  }
 
   // Language
   const lang = s.language || 'en';
@@ -5555,6 +6159,8 @@ $('btn-config').addEventListener('click', openConfig);
     if (ah) ah.classList.toggle('checked', !!(state.settings && state.settings.app && state.settings.app.hudAutoHide));
     const sb = panel.querySelector('[data-action="sidebar"]');
     if (sb) sb.classList.toggle('checked', !!state.sidebarOpen);
+    const th = panel.querySelector('[data-action="toggle-hints"]');
+    if (th) th.classList.toggle('checked', !!(state.settings && state.settings.app && state.settings.app.showTopHints !== false));
   }
   function openMenu() { refreshMenuState(); panel.classList.add('open'); btn.classList.add('open'); }
 
@@ -5572,6 +6178,7 @@ $('btn-config').addEventListener('click', openConfig);
   function runAction(action) {
     switch (action) {
       case 'open-folder':    $('btn-open-hud').click(); break;
+      case 'close-image':    closeImage(); break;
       case 'show-folder':    $('btn-show-folder').click(); break;
       case 'save':           saveCurrent(); break;
       case 'copy':           copyToClipboard(); break;
@@ -5595,6 +6202,11 @@ $('btn-config').addEventListener('click', openConfig);
         if (isElectron) window.electronAPI.saveSettings(state.settings.app);
         applySettings();
         if (typeof resetHudTimer === 'function') resetHudTimer();
+        break;
+      case 'toggle-hints':
+        state.settings.app.showTopHints = (state.settings.app.showTopHints !== false) ? false : true;
+        if (isElectron) window.electronAPI.saveSettings(state.settings.app);
+        applySettings();
         break;
       case 'next':           next(); break;
       case 'prev':           prev(); break;
