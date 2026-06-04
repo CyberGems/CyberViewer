@@ -2593,8 +2593,25 @@
             </div>
 
             <!-- SLIDER INTEGRADO -->
-            <div class="cyber-tooltip" data-i18n-title="resize_slider_tooltip" style="margin-top: 14px; margin-bottom: 2px; display: block;">
+            <div id="slider-locked-container" class="cyber-tooltip" data-i18n-title="resize_slider_tooltip" style="margin-top: 14px; margin-bottom: 2px; display: block;">
               <input type="range" id="resize-slider" min="10" max="400" value="100" style="width: 100%;">
+            </div>
+
+            <div id="slider-unlocked-container" style="margin-top: 14px; margin-bottom: 2px; display: none; flex-direction: column; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span data-i18n="resize_width_lbl" style="font-size: 10px; color: var(--cyber-muted); width: 45px; font-family: 'Share Tech Mono', monospace; text-transform: uppercase;">ANCHO</span>
+                <div class="cyber-tooltip" data-i18n-title="resize_width_slider_tooltip" style="flex: 1; display: block;">
+                  <input type="range" id="resize-slider-w" min="10" max="400" value="100" style="width: 100%;">
+                </div>
+                <span id="slider-w-pct" style="font-size: 11px; font-family: 'Orbitron', sans-serif; color: var(--cyber-accent); width: 45px; text-align: right;">100%</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span data-i18n="resize_height_lbl" style="font-size: 10px; color: var(--cyber-muted); width: 45px; font-family: 'Share Tech Mono', monospace; text-transform: uppercase;">ALTO</span>
+                <div class="cyber-tooltip" data-i18n-title="resize_height_slider_tooltip" style="flex: 1; display: block;">
+                  <input type="range" id="resize-slider-h" min="10" max="400" value="100" style="width: 100%;">
+                </div>
+                <span id="slider-h-pct" style="font-size: 11px; font-family: 'Orbitron', sans-serif; color: var(--cyber-accent); width: 45px; text-align: right;">100%</span>
+              </div>
             </div>
 
             <div class="hud-flow-line"></div>
@@ -2798,6 +2815,8 @@ const I18N = {
     resize_width_tooltip: "Specify target width in pixels",
     resize_height_tooltip: "Specify target height in pixels",
     resize_slider_tooltip: "Adjust scale percentage",
+    resize_width_slider_tooltip: "Adjust width scale percentage",
+    resize_height_slider_tooltip: "Adjust height scale percentage",
     resize_preset_1_1: "Square aspect ratio (1080x1080 px)",
     resize_preset_720p: "High Definition 16:9 (1280x720 px)",
     resize_preset_1080p: "Full HD 16:9 (1920x1080 px)",
@@ -2982,6 +3001,8 @@ const I18N = {
     resize_width_tooltip: "Especificar ancho destino en píxeles",
     resize_height_tooltip: "Especificar alto destino en píxeles",
     resize_slider_tooltip: "Ajustar porcentaje de escala",
+    resize_width_slider_tooltip: "Ajustar porcentaje de escala del ancho",
+    resize_height_slider_tooltip: "Ajustar porcentaje de escala del alto",
     resize_preset_1_1: "Relación cuadrada (1080x1080 px)",
     resize_preset_720p: "Alta Definición 16:9 (1280x720 px)",
     resize_preset_1080p: "Full HD 16:9 (1920x1080 px)",
@@ -4106,15 +4127,19 @@ function openResizeModal() {
     
     const wInput = $('resize-width');
     const hInput = $('resize-height');
-    const slider = $('resize-slider');
     
     wInput.value = im.w;
     hInput.value = im.h;
-    slider.value = 100;
+    $('resize-slider').value = 100;
+    $('resize-slider-w').value = 100;
+    $('resize-slider-h').value = 100;
+    $('slider-w-pct').textContent = '100%';
+    $('slider-h-pct').textContent = '100%';
     
     resizeState.aspectRatio = im.w / im.h;
     resizeState.lockAspect = true;
     updateAspectLockButton();
+    syncSliderVisibility();
     
     selectResampleAlgo('nearest');
     
@@ -4142,9 +4167,42 @@ function updateAspectLockButton() {
   }
 }
 
+function syncSliderVisibility() {
+  if (resizeState.lockAspect) {
+    $('slider-locked-container').style.display = 'block';
+    $('slider-unlocked-container').style.display = 'none';
+  } else {
+    $('slider-locked-container').style.display = 'none';
+    $('slider-unlocked-container').style.display = 'flex';
+  }
+}
+
+function syncSlidersFromInputs() {
+  const idx = state.current;
+  if (idx === undefined || idx === -1) return;
+  const im = state.images[idx];
+  if (!im || !im.w || !im.h) return;
+
+  const w = parseFloat($('resize-width').value) || 0;
+  const h = parseFloat($('resize-height').value) || 0;
+
+  const pctW = Math.round((w / im.w) * 100);
+  const pctH = Math.round((h / im.h) * 100);
+
+  if (resizeState.lockAspect) {
+    $('resize-slider').value = Math.min(400, Math.max(10, pctW));
+  } else {
+    $('resize-slider-w').value = Math.min(400, Math.max(10, pctW));
+    $('resize-slider-h').value = Math.min(400, Math.max(10, pctH));
+    $('slider-w-pct').textContent = `${Math.min(400, Math.max(10, pctW))}%`;
+    $('slider-h-pct').textContent = `${Math.min(400, Math.max(10, pctH))}%`;
+  }
+}
+
 $('btn-aspect-lock').addEventListener('click', () => {
   resizeState.lockAspect = !resizeState.lockAspect;
   updateAspectLockButton();
+  syncSliderVisibility();
   if (resizeState.lockAspect) {
     let w = parseFloat($('resize-width').value) || 0;
     if (w > 16384) {
@@ -4160,6 +4218,7 @@ $('btn-aspect-lock').addEventListener('click', () => {
       $('resize-height').value = h;
     }
   }
+  syncSlidersFromInputs();
   updateResizeDestInfo();
 });
 
@@ -4178,7 +4237,7 @@ $('resize-width').addEventListener('input', () => {
     }
     $('resize-height').value = h;
   }
-  $('resize-slider').value = 100;
+  syncSlidersFromInputs();
   updateResizeDestInfo();
 });
 
@@ -4197,7 +4256,7 @@ $('resize-height').addEventListener('input', () => {
     }
     $('resize-width').value = w;
   }
-  $('resize-slider').value = 100;
+  syncSlidersFromInputs();
   updateResizeDestInfo();
 });
 
@@ -4208,8 +4267,46 @@ $('resize-slider').addEventListener('input', (e) => {
   if (!im) return;
   const pct = parseInt(e.target.value);
   
-  $('resize-width').value = Math.round(im.w * (pct / 100));
-  $('resize-height').value = Math.round(im.h * (pct / 100));
+  let w = Math.round(im.w * (pct / 100));
+  let h = Math.round(im.h * (pct / 100));
+  if (w > 16384) {
+    w = 16384;
+    h = Math.round(w / resizeState.aspectRatio);
+  }
+  if (h > 16384) {
+    h = 16384;
+    w = Math.round(h * resizeState.aspectRatio);
+  }
+  $('resize-width').value = w;
+  $('resize-height').value = h;
+  updateResizeDestInfo();
+});
+
+$('resize-slider-w').addEventListener('input', (e) => {
+  const idx = state.current;
+  if (idx === undefined || idx === -1) return;
+  const im = state.images[idx];
+  if (!im) return;
+  const pct = parseInt(e.target.value);
+  
+  let w = Math.round(im.w * (pct / 100));
+  if (w > 16384) w = 16384;
+  $('resize-width').value = w;
+  $('slider-w-pct').textContent = `${pct}%`;
+  updateResizeDestInfo();
+});
+
+$('resize-slider-h').addEventListener('input', (e) => {
+  const idx = state.current;
+  if (idx === undefined || idx === -1) return;
+  const im = state.images[idx];
+  if (!im) return;
+  const pct = parseInt(e.target.value);
+  
+  let h = Math.round(im.h * (pct / 100));
+  if (h > 16384) h = 16384;
+  $('resize-height').value = h;
+  $('slider-h-pct').textContent = `${pct}%`;
   updateResizeDestInfo();
 });
 
@@ -4300,7 +4397,7 @@ function applyResizePreset(w, h) {
   } else {
     $('resize-height').value = h;
   }
-  $('resize-slider').value = 100;
+  syncSlidersFromInputs();
   updateResizeDestInfo();
 }
 
@@ -4311,7 +4408,7 @@ function applyResizeScalePreset(scale) {
   if (!im) return;
   $('resize-width').value = Math.round(im.w * scale);
   $('resize-height').value = Math.round(im.h * scale);
-  $('resize-slider').value = Math.round(scale * 100);
+  syncSlidersFromInputs();
   updateResizeDestInfo();
 }
 
