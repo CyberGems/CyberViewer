@@ -6018,8 +6018,8 @@ $('btn-center').addEventListener('click', () => {
     }
     
     try {
-      const response = await fetch('https://api.github.com/repos/Ciber-CR/CyberViewer/releases/latest');
-      if (!response.ok) throw new Error('API error');
+      const response = await fetch('https://api.github.com/repos/CyberGems/CyberViewer/releases/latest');
+      if (!response.ok) throw new Error('HTTP ' + response.status);
       
       const data = await response.json();
       const latestTag = data.tag_name;
@@ -6062,7 +6062,7 @@ $('btn-center').addEventListener('click', () => {
       console.error('Error checking updates:', err);
       const lang = state.settings.app.language || 'en';
       if (statusEl) {
-        statusEl.textContent = I18N[lang].about_update_err;
+        statusEl.textContent = `${I18N[lang].about_update_err} (${err.message})`;
         statusEl.style.color = 'var(--cyber-accent2)';
       }
     }
