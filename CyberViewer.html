@@ -2581,8 +2581,8 @@
                   <span data-i18n="resize_width_lbl" style="position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); font-size: 8px; color: var(--cyber-muted); letter-spacing: 1px;">ANCHO</span>
                 </div>
                 
-                <button id="btn-aspect-lock" class="top-btn active tooltip-bottom" style="padding: 10px; height: 46px; border-radius: 4px; border-color: rgba(var(--cyber-accent-rgb), 0.3);" data-i18n-title="resize_lock_aspect" title="Mantener Proporciones">
-                  <span id="aspect-lock-icon">&#128279;</span>
+                <button id="btn-aspect-lock" class="top-btn active tooltip-bottom" style="padding: 10px; height: 46px; border-radius: 4px; border-color: rgba(var(--cyber-accent-rgb), 0.3); display: flex; align-items: center; justify-content: center;" data-i18n-title="resize_lock_aspect" title="Mantener Proporciones">
+                  <span id="aspect-lock-icon" style="display: flex; align-items: center; justify-content: center;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: block;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></span>
                 </button>
 
                 <div class="cyber-tooltip tooltip-align-right" data-i18n-title="resize_height_tooltip" style="position: relative;">
@@ -4128,14 +4128,17 @@ function openResizeModal() {
   }
 }
 
+const SVG_LOCKED = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: block;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>`;
+const SVG_UNLOCKED = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: block;"><path d="M18.84 12.2a4.49 4.49 0 0 0-6.36-6.36l-1.54 1.54"></path><path d="M8.9 14.9L7.36 16.4a4.49 4.49 0 0 0 6.36 6.36l1.54-1.54"></path></svg>`;
+
 function updateAspectLockButton() {
   const btn = $('btn-aspect-lock');
   if (resizeState.lockAspect) {
     btn.classList.add('active');
-    $('aspect-lock-icon').innerHTML = '&#128279;';
+    $('aspect-lock-icon').innerHTML = SVG_LOCKED;
   } else {
     btn.classList.remove('active');
-    $('aspect-lock-icon').innerHTML = '&#128280;';
+    $('aspect-lock-icon').innerHTML = SVG_UNLOCKED;
   }
 }
 
@@ -4143,27 +4146,56 @@ $('btn-aspect-lock').addEventListener('click', () => {
   resizeState.lockAspect = !resizeState.lockAspect;
   updateAspectLockButton();
   if (resizeState.lockAspect) {
-    const w = parseFloat($('resize-width').value) || 0;
+    let w = parseFloat($('resize-width').value) || 0;
+    if (w > 16384) {
+      w = 16384;
+      $('resize-width').value = 16384;
+    }
     if (w > 0) {
-      $('resize-height').value = Math.round(w / resizeState.aspectRatio);
+      let h = Math.round(w / resizeState.aspectRatio);
+      if (h > 16384) {
+        h = 16384;
+        $('resize-width').value = Math.round(h * resizeState.aspectRatio);
+      }
+      $('resize-height').value = h;
     }
   }
   updateResizeDestInfo();
 });
 
 $('resize-width').addEventListener('input', () => {
-  const w = parseFloat($('resize-width').value) || 0;
+  let w = parseFloat($('resize-width').value) || 0;
+  if (w > 16384) {
+    w = 16384;
+    $('resize-width').value = 16384;
+  }
   if (resizeState.lockAspect && w > 0) {
-    $('resize-height').value = Math.round(w / resizeState.aspectRatio);
+    let h = Math.round(w / resizeState.aspectRatio);
+    if (h > 16384) {
+      h = 16384;
+      $('resize-width').value = Math.round(h * resizeState.aspectRatio);
+      w = parseFloat($('resize-width').value) || 0;
+    }
+    $('resize-height').value = h;
   }
   $('resize-slider').value = 100;
   updateResizeDestInfo();
 });
 
 $('resize-height').addEventListener('input', () => {
-  const h = parseFloat($('resize-height').value) || 0;
+  let h = parseFloat($('resize-height').value) || 0;
+  if (h > 16384) {
+    h = 16384;
+    $('resize-height').value = 16384;
+  }
   if (resizeState.lockAspect && h > 0) {
-    $('resize-width').value = Math.round(h * resizeState.aspectRatio);
+    let w = Math.round(h * resizeState.aspectRatio);
+    if (w > 16384) {
+      w = 16384;
+      $('resize-height').value = Math.round(w / resizeState.aspectRatio);
+      h = parseFloat($('resize-height').value) || 0;
+    }
+    $('resize-width').value = w;
   }
   $('resize-slider').value = 100;
   updateResizeDestInfo();
