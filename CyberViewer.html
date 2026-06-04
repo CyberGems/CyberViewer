@@ -4194,8 +4194,8 @@ function syncSlidersFromInputs() {
   } else {
     $('resize-slider-w').value = Math.min(400, Math.max(10, pctW));
     $('resize-slider-h').value = Math.min(400, Math.max(10, pctH));
-    $('slider-w-pct').textContent = `${Math.min(400, Math.max(10, pctW))}%`;
-    $('slider-h-pct').textContent = `${Math.min(400, Math.max(10, pctH))}%`;
+    $('slider-w-pct').textContent = `${pctW}%`;
+    $('slider-h-pct').textContent = `${pctH}%`;
   }
 }
 
