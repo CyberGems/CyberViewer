@@ -6,7 +6,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' blob: data: file:; connect-src 'self' blob: file:;">
 <title>CyberViewer</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap');
 
   :root {
     --cyber-black: #080a0e;
@@ -1661,6 +1661,361 @@
     pointer-events: none;
     z-index: 10;
   }
+
+  /* ── OVERRIDES & IMPROVEMENTS FOR MODAL RESIZE (CYBERPUNK AESTHETIC) ── */
+  
+  /* Grid layout for the split two-column resize modal */
+  #modal-resize .modal-box {
+    max-width: 760px !important;
+  }
+  .resize-grid-layout {
+    display: grid;
+    grid-template-columns: 1fr 1.1fr;
+    gap: 24px;
+    align-items: stretch;
+  }
+  .resize-left-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .resize-right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    justify-content: space-between;
+    height: 100%;
+  }
+
+  /* Digital Dimensions HUD panel on the right */
+  .hud-dims-panel {
+    background: rgba(8, 10, 14, 0.95);
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.25);
+    border-radius: 6px;
+    padding: 16px;
+    box-shadow: inset 0 0 15px rgba(var(--cyber-accent-rgb), 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    font-family: 'Share Tech Mono', monospace;
+    height: 100%;
+    justify-content: center;
+  }
+  .hud-section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .hud-label {
+    font-size: 10px;
+    color: var(--cyber-muted);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: bold;
+  }
+  
+  /* Large glowing values */
+  .hud-large-readout {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--cyber-muted);
+    letter-spacing: 1px;
+    text-shadow: 0 0 5px rgba(74, 96, 128, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Digital Input group */
+  .hud-digital-inputs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .hud-input-digit {
+    font-family: 'Orbitron', sans-serif !important;
+    font-size: 28px !important;
+    font-weight: 900 !important;
+    text-align: center !important;
+    letter-spacing: 1px !important;
+    background: #040609 !important;
+    color: var(--cyber-accent) !important;
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.3) !important;
+    border-radius: 4px !important;
+    padding: 8px 4px !important;
+    width: 120px !important;
+    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.05) !important;
+    transition: all var(--transition) !important;
+  }
+  .hud-input-digit:hover {
+    border-color: rgba(var(--cyber-accent-rgb), 0.6) !important;
+    box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.15) !important;
+  }
+  .hud-input-digit:focus {
+    outline: none !important;
+    border-color: var(--cyber-accent) !important;
+    color: #fff !important;
+    background: #080a0e !important;
+    box-shadow: 0 0 18px rgba(var(--cyber-accent-rgb), 0.5) !important;
+    text-shadow: 0 0 8px rgba(var(--cyber-accent-rgb), 0.5);
+  }
+
+  /* HUD status display */
+  .hud-status-badge {
+    background: rgba(0, 212, 255, 0.03);
+    border: 1px dashed rgba(var(--cyber-accent-rgb), 0.2);
+    border-radius: 4px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .hud-status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+  }
+  .hud-status-key {
+    color: var(--cyber-muted);
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+  .hud-status-val {
+    color: var(--cyber-accent);
+    font-weight: bold;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+  }
+  .hud-status-val.green {
+    color: var(--cyber-accent3);
+    text-shadow: 0 0 5px rgba(168, 255, 62, 0.3);
+  }
+  .hud-status-val.yellow {
+    color: #ffb700;
+  }
+  
+  /* Vertical indicator line */
+  .hud-flow-line {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(var(--cyber-accent-rgb), 0.25), transparent);
+    margin: 4px 0;
+    position: relative;
+  }
+  
+  /* Notable preset buttons styling */
+  .preset-btn {
+    justify-content: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px !important;
+    padding: 10px 8px !important;
+    border-color: var(--cyber-border);
+    color: var(--cyber-text);
+    background: rgba(0, 212, 255, 0.02);
+    transition: all var(--transition);
+  }
+  .preset-btn:hover {
+    border-color: var(--cyber-accent) !important;
+    color: var(--cyber-accent) !important;
+    background: rgba(0, 212, 255, 0.08) !important;
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+    transform: translateY(-1px);
+  }
+  .preset-btn:active {
+    transform: translateY(0);
+  }
+  .preset-btn:focus-visible {
+    outline: 2px solid var(--cyber-accent);
+    outline-offset: 1px;
+  }
+  /* Selected/active preset button highlight (Neon Lime glow) */
+  .preset-btn.active {
+    border-color: var(--cyber-accent3) !important;
+    color: var(--cyber-accent3) !important;
+    background: rgba(168, 255, 62, 0.08) !important;
+    box-shadow: 0 0 15px rgba(168, 255, 62, 0.4) !important;
+    font-weight: 700;
+  }
+
+  /* Focus and hover states for resize modal inputs */
+  .modal-box input.cfg-select {
+    background: #080a0e !important;
+    color: var(--cyber-accent) !important;
+    border: 1px solid var(--cyber-dim) !important;
+    padding: 8px;
+    font-family: monospace;
+    font-size: 14px;
+    width: 100%;
+    border-radius: 3px;
+    transition: border-color var(--transition), box-shadow var(--transition), background-color var(--transition);
+  }
+  .modal-box input.cfg-select:hover {
+    border-color: rgba(var(--cyber-accent-rgb), 0.5) !important;
+  }
+  .modal-box input.cfg-select:focus {
+    outline: none !important;
+    border-color: var(--cyber-accent) !important;
+    box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.4) !important;
+    background-color: #0b0f16 !important;
+  }
+
+  /* Slider improvement */
+  #resize-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(0, 212, 255, 0.15) !important;
+    height: 4px;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+    transition: background-color var(--transition), box-shadow var(--transition);
+  }
+  #resize-slider:hover {
+    background: rgba(0, 212, 255, 0.25) !important;
+    box-shadow: 0 0 8px rgba(0, 212, 255, 0.15);
+  }
+  #resize-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--cyber-accent) !important;
+    box-shadow: 0 0 6px rgba(0, 212, 255, 0.6);
+    transition: transform var(--transition), background-color var(--transition), box-shadow var(--transition);
+  }
+  #resize-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    background: #fff !important;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.9);
+  }
+  #resize-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--cyber-accent) !important;
+    box-shadow: 0 0 6px rgba(0, 212, 255, 0.6);
+    border: none;
+    transition: transform var(--transition), background-color var(--transition), box-shadow var(--transition);
+  }
+  #resize-slider::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    background: #fff !important;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.9);
+  }
+
+  /* Switch hover glow */
+  .switch:hover .slider {
+    border-color: rgba(var(--cyber-accent-rgb), 0.5) !important;
+  }
+  .switch:hover input:checked + .slider {
+    border-color: var(--cyber-accent) !important;
+    box-shadow: 0 0 8px rgba(var(--cyber-accent-rgb), 0.3);
+  }
+  .switch:hover .slider:before {
+    background: var(--cyber-text) !important;
+  }
+
+  /* Config row hover highlight */
+  .config-row {
+    transition: background-color var(--transition);
+    padding: 10px 8px;
+    margin: 0 -8px;
+    border-radius: 4px;
+  }
+  .config-row:hover {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  /* Top Button general hover (solves the missing hover on top-btn) */
+  .top-btn {
+    transition: all var(--transition);
+  }
+  .top-btn:hover {
+    border-color: var(--cyber-accent);
+    color: var(--cyber-accent);
+    background: rgba(0, 212, 255, 0.08);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.25);
+  }
+  .top-btn.active {
+    transition: all var(--transition);
+  }
+  .top-btn.active:hover {
+    border-color: #ff5599 !important;
+    color: white !important;
+    background: rgba(255, 45, 120, 0.15) !important;
+    box-shadow: 0 0 12px rgba(255, 45, 120, 0.4) !important;
+  }
+
+  /* Dialog close & cancel buttons reddish hover (match window close X) */
+  .modal-close-btn:hover {
+    border-color: var(--cyber-accent2) !important;
+    color: var(--cyber-accent2) !important;
+    background: rgba(255, 45, 120, 0.12) !important;
+    box-shadow: 0 0 12px rgba(255, 45, 120, 0.4) !important;
+  }
+  .modal-cancel-btn:hover {
+    border-color: var(--cyber-accent2) !important;
+    color: var(--cyber-accent2) !important;
+    background: rgba(255, 45, 120, 0.08) !important;
+    box-shadow: 0 0 12px rgba(255, 45, 120, 0.3) !important;
+  }
+
+  /* Dialog confirm button green hover */
+  #btn-confirm-resize:hover {
+    border-color: var(--cyber-accent3) !important;
+    color: var(--cyber-accent3) !important;
+    background: rgba(168, 255, 62, 0.08) !important;
+    box-shadow: 0 0 12px rgba(168, 255, 62, 0.3) !important;
+  }
+
+  /* Override tooltip positioning for elements inside modal bodies to prevent clipping */
+  .modal-box .cyber-tooltip::after {
+    bottom: calc(100% + 8px) !important;
+    top: auto !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) translateY(4px) !important;
+  }
+  .modal-box .cyber-tooltip::before {
+    bottom: calc(100% + 2px) !important;
+    top: auto !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) translateY(4px) !important;
+    border-width: 6px 6px 0 !important;
+    border-color: var(--cyber-accent) transparent transparent transparent !important;
+  }
+  .modal-box .cyber-tooltip:hover::after,
+  .modal-box .cyber-tooltip:hover::before {
+    transform: translateX(-50%) translateY(0) !important;
+    opacity: 1 !important;
+  }
+
+  /* For top elements in modals, show tooltips below them */
+  .modal-box .cyber-tooltip.tooltip-bottom::after {
+    bottom: auto !important;
+    top: calc(100% + 8px) !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) translateY(-4px) !important;
+  }
+  .modal-box .cyber-tooltip.tooltip-bottom::before {
+    bottom: auto !important;
+    top: calc(100% + 2px) !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) translateY(-4px) !important;
+    border-width: 0 6px 6px 6px !important;
+    border-color: transparent transparent var(--cyber-accent) transparent !important;
+  }
+  .modal-box .cyber-tooltip.tooltip-bottom:hover::after,
+  .modal-box .cyber-tooltip.tooltip-bottom:hover::before {
+    transform: translateX(-50%) translateY(0) !important;
+    opacity: 1 !important;
+  }
 </style>
 </head>
 <body>
@@ -2115,76 +2470,109 @@
   <div class="modal-box">
     <div class="modal-header">
       <div class="modal-title" data-i18n="resize_title">[CYBERVIEWER RESIZE]</div>
-      <button class="win-btn" onclick="closeModal('modal-resize')">&#10005;</button>
+      <button class="win-btn modal-close-btn tooltip-bottom" onclick="closeModal('modal-resize')" data-i18n-title="close" title="Cerrar">&#10005;</button>
     </div>
     <div class="modal-body">
       
-      <div class="config-section">
-        <label class="config-label" data-i18n="resize_dimensions">Dimensiones Destino</label>
-        <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 16px;">
-          <div style="flex: 1;">
-            <label style="font-size: 11px; color: var(--cyber-muted); display: block; margin-bottom: 4px;" data-i18n="width">ANCHO (PX)</label>
-            <input type="number" id="resize-width" class="cfg-select" style="background:#080a0e; color:var(--cyber-accent); border:1px solid var(--cyber-dim); padding:8px; font-family:monospace; font-size:14px; width:100%; border-radius:3px;">
+      <div class="resize-grid-layout">
+        <!-- COLUMNA IZQUIERDA: CONTROLES DE AJUSTE -->
+        <div class="resize-left-col">
+          <div class="config-section">
+            <label class="config-label" data-i18n="resize_presets">Ajustes Rápidos (Presets)</label>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px;">
+              <button class="top-btn preset-btn" id="preset-1080" onclick="applyResizePreset(1080, 1080)" data-i18n-title="resize_preset_1_1">1:1 (1080)</button>
+              <button class="top-btn preset-btn" id="preset-720" onclick="applyResizePreset(1280, 720)" data-i18n-title="resize_preset_720p">16:9 (720p)</button>
+              <button class="top-btn preset-btn" id="preset-1080p" onclick="applyResizePreset(1920, 1080)" data-i18n-title="resize_preset_1080p">16:9 (1080p)</button>
+              <button class="top-btn preset-btn" id="preset-pct25" onclick="applyResizeScalePreset(0.25)" data-i18n-title="resize_preset_25">25%</button>
+              <button class="top-btn preset-btn" id="preset-pct50" onclick="applyResizeScalePreset(0.50)" data-i18n-title="resize_preset_50">50%</button>
+              <button class="top-btn preset-btn" id="preset-pct200" onclick="applyResizeScalePreset(2.00)" data-i18n-title="resize_preset_200">200%</button>
+            </div>
           </div>
-          <button id="btn-aspect-lock" class="top-btn active" style="margin-top: 18px; padding: 10px;" title="Mantener Proporciones">
-            <span id="aspect-lock-icon">&#128279;</span>
-          </button>
-          <div style="flex: 1;">
-            <label style="font-size: 11px; color: var(--cyber-muted); display: block; margin-bottom: 4px;" data-i18n="height">ALTO (PX)</label>
-            <input type="number" id="resize-height" class="cfg-select" style="background:#080a0e; color:var(--cyber-accent); border:1px solid var(--cyber-dim); padding:8px; font-family:monospace; font-size:14px; width:100%; border-radius:3px;">
+
+          <div class="config-section">
+            <label class="config-label" data-i18n="resampling_quality">Algoritmo de Remuestreo</label>
+            <div style="display: flex; gap: 8px;">
+              <button class="top-btn active" id="btn-algo-nearest" onclick="selectResampleAlgo('nearest')" data-i18n-title="resize_algo_nearest">Fast</button>
+              <button class="top-btn" id="btn-algo-bilinear" onclick="selectResampleAlgo('bilinear')" data-i18n-title="resize_algo_bilinear">Bilinear</button>
+              <button class="top-btn" id="btn-algo-bicubic" onclick="selectResampleAlgo('bicubic')" data-i18n-title="resize_algo_bicubic">Bicubic</button>
+            </div>
+          </div>
+
+          <div class="config-section">
+            <div class="config-row" style="border-bottom: none; margin: 0; padding: 10px 0;">
+              <div class="config-info" data-i18n-title="resize_copy_tooltip" style="position: relative; cursor: help; display: inline-block;">
+                <div class="config-name" data-i18n="resize_create_copy">Crear una copia</div>
+                <div class="config-desc" data-i18n="resize_create_copy_desc">Guardar como archivo nuevo sin sobrescribir el original.</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="cfg-resize-copy" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
           </div>
         </div>
-        <div style="margin-bottom: 16px;">
-          <label style="font-size: 11px; color: var(--cyber-muted); display: block; margin-bottom: 8px;"><span data-i18n="resize_percentage">Porcentaje: </span><span id="resize-pct-val" style="color:var(--cyber-accent3)">100%</span></label>
-          <input type="range" id="resize-slider" min="10" max="400" value="100" style="width: 100%; accent-color: var(--cyber-accent);">
-        </div>
-      </div>
 
-      <div class="config-section">
-        <label class="config-label" data-i18n="resize_presets">Ajustes Rápidos (Presets)</label>
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px;">
-          <button class="top-btn" onclick="applyResizePreset(1080, 1080)">1:1 (1080)</button>
-          <button class="top-btn" onclick="applyResizePreset(1280, 720)">16:9 (720p)</button>
-          <button class="top-btn" onclick="applyResizePreset(1920, 1080)">16:9 (1080p)</button>
-          <button class="top-btn" onclick="applyResizeScalePreset(0.25)">25%</button>
-          <button class="top-btn" onclick="applyResizeScalePreset(0.50)">50%</button>
-          <button class="top-btn" onclick="applyResizeScalePreset(2.00)">200%</button>
-        </div>
-      </div>
+        <!-- COLUMNA DERECHA: HUD DIGITAL DE DIMENSIONES -->
+        <div class="resize-right-col">
+          <div class="hud-dims-panel">
+            
+            <!-- TAMAÑO ORIGINAL -->
+            <div class="hud-section">
+              <span class="hud-label" data-i18n="resize_orig_title">Tamaño Original</span>
+              <div class="hud-large-readout" id="hud-orig-dims" style="font-size: 20px; opacity: 0.65; font-family: 'Orbitron', sans-serif;">
+                0 <span style="font-size: 13px; color: var(--cyber-muted);">×</span> 0 <span style="font-size: 11px; color: var(--cyber-muted);">PX</span>
+              </div>
+            </div>
 
-      <div class="config-section">
-        <label class="config-label" data-i18n="resampling_quality">Algoritmo de Remuestreo</label>
-        <div style="display: flex; gap: 8px;">
-          <button class="top-btn active" id="btn-algo-nearest" onclick="selectResampleAlgo('nearest')">Fast</button>
-          <button class="top-btn" id="btn-algo-bilinear" onclick="selectResampleAlgo('bilinear')">Bilinear</button>
-          <button class="top-btn" id="btn-algo-bicubic" onclick="selectResampleAlgo('bicubic')">Bicubic</button>
-        </div>
-      </div>
+            <div class="hud-flow-line"></div>
 
-      <div class="config-section" style="border-top: 1px solid var(--cyber-border); padding-top: 16px; margin-top: 16px;">
-        <div class="config-row" style="border-bottom: none; padding: 0;">
-          <div class="config-info">
-            <div class="config-name" data-i18n="resize_create_copy">Crear una copia</div>
-            <div class="config-desc" data-i18n="resize_create_copy_desc">Guardar como archivo nuevo sin sobrescribir el original.</div>
+            <!-- TAMAÑO DESTINO (INPUTS EDITABLES) -->
+            <div class="hud-section">
+              <span class="hud-label" data-i18n="resize_target_title">Dimensiones de Destino</span>
+              <div class="hud-digital-inputs" style="margin-top: 6px;">
+                <div style="position: relative;">
+                  <input type="number" id="resize-width" class="hud-input-digit" data-i18n-title="resize_width_tooltip" title="Ancho">
+                  <span style="position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); font-size: 8px; color: var(--cyber-muted); letter-spacing: 1px;">ANCHO</span>
+                </div>
+                
+                <button id="btn-aspect-lock" class="top-btn active tooltip-bottom" style="padding: 10px; height: 46px; border-radius: 4px; border-color: rgba(var(--cyber-accent-rgb), 0.3);" data-i18n-title="resize_lock_aspect" title="Mantener Proporciones">
+                  <span id="aspect-lock-icon">&#128279;</span>
+                </button>
+
+                <div style="position: relative;">
+                  <input type="number" id="resize-height" class="hud-input-digit" data-i18n-title="resize_height_tooltip" title="Alto">
+                  <span style="position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); font-size: 8px; color: var(--cyber-muted); letter-spacing: 1px;">ALTO</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- SLIDER INTEGRADO -->
+            <div style="margin-top: 14px; margin-bottom: 2px;">
+              <input type="range" id="resize-slider" min="10" max="400" value="100" style="width: 100%;" data-i18n-title="resize_slider_tooltip">
+            </div>
+
+            <div class="hud-flow-line"></div>
+
+            <!-- ESTADÍSTICAS DE ESCALA Y PESO ESTIMADO -->
+            <div class="hud-status-badge">
+              <div class="hud-status-row">
+                <span class="hud-status-key" data-i18n="resize_alteration_lbl">Alteración:</span>
+                <span class="hud-status-val green" id="hud-scale-stats">100% (0%)</span>
+              </div>
+              <div class="hud-status-row" style="margin-top: 4px;">
+                <span class="hud-status-key" data-i18n="resize_est_weight_lbl">Resultado:</span>
+                <span class="hud-status-val yellow" id="hud-weight-stats">0 KB → ~0 KB</span>
+              </div>
+            </div>
+
           </div>
-          <label class="switch">
-            <input type="checkbox" id="cfg-resize-copy" checked>
-            <span class="slider"></span>
-          </label>
-        </div>
-      </div>
-
-      <div class="config-section" style="border-top: 1px solid var(--cyber-border); padding-top: 16px; margin-top: 16px;">
-        <div style="display: flex; justify-content: space-between; font-family: 'Share Tech Mono', monospace; font-size: 12px;">
-          <div>Original: <span id="resize-orig-info" style="color: var(--cyber-muted)">0x0 px</span></div>
-          <div>Destino: <span id="resize-new-info" style="color: var(--cyber-accent3)">0x0 px</span></div>
         </div>
       </div>
 
     </div>
     <div class="modal-footer">
-      <button class="top-btn" onclick="closeModal('modal-resize')" data-i18n="config_cancel">Cancelar</button>
-      <button class="top-btn active" id="btn-confirm-resize" data-i18n="resize_apply">Redimensionar y Guardar</button>
+      <button class="top-btn modal-cancel-btn" onclick="closeModal('modal-resize')" data-i18n="config_cancel" data-i18n-title="resize_cancel_tooltip">Cancelar</button>
+      <button class="top-btn active" id="btn-confirm-resize" data-i18n="resize_apply" data-i18n-title="resize_apply_tooltip">Redimensionar y Guardar</button>
     </div>
   </div>
 </div>
@@ -2356,6 +2744,26 @@ const I18N = {
     toast_changes_saved: "CHANGES SAVED",
     toast_path_not_found: "PATH NOT FOUND",
     toast_image_not_ready: "IMAGE NOT READY",
+    resize_orig_title: "Original Size",
+    resize_target_title: "Target Size",
+    resize_alteration_lbl: "Alteration:",
+    resize_est_weight_lbl: "Result:",
+    resize_lock_aspect: "Lock aspect ratio",
+    resize_width_tooltip: "Specify target width in pixels",
+    resize_height_tooltip: "Specify target height in pixels",
+    resize_slider_tooltip: "Adjust scale percentage",
+    resize_preset_1_1: "Square aspect ratio (1080x1080 px)",
+    resize_preset_720p: "High Definition 16:9 (1280x720 px)",
+    resize_preset_1080p: "Full HD 16:9 (1920x1080 px)",
+    resize_preset_25: "Scale down to 25%",
+    resize_preset_50: "Scale down to 50%",
+    resize_preset_200: "Scale up to 200%",
+    resize_algo_nearest: "Fast pixelated resampling (Nearest Neighbor)",
+    resize_algo_bilinear: "Smooth resampling (Bilinear)",
+    resize_algo_bicubic: "High-quality smooth resampling (Bicubic)",
+    resize_copy_tooltip: "Enable to save as a new file, disable to overwrite original",
+    resize_cancel_tooltip: "Cancel and close this dialog",
+    resize_apply_tooltip: "Resize and save the image",
     resize_title: "[CYBERVIEWER RESIZE]",
     resize_dimensions: "Target Dimensions",
     width: "WIDTH (PX)",
@@ -2515,6 +2923,26 @@ const I18N = {
     toast_changes_saved: "CAMBIOS GUARDADOS",
     toast_path_not_found: "RUTA NO ENCONTRADA",
     toast_image_not_ready: "IMAGEN NO LISTA",
+    resize_orig_title: "Tamaño Original",
+    resize_target_title: "Tamaño de Destino",
+    resize_alteration_lbl: "Alteración:",
+    resize_est_weight_lbl: "Resultado:",
+    resize_lock_aspect: "Mantener proporción de aspecto",
+    resize_width_tooltip: "Especificar ancho destino en píxeles",
+    resize_height_tooltip: "Especificar alto destino en píxeles",
+    resize_slider_tooltip: "Ajustar porcentaje de escala",
+    resize_preset_1_1: "Relación cuadrada (1080x1080 px)",
+    resize_preset_720p: "Alta Definición 16:9 (1280x720 px)",
+    resize_preset_1080p: "Full HD 16:9 (1920x1080 px)",
+    resize_preset_25: "Reducir escala al 25%",
+    resize_preset_50: "Reducir escala al 50%",
+    resize_preset_200: "Aumentar escala al 200%",
+    resize_algo_nearest: "Remuestreo rápido pixelado (Vecino Más Próximo)",
+    resize_algo_bilinear: "Remuestreo suave (Bilineal)",
+    resize_algo_bicubic: "Remuestreo suave de alta calidad (Bicúbico)",
+    resize_copy_tooltip: "Activar para guardar como archivo nuevo, desactivar para sobrescribir",
+    resize_cancel_tooltip: "Cancelar y cerrar esta ventana",
+    resize_apply_tooltip: "Redimensionar y guardar la imagen",
     resize_title: "[CYBERVIEWER REDIMENSIONAR]",
     resize_dimensions: "Dimensiones de Destino",
     width: "ANCHO (PX)",
@@ -3627,7 +4055,6 @@ function openResizeModal() {
     wInput.value = im.w;
     hInput.value = im.h;
     slider.value = 100;
-    $('resize-pct-val').textContent = '100%';
     
     resizeState.aspectRatio = im.w / im.h;
     resizeState.lockAspect = true;
@@ -3635,7 +4062,7 @@ function openResizeModal() {
     
     selectResampleAlgo('nearest');
     
-    $('resize-orig-info').textContent = `${im.w}x${im.h} px`;
+    $('hud-orig-dims').innerHTML = `${im.w} <span style="font-size: 13px; color: var(--cyber-muted);">×</span> ${im.h} <span style="font-size: 11px; color: var(--cyber-muted);">PX</span>`;
     updateResizeDestInfo();
     
     openModal('modal-resize');
@@ -3663,9 +4090,9 @@ $('btn-aspect-lock').addEventListener('click', () => {
     const w = parseFloat($('resize-width').value) || 0;
     if (w > 0) {
       $('resize-height').value = Math.round(w / resizeState.aspectRatio);
-      updateResizeDestInfo();
     }
   }
+  updateResizeDestInfo();
 });
 
 $('resize-width').addEventListener('input', () => {
@@ -3674,7 +4101,6 @@ $('resize-width').addEventListener('input', () => {
     $('resize-height').value = Math.round(w / resizeState.aspectRatio);
   }
   $('resize-slider').value = 100;
-  $('resize-pct-val').textContent = '—';
   updateResizeDestInfo();
 });
 
@@ -3684,7 +4110,6 @@ $('resize-height').addEventListener('input', () => {
     $('resize-width').value = Math.round(h * resizeState.aspectRatio);
   }
   $('resize-slider').value = 100;
-  $('resize-pct-val').textContent = '—';
   updateResizeDestInfo();
 });
 
@@ -3694,7 +4119,6 @@ $('resize-slider').addEventListener('input', (e) => {
   const im = state.images[idx];
   if (!im) return;
   const pct = parseInt(e.target.value);
-  $('resize-pct-val').textContent = `${pct}%`;
   
   $('resize-width').value = Math.round(im.w * (pct / 100));
   $('resize-height').value = Math.round(im.h * (pct / 100));
@@ -3702,9 +4126,74 @@ $('resize-slider').addEventListener('input', (e) => {
 });
 
 function updateResizeDestInfo() {
+  const idx = state.current;
+  if (idx === undefined || idx === -1) return;
+  const im = state.images[idx];
+  if (!im || !im.w || !im.h) return;
+
   const w = parseInt($('resize-width').value) || 0;
   const h = parseInt($('resize-height').value) || 0;
-  $('resize-new-info').textContent = `${w}x${h} px`;
+  
+  // 1. Update preset highlights
+  updatePresetActiveStates(w, h);
+
+  // 2. Calculate Scale Factor & Alteration percentage
+  const scaleW = w / im.w;
+  const scaleH = h / im.h;
+  const scalePercent = Math.round(scaleW * 100);
+  const alteration = scalePercent - 100;
+  const sign = alteration > 0 ? '+' : '';
+  
+  $('hud-scale-stats').textContent = `${scalePercent}% (${sign}${alteration}%)`;
+
+  // 3. Estimate disk weight
+  let origWeightText = '0 KB';
+  let estWeightText = '0 KB';
+  if (im.size) {
+    origWeightText = formatBytes(im.size);
+    // Area scaling factor (w * h) / (im.w * im.h)
+    const areaScale = (w * h) / (im.w * im.h);
+    const estimatedSize = im.size * areaScale;
+    estWeightText = formatBytes(estimatedSize);
+  }
+  
+  $('hud-weight-stats').textContent = `${origWeightText} → ~${estWeightText}`;
+}
+
+function updatePresetActiveStates(w, h) {
+  const idx = state.current;
+  if (idx === undefined || idx === -1) return;
+  const im = state.images[idx];
+  if (!im || !im.w || !im.h) return;
+
+  const presets = [
+    { el: $('preset-1080'), type: 'dims', w: 1080, h: 1080 },
+    { el: $('preset-720'), type: 'dims', w: 1280, h: 720 },
+    { el: $('preset-1080p'), type: 'dims', w: 1920, h: 1080 },
+    { el: $('preset-pct25'), type: 'scale', val: 0.25 },
+    { el: $('preset-pct50'), type: 'scale', val: 0.50 },
+    { el: $('preset-pct200'), type: 'scale', val: 2.00 }
+  ];
+
+  presets.forEach(p => {
+    if (!p.el) return;
+    let isActive = false;
+    if (p.type === 'dims') {
+      if (resizeState.lockAspect) {
+        isActive = (w === p.w);
+      } else {
+        isActive = (w === p.w && h === p.h);
+      }
+    } else if (p.type === 'scale') {
+      const scaleW = w / im.w;
+      const scaleH = h / im.h;
+      if (Math.abs(scaleW - scaleH) < 0.005) {
+        const currentScale = scaleW;
+        isActive = (Math.abs(currentScale - p.val) < 0.005);
+      }
+    }
+    p.el.classList.toggle('active', isActive);
+  });
 }
 
 function applyResizePreset(w, h) {
@@ -3715,7 +4204,6 @@ function applyResizePreset(w, h) {
     $('resize-height').value = h;
   }
   $('resize-slider').value = 100;
-  $('resize-pct-val').textContent = '—';
   updateResizeDestInfo();
 }
 
@@ -3727,7 +4215,6 @@ function applyResizeScalePreset(scale) {
   $('resize-width').value = Math.round(im.w * scale);
   $('resize-height').value = Math.round(im.h * scale);
   $('resize-slider').value = Math.round(scale * 100);
-  $('resize-pct-val').textContent = `${Math.round(scale * 100)}%`;
   updateResizeDestInfo();
 }
 
