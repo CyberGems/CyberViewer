@@ -1748,6 +1748,14 @@
     box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.05) !important;
     transition: all var(--transition) !important;
   }
+  .hud-input-digit::-webkit-outer-spin-button,
+  .hud-input-digit::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+  }
+  .hud-input-digit {
+    -moz-appearance: textfield !important;
+  }
   .hud-input-digit:hover {
     border-color: rgba(var(--cyber-accent-rgb), 0.6) !important;
     box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.15) !important;
@@ -1994,6 +2002,25 @@
     opacity: 1 !important;
   }
 
+  /* Tooltip box alignment overrides to prevent edge overflow */
+  .modal-box .cyber-tooltip.tooltip-align-left::after {
+    left: 0 !important;
+    right: auto !important;
+    transform: translateY(4px) !important;
+  }
+  .modal-box .cyber-tooltip.tooltip-align-left:hover::after {
+    transform: translateY(0) !important;
+  }
+
+  .modal-box .cyber-tooltip.tooltip-align-right::after {
+    right: 0 !important;
+    left: auto !important;
+    transform: translateY(4px) !important;
+  }
+  .modal-box .cyber-tooltip.tooltip-align-right:hover::after {
+    transform: translateY(0) !important;
+  }
+
   /* For top elements in modals, show tooltips below them */
   .modal-box .cyber-tooltip.tooltip-bottom::after {
     bottom: auto !important;
@@ -2015,6 +2042,25 @@
   .modal-box .cyber-tooltip.tooltip-bottom:hover::before {
     transform: translateX(-50%) translateY(0) !important;
     opacity: 1 !important;
+  }
+
+  /* Bottom tooltips with left/right alignment overrides */
+  .modal-box .cyber-tooltip.tooltip-bottom.tooltip-align-left::after {
+    left: 0 !important;
+    right: auto !important;
+    transform: translateY(-4px) !important;
+  }
+  .modal-box .cyber-tooltip.tooltip-bottom.tooltip-align-left:hover::after {
+    transform: translateY(0) !important;
+  }
+
+  .modal-box .cyber-tooltip.tooltip-bottom.tooltip-align-right::after {
+    right: 0 !important;
+    left: auto !important;
+    transform: translateY(-4px) !important;
+  }
+  .modal-box .cyber-tooltip.tooltip-bottom.tooltip-align-right:hover::after {
+    transform: translateY(0) !important;
   }
 </style>
 </head>
@@ -2470,7 +2516,7 @@
   <div class="modal-box">
     <div class="modal-header">
       <div class="modal-title" data-i18n="resize_title">[CYBERVIEWER RESIZE]</div>
-      <button class="win-btn modal-close-btn tooltip-bottom" onclick="closeModal('modal-resize')" data-i18n-title="close" title="Cerrar">&#10005;</button>
+      <button class="win-btn modal-close-btn tooltip-bottom tooltip-align-right" onclick="closeModal('modal-resize')" data-i18n-title="close" title="Cerrar">&#10005;</button>
     </div>
     <div class="modal-body">
       
@@ -2480,27 +2526,27 @@
           <div class="config-section">
             <label class="config-label" data-i18n="resize_presets">Ajustes Rápidos (Presets)</label>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px;">
-              <button class="top-btn preset-btn" id="preset-1080" onclick="applyResizePreset(1080, 1080)" data-i18n-title="resize_preset_1_1">1:1 (1080)</button>
+              <button class="top-btn preset-btn tooltip-align-left" id="preset-1080" onclick="applyResizePreset(1080, 1080)" data-i18n-title="resize_preset_1_1">1:1 (1080)</button>
               <button class="top-btn preset-btn" id="preset-720" onclick="applyResizePreset(1280, 720)" data-i18n-title="resize_preset_720p">16:9 (720p)</button>
-              <button class="top-btn preset-btn" id="preset-1080p" onclick="applyResizePreset(1920, 1080)" data-i18n-title="resize_preset_1080p">16:9 (1080p)</button>
-              <button class="top-btn preset-btn" id="preset-pct25" onclick="applyResizeScalePreset(0.25)" data-i18n-title="resize_preset_25">25%</button>
+              <button class="top-btn preset-btn tooltip-align-right" id="preset-1080p" onclick="applyResizePreset(1920, 1080)" data-i18n-title="resize_preset_1080p">16:9 (1080p)</button>
+              <button class="top-btn preset-btn tooltip-align-left" id="preset-pct25" onclick="applyResizeScalePreset(0.25)" data-i18n-title="resize_preset_25">25%</button>
               <button class="top-btn preset-btn" id="preset-pct50" onclick="applyResizeScalePreset(0.50)" data-i18n-title="resize_preset_50">50%</button>
-              <button class="top-btn preset-btn" id="preset-pct200" onclick="applyResizeScalePreset(2.00)" data-i18n-title="resize_preset_200">200%</button>
+              <button class="top-btn preset-btn tooltip-align-right" id="preset-pct200" onclick="applyResizeScalePreset(2.00)" data-i18n-title="resize_preset_200">200%</button>
             </div>
           </div>
 
           <div class="config-section">
-            <label class="config-label" data-i18n="resampling_quality">Algoritmo de Remuestreo</label>
+            <label class="config-label" data-i18n="resampling_quality">Calidad de Remuestreo</label>
             <div style="display: flex; gap: 8px;">
-              <button class="top-btn active" id="btn-algo-nearest" onclick="selectResampleAlgo('nearest')" data-i18n-title="resize_algo_nearest">Fast</button>
-              <button class="top-btn" id="btn-algo-bilinear" onclick="selectResampleAlgo('bilinear')" data-i18n-title="resize_algo_bilinear">Bilinear</button>
-              <button class="top-btn" id="btn-algo-bicubic" onclick="selectResampleAlgo('bicubic')" data-i18n-title="resize_algo_bicubic">Bicubic</button>
+              <button class="top-btn active tooltip-align-left" id="btn-algo-nearest" onclick="selectResampleAlgo('nearest')" data-i18n-title="resize_algo_nearest" data-i18n="resize_algo_fast_lbl">Fast</button>
+              <button class="top-btn" id="btn-algo-bilinear" onclick="selectResampleAlgo('bilinear')" data-i18n-title="resize_algo_bilinear" data-i18n="resize_algo_balanced_lbl">Balanced</button>
+              <button class="top-btn tooltip-align-right" id="btn-algo-bicubic" onclick="selectResampleAlgo('bicubic')" data-i18n-title="resize_algo_bicubic" data-i18n="resize_algo_hq_lbl">High Quality</button>
             </div>
           </div>
 
           <div class="config-section">
             <div class="config-row" style="border-bottom: none; margin: 0; padding: 10px 0;">
-              <div class="config-info" data-i18n-title="resize_copy_tooltip" style="position: relative; cursor: help; display: inline-block;">
+              <div class="config-info tooltip-align-left" data-i18n-title="resize_copy_tooltip" style="position: relative; cursor: help; display: inline-block;">
                 <div class="config-name" data-i18n="resize_create_copy">Crear una copia</div>
                 <div class="config-desc" data-i18n="resize_create_copy_desc">Guardar como archivo nuevo sin sobrescribir el original.</div>
               </div>
@@ -2530,25 +2576,25 @@
             <div class="hud-section">
               <span class="hud-label" data-i18n="resize_target_title">Dimensiones de Destino</span>
               <div class="hud-digital-inputs" style="margin-top: 6px;">
-                <div style="position: relative;">
-                  <input type="number" id="resize-width" class="hud-input-digit" data-i18n-title="resize_width_tooltip" title="Ancho">
-                  <span style="position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); font-size: 8px; color: var(--cyber-muted); letter-spacing: 1px;">ANCHO</span>
+                <div class="cyber-tooltip tooltip-align-left" data-i18n-title="resize_width_tooltip" style="position: relative;">
+                  <input type="number" id="resize-width" class="hud-input-digit" title="Ancho">
+                  <span data-i18n="resize_width_lbl" style="position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); font-size: 8px; color: var(--cyber-muted); letter-spacing: 1px;">ANCHO</span>
                 </div>
                 
                 <button id="btn-aspect-lock" class="top-btn active tooltip-bottom" style="padding: 10px; height: 46px; border-radius: 4px; border-color: rgba(var(--cyber-accent-rgb), 0.3);" data-i18n-title="resize_lock_aspect" title="Mantener Proporciones">
                   <span id="aspect-lock-icon">&#128279;</span>
                 </button>
 
-                <div style="position: relative;">
-                  <input type="number" id="resize-height" class="hud-input-digit" data-i18n-title="resize_height_tooltip" title="Alto">
-                  <span style="position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); font-size: 8px; color: var(--cyber-muted); letter-spacing: 1px;">ALTO</span>
+                <div class="cyber-tooltip tooltip-align-right" data-i18n-title="resize_height_tooltip" style="position: relative;">
+                  <input type="number" id="resize-height" class="hud-input-digit" title="Alto">
+                  <span data-i18n="resize_height_lbl" style="position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); font-size: 8px; color: var(--cyber-muted); letter-spacing: 1px;">ALTO</span>
                 </div>
               </div>
             </div>
 
             <!-- SLIDER INTEGRADO -->
-            <div style="margin-top: 14px; margin-bottom: 2px;">
-              <input type="range" id="resize-slider" min="10" max="400" value="100" style="width: 100%;" data-i18n-title="resize_slider_tooltip">
+            <div class="cyber-tooltip" data-i18n-title="resize_slider_tooltip" style="margin-top: 14px; margin-bottom: 2px; display: block;">
+              <input type="range" id="resize-slider" min="10" max="400" value="100" style="width: 100%;">
             </div>
 
             <div class="hud-flow-line"></div>
@@ -2571,8 +2617,8 @@
 
     </div>
     <div class="modal-footer">
-      <button class="top-btn modal-cancel-btn" onclick="closeModal('modal-resize')" data-i18n="config_cancel" data-i18n-title="resize_cancel_tooltip">Cancelar</button>
-      <button class="top-btn active" id="btn-confirm-resize" data-i18n="resize_apply" data-i18n-title="resize_apply_tooltip">Redimensionar y Guardar</button>
+      <button class="top-btn modal-cancel-btn tooltip-align-left" onclick="closeModal('modal-resize')" data-i18n="config_cancel" data-i18n-title="resize_cancel_tooltip">Cancelar</button>
+      <button class="top-btn active tooltip-align-right" id="btn-confirm-resize" data-i18n="resize_apply" data-i18n-title="resize_apply_tooltip">Redimensionar y Guardar</button>
     </div>
   </div>
 </div>
@@ -2758,9 +2804,14 @@ const I18N = {
     resize_preset_25: "Scale down to 25%",
     resize_preset_50: "Scale down to 50%",
     resize_preset_200: "Scale up to 200%",
-    resize_algo_nearest: "Fast pixelated resampling (Nearest Neighbor)",
-    resize_algo_bilinear: "Smooth resampling (Bilinear)",
-    resize_algo_bicubic: "High-quality smooth resampling (Bicubic)",
+    resize_algo_nearest: "Nearest Neighbor resampling (Fast & sharp)",
+    resize_algo_bilinear: "Bilinear resampling (Balanced & smooth)",
+    resize_algo_bicubic: "Bicubic resampling (High quality & ultra smooth)",
+    resize_algo_fast_lbl: "Fast",
+    resize_algo_balanced_lbl: "Balanced",
+    resize_algo_hq_lbl: "High Quality",
+    resize_width_lbl: "WIDTH",
+    resize_height_lbl: "HEIGHT",
     resize_copy_tooltip: "Enable to save as a new file, disable to overwrite original",
     resize_cancel_tooltip: "Cancel and close this dialog",
     resize_apply_tooltip: "Resize and save the image",
@@ -2937,9 +2988,14 @@ const I18N = {
     resize_preset_25: "Reducir escala al 25%",
     resize_preset_50: "Reducir escala al 50%",
     resize_preset_200: "Aumentar escala al 200%",
-    resize_algo_nearest: "Remuestreo rápido pixelado (Vecino Más Próximo)",
-    resize_algo_bilinear: "Remuestreo suave (Bilineal)",
-    resize_algo_bicubic: "Remuestreo suave de alta calidad (Bicúbico)",
+    resize_algo_nearest: "Remuestreo por Vecino Más Próximo (Rápido y nítido)",
+    resize_algo_bilinear: "Remuestreo Bilineal (Equilibrado y suave)",
+    resize_algo_bicubic: "Remuestreo Bicúbico (Alta calidad y ultra suave)",
+    resize_algo_fast_lbl: "Fast",
+    resize_algo_balanced_lbl: "Balanced",
+    resize_algo_hq_lbl: "High Quality",
+    resize_width_lbl: "ANCHO",
+    resize_height_lbl: "ALTO",
     resize_copy_tooltip: "Activar para guardar como archivo nuevo, desactivar para sobrescribir",
     resize_cancel_tooltip: "Cancelar y cerrar esta ventana",
     resize_apply_tooltip: "Redimensionar y guardar la imagen",
@@ -4153,7 +4209,16 @@ function updateResizeDestInfo() {
     origWeightText = formatBytes(im.size);
     // Area scaling factor (w * h) / (im.w * im.h)
     const areaScale = (w * h) / (im.w * im.h);
-    const estimatedSize = im.size * areaScale;
+    
+    // Apply empirical multiplier based on selected algorithm to reflect complexity/weight difference
+    let algoMultiplier = 1.0;
+    if (resizeState.currentAlgo === 'nearest') {
+      algoMultiplier = 0.85; // Fast (Nearest Neighbor) is usually smaller/less complex
+    } else if (resizeState.currentAlgo === 'bicubic') {
+      algoMultiplier = 1.15; // High Quality (Bicubic) preserves more fine details/gradients (larger file)
+    } // Bilinear (balanced) is 1.0
+    
+    const estimatedSize = im.size * areaScale * algoMultiplier;
     estWeightText = formatBytes(estimatedSize);
   }
   
@@ -4223,6 +4288,7 @@ function selectResampleAlgo(algo) {
   ['nearest', 'bilinear', 'bicubic'].forEach(a => {
     $(`btn-algo-${a}`).classList.toggle('active', a === algo);
   });
+  updateResizeDestInfo();
 }
 
 $('btn-resize').addEventListener('click', openResizeModal);
