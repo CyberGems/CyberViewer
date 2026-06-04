@@ -607,16 +607,16 @@
   }
   .menu-cat .menu-label, .menu-item .menu-label { flex: 1; white-space: nowrap; }
   .menu-arrow { color: var(--cyber-muted); font-size: 16px; line-height: 1; }
-  .menu-shortcut { color: var(--cyber-muted); font-size: 10px; letter-spacing: .5px; flex-shrink: 0; }
+  .menu-shortcut { color: var(--cyber-accent); opacity: 0.5; font-size: 10px; letter-spacing: .5px; flex-shrink: 0; }
 
   .menu-cat:hover, .menu-item:hover {
     background: var(--cyber-accent);
     color: var(--cyber-black);
     box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.35);
   }
-  .menu-cat:hover .menu-arrow,
+  .menu-cat:hover .menu-arrow { color: var(--cyber-black); }
   .menu-cat:hover .menu-shortcut,
-  .menu-item:hover .menu-shortcut { color: var(--cyber-black); }
+  .menu-item:hover .menu-shortcut { color: var(--cyber-black); opacity: 0.8; }
   .menu-item.danger:hover { background: var(--cyber-accent2); box-shadow: 0 0 12px rgba(var(--cyber-accent2-rgb), 0.4); }
 
   .menu-divider { height: 1px; margin: 5px 8px; background: rgba(var(--cyber-accent-rgb), 0.16); }
