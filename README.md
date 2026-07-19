@@ -1,76 +1,75 @@
-# CyberViewer — Installation and Compilation Guide
+# CyberViewer
 
-## Project Structure
+Ultralight Windows image viewer by CyberGems — open, browse a folder, zoom/pan, and light edit (rotate, crop, resize).
+
+**Version:** 1.6.0 · **Stack:** Electron 30 · Vanilla JS
+
+## Project structure
 
 ```text
 CyberViewer/
-├── main.js           ← Electron entry point
-├── package.json      ← Project config and build parameters
-├── CyberViewer.html  ← Full single-page application core
-└── assets/
-    ├── icon.png      ← Icon asset (256×256 px PNG for dev environment)
-    └── icon.ico      ← Windows Icon asset (256×256 px ICO for production builds)
+├── main.js              Electron main process (IPC, tray, protocol)
+├── preload.js           contextBridge → window.electronAPI
+├── CyberViewer.html     Shell markup
+├── css/app.css          Styles
+├── js/app.js            Renderer logic
+├── lib/                 Shared Node helpers (paths, thumb cache)
+├── i18n/menu.json       Menu/tray strings (EN/ES)
+├── assets/              Icons
+├── package.json
+└── test/                Node unit tests
 ```
-
----
 
 ## Requirements
 
-- **Node.js LTS** → https://nodejs.org (select the "LTS" version)
-- Install Node.js and restart your terminal/PowerShell window afterward.
+- **Node.js LTS** → https://nodejs.org
+- Windows x64 (primary target)
 
----
-
-## Step 1 — Development Mode (running the app)
+## Development
 
 ```powershell
-# Open PowerShell in the CyberViewer directory
 cd C:\path\to\CyberViewer
-
-# Install dependencies (only required the first time, takes ~2 mins)
 npm install
-
-# Start the application
 npm start
 ```
 
-The application will open as a native, fully GPU-accelerated desktop window. ✓
-
----
-
-## Step 2 — Compiling to Production .exe
+## Test / lint
 
 ```powershell
-# Build both the NSIS setup installer and the portable executable
-npm run build
+npm test
+npm run lint
 ```
 
-Once the compilation finishes, you will find the binaries inside the `dist/` directory:
+## Build
 
-| Filename | Description |
+```powershell
+npm run build            # NSIS installer + portable
+npm run build:portable   # portable only
+```
+
+Outputs land in `dist/`:
+
+| Artifact | Description |
 |---|---|
-| `CyberViewer Setup 1.2.0.exe` | NSIS Setup installer with desktop shortcut capabilities |
-| `CyberViewer 1.2.0.exe`       | High-speed portable version (no installation required) |
+| `CyberViewer Setup 1.6.0.exe` | NSIS installer |
+| `CyberViewer Portable 1.6.0.exe` | Portable build |
 
----
+## Icons
 
-## Icons Setup (Important)
+Place these under `assets/` before a production build:
 
-Before initiating a production build, place these files inside the `assets/` directory:
-- `icon.png` — 256×256 px PNG (for dev environment)
-- `icon.ico` — 256×256 px ICO (for the packaged .exe)
+- `icon.png` — 256×256 PNG (dev)
+- `icon.ico` — 256×256 ICO (packaged exe)
 
-*Note: Without these files, electron-builder might fail. If you do not have icons prepared, temporarily comment out the `"icon"` field inside `package.json`.*
+## Security notes
 
----
+- `webSecurity` is enabled.
+- Local images are served through the `cvlocal://` protocol with a path allowlist (folders you open / register).
+- Renderer has `nodeIntegration: false` and `contextIsolation: true`.
 
-## Reference Commands
+## Supported formats
 
-| Command | Action |
-|---|---|
-| `npm start` | Run in development mode |
-| `npm run build` | Pack both setup installer and portable .exe |
-| `npm run build:portable` | Compile portable executable target only |
+JPG · JPEG · PNG · GIF · WEBP · BMP · TIFF
 
 ---
 

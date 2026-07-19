@@ -1,29 +1,55 @@
-const { app, BrowserWindow, shell, ipcMain, screen, Tray, Menu, protocol, net, nativeImage, clipboard, dialog } = require('electron');
+'use strict';
+
+const {
+  app, BrowserWindow, shell, ipcMain, screen, Tray, Menu,
+  protocol, nativeImage, clipboard, dialog, net
+} = require('electron');
 const path = require('path');
-const fs   = require('fs');
+const fs = require('fs');
 const crypto = require('crypto');
 const { pathToFileURL } = require('url');
+const { execFile } = require('child_process');
 
-// Registrar protocolo para carga ultra-rápida de imágenes locales
+const {
+  cleanFsPath, toMediaUrl, createPathAllowlist, IMAGE_EXTS
+} = require('./lib/paths');
+const { evictThumbCache } = require('./lib/thumb-cache');
+
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'cyber', privileges: { bypassCSP: true, stream: true, standard: true, secure: true, supportFetchAPI: true } }
+  {
+    scheme: 'cvlocal',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      stream: true,
+      bypassCSP: false
+    }
+  }
 ]);
 
-// ── PERSISTENCIA ──
 const settingsPath = path.join(app.getPath('userData'), 'settings.json');
+const menuI18n = JSON.parse(
+  fs.readFileSync(path.join(__dirname, 'i18n', 'menu.json'), 'utf8')
+);
+
+const pathAllowlist = createPathAllowlist([__dirname]);
 
 function loadSettings() {
-  try { 
+  try {
     if (fs.existsSync(settingsPath)) {
-      const data = JSON.parse(fs.readFileSync(settingsPath, 'utf8')); 
+      const data = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
       if (data && data.app) {
         if (data.app.manualUpdateOnly === undefined) data.app.manualUpdateOnly = false;
         if (data.app.hudAutoHide === undefined) data.app.hudAutoHide = true;
         if (data.app.hudAutoHideDelay === undefined) data.app.hudAutoHideDelay = 2000;
+        if (data.app.onboardingSeen === undefined) data.app.onboardingSeen = false;
       }
       return data;
     }
-  } catch (e) { console.error('Error cargando settings:', e); }
+  } catch (e) {
+    console.error('Error cargando settings:', e);
+  }
   return {
     window: { width: 1280, height: 800, maximized: false },
     app: {
@@ -39,7 +65,8 @@ function loadSettings() {
       manualUpdateOnly: false,
       hudAutoHide: true,
       hudAutoHideDelay: 2000,
-      showTopHints: true
+      showTopHints: true,
+      onboardingSeen: false
     }
   };
 }
@@ -52,20 +79,52 @@ function saveSettings(data) {
       app: { ...current.app, ...(data.app || {}) }
     };
     fs.writeFileSync(settingsPath, JSON.stringify(merged, null, 2));
-  } catch (e) { console.error('Error guardando settings:', e); }
+  } catch (e) {
+    console.error('Error guardando settings:', e);
+  }
 }
 
 function getFilePathFromArgs(args) {
   for (let arg of args) {
-    // Limpiar comillas que a veces pone Windows
     arg = arg.replace(/^"(.*)"$/, '$1');
     if (arg.match(/\.(jpg|jpeg|png|gif|webp|bmp|tiff|tif)$/i)) {
       try {
-        if (fs.existsSync(arg)) return path.resolve(arg);
-      } catch(e) {}
+        if (fs.existsSync(arg)) {
+          const resolved = path.resolve(arg);
+          pathAllowlist.allow(resolved);
+          return resolved;
+        }
+      } catch (_) { /* ignore */ }
     }
   }
   return null;
+}
+
+function resolveAllowedPath(rawPath) {
+  const abs = cleanFsPath(rawPath);
+  return pathAllowlist.assertAllowed(abs);
+}
+
+function registerMediaProtocol() {
+  protocol.handle('cvlocal', async (request) => {
+    try {
+      let urlPath = request.url.slice('cvlocal://'.length);
+      if (urlPath.startsWith('/')) urlPath = urlPath.slice(1);
+      const q = urlPath.indexOf('?');
+      if (q !== -1) urlPath = urlPath.slice(0, q);
+      const abs = cleanFsPath(urlPath);
+      if (!pathAllowlist.isAllowed(abs)) {
+        return new Response('Forbidden', { status: 403 });
+      }
+      if (!fs.existsSync(abs)) {
+        return new Response('Not Found', { status: 404 });
+      }
+      return net.fetch(pathToFileURL(abs).toString());
+    } catch (e) {
+      console.error('cvlocal protocol error:', e.message);
+      return new Response('Bad Request', { status: 400 });
+    }
+  });
 }
 
 let win;
@@ -79,25 +138,23 @@ function createWindow() {
 
   let bounds = settings.window.bounds;
   if (bounds) {
-    const visible = displays.some(d => {
+    const visible = displays.some((d) => {
       const b = d.bounds;
       return bounds.x < b.x + b.width && bounds.x + bounds.width > b.x &&
-             bounds.y < b.y + b.height && bounds.y + bounds.height > b.y;
+        bounds.y < b.y + b.height && bounds.y + bounds.height > b.y;
     });
     if (!visible) bounds = null;
   }
 
-  const defaultW = 1280, defaultH = 800;
+  const defaultW = 1280;
+  const defaultH = 800;
   let x, y, w, h;
   const preferredId = settings.app.preferredDisplayId;
-  
+
   if (preferredId && preferredId !== 'auto') {
-    // Buscar por ID exacto (convertir ambos a string para seguridad)
-    const targetDisplay = displays.find(d => d.id.toString() === preferredId.toString()) || primary;
+    const targetDisplay = displays.find((d) => d.id.toString() === preferredId.toString()) || primary;
     w = bounds ? Math.max(800, bounds.width) : defaultW;
     h = bounds ? Math.max(500, bounds.height) : defaultH;
-    
-    // Calcular centro absoluto del monitor objetivo
     x = Math.floor(targetDisplay.bounds.x + (targetDisplay.bounds.width - w) / 2);
     y = Math.floor(targetDisplay.bounds.y + (targetDisplay.bounds.height - h) / 2);
   } else {
@@ -122,11 +179,10 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       spellcheck: false,
       enableWebSQL: false,
-      webSecurity: false, // ACTIVACIÓN RADICAL: Permite acceso directo a archivos
-    },
+      webSecurity: true
+    }
   });
 
-  // Guardar estado en tiempo real para no perder el monitor
   win.on('move', () => {
     if (!win.isMaximized()) saveSettings({ window: { bounds: win.getBounds(), maximized: false } });
   });
@@ -134,12 +190,11 @@ function createWindow() {
     if (!win.isMaximized()) saveSettings({ window: { bounds: win.getBounds(), maximized: false } });
   });
 
-  // EXORCISMO DE CACHE (LEVEL 13)
-  const session = win.webContents.session;
-  session.clearCache();
-  
   const htmlPath = path.join(__dirname, 'CyberViewer.html');
-  win.loadURL(`file://${htmlPath}?v=${Date.now()}`);
+  const loadUrl = !app.isPackaged
+    ? pathToFileURL(htmlPath).href + '?v=' + Date.now()
+    : pathToFileURL(htmlPath).href;
+  win.loadURL(loadUrl);
 
   let wasMaximizedOnStart = settings.window.maximized;
 
@@ -155,9 +210,8 @@ function createWindow() {
       } else {
         win.show();
       }
-    } else {
-      // Si inicia minimizado por el sistema, creamos el tray si no existe
-      if (!tray) createTray();
+    } else if (!tray) {
+      createTray();
     }
   });
 
@@ -175,17 +229,16 @@ function createWindow() {
       win.hide();
       return false;
     }
-    
+
     const isMax = win.isMaximized();
     const windowState = { maximized: isMax };
     if (!isMax) windowState.bounds = win.getBounds();
     saveSettings({ window: windowState });
   });
 
-  // Eventos de estado para el renderer
   win.on('maximize', () => win.webContents.send('win-state', 'maximized'));
   win.on('unmaximize', () => win.webContents.send('win-state', 'normal'));
-  
+
   win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: 'deny' };
@@ -196,19 +249,16 @@ function createTray() {
   if (tray) return;
   const settings = loadSettings();
   const lang = settings.app.language || 'en';
-  
-  const showLabel = lang === 'es' ? 'Mostrar CyberViewer' : 'Show CyberViewer';
-  const settingsLabel = lang === 'es' ? 'Configuración' : 'Settings';
-  const exitLabel = lang === 'es' ? 'Salir' : 'Exit';
+  const t = menuI18n[lang] || menuI18n.en;
 
   tray = new Tray(path.join(__dirname, 'assets', 'icon.png'));
   const contextMenu = Menu.buildFromTemplate([
     { label: `CyberViewer v${app.getVersion()}`, enabled: false },
     { type: 'separator' },
-    { label: showLabel, click: () => { win.show(); win.focus(); } },
-    { label: settingsLabel, click: () => { win.show(); win.focus(); win.webContents.send('open-settings'); } },
+    { label: t.tray_show, click: () => { win.show(); win.focus(); } },
+    { label: t.tray_settings, click: () => { win.show(); win.focus(); win.webContents.send('open-settings'); } },
     { type: 'separator' },
-    { label: exitLabel, click: () => { isQuitting = true; app.quit(); } }
+    { label: t.tray_exit, click: () => { isQuitting = true; app.quit(); } }
   ]);
   tray.setToolTip('CyberViewer');
   tray.setContextMenu(contextMenu);
@@ -223,13 +273,10 @@ function createTray() {
   });
 }
 
-// ── IPC HANDLERS ──
+// ── IPC ──
 ipcMain.on('win-minimize', () => win.minimize());
-ipcMain.on('win-maximize', () => win.isMaximized() ? win.unmaximize() : win.maximize());
-ipcMain.on('win-close', () => {
-  win.close();
-});
-
+ipcMain.on('win-maximize', () => (win.isMaximized() ? win.unmaximize() : win.maximize()));
+ipcMain.on('win-close', () => win.close());
 ipcMain.on('win-devtools', () => win.webContents.openDevTools());
 
 ipcMain.handle('open-file-dialog', async () => {
@@ -242,58 +289,81 @@ ipcMain.handle('open-file-dialog', async () => {
     properties: ['openFile']
   });
   if (result.canceled || !result.filePaths.length) return null;
-  return result.filePaths[0];
+  const filePath = result.filePaths[0];
+  pathAllowlist.allow(filePath);
+  return filePath;
 });
 
 ipcMain.handle('get-settings', () => loadSettings());
 ipcMain.handle('get-version', () => app.getVersion());
 ipcMain.handle('show-save-dialog', async (event, options) => {
   const result = await dialog.showSaveDialog(win, options);
+  if (!result.canceled && result.filePath) {
+    pathAllowlist.allow(result.filePath);
+  }
   return result;
 });
+
 ipcMain.handle('check-updates', async () => {
   try {
     const response = await fetch('https://api.github.com/repos/CyberGems/CyberViewer/releases/latest', {
-      headers: {
-        'User-Agent': 'CyberViewer-App'
-      }
+      headers: { 'User-Agent': 'CyberViewer-App' }
     });
-    if (!response.ok) {
-      return { success: false, error: 'HTTP ' + response.status };
-    }
+    if (!response.ok) return { success: false, error: 'HTTP ' + response.status };
     const data = await response.json();
     return { success: true, data };
   } catch (e) {
     return { success: false, error: e.message };
   }
 });
+
 ipcMain.handle('get-monitors', () => {
-  return screen.getAllDisplays().map(d => ({
+  return screen.getAllDisplays().map((d) => ({
     id: d.id,
     label: `${d.id === screen.getPrimaryDisplay().id ? '[Principal] ' : ''}Monitor ${d.id}`,
     bounds: d.bounds
   }));
 });
+
+ipcMain.handle('to-media-url', (event, filePath) => {
+  try {
+    const abs = resolveAllowedPath(filePath);
+    return toMediaUrl(abs);
+  } catch (e) {
+    return null;
+  }
+});
+
+ipcMain.handle('register-paths', (event, paths) => {
+  try {
+    if (!Array.isArray(paths)) return { success: false };
+    for (const p of paths) {
+      if (p) pathAllowlist.allow(cleanFsPath(p));
+    }
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+});
+
 ipcMain.handle('scan-folder', (event, filePath) => {
   try {
-    const dir = path.dirname(filePath);
+    const absFile = cleanFsPath(filePath);
+    pathAllowlist.allow(absFile);
+    const dir = path.dirname(absFile);
+    pathAllowlist.allow(dir);
+
     const files = fs.readdirSync(dir);
-    const allowedExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.tif'];
-    
-    // Ordenamiento natural (como Windows Explorer)
     const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
-    
+
     const filtered = files
-      .filter(f => allowedExts.includes(path.extname(f).toLowerCase()))
+      .filter((f) => IMAGE_EXTS.has(path.extname(f).toLowerCase()))
       .sort((a, b) => collator.compare(a, b));
 
-    return filtered.map(f => {
+    return filtered.map((f) => {
       const fullPath = path.resolve(dir, f);
       const stats = fs.statSync(fullPath);
-      return {
-        path: fullPath,
-        size: stats.size
-      };
+      return { path: fullPath, size: stats.size };
     });
   } catch (e) {
     console.error('Error escaneando carpeta:', e);
@@ -301,50 +371,45 @@ ipcMain.handle('scan-folder', (event, filePath) => {
   }
 });
 
-// ── SISTEMA DE CACHE DE MINIATURAS ──
 const thumbCachePath = path.join(app.getPath('userData'), 'thumb_cache');
 if (!fs.existsSync(thumbCachePath)) fs.mkdirSync(thumbCachePath, { recursive: true });
+pathAllowlist.allow(thumbCachePath);
 
 ipcMain.handle('get-thumbnail', async (event, filePath) => {
   try {
-    const stats = fs.statSync(filePath);
-    // Normalizar ruta para evitar duplicados por mayúsculas/minúsculas en Windows
-    const normalizedPath = path.resolve(filePath).toLowerCase();
+    const abs = resolveAllowedPath(filePath);
+    const stats = fs.statSync(abs);
+    const normalizedPath = abs.toLowerCase();
     const hash = crypto.createHash('md5').update(normalizedPath + stats.mtimeMs).digest('hex');
     const cacheFile = path.join(thumbCachePath, `${hash}.jpg`);
 
     if (fs.existsSync(cacheFile)) {
-      return pathToFileURL(cacheFile).toString();
+      return toMediaUrl(cacheFile);
     }
 
-    const img = nativeImage.createFromPath(filePath);
+    const img = nativeImage.createFromPath(abs);
     if (img.isEmpty()) return null;
 
     const thumb = img.resize({ height: 100, quality: 'better' });
     fs.writeFileSync(cacheFile, thumb.toJPEG(80));
-    
-    return pathToFileURL(cacheFile).toString();
+    evictThumbCache(thumbCachePath);
+    return toMediaUrl(cacheFile);
   } catch (e) {
     return null;
   }
 });
+
 ipcMain.handle('save-image', async (event, { filePath, rotation, buffer, createCopy }) => {
   try {
     if (!filePath) return { success: false, error: 'Ruta no proporcionada' };
 
-    let cleanPath = filePath;
-    if (cleanPath.startsWith('file:///')) cleanPath = cleanPath.substring(8);
-    else if (cleanPath.startsWith('file://')) cleanPath = cleanPath.substring(7);
-    cleanPath = decodeURIComponent(cleanPath);
-    if (process.platform === 'win32' && cleanPath.startsWith('/')) cleanPath = cleanPath.substring(1);
-    cleanPath = path.resolve(cleanPath);
-
+    const cleanPath = resolveAllowedPath(filePath);
     let targetPath = cleanPath;
+
     if (createCopy) {
       const dir = path.dirname(cleanPath);
       const ext = path.extname(cleanPath);
       const base = path.basename(cleanPath, ext);
-      
       let candidate = path.join(dir, `${base}_resized${ext}`);
       let counter = 1;
       while (fs.existsSync(candidate)) {
@@ -352,17 +417,13 @@ ipcMain.handle('save-image', async (event, { filePath, rotation, buffer, createC
         candidate = path.join(dir, `${base}_resized (${counter})${ext}`);
       }
       targetPath = candidate;
+      pathAllowlist.allow(targetPath);
     }
 
-    console.log(`[LEVEL-20-GHOST] Procesando: ${targetPath}`);
-
     let dataToWrite;
-
     if (buffer) {
-      // ── Modo directo: el renderer envía la imagen ya renderizada (canvas → base64) ──
       dataToWrite = Buffer.from(buffer, 'base64');
     } else {
-      // ── Modo legacy: cargar desde disco y procesar con nativeImage ──
       let img = nativeImage.createFromPath(cleanPath);
       if (img.isEmpty()) {
         try {
@@ -375,78 +436,77 @@ ipcMain.handle('save-image', async (event, { filePath, rotation, buffer, createC
       if (img.isEmpty()) {
         return { success: false, error: 'Formato de imagen no soportado por el motor nativo' };
       }
-
       const times = Math.floor((rotation || 0) / 90);
-      for (let i = 0; i < times; i++) { img = img.rotate(90); }
-      dataToWrite = img.toJPEG(95);
+      for (let i = 0; i < times; i++) img = img.rotate(90);
+      const ext = path.extname(targetPath).toLowerCase();
+      dataToWrite = (ext === '.png') ? img.toPNG() : img.toJPEG(95);
     }
 
-    // ── ESCRITURA ATÓMICA: archivo temporal + rename ──
     const tmpPath = targetPath + '.cybertmp.' + Date.now();
-
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        // Verificar que el directorio padre es escribible
         const dir = path.dirname(targetPath);
-        try { fs.accessSync(dir, fs.constants.W_OK); } catch (e) {
+        try {
+          fs.accessSync(dir, fs.constants.W_OK);
+        } catch (e) {
           return { success: false, error: `No hay permisos de escritura en: ${dir}` };
         }
 
         fs.writeFileSync(tmpPath, dataToWrite);
-
-        if (fs.existsSync(targetPath)) {
-          fs.unlinkSync(targetPath);
-        }
+        if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
         fs.renameSync(tmpPath, targetPath);
-
-        console.log('[LEVEL-20-GHOST] Guardado exitoso:', targetPath);
         return { success: true, filePath: targetPath };
       } catch (e) {
-        console.warn(`[LEVEL-20] Reintento ${attempt + 1} fallido:`, e.message);
-        try { if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath); } catch (_) {}
-        await new Promise(r => setTimeout(r, 200));
+        console.warn(`Save retry ${attempt + 1} failed:`, e.message);
+        try { if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath); } catch (_) { /* ignore */ }
+        await new Promise((r) => setTimeout(r, 200));
       }
     }
 
     return { success: false, error: 'No se pudo escribir el archivo (archivo en uso o permisos insuficientes)' };
   } catch (e) {
-    console.error('[LEVEL-20-GHOST] Error:', e.message);
+    if (e.code === 'PATH_NOT_ALLOWED') {
+      return { success: false, error: 'Ruta no permitida' };
+    }
+    console.error('save-image error:', e.message);
     return { success: false, error: e.message };
   }
 });
 
 ipcMain.on('copy-image', (event, filePath) => {
   try {
-    let cleanPath = filePath;
-    if (cleanPath.startsWith('file:///')) cleanPath = cleanPath.substring(8);
-    else if (cleanPath.startsWith('file://')) cleanPath = cleanPath.substring(7);
-    cleanPath = decodeURIComponent(cleanPath);
-    if (process.platform === 'win32' && cleanPath.startsWith('/')) cleanPath = cleanPath.substring(1);
-    cleanPath = path.resolve(cleanPath);
-
+    const cleanPath = resolveAllowedPath(filePath);
     fs.readFile(cleanPath, (err, data) => {
       if (err) {
         console.error('Failed to read file for clipboard:', err);
         return;
       }
       const img = nativeImage.createFromBuffer(data);
-      if (!img.isEmpty()) {
-        clipboard.writeImage(img);
-      } else {
-        console.error('Failed to load image for clipboard:', cleanPath);
-      }
+      if (!img.isEmpty()) clipboard.writeImage(img);
     });
   } catch (e) {
     console.error('Error copying image to clipboard:', e);
   }
 });
 
+async function trashFile(filePath) {
+  const abs = resolveAllowedPath(filePath);
+  await shell.trashItem(abs);
+  return { success: true };
+}
 
+ipcMain.handle('move-to-trash', async (event, filePath) => {
+  try {
+    return await trashFile(filePath);
+  } catch (e) {
+    console.error('Error moving file to trash:', e);
+    return { success: false, error: e.message };
+  }
+});
 
 ipcMain.handle('move-to-trash-direct', async (event, filePath) => {
   try {
-    await shell.trashItem(filePath);
-    return { success: true };
+    return await trashFile(filePath);
   } catch (e) {
     console.error('Error moving file to trash directly:', e);
     return { success: false, error: e.message };
@@ -456,38 +516,17 @@ ipcMain.handle('move-to-trash-direct', async (event, filePath) => {
 ipcMain.on('show-item-in-folder', (event, filePath) => {
   try {
     if (!filePath) return;
-    let cleanPath = filePath;
-    if (cleanPath.startsWith('file:///')) cleanPath = cleanPath.substring(8);
-    else if (cleanPath.startsWith('file://')) cleanPath = cleanPath.substring(7);
-    cleanPath = decodeURIComponent(cleanPath);
-    if (process.platform === 'win32' && cleanPath.startsWith('/')) cleanPath = cleanPath.substring(1);
-    cleanPath = path.resolve(cleanPath);
-
-    if (fs.existsSync(cleanPath)) {
-      shell.showItemInFolder(cleanPath);
-    }
+    const abs = resolveAllowedPath(filePath);
+    if (fs.existsSync(abs)) shell.showItemInFolder(abs);
   } catch (e) {
     console.error('Error showing item in folder:', e);
   }
 });
 
-// Normaliza una ruta entrante (file://, %20, barra inicial en win32) a ruta de sistema.
-function cleanFsPath(p) {
-  let cleanPath = p;
-  if (cleanPath.startsWith('file:///')) cleanPath = cleanPath.substring(8);
-  else if (cleanPath.startsWith('file://')) cleanPath = cleanPath.substring(7);
-  cleanPath = decodeURIComponent(cleanPath);
-  if (process.platform === 'win32' && cleanPath.startsWith('/')) cleanPath = cleanPath.substring(1);
-  return path.resolve(cleanPath);
-}
-
-// Abre el diálogo nativo de Propiedades de Windows para un archivo. El script
-// auxiliar (.wsf) se escribe una sola vez por sesión y se reutiliza, pasando
-// carpeta/archivo como WScript.Arguments para no reescribirlo en cada llamada.
 let propertiesScriptWritten = false;
 function openNativeProperties(rawPath) {
   try {
-    const absolutePath = cleanFsPath(rawPath);
+    const absolutePath = resolveAllowedPath(rawPath);
     const folderPath = path.dirname(absolutePath).replace(/\//g, '\\');
     const fileName = path.basename(absolutePath);
     const propsWsfPath = path.join(app.getPath('temp'), 'cyberviewer_properties.wsf');
@@ -503,7 +542,7 @@ function openNativeProperties(rawPath) {
                Set objFolderItem = objFolder.ParseName(WScript.Arguments(1))
                If Not objFolderItem Is Nothing Then
                   objFolderItem.InvokeVerb "Properties"
-                  WScript.Sleep 1800000 ' mantiene vivo el proceso mientras el diálogo está abierto
+                  WScript.Sleep 1800000
                End If
             End If
          End If
@@ -515,21 +554,19 @@ function openNativeProperties(rawPath) {
       fs.writeFileSync(propsWsfPath, wsfContent, 'utf-8');
       propertiesScriptWritten = true;
     }
-    require('child_process').execFile('wscript.exe', [propsWsfPath, folderPath, fileName]);
+    execFile('wscript.exe', [propsWsfPath, folderPath, fileName]);
   } catch (e) {
     console.error('Error opening file properties via WSF:', e);
   }
 }
 
-// Botón discreto "Propiedades de Windows" dentro del panel in-app.
 ipcMain.on('open-native-properties', (event, filePath) => {
   if (filePath) openNativeProperties(filePath);
 });
 
-// Datos del archivo para el panel in-app (tamaño y fechas frescas desde disco).
 ipcMain.handle('get-file-info', (event, filePath) => {
   try {
-    const stats = fs.statSync(cleanFsPath(filePath));
+    const stats = fs.statSync(resolveAllowedPath(filePath));
     return { size: stats.size, modified: stats.mtimeMs, created: stats.birthtimeMs };
   } catch (e) {
     return null;
@@ -539,16 +576,13 @@ ipcMain.handle('get-file-info', (event, filePath) => {
 ipcMain.handle('validate-paths', (event, paths) => {
   try {
     if (!Array.isArray(paths)) return [];
-    return paths.filter(p => {
+    return paths.filter((p) => {
       try {
-        let cleanPath = p;
-        if (cleanPath.startsWith('file:///')) cleanPath = cleanPath.substring(8);
-        else if (cleanPath.startsWith('file://')) cleanPath = cleanPath.substring(7);
-        cleanPath = decodeURIComponent(cleanPath);
-        if (process.platform === 'win32' && cleanPath.startsWith('/')) cleanPath = cleanPath.substring(1);
-        cleanPath = path.resolve(cleanPath);
-        return fs.existsSync(cleanPath);
-      } catch (e) {
+        const abs = cleanFsPath(p);
+        if (!fs.existsSync(abs)) return false;
+        pathAllowlist.allow(abs);
+        return true;
+      } catch (_) {
         return false;
       }
     });
@@ -557,6 +591,33 @@ ipcMain.handle('validate-paths', (event, paths) => {
     return [];
   }
 });
+
+function runRegCommands(commands) {
+  return new Promise((resolve) => {
+    if (!commands.length) {
+      resolve({ success: true });
+      return;
+    }
+    const runNext = (i) => {
+      if (i >= commands.length) {
+        resolve({ success: true });
+        return;
+      }
+      const [cmd, ...args] = commands[i];
+      execFile(cmd, args, (err) => {
+        if (err && cmd === 'reg' && args[0] === 'delete') {
+          // ignore missing keys
+        } else if (err) {
+          console.error('Registry command failed:', err.message);
+          resolve({ success: false, error: err.message });
+          return;
+        }
+        runNext(i + 1);
+      });
+    };
+    runNext(0);
+  });
+}
 
 ipcMain.handle('register-context-menu', async (event, enable, lang) => {
   try {
@@ -568,7 +629,6 @@ ipcMain.handle('register-context-menu', async (event, enable, lang) => {
 
     const extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.tif'];
     const progIds = ['BMP Image', 'GIF Image', 'JPEG Image', 'PNG Image', 'WebP Image', 'TIFF Image'];
-    const { exec } = require('child_process');
 
     if (enable) {
       if (!fs.existsSync(exePath)) {
@@ -577,55 +637,33 @@ ipcMain.handle('register-context-menu', async (event, enable, lang) => {
 
       const label = lang === 'es' ? 'Ver con CyberViewer' : 'View with CyberViewer';
       const assocLabel = lang === 'es' ? 'Abrir con CyberViewer' : 'Open with CyberViewer';
+      const commands = [];
 
-      let commands = [];
       for (const ext of extensions) {
         const regPath = `HKCU\\Software\\Classes\\SystemFileAssociations\\${ext}\\shell\\CyberViewer`;
-        commands.push(`reg add "${regPath}" /ve /d "${label}" /f`);
-        commands.push(`reg add "${regPath}" /v Icon /d "\\"${exePath}\\"" /f`);
-        commands.push(`reg add "${regPath}\\command" /ve /d "\\"${exePath}\\" \\"%1\\"" /f`);
+        commands.push(['reg', 'add', regPath, '/ve', '/d', label, '/f']);
+        commands.push(['reg', 'add', regPath, '/v', 'Icon', '/d', exePath, '/f']);
+        commands.push(['reg', 'add', `${regPath}\\command`, '/ve', '/d', `"${exePath}" "%1"`, '/f']);
       }
-
       for (const progId of progIds) {
         const regPath = `HKCU\\Software\\Classes\\${progId}\\shell\\open`;
-        commands.push(`reg add "${regPath}" /ve /d "${assocLabel}" /f`);
-        commands.push(`reg add "${regPath}" /v Icon /d "\\"${exePath}\\"" /f`);
+        commands.push(['reg', 'add', regPath, '/ve', '/d', assocLabel, '/f']);
+        commands.push(['reg', 'add', regPath, '/v', 'Icon', '/d', exePath, '/f']);
       }
-
-      const fullCommand = commands.join(' & ');
-
-      return new Promise((resolve) => {
-        exec(fullCommand, (err) => {
-          if (err) {
-            console.error('Error registering context menu:', err);
-            resolve({ success: false, error: err.message });
-          } else {
-            resolve({ success: true });
-          }
-        });
-      });
-    } else {
-      let commands = [];
-      for (const ext of extensions) {
-        const regPath = `HKCU\\Software\\Classes\\SystemFileAssociations\\${ext}\\shell\\CyberViewer`;
-        commands.push(`reg delete "${regPath}" /f`);
-      }
-
-      for (const progId of progIds) {
-        const regPath = `HKCU\\Software\\Classes\\${progId}\\shell\\open`;
-        commands.push(`reg add "${regPath}" /ve /d "Open with CyberViewer" /f`);
-        commands.push(`reg delete "${regPath}" /v Icon /f`);
-      }
-
-      const fullCommand = commands.join(' & ');
-
-      return new Promise((resolve) => {
-        exec(fullCommand, (err) => {
-          // Ignore error since keys might not exist
-          resolve({ success: true });
-        });
-      });
+      return runRegCommands(commands);
     }
+
+    const commands = [];
+    for (const ext of extensions) {
+      const regPath = `HKCU\\Software\\Classes\\SystemFileAssociations\\${ext}\\shell\\CyberViewer`;
+      commands.push(['reg', 'delete', regPath, '/f']);
+    }
+    for (const progId of progIds) {
+      const regPath = `HKCU\\Software\\Classes\\${progId}\\shell\\open`;
+      commands.push(['reg', 'add', regPath, '/ve', '/d', 'Open with CyberViewer', '/f']);
+      commands.push(['reg', 'delete', regPath, '/v', 'Icon', '/f']);
+    }
+    return runRegCommands(commands);
   } catch (e) {
     console.error('Error in register-context-menu handler:', e);
     return { success: false, error: e.message };
@@ -634,8 +672,7 @@ ipcMain.handle('register-context-menu', async (event, enable, lang) => {
 
 ipcMain.on('save-settings', (event, newSettings) => {
   saveSettings({ app: newSettings });
-  
-  // Aplicar cambios que requieren acción de Electron
+
   if (newSettings.autoStart !== undefined) {
     app.setLoginItemSettings({
       openAtLogin: newSettings.autoStart,
@@ -650,95 +687,17 @@ ipcMain.on('save-settings', (event, newSettings) => {
     tray.destroy();
     tray = null;
   } else if (tray) {
-    // Si cambia de idioma, recrear el tray para actualizar textos
     tray.destroy();
     tray = null;
     createTray();
   }
 });
 
-const I18N_MAIN = {
-  en: {
-    file: "File",
-    edit: "Edit",
-    view: "View",
-    navigate: "Navigate",
-    copy_image: "Copy Image",
-    show_in_folder: "Show in Folder",
-    hide_session: "Hide from this session",
-    restore_hidden: "Restore hidden ({count})",
-    copy_original: "Copy Original",
-    go_start: "Go to Start",
-    go_end: "Go to End",
-    move_trash: "Move to Trash",
-    open_folder: "Open image",
-    close_image: "Close Image",
-    copy_path: "Copy Image Path",
-    config: "Configuration",
-    about: "About",
-    fit_window: "Fit to Window",
-    reset_zoom: "Original Size 1:1",
-    save_changes: "Save Changes",
-    save_as: "Save As...",
-    properties: "Properties",
-    quit: "Quit",
-    maximize: "Maximize",
-    restore: "Restore",
-    autohide_hud: "Auto-hide Toolbar",
-    autohide_nav: "Auto-hide Nav Buttons",
-    rotate: "Rotate",
-    rotate_r: "Rotate Right 90° (Autosave)",
-    rotate_l: "Rotate Left 90° (Autosave)",
-    crop: "Crop Image",
-    resize: "Resize Image",
-    favorite_add: "Add to Favorites",
-    favorite_remove: "Remove from Favorites",
-  },
-  es: {
-    file: "Archivo",
-    edit: "Editar",
-    view: "Ver",
-    navigate: "Navegar",
-    copy_image: "Copiar Imagen",
-    show_in_folder: "Mostrar en Carpeta",
-    hide_session: "Ocultar de esta sesión",
-    restore_hidden: "Restaurar ocultos ({count})",
-    copy_original: "Copiar Original",
-    go_start: "Ir al Principio",
-    go_end: "Ir al Final",
-    move_trash: "Mover a la Papelera",
-    open_folder: "Abrir imagen",
-    close_image: "Cerrar Imagen",
-    copy_path: "Copiar ruta de la imagen",
-    config: "Configuración",
-    about: "Acerca de",
-    fit_window: "Ajustar a la Ventana",
-    reset_zoom: "Tamaño Original 1:1",
-    save_changes: "Guardar Cambios",
-    save_as: "Guardar Como...",
-    properties: "Propiedades",
-    quit: "Salir",
-    maximize: "Maximizar",
-    restore: "Restaurar",
-    autohide_hud: "Ocultar barra automáticamente",
-    autohide_nav: "Ocultar botones de navegación",
-    rotate: "Rotar",
-    rotate_r: "Rotar 90° Derecha (Auto-guardar)",
-    rotate_l: "Rotar 90° Izquierda (Auto-guardar)",
-    crop: "Recortar Imagen",
-    resize: "Redimensionar Imagen",
-    favorite_add: "Añadir a Favoritos",
-    favorite_remove: "Quitar de Favoritos",
-  }
-};
-
-// Menú contextual nativo para campos de texto
 ipcMain.on('show-context-menu', (event, props) => {
   const settings = loadSettings();
   const lang = settings.app.language || 'en';
-  const t = I18N_MAIN[lang] || I18N_MAIN.en;
-
-  const win = BrowserWindow.fromWebContents(event.sender);
+  const t = menuI18n[lang] || menuI18n.en;
+  const browserWin = BrowserWindow.fromWebContents(event.sender);
   let template = [];
 
   if (props.isEditable) {
@@ -760,22 +719,21 @@ ipcMain.on('show-context-menu', (event, props) => {
           {
             label: t.copy_image,
             click: () => {
-              fs.readFile(props.path, (err, data) => {
-                if (!err) {
-                  const img = nativeImage.createFromBuffer(data);
-                  clipboard.writeImage(img);
-                }
-              });
+              try {
+                const abs = resolveAllowedPath(props.path);
+                fs.readFile(abs, (err, data) => {
+                  if (!err) {
+                    const img = nativeImage.createFromBuffer(data);
+                    clipboard.writeImage(img);
+                  }
+                });
+              } catch (_) { /* ignore */ }
             }
           },
           {
             label: t.copy_path,
             enabled: !!props.path,
-            click: () => {
-              if (props.path) {
-                clipboard.writeText(props.path);
-              }
-            }
+            click: () => { if (props.path) clipboard.writeText(props.path); }
           },
           {
             label: t.save_changes,
@@ -786,7 +744,7 @@ ipcMain.on('show-context-menu', (event, props) => {
             label: t.save_as,
             click: async () => {
               const ext = path.extname(props.path);
-              const result = await dialog.showSaveDialog(win, {
+              const result = await dialog.showSaveDialog(browserWin, {
                 title: lang === 'es' ? 'Guardar como' : 'Save As',
                 defaultPath: path.join(path.dirname(props.path), path.basename(props.path, ext) + '_copy' + ext),
                 filters: [
@@ -795,6 +753,7 @@ ipcMain.on('show-context-menu', (event, props) => {
                 ]
               });
               if (!result.canceled && result.filePath) {
+                pathAllowlist.allow(result.filePath);
                 event.sender.send('menu-action', { action: 'save-as', targetPath: result.filePath });
               }
             }
@@ -826,7 +785,12 @@ ipcMain.on('show-context-menu', (event, props) => {
       {
         label: t.view,
         submenu: [
-          { label: t.show_in_folder, click: () => shell.showItemInFolder(props.path) },
+          {
+            label: t.show_in_folder,
+            click: () => {
+              try { shell.showItemInFolder(resolveAllowedPath(props.path)); } catch (_) { /* ignore */ }
+            }
+          },
           {
             label: t.properties,
             click: () => event.sender.send('menu-action', { action: 'show-properties', path: props.path })
@@ -849,7 +813,7 @@ ipcMain.on('show-context-menu', (event, props) => {
         click: () => event.sender.send('menu-action', { action: 'restore-hidden' })
       },
       { type: 'separator' },
-      { label: t.quit, click: () => win.close() }
+      { label: t.quit, click: () => browserWin.close() }
     ];
   } else if (props.type === 'thumb') {
     template = [
@@ -859,15 +823,23 @@ ipcMain.on('show-context-menu', (event, props) => {
           {
             label: t.copy_original,
             click: () => {
-              fs.readFile(props.path, (err, data) => {
-                if (!err) {
-                  const img = nativeImage.createFromBuffer(data);
-                  clipboard.writeImage(img);
-                }
-              });
+              try {
+                const abs = resolveAllowedPath(props.path);
+                fs.readFile(abs, (err, data) => {
+                  if (!err) {
+                    const img = nativeImage.createFromBuffer(data);
+                    clipboard.writeImage(img);
+                  }
+                });
+              } catch (_) { /* ignore */ }
             }
           },
-          { label: t.show_in_folder, click: () => shell.showItemInFolder(props.path) }
+          {
+            label: t.show_in_folder,
+            click: () => {
+              try { shell.showItemInFolder(resolveAllowedPath(props.path)); } catch (_) { /* ignore */ }
+            }
+          }
         ]
       },
       {
@@ -893,10 +865,9 @@ ipcMain.on('show-context-menu', (event, props) => {
         }
       },
       { type: 'separator' },
-      { label: t.quit, click: () => win.close() }
+      { label: t.quit, click: () => browserWin.close() }
     ];
   } else {
-    // Canvas context menu
     const hasImages = !!props.hiddenCount || (props.type === 'canvas' && props.hasImages);
     template = [
       {
@@ -912,11 +883,7 @@ ipcMain.on('show-context-menu', (event, props) => {
           {
             label: t.copy_path,
             enabled: hasImages && !!props.path,
-            click: () => {
-              if (props.path) {
-                clipboard.writeText(props.path);
-              }
-            }
+            click: () => { if (props.path) clipboard.writeText(props.path); }
           }
         ]
       },
@@ -972,27 +939,22 @@ ipcMain.on('show-context-menu', (event, props) => {
       { label: t.about, click: () => event.sender.send('menu-action', { action: 'show-about' }) },
       { type: 'separator' },
       {
-        label: win.isMaximized() ? t.restore : t.maximize,
+        label: browserWin.isMaximized() ? t.restore : t.maximize,
         click: () => {
-          if (win.isMaximized()) {
-            win.unmaximize();
-          } else {
-            win.maximize();
-          }
+          if (browserWin.isMaximized()) browserWin.unmaximize();
+          else browserWin.maximize();
         }
       },
       { type: 'separator' },
-      { label: t.quit, click: () => win.close() }
+      { label: t.quit, click: () => browserWin.close() }
     ];
   }
 
   if (template.length > 0) {
-    const menu = Menu.buildFromTemplate(template);
-    menu.popup(win);
+    Menu.buildFromTemplate(template).popup(browserWin);
   }
 });
 
-// ── APP LIFECYCLE ──
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
@@ -1001,23 +963,24 @@ if (!gotTheLock) {
   app.on('second-instance', (event, commandLine) => {
     if (win) {
       if (win.isMinimized()) win.restore();
-      win.show(); // Asegurar que sale de la bandeja
+      win.show();
       win.focus();
-      
       const filePath = getFilePathFromArgs(commandLine);
       if (filePath) win.webContents.send('open-file', filePath);
     }
   });
 
   app.whenReady().then(() => {
-    // Protocolo eliminado para usar file:// directo (máximo rendimiento)
+    registerMediaProtocol();
+    pathAllowlist.allow(thumbCachePath);
+    evictThumbCache(thumbCachePath);
+
     createWindow();
-    
     win.webContents.setBackgroundThrottling(false);
+
     const settings = loadSettings();
     if (settings.app.closeToTray) createTray();
 
-    // Si se abrió con un archivo directamente
     const initialFile = getFilePathFromArgs(process.argv);
     if (initialFile) {
       win.webContents.once('did-finish-load', () => {

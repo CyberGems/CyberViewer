@@ -27,6 +27,12 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit Tests
+        run: npm test
+
       - name: Compile and Package Electron App
         run: npm run build
         env:

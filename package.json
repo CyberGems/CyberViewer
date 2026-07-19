@@ -8,11 +8,14 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --win --x64",
-    "build:portable": "electron-builder --win portable --x64"
+    "build:portable": "electron-builder --win portable --x64",
+    "test": "node --test test/**/*.test.js",
+    "lint": "eslint main.js preload.js lib test"
   },
   "devDependencies": {
     "electron": "^30.0.0",
-    "electron-builder": "^24.0.0"
+    "electron-builder": "^24.0.0",
+    "eslint": "^9.0.0"
   },
   "build": {
     "appId": "com.cybergems.cyberviewer",
@@ -25,6 +28,10 @@
       "CyberViewer.html",
       "main.js",
       "preload.js",
+      "css/**",
+      "js/**",
+      "lib/**",
+      "i18n/**",
       "assets/**"
     ],
     "win": {
