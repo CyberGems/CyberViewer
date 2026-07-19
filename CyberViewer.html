@@ -5693,6 +5693,13 @@ $('sidebar-handle').addEventListener('click', () => {
   handle.style.left = state.sidebarOpen ? 'var(--panel-w)' : '0';
   $('sidebar-handle-arrow').textContent = state.sidebarOpen ? '◂' : '▸';
   
+  if (state.settings && state.settings.app) {
+    state.settings.app.sidebarOpen = state.sidebarOpen;
+    if (isElectron) {
+      window.electronAPI.saveSettings(state.settings.app);
+    }
+  }
+  
   if (state.sidebarOpen) {
     startBackgroundScan();
   } else {
