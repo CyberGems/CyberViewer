@@ -3370,6 +3370,8 @@ function buildSidebar() {
     });
   }, { root: $('sidebar-scroll'), rootMargin: '400px' });
 
+  const fragment = document.createDocumentFragment();
+
   state.images.forEach((im, i) => {
     if (im.hidden) return; // No renderizar si está oculto
 
@@ -3392,12 +3394,12 @@ function buildSidebar() {
 
     thumbObserver.observe(item);
 
-      item.addEventListener('contextmenu', (e) => {
-        showCustomContextMenu(e, 'thumb', { 
-          path: im.file.path,
-          index: i
-        });
+    item.addEventListener('contextmenu', (e) => {
+      showCustomContextMenu(e, 'thumb', { 
+        path: im.file.path,
+        index: i
       });
+    });
 
     item.addEventListener('click', () => {
       if (state.transitioning) return;
@@ -3405,8 +3407,10 @@ function buildSidebar() {
       showImage(i, dir);
     });
 
-    container.appendChild(item);
+    fragment.appendChild(item);
   });
+
+  container.appendChild(fragment);
 }
 
 // ── CONTEXT MENU ──
@@ -4354,7 +4358,18 @@ function preloadAdjacent(idx) {
     [idx + d, idx - d].forEach(i => {
       if (i >= 0 && i < state.images.length && !state.images[i].loaded) {
         const url = getUrl(i);
+        if (state.preloadCache.has(url)) return;
+
         const tmp = new Image();
+        
+        // Mantener el tamaño de la caché bajo control (ej. máximo 15 imágenes precargadas)
+        if (state.preloadCache.size > 15) {
+          const firstKey = state.preloadCache.keys().next().value;
+          state.preloadCache.delete(firstKey);
+        }
+        
+        state.preloadCache.set(url, tmp);
+
         tmp.onload = () => {
           state.images[i].loaded = true;
           state.images[i].w = tmp.naturalWidth;
