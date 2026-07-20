@@ -1,15 +1,24 @@
 
 // ── Media / format helpers (cvlocal protocol) ──
+// Use ?p=<absolute path> so Windows drive letters are never parsed as URL hosts.
 function mediaUrl(fsPath, bust) {
   if (!fsPath) return '';
   const s = String(fsPath);
-  if (s.startsWith('cvlocal://') || s.startsWith('blob:') || s.startsWith('data:')) {
-    return bust ? (s.split('?')[0] + '?t=' + bust) : s;
+  if (s.startsWith('blob:') || s.startsWith('data:')) return s;
+  if (s.startsWith('cvlocal:')) {
+    try {
+      const u = new URL(s.replace(/^cvlocal:/i, 'http:'));
+      const p = u.searchParams.get('p');
+      if (p) {
+        let url = 'cvlocal://media/?p=' + encodeURIComponent(p);
+        if (bust != null && bust !== false) url += '&t=' + encodeURIComponent(String(bust));
+        return url;
+      }
+    } catch (_) { /* fall through */ }
   }
-  const abs = s.replace(/\\/g, '/');
-  const encoded = encodeURI(abs).replace(/#/g, '%23');
-  const url = 'cvlocal:///' + encoded;
-  return bust ? url + '?t=' + bust : url;
+  let url = 'cvlocal://media/?p=' + encodeURIComponent(s);
+  if (bust != null && bust !== false) url += '&t=' + encodeURIComponent(String(bust));
+  return url;
 }
 
 function canvasExport(canvas, filePath) {

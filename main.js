@@ -2,7 +2,7 @@
 
 const {
   app, BrowserWindow, shell, ipcMain, screen, Tray, Menu,
-  protocol, nativeImage, clipboard, dialog, net
+  protocol, nativeImage, clipboard, dialog
 } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -11,7 +11,7 @@ const { pathToFileURL } = require('url');
 const { execFile } = require('child_process');
 
 const {
-  cleanFsPath, toMediaUrl, createPathAllowlist, IMAGE_EXTS
+  cleanFsPath, toMediaUrl, createPathAllowlist, IMAGE_EXTS, mimeForPath
 } = require('./lib/paths');
 const { evictThumbCache } = require('./lib/thumb-cache');
 
@@ -23,6 +23,7 @@ protocol.registerSchemesAsPrivileged([
       secure: true,
       supportFetchAPI: true,
       stream: true,
+      corsEnabled: true,
       bypassCSP: false
     }
   }
@@ -108,18 +109,22 @@ function resolveAllowedPath(rawPath) {
 function registerMediaProtocol() {
   protocol.handle('cvlocal', async (request) => {
     try {
-      let urlPath = request.url.slice('cvlocal://'.length);
-      if (urlPath.startsWith('/')) urlPath = urlPath.slice(1);
-      const q = urlPath.indexOf('?');
-      if (q !== -1) urlPath = urlPath.slice(0, q);
-      const abs = cleanFsPath(urlPath);
+      // Prefer ?p= absolute path — avoids Windows drive letters becoming URL hosts.
+      const abs = cleanFsPath(request.url);
       if (!pathAllowlist.isAllowed(abs)) {
+        console.warn('cvlocal forbidden:', abs);
         return new Response('Forbidden', { status: 403 });
       }
       if (!fs.existsSync(abs)) {
         return new Response('Not Found', { status: 404 });
       }
-      return net.fetch(pathToFileURL(abs).toString());
+      const data = await fs.promises.readFile(abs);
+      return new Response(data, {
+        headers: {
+          'Content-Type': mimeForPath(abs),
+          'Cache-Control': 'no-cache'
+        }
+      });
     } catch (e) {
       console.error('cvlocal protocol error:', e.message);
       return new Response('Bad Request', { status: 400 });

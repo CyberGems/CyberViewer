@@ -22,20 +22,26 @@ describe('cleanFsPath', () => {
     assert.equal(cleaned.toLowerCase(), sample.toLowerCase());
   });
 
-  it('strips cvlocal:// and query bust', () => {
+  it('reads cvlocal ?p= query (Windows-safe)', () => {
     const sample = path.resolve('C:\\Images\\a.jpg');
-    const url = toMediaUrl(sample) + '?t=123';
+    const url = toMediaUrl(sample, 123);
     const cleaned = cleanFsPath(url);
     assert.equal(cleaned.toLowerCase(), sample.toLowerCase());
+  });
+
+  it('recovers legacy drive-as-host form', () => {
+    const cleaned = cleanFsPath('cvlocal://c/Users/test/pic.png');
+    assert.match(cleaned.toLowerCase(), /c:\\users\\test\\pic\.png$/);
   });
 });
 
 describe('toMediaUrl', () => {
-  it('builds cvlocal URL', () => {
+  it('uses query param, not path host', () => {
     const sample = path.resolve('C:\\x\\y.png');
     const url = toMediaUrl(sample);
-    assert.match(url, /^cvlocal:\/\/\//);
-    assert.ok(url.includes('y.png'));
+    assert.match(url, /^cvlocal:\/\/media\/\?p=/);
+    assert.ok(url.includes(encodeURIComponent(sample)) || url.includes(encodeURIComponent(sample.replace(/\\/g, '\\'))));
+    assert.ok(!/^cvlocal:\/\/\/[A-Za-z]:/.test(url));
   });
 });
 

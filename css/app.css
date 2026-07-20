@@ -1,5 +1,14 @@
+  @font-face {
+    font-family: 'Orbitron';
+    font-style: normal;
+    font-weight: 400 900;
+    font-display: swap;
+    src: local('Orbitron');
+  }
+
   :root {
     --font-ui: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    --font-digits: 'Orbitron', "Segoe UI", system-ui, sans-serif;
     --cyber-black: #080a0e;
     --cyber-dark: #0d1117;
     --cyber-panel: #111620;
@@ -1740,7 +1749,7 @@
   
   /* Large glowing values */
   .hud-large-readout {
-    font-family: var(--font-ui);
+    font-family: var(--font-digits);
     font-size: 26px;
     font-weight: 700;
     color: var(--cyber-muted);
@@ -1758,11 +1767,11 @@
     gap: 10px;
   }
   .hud-input-digit {
-    font-family: var(--font-ui) !important;
+    font-family: var(--font-digits) !important;
     font-size: 28px !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     text-align: center !important;
-    letter-spacing: 0.3px !important;
+    letter-spacing: 1px !important;
     background: #040609 !important;
     color: var(--cyber-accent) !important;
     border: 1px solid rgba(var(--cyber-accent-rgb), 0.3) !important;
@@ -1816,6 +1825,7 @@
     letter-spacing: 1px;
   }
   .hud-status-val {
+    font-family: var(--font-digits);
     color: var(--cyber-accent);
     font-weight: bold;
     font-size: 13px;
