@@ -2,7 +2,7 @@
 
 Ultralight Windows image viewer by CyberGems — open, browse a folder, zoom/pan, and light edit (rotate, crop, resize).
 
-**Version:** 1.6.0 · **Stack:** Electron 30 · Vanilla JS
+**Version:** 1.6.1 · **Stack:** Electron 30 · Vanilla JS
 
 ## Project structure
 
@@ -51,8 +51,8 @@ Outputs land in `dist/`:
 
 | Artifact | Description |
 |---|---|
-| `CyberViewer Setup 1.6.0.exe` | NSIS installer |
-| `CyberViewer Portable 1.6.0.exe` | Portable build |
+| `CyberViewer Setup 1.6.1.exe` | NSIS installer |
+| `CyberViewer Portable 1.6.1.exe` | Portable build |
 
 ## Icons
 
