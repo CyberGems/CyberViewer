@@ -14,6 +14,7 @@ const {
   cleanFsPath, toMediaUrl, createPathAllowlist, IMAGE_EXTS, mimeForPath
 } = require('./lib/paths');
 const { evictThumbCache } = require('./lib/thumb-cache');
+const { clampWindowBounds } = require('./lib/window-bounds');
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -52,7 +53,7 @@ function loadSettings() {
     console.error('Error cargando settings:', e);
   }
   return {
-    window: { width: 1280, height: 800, maximized: false },
+    window: { width: 1280, height: 800, maximized: true },
     app: {
       closeToTray: false,
       startMinimized: false,
@@ -136,42 +137,65 @@ let win;
 let tray = null;
 let isQuitting = false;
 
+function resolveStartupBounds(settings) {
+  const raw = settings.window && settings.window.bounds;
+  const clamped = clampWindowBounds(raw, {
+    displays: screen.getAllDisplays(),
+    primary: screen.getPrimaryDisplay(),
+    preferredDisplayId: settings.app && settings.app.preferredDisplayId
+  });
+  const inflated = !!(
+    raw &&
+    Number.isFinite(raw.width) &&
+    Number.isFinite(raw.height) &&
+    (raw.width > clamped.width + 32 || raw.height > clamped.height + 32)
+  );
+  return { ...clamped, inflated };
+}
+
+function persistWindowState() {
+  if (!win || win.isDestroyed()) return;
+  try {
+    const isMax = win.isMaximized();
+    // getNormalBounds avoids DPI-inflated maximized metrics on Windows
+    const raw = typeof win.getNormalBounds === 'function' ? win.getNormalBounds() : win.getBounds();
+    const clamped = clampWindowBounds(raw, {
+      displays: screen.getAllDisplays(),
+      primary: screen.getPrimaryDisplay(),
+      preferredDisplayId: loadSettings().app.preferredDisplayId
+    });
+    saveSettings({
+      window: {
+        maximized: isMax,
+        bounds: {
+          x: clamped.x,
+          y: clamped.y,
+          width: clamped.width,
+          height: clamped.height
+        }
+      }
+    });
+  } catch (e) {
+    console.error('Error persisting window state:', e);
+  }
+}
+
 function createWindow() {
   const settings = loadSettings();
-  const displays = screen.getAllDisplays();
-  const primary = screen.getPrimaryDisplay();
-
-  let bounds = settings.window.bounds;
-  if (bounds) {
-    const visible = displays.some((d) => {
-      const b = d.bounds;
-      return bounds.x < b.x + b.width && bounds.x + bounds.width > b.x &&
-        bounds.y < b.y + b.height && bounds.y + bounds.height > b.y;
-    });
-    if (!visible) bounds = null;
-  }
-
-  const defaultW = 1280;
-  const defaultH = 800;
-  let x, y, w, h;
-  const preferredId = settings.app.preferredDisplayId;
-
-  if (preferredId && preferredId !== 'auto') {
-    const targetDisplay = displays.find((d) => d.id.toString() === preferredId.toString()) || primary;
-    w = bounds ? Math.max(800, bounds.width) : defaultW;
-    h = bounds ? Math.max(500, bounds.height) : defaultH;
-    x = Math.floor(targetDisplay.bounds.x + (targetDisplay.bounds.width - w) / 2);
-    y = Math.floor(targetDisplay.bounds.y + (targetDisplay.bounds.height - h) / 2);
-  } else {
-    x = bounds ? bounds.x : Math.round(primary.bounds.x + (primary.bounds.width - defaultW) / 2);
-    y = bounds ? bounds.y : Math.round(primary.bounds.y + (primary.bounds.height - defaultH) / 2);
-    w = bounds ? Math.max(800, bounds.width) : defaultW;
-    h = bounds ? Math.max(500, bounds.height) : defaultH;
-  }
+  const startup = resolveStartupBounds(settings);
+  // Prefer maximized when previously maximized, first-run, or saved size was DPI-inflated
+  const startMaximized =
+    settings.window.maximized === true ||
+    settings.window.maximized == null ||
+    startup.inflated;
 
   win = new BrowserWindow({
-    x, y, width: w, height: h,
-    minWidth: 800, minHeight: 500,
+    x: startup.x,
+    y: startup.y,
+    width: startup.width,
+    height: startup.height,
+    minWidth: 800,
+    minHeight: 500,
     title: 'CyberViewer',
     backgroundColor: '#080a0e',
     icon: path.join(__dirname, 'assets', 'icon.png'),
@@ -188,12 +212,17 @@ function createWindow() {
     }
   });
 
-  win.on('move', () => {
-    if (!win.isMaximized()) saveSettings({ window: { bounds: win.getBounds(), maximized: false } });
-  });
-  win.on('resize', () => {
-    if (!win.isMaximized()) saveSettings({ window: { bounds: win.getBounds(), maximized: false } });
-  });
+  // Debounce persistence — move/resize fire often and mixed-DPI getBounds is noisy
+  let persistTimer = null;
+  const schedulePersist = () => {
+    if (persistTimer) clearTimeout(persistTimer);
+    persistTimer = setTimeout(() => {
+      persistTimer = null;
+      if (!win.isMaximized()) persistWindowState();
+    }, 400);
+  };
+  win.on('move', schedulePersist);
+  win.on('resize', schedulePersist);
 
   const htmlPath = path.join(__dirname, 'CyberViewer.html');
   const loadUrl = !app.isPackaged
@@ -201,30 +230,35 @@ function createWindow() {
     : pathToFileURL(htmlPath).href;
   win.loadURL(loadUrl);
 
-  let wasMaximizedOnStart = settings.window.maximized;
-
   win.once('ready-to-show', () => {
     const isStartupLaunch = process.argv.includes('--startup');
     const shouldStartMinimized = settings.app.autoStart && isStartupLaunch;
 
+    // DPI workaround: park on target display origin, then apply clamped bounds
+    try {
+      const display = screen.getDisplayNearestPoint({ x: startup.x + 10, y: startup.y + 10 });
+      const origin = display.workArea || display.bounds;
+      win.setBounds({ x: origin.x, y: origin.y, width: startup.width, height: startup.height });
+      win.setBounds({
+        x: startup.x,
+        y: startup.y,
+        width: startup.width,
+        height: startup.height
+      });
+    } catch (_) {
+      win.setBounds({
+        x: startup.x,
+        y: startup.y,
+        width: startup.width,
+        height: startup.height
+      });
+    }
+
     if (!shouldStartMinimized) {
-      if (wasMaximizedOnStart) {
-        win.show();
-        win.maximize();
-        wasMaximizedOnStart = false;
-      } else {
-        win.show();
-      }
+      if (startMaximized) win.maximize();
+      win.show();
     } else if (!tray) {
       createTray();
-    }
-  });
-
-  win.on('show', () => {
-    if (wasMaximizedOnStart) {
-      wasMaximizedOnStart = false;
-      win.show();
-      win.maximize();
     }
   });
 
@@ -234,15 +268,37 @@ function createWindow() {
       win.hide();
       return false;
     }
-
-    const isMax = win.isMaximized();
-    const windowState = { maximized: isMax };
-    if (!isMax) windowState.bounds = win.getBounds();
-    saveSettings({ window: windowState });
+    persistWindowState();
   });
 
-  win.on('maximize', () => win.webContents.send('win-state', 'maximized'));
-  win.on('unmaximize', () => win.webContents.send('win-state', 'normal'));
+  win.on('maximize', () => {
+    win.webContents.send('win-state', 'maximized');
+    persistWindowState();
+  });
+  win.on('unmaximize', () => {
+    win.webContents.send('win-state', 'normal');
+    // Re-clamp after unmaximize — Windows/DPI often restores oversized bounds
+    setTimeout(() => {
+      if (!win || win.isDestroyed() || win.isMaximized()) return;
+      try {
+        const raw = win.getBounds();
+        const clamped = clampWindowBounds(raw, {
+          displays: screen.getAllDisplays(),
+          primary: screen.getPrimaryDisplay(),
+          preferredDisplayId: loadSettings().app.preferredDisplayId
+        });
+        if (raw.width > clamped.width + 8 || raw.height > clamped.height + 8) {
+          win.setBounds({
+            x: clamped.x,
+            y: clamped.y,
+            width: clamped.width,
+            height: clamped.height
+          });
+        }
+      } catch (_) { /* ignore */ }
+      persistWindowState();
+    }, 0);
+  });
 
   win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
