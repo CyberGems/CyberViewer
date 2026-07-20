@@ -61,6 +61,20 @@ Place these under `assets/` before a production build:
 - `icon.png` — 256×256 PNG (dev)
 - `icon.ico` — 256×256 ICO (packaged exe)
 
+## Updates
+
+Installed (NSIS) builds use **electron-updater** against GitHub Releases:
+
+1. About → **Check for Updates** (or menu Help)
+2. **Download update** when a newer version is available
+3. **Install & restart** to run the NSIS installer
+
+Download/install is always user-requested. With “Manual check only” off, the app may notify on startup that an update exists (toast), but will not download until you ask.
+
+Portable builds cannot self-update in-app — use **Open releases page**.
+
+Release tags (`v*`) must publish `latest.yml`, `.blockmap`, and the Setup `.exe` (see `.github/workflows/release.yml`).
+
 ## Security notes
 
 - `webSecurity` is enabled.

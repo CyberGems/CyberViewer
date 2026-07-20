@@ -12,6 +12,9 @@
     "test": "node --test test/**/*.test.js",
     "lint": "eslint main.js preload.js lib test"
   },
+  "dependencies": {
+    "electron-updater": "^6.6.2"
+  },
   "devDependencies": {
     "electron": "^30.0.0",
     "electron-builder": "^24.0.0",
@@ -34,6 +37,11 @@
       "i18n/**",
       "assets/**"
     ],
+    "publish": {
+      "provider": "github",
+      "owner": "CyberGems",
+      "repo": "CyberViewer"
+    },
     "win": {
       "target": [
         {
@@ -100,9 +108,12 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "CyberViewer"
+      "shortcutName": "CyberViewer",
+      "artifactName": "${productName} Setup ${version}.${ext}",
+      "runAfterFinish": true
     },
     "portable": {
       "artifactName": "${productName} Portable ${version}.${ext}"

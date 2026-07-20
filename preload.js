@@ -32,8 +32,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getFileInfo: (path) => ipcRenderer.invoke('get-file-info', path),
   validatePaths: (paths) => ipcRenderer.invoke('validate-paths', paths),
   showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),
-  checkUpdates: () => ipcRenderer.invoke('check-updates'),
-  registerContextMenu: (enable, lang) => ipcRenderer.invoke('register-context-menu', enable, lang)
+  registerContextMenu: (enable, lang) => ipcRenderer.invoke('register-context-menu', enable, lang),
+
+  // Updates (electron-updater) — download/install always user-requested
+  getUpdateInfo: () => ipcRenderer.invoke('update:get-info'),
+  checkForUpdates: () => ipcRenderer.invoke('update:check'),
+  downloadUpdate: () => ipcRenderer.invoke('update:download'),
+  installUpdate: () => ipcRenderer.invoke('update:install'),
+  openReleasesPage: () => ipcRenderer.invoke('update:open-releases'),
+  onUpdateStatus: (cb) => {
+    const handler = (_, status) => cb(status);
+    ipcRenderer.on('update:status', handler);
+    return () => ipcRenderer.removeListener('update:status', handler);
+  },
+  // Legacy alias used by older UI paths
+  checkUpdates: () => ipcRenderer.invoke('update:check')
 });
 
 window.addEventListener('contextmenu', (e) => {

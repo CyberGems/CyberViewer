@@ -15,6 +15,7 @@ const {
 } = require('./lib/paths');
 const { evictThumbCache } = require('./lib/thumb-cache');
 const { clampWindowBounds } = require('./lib/window-bounds');
+const { initUpdater, setAutoCheckEnabled } = require('./lib/updater');
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -363,19 +364,6 @@ ipcMain.handle('show-save-dialog', async (event, options) => {
     pathAllowlist.allow(result.filePath);
   }
   return result;
-});
-
-ipcMain.handle('check-updates', async () => {
-  try {
-    const response = await fetch('https://api.github.com/repos/CyberGems/CyberViewer/releases/latest', {
-      headers: { 'User-Agent': 'CyberViewer-App' }
-    });
-    if (!response.ok) return { success: false, error: 'HTTP ' + response.status };
-    const data = await response.json();
-    return { success: true, data };
-  } catch (e) {
-    return { success: false, error: e.message };
-  }
 });
 
 ipcMain.handle('get-monitors', () => {
@@ -734,6 +722,10 @@ ipcMain.handle('register-context-menu', async (event, enable, lang) => {
 ipcMain.on('save-settings', (event, newSettings) => {
   saveSettings({ app: newSettings });
 
+  if (newSettings.manualUpdateOnly !== undefined) {
+    setAutoCheckEnabled(!newSettings.manualUpdateOnly);
+  }
+
   if (newSettings.autoStart !== undefined) {
     app.setLoginItemSettings({
       openAtLogin: newSettings.autoStart,
@@ -1040,6 +1032,9 @@ if (!gotTheLock) {
     win.webContents.setBackgroundThrottling(false);
 
     const settings = loadSettings();
+    initUpdater(settings.app, {
+      beforeQuitInstall: () => { isQuitting = true; }
+    });
     if (settings.app.closeToTray) createTray();
 
     const initialFile = getFilePathFromArgs(process.argv);

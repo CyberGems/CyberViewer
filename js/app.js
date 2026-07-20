@@ -312,6 +312,14 @@ const I18N = {
     about_up_to_date: "CyberViewer is up to date.",
     about_update_avail: "New version available!",
     about_update_err: "Could not check updates.",
+    about_download_btn: "Download update",
+    about_install_btn: "Install & restart",
+    about_downloading: "Downloading… {percent}%",
+    about_downloaded: "Update ready to install",
+    about_open_releases: "Open releases page",
+    about_portable_hint: "Portable builds update via GitHub Releases.",
+    about_dev_hint: "Install the NSIS build to enable in-app updates.",
+    about_notify_startup: "Update available: v{version}",
     cfg_hud_autohide: "Auto-hide Toolbar",
     cfg_hud_autohide_desc: "Hide the floating toolbar after inactivity.",
     cfg_nav_autohide: "Auto-hide Nav Buttons",
@@ -517,6 +525,14 @@ const I18N = {
     about_up_to_date: "CyberViewer está actualizado.",
     about_update_avail: "¡Nueva versión disponible!",
     about_update_err: "No se pudo buscar actualizaciones.",
+    about_download_btn: "Descargar actualización",
+    about_install_btn: "Instalar y reiniciar",
+    about_downloading: "Descargando… {percent}%",
+    about_downloaded: "Actualización lista para instalar",
+    about_open_releases: "Abrir página de releases",
+    about_portable_hint: "La versión portable se actualiza desde GitHub Releases.",
+    about_dev_hint: "Instala el setup NSIS para actualizar desde la app.",
+    about_notify_startup: "Actualización disponible: v{version}",
     cfg_hud_autohide: "Ocultar barra automáticamente",
     cfg_hud_autohide_desc: "Ocultar la barra de herramientas tras inactividad.",
     cfg_nav_autohide: "Ocultar botones de navegación",
@@ -3362,9 +3378,16 @@ if (isElectron) {
       state.settings.app = { ...state.settings.app, ...s.app };
       applySettings();
       maybeShowOnboarding();
-      // Silent automatic check for updates on startup if allowed
-      if (!state.settings.app.manualUpdateOnly && typeof checkUpdatesGlobal === 'function') {
-        setTimeout(() => checkUpdatesGlobal(false), 3000);
+      // Startup update check is owned by main (electron-updater); listen for notify
+      if (window.electronAPI.onUpdateStatus) {
+        window.electronAPI.onUpdateStatus((status) => {
+          if (status && status.state === 'available' && !state.settings.app.manualUpdateOnly) {
+            const lang = state.settings.app.language || 'en';
+            const msg = (I18N[lang].about_notify_startup || 'Update available: v{version}')
+              .replace('{version}', status.version || '');
+            showToast(msg, 'info');
+          }
+        });
       }
     }
   }).catch(err => console.error('Error cargando settings:', err));
@@ -3438,75 +3461,113 @@ $('btn-center').addEventListener('click', () => {
 // Modificar confirmCrop y cancelCrop para limpiar
 // (Ya gestionado por listeners directos arriba)
 
-// ── ABOUT MODAL ──
+// ── ABOUT MODAL + UPDATES ──
 (function() {
   const overlay = document.createElement('div');
   overlay.id = 'about-overlay';
   overlay.className = 'modal-overlay';
   document.body.appendChild(overlay);
 
-  window.checkUpdatesGlobal = async function(manual = true, statusEl = null) {
-    if (statusEl) {
-      const lang = state.settings.app.language || 'en';
-      statusEl.textContent = I18N[lang].about_checking;
-      statusEl.style.color = 'var(--cyber-muted)';
+  let updateStatus = { state: 'idle' };
+  let unsubUpdateStatus = null;
+
+  function tAbout() {
+    const lang = (state.settings.app && state.settings.app.language) || 'en';
+    return I18N[lang] || I18N.en;
+  }
+
+  function renderUpdateStatusText(el) {
+    if (!el) return;
+    const t = tAbout();
+    const s = updateStatus;
+    el.style.color = 'var(--cyber-muted)';
+    if (s.state === 'checking') {
+      el.textContent = t.about_checking;
+    } else if (s.state === 'available') {
+      el.textContent = `${t.about_update_avail} (v${s.version || ''})`;
+      el.style.color = 'var(--cyber-accent2)';
+    } else if (s.state === 'not-available') {
+      el.textContent = t.about_up_to_date;
+      el.style.color = 'var(--cyber-accent3)';
+    } else if (s.state === 'downloading') {
+      el.textContent = (t.about_downloading || 'Downloading… {percent}%')
+        .replace('{percent}', String(s.percent || 0));
+      el.style.color = 'var(--cyber-accent)';
+    } else if (s.state === 'downloaded') {
+      el.textContent = `${t.about_downloaded}${s.version ? ' (v' + s.version + ')' : ''}`;
+      el.style.color = 'var(--cyber-accent3)';
+    } else if (s.state === 'error') {
+      el.textContent = `${t.about_update_err}${s.message ? ' (' + s.message + ')' : ''}`;
+      el.style.color = 'var(--cyber-accent2)';
+    } else {
+      el.textContent = '';
     }
-    
-    try {
-      let latestTag;
-      if (isElectron) {
-        const res = await window.electronAPI.checkUpdates();
-        if (!res.success) throw new Error(res.error);
-        latestTag = res.data.tag_name;
-      } else {
-        const response = await fetch('https://api.github.com/repos/CyberGems/CyberViewer/releases/latest');
-        if (!response.ok) throw new Error('HTTP ' + response.status);
-        const data = await response.json();
-        latestTag = data.tag_name;
-      }
-      const version = isElectron ? await window.electronAPI.getVersion() : '1.6.0';
-      
-      const cleanLatest = latestTag.replace(/^v/, '');
-      const cleanCurrent = version.replace(/^v/, '');
-      
-      const partsLatest = cleanLatest.split('.').map(Number);
-      const partsCurrent = cleanCurrent.split('.').map(Number);
-      
-      let isNewer = false;
-      for (let i = 0; i < 3; i++) {
-        const l = partsLatest[i] || 0;
-        const c = partsCurrent[i] || 0;
-        if (l > c) {
-          isNewer = true;
-          break;
-        } else if (l < c) {
-          break;
-        }
-      }
-      
-      const lang = state.settings.app.language || 'en';
-      if (isNewer) {
-        if (statusEl) {
-          statusEl.textContent = `${I18N[lang].about_update_avail} (${latestTag})`;
-          statusEl.style.color = 'var(--cyber-accent2)';
-        }
-        if (!manual) {
-          showToast(`${I18N[lang].about_update_avail} (${latestTag})`, 'info');
-        }
-      } else {
-        if (statusEl) {
-          statusEl.textContent = I18N[lang].about_up_to_date;
-          statusEl.style.color = 'var(--cyber-accent3)';
-        }
-      }
-    } catch (err) {
-      console.error('Error checking updates:', err);
-      const lang = state.settings.app.language || 'en';
-      if (statusEl) {
-        statusEl.textContent = `${I18N[lang].about_update_err} (${err.message})`;
-        statusEl.style.color = 'var(--cyber-accent2)';
-      }
+  }
+
+  function syncUpdateActions(root) {
+    if (!root) return;
+    const checkBtn = root.querySelector('#about-btn-update');
+    const downloadBtn = root.querySelector('#about-btn-download');
+    const installBtn = root.querySelector('#about-btn-install');
+    const progress = root.querySelector('#about-update-progress');
+    const bar = root.querySelector('#about-update-bar');
+    const statusEl = root.querySelector('#about-update-status');
+    const s = updateStatus.state;
+
+    if (checkBtn) {
+      checkBtn.disabled = s === 'checking' || s === 'downloading';
+      checkBtn.style.display = (s === 'available' || s === 'downloaded' || s === 'downloading') ? 'none' : '';
     }
+    if (downloadBtn) {
+      downloadBtn.style.display = s === 'available' ? '' : 'none';
+      downloadBtn.disabled = false;
+    }
+    if (installBtn) {
+      installBtn.style.display = s === 'downloaded' ? '' : 'none';
+    }
+    if (progress) {
+      progress.style.display = s === 'downloading' ? '' : 'none';
+    }
+    if (bar) {
+      bar.style.width = Math.max(0, Math.min(100, s === 'downloading' ? (updateStatus.percent || 0) : 0)) + '%';
+    }
+    renderUpdateStatusText(statusEl);
+  }
+
+  window.checkUpdatesGlobal = async function(manual = true) {
+    const t = tAbout();
+    if (!isElectron || !window.electronAPI.checkForUpdates) return;
+
+    updateStatus = { state: 'checking' };
+    syncUpdateActions(overlay);
+
+    const res = await window.electronAPI.checkForUpdates();
+    if (!res || !res.ok) {
+      if (res && (res.portable || res.error === 'PORTABLE_NO_AUTO_UPDATE' || res.error === 'DEV_NO_AUTO_UPDATE')) {
+        updateStatus = {
+          state: 'error',
+          message: res.portable ? t.about_portable_hint : t.about_dev_hint
+        };
+        syncUpdateActions(overlay);
+        if (manual && window.electronAPI.openReleasesPage) {
+          // Keep status visible; user can click Open releases
+        }
+        return res;
+      }
+      updateStatus = { state: 'error', message: (res && res.error) || 'Update check failed' };
+      syncUpdateActions(overlay);
+      return res;
+    }
+
+    // Events usually settle UI first; safety net if still checking
+    if (updateStatus.state === 'checking') {
+      updateStatus = {
+        state: 'not-available',
+        version: res.version || ''
+      };
+      syncUpdateActions(overlay);
+    }
+    return res;
   };
 
   async function openAbout() {
@@ -3514,15 +3575,18 @@ $('btn-center').addEventListener('click', () => {
     const t = I18N[lang] || I18N.en;
     const version = isElectron ? await window.electronAPI.getVersion() : '1.6.0';
     const subtitle = lang === 'es' ? `v${version} — Visor Pro` : `v${version} — Pro Viewer`;
-    
+    const updateInfo = (isElectron && window.electronAPI.getUpdateInfo)
+      ? await window.electronAPI.getUpdateInfo()
+      : { canUpdate: false, portable: false };
+
     overlay.innerHTML = `
-      <div class="modal-box" style="max-width:360px">
+      <div class="modal-box" style="max-width:400px" role="dialog" aria-modal="true">
         <div class="modal-header">
           <div class="modal-title">${t.about_title}</div>
           <button class="win-btn" id="about-close-btn">&#10005;</button>
         </div>
         <div class="modal-body">
-          <div style="font-size:18px;color:var(--cyber-accent);letter-spacing:3px;margin-bottom:4px">
+          <div style="font-size:18px;color:var(--cyber-accent);letter-spacing:0.4px;margin-bottom:4px">
             [Cyber<span style="color:var(--cyber-accent3)">Viewer</span>]
           </div>
           <div style="font-size:11px;color:var(--cyber-muted);margin-bottom:20px">${subtitle}</div>
@@ -3544,12 +3608,25 @@ $('btn-center').addEventListener('click', () => {
                 <span class="slider"></span>
               </label>
             </div>
-            <div style="display:flex; align-items:center; gap:10px;">
+            <div id="about-update-progress" class="about-update-progress" style="display:none;margin-bottom:10px;">
+              <div class="about-update-track"><div id="about-update-bar" class="about-update-bar"></div></div>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
               <button id="about-btn-update" class="top-btn" style="padding: 4px 12px; font-size:10px; border-color:var(--cyber-accent); color:var(--cyber-accent); cursor:pointer;">
                 ${t.about_check_updates}
               </button>
-              <span id="about-update-status" style="font-size:10px; font-family:var(--font-ui); color:var(--cyber-muted);"></span>
+              <button id="about-btn-download" class="top-btn active" style="display:none;padding: 4px 12px; font-size:10px; cursor:pointer;">
+                ${t.about_download_btn}
+              </button>
+              <button id="about-btn-install" class="top-btn active" style="display:none;padding: 4px 12px; font-size:10px; cursor:pointer;">
+                ${t.about_install_btn}
+              </button>
+              <button id="about-btn-releases" class="top-btn" style="padding: 4px 12px; font-size:10px; border-color:var(--cyber-muted); color:var(--cyber-muted); cursor:pointer;">
+                ${t.about_open_releases}
+              </button>
             </div>
+            <div id="about-update-status" style="margin-top:10px;font-size:10px; font-family:var(--font-ui); color:var(--cyber-muted);"></div>
+            ${!updateInfo.canUpdate ? `<div style="margin-top:8px;font-size:10px;color:var(--cyber-muted)">${updateInfo.portable ? t.about_portable_hint : t.about_dev_hint}</div>` : ''}
           </div>
         </div>
         <div class="modal-footer">
@@ -3574,16 +3651,44 @@ $('btn-center').addEventListener('click', () => {
       }
     });
 
-    const updateBtn = overlay.querySelector('#about-btn-update');
-    const updateStatus = overlay.querySelector('#about-update-status');
-    updateBtn.addEventListener('click', () => {
-      window.checkUpdatesGlobal(true, updateStatus);
+    overlay.querySelector('#about-btn-update').addEventListener('click', () => {
+      window.checkUpdatesGlobal(true);
+    });
+    overlay.querySelector('#about-btn-download').addEventListener('click', async () => {
+      updateStatus = { state: 'downloading', percent: 0 };
+      syncUpdateActions(overlay);
+      const res = await window.electronAPI.downloadUpdate();
+      if (!res || !res.ok) {
+        updateStatus = { state: 'error', message: (res && res.error) || 'Download failed' };
+        syncUpdateActions(overlay);
+      }
+    });
+    overlay.querySelector('#about-btn-install').addEventListener('click', () => {
+      window.electronAPI.installUpdate();
+    });
+    overlay.querySelector('#about-btn-releases').addEventListener('click', () => {
+      if (window.electronAPI.openReleasesPage) window.electronAPI.openReleasesPage();
     });
 
+    if (unsubUpdateStatus) unsubUpdateStatus();
+    if (window.electronAPI.onUpdateStatus) {
+      unsubUpdateStatus = window.electronAPI.onUpdateStatus((status) => {
+        updateStatus = status || { state: 'idle' };
+        syncUpdateActions(overlay);
+      });
+    }
+
+    syncUpdateActions(overlay);
     overlay.classList.add('active');
   }
 
-  function closeAbout() { overlay.classList.remove('active'); }
+  function closeAbout() {
+    overlay.classList.remove('active');
+    if (unsubUpdateStatus) {
+      unsubUpdateStatus();
+      unsubUpdateStatus = null;
+    }
+  }
 
   overlay.addEventListener('click', e => { if (e.target === overlay) closeAbout(); });
   $('btn-about').addEventListener('click', openAbout);
@@ -3679,11 +3784,10 @@ $('btn-config').addEventListener('click', openConfig);
       case 'preferences':    $('btn-config').click(); break;
       case 'about':          $('btn-about').click(); break;
       case 'check-updates':
-        if (typeof window.checkUpdatesGlobal === 'function') {
-          // route the function's status text into toasts (it only writes to statusEl)
-          const sink = { style: {}, set textContent(v) { if (v) showToast(v, 'info'); } };
-          window.checkUpdatesGlobal(true, sink);
-        }
+        $('btn-about').click();
+        setTimeout(() => {
+          if (typeof window.checkUpdatesGlobal === 'function') window.checkUpdatesGlobal(true);
+        }, 80);
         break;
       case 'devtools':
         if (isElectron && window.electronAPI.openDevTools) window.electronAPI.openDevTools();

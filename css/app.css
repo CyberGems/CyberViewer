@@ -2112,3 +2112,23 @@
 .onboarding-tip[hidden] { display: none !important; }
 .onboarding-tip p { margin-bottom: 12px; color: var(--cyber-muted); }
 .onboarding-dismiss { min-width: 120px; }
+
+.about-update-progress { width: 100%; }
+.about-update-track {
+  width: 100%;
+  height: 4px;
+  background: var(--cyber-dim);
+  border: 1px solid var(--cyber-border);
+  overflow: hidden;
+}
+.about-update-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--cyber-accent);
+  transition: width 120ms linear;
+}
+#about-btn-update:disabled,
+#about-btn-download:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
