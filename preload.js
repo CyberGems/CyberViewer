@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openFile: () => ipcRenderer.invoke('open-file-dialog'),
   saveImage: (data) => ipcRenderer.invoke('save-image', data),
   copyImage: (path) => ipcRenderer.send('copy-image', path),
+  readClipboardImage: () => ipcRenderer.invoke('clipboard:read-image'),
   moveToTrash: (path) => ipcRenderer.invoke('move-to-trash', path),
   moveToTrashDirect: (path) => ipcRenderer.invoke('move-to-trash-direct', path),
   onOpenSettings: (cb) => ipcRenderer.on('open-settings', () => cb()),

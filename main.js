@@ -43,10 +43,13 @@ function loadSettings() {
     if (fs.existsSync(settingsPath)) {
       const data = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
       if (data && data.app) {
-        if (data.app.manualUpdateOnly === undefined) data.app.manualUpdateOnly = false;
+        if (data.app.checkUpdatesOnStartup === undefined) {
+          data.app.checkUpdatesOnStartup = data.app.manualUpdateOnly === undefined
+            ? true
+            : !data.app.manualUpdateOnly;
+        }
         if (data.app.hudAutoHide === undefined) data.app.hudAutoHide = true;
         if (data.app.hudAutoHideDelay === undefined) data.app.hudAutoHideDelay = 2000;
-        if (data.app.onboardingSeen === undefined) data.app.onboardingSeen = false;
       }
       return data;
     }
@@ -65,11 +68,10 @@ function loadSettings() {
       preferredDisplayId: 'auto',
       language: 'en',
       contextMenuEnabled: false,
-      manualUpdateOnly: false,
+      checkUpdatesOnStartup: true,
       hudAutoHide: true,
       hudAutoHideDelay: 2000,
-      showTopHints: true,
-      onboardingSeen: false
+      showTopHints: true
     }
   };
 }
@@ -538,6 +540,26 @@ ipcMain.on('copy-image', (event, filePath) => {
   }
 });
 
+ipcMain.handle('clipboard:read-image', () => {
+  try {
+    const img = clipboard.readImage();
+    if (!img || img.isEmpty()) {
+      return { ok: false, error: 'NO_IMAGE' };
+    }
+    const size = img.getSize();
+    return {
+      ok: true,
+      buffer: img.toPNG().toString('base64'),
+      width: size.width,
+      height: size.height,
+      mime: 'image/png'
+    };
+  } catch (e) {
+    console.error('Error reading clipboard image:', e);
+    return { ok: false, error: String((e && e.message) || e) };
+  }
+});
+
 async function trashFile(filePath) {
   const abs = resolveAllowedPath(filePath);
   await shell.trashItem(abs);
@@ -722,8 +744,8 @@ ipcMain.handle('register-context-menu', async (event, enable, lang) => {
 ipcMain.on('save-settings', (event, newSettings) => {
   saveSettings({ app: newSettings });
 
-  if (newSettings.manualUpdateOnly !== undefined) {
-    setAutoCheckEnabled(!newSettings.manualUpdateOnly);
+  if (newSettings.checkUpdatesOnStartup !== undefined) {
+    setAutoCheckEnabled(!!newSettings.checkUpdatesOnStartup);
   }
 
   if (newSettings.autoStart !== undefined) {

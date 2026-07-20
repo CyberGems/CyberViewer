@@ -113,7 +113,8 @@ const state = {
       accentColor: '#00d4ff',
       language: 'en',
       favorites: [],
-      showTopHints: true
+      showTopHints: true,
+      checkUpdatesOnStartup: true
     } 
   },
 };
@@ -260,6 +261,7 @@ const I18N = {
     menu_go: "Go",
     menu_help: "Help",
     menu_open: "Open image",
+    menu_paste: "Paste image",
     menu_close_image: "Close image",
     menu_show: "Show in Explorer",
     menu_copy_original: "Copy Original",
@@ -277,6 +279,9 @@ const I18N = {
     favorite_remove: "Remove from Favorites",
     menu_save: "Save",
     menu_copy: "Copy Image",
+    toast_pasted: "IMAGE PASTED FROM CLIPBOARD",
+    toast_paste_empty: "NO IMAGE IN CLIPBOARD",
+    toast_paste_error: "COULD NOT PASTE IMAGE",
     menu_props: "Properties",
     menu_trash: "Move to Trash",
     menu_rotate_l: "Rotate Left",
@@ -302,12 +307,10 @@ const I18N = {
     ghost_hint_txt: "GHOST",
     fav_title: "Favorite (Ctrl+D)",
     toast_load_image_first: "LOAD AN IMAGE FIRST",
-    onboarding_tip: "Tip: Open an image with Ctrl+O, browse the folder with A/D, zoom with the mouse wheel.",
-    onboarding_dismiss: "Got it",
     show_favorites_lbl: "FAVORITES",
     show_all_lbl: "ALL IMAGES",
     about_check_updates: "Check for Updates",
-    about_manual_only: "Manual check only",
+    about_check_on_startup: "Check for updates on startup",
     about_checking: "Checking updates...",
     about_up_to_date: "CyberViewer is up to date.",
     about_update_avail: "New version available!",
@@ -473,6 +476,7 @@ const I18N = {
     menu_go: "Navegar",
     menu_help: "Ayuda",
     menu_open: "Abrir imagen",
+    menu_paste: "Pegar imagen",
     menu_close_image: "Cerrar imagen",
     menu_show: "Mostrar en explorador",
     menu_copy_original: "Copiar Original",
@@ -490,6 +494,9 @@ const I18N = {
     favorite_remove: "Quitar de Favoritos",
     menu_save: "Guardar",
     menu_copy: "Copiar imagen",
+    toast_pasted: "IMAGEN PEGADA DESDE PORTAPAPELES",
+    toast_paste_empty: "NO HAY IMAGEN EN EL PORTAPAPELES",
+    toast_paste_error: "NO SE PUDO PEGAR LA IMAGEN",
     menu_props: "Propiedades",
     menu_trash: "Mover a papelera",
     menu_rotate_l: "Rotar izquierda",
@@ -515,12 +522,10 @@ const I18N = {
     ghost_hint_txt: "GHOST",
     fav_title: "Favorito (Ctrl+D)",
     toast_load_image_first: "CARGA UNA IMAGEN PRIMERO",
-    onboarding_tip: "Consejo: Abre una imagen con Ctrl+O, navega la carpeta con A/D y haz zoom con la rueda.",
-    onboarding_dismiss: "Entendido",
     show_favorites_lbl: "FAVORITOS",
     show_all_lbl: "TODAS",
     about_check_updates: "Buscar Actualizaciones",
-    about_manual_only: "Solo buscar manualmente",
+    about_check_on_startup: "Buscar actualizaciones al iniciar",
     about_checking: "Buscando actualizaciones...",
     about_up_to_date: "CyberViewer está actualizado.",
     about_update_avail: "¡Nueva versión disponible!",
@@ -666,8 +671,6 @@ function loadFiles(files, initialIdx = 0) {
     syncCurrentIndex(initialIdx);
     console.log('Archivos cargados:', state.images.length);
     dropZone.style.display = 'none';
-    const tip = $('onboarding-tip');
-    if (tip) tip.hidden = true;
     buildSidebar();
     showImage(initialIdx, null, true);
     startBackgroundScan();
@@ -795,6 +798,7 @@ function buildSidebar() {
   });
 
   container.appendChild(fragment);
+  updateNavVisibility();
 }
 
 // ── CONTEXT MENU ──
@@ -819,12 +823,12 @@ window.addEventListener('contextmenu', (e) => {
     );
     if (onImage) {
       showCustomContextMenu(e, 'image', { 
-        path: state.images[state.currentIdx]?.file.path,
+        path: state.images[state.currentIdx]?.file?.path || null,
         index: state.currentIdx
       });
     } else {
       showCustomContextMenu(e, 'canvas', { 
-        path: state.images[state.currentIdx]?.file.path
+        path: state.images[state.currentIdx]?.file?.path || null
       });
     }
   } else {
@@ -990,7 +994,14 @@ function buildMenuTemplate(type, data) {
             action: () => copyToClipboard()
           },
           {
+            label: getTxt('menu_paste'),
+            shortcut: 'Ctrl+V',
+            action: () => pasteFromClipboard()
+          },
+          {
             label: getTxt('menu_copy_path'),
+            enabled: !!data.path,
+            visible: !!data.path,
             action: () => {
               if (data.path) {
                 navigator.clipboard.writeText(data.path);
@@ -1001,7 +1012,7 @@ function buildMenuTemplate(type, data) {
           {
             label: getTxt('menu_save'),
             shortcut: 'Ctrl+S',
-            enabled: state.hasChanges,
+            enabled: state.hasChanges || !data.path,
             action: () => saveCurrent()
           },
           {
@@ -1050,6 +1061,8 @@ function buildMenuTemplate(type, data) {
       {
         label: getTxt('menu_view'),
         isSub: true,
+        enabled: !!data.path,
+        visible: !!data.path,
         items: [
           {
             label: getTxt('menu_show'),
@@ -1097,6 +1110,11 @@ function buildMenuTemplate(type, data) {
             label: getTxt('menu_open'),
             shortcut: 'Ctrl+O',
             action: () => $('btn-open-hud').click()
+          },
+          {
+            label: getTxt('menu_paste'),
+            shortcut: 'Ctrl+V',
+            action: () => pasteFromClipboard()
           },
           {
             label: getTxt('menu_close_image'),
@@ -1300,22 +1318,27 @@ function renderMenuTemplate(container, template) {
 }
 
 async function showSaveAsDialog(filePath) {
-  if (!isElectron || !filePath) return;
+  if (!isElectron) return;
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
-  
-  const ext = filePath.split('.').pop();
+  const im = state.images[state.current];
+  const sourcePath = filePath || imageDiskPath(im);
+  const defaultName = sourcePath
+    ? sourcePath.replace(/\.[^.]+$/, (m) => '_copy' + m)
+    : ((im && im.file && im.file.name) || clipboardDefaultName());
+  const ext = (defaultName.split('.').pop() || 'png').toLowerCase();
+
   const options = {
     title: lang === 'es' ? 'Guardar como' : 'Save As',
-    defaultPath: filePath.replace(new RegExp(`\\.${ext}$`), `_copy.${ext}`),
+    defaultPath: defaultName,
     filters: [
       { name: 'Images', extensions: [ext] },
       { name: 'All Files', extensions: ['*'] }
     ]
   };
-  
+
   const result = await window.electronAPI.showSaveDialog(options);
   if (result && !result.canceled && result.filePath) {
-    saveAsPath(result.filePath);
+    await saveAsPath(result.filePath);
   }
 }
 
@@ -1517,12 +1540,18 @@ async function saveAsPath(targetPath) {
     });
 
     if (result.success) {
-      const currentPath = im.file ? im.file.path : null;
+      const currentPath = imageDiskPath(im);
+      bindImageToDiskPath(im, targetPath);
+      if (window.electronAPI.registerPaths) {
+        await window.electronAPI.registerPaths([targetPath]);
+      }
+
       if (currentPath) {
         const currentDir = currentPath.substring(0, Math.max(currentPath.lastIndexOf('\\'), currentPath.lastIndexOf('/')));
         const targetDir = targetPath.substring(0, Math.max(targetPath.lastIndexOf('\\'), targetPath.lastIndexOf('/')));
-        
-        if (currentDir && targetDir && currentDir.toLowerCase() === targetDir.toLowerCase()) {
+
+        if (currentDir && targetDir && currentDir.toLowerCase() === targetDir.toLowerCase() &&
+            currentPath.toLowerCase() !== targetPath.toLowerCase()) {
           const newImg = {
             file: {
               name: targetPath.split(/[\\/]/).pop(),
@@ -1533,9 +1562,16 @@ async function saveAsPath(targetPath) {
           state.images.splice(state.current + 1, 0, newImg);
           buildSidebar();
           showImage(state.current + 1, null);
+          showToast(lang === 'es' ? 'COPIA GUARDADA' : 'COPY SAVED', 'success');
+          return;
         }
       }
-      showToast(lang === 'es' ? 'COPIA GUARDADA' : 'COPY SAVED', 'success');
+
+      state.currentRotation = 0;
+      state.hasChanges = false;
+      buildSidebar();
+      showImage(state.current, null, true);
+      showToast(lang === 'es' ? 'IMAGEN GUARDADA' : 'IMAGE SAVED', 'success');
     } else {
       showToast(result.error || 'ERROR', 'error');
     }
@@ -1574,11 +1610,10 @@ function getUrl(i) {
   const im = state.images[i];
   if (im.url) return im.url;
   
-  if (im.file.path) {
+  if (im.file && im.file.path) {
     // Serve via cvlocal:// (webSecurity-safe)
-    const safePath = im.file.path.replace(/\\/g, '/');
     im.url = mediaUrl(im.file.path, Date.now());
-  } else {
+  } else if (im.file) {
     im.url = URL.createObjectURL(im.file);
   }
   return im.url;
@@ -1652,9 +1687,12 @@ function showImage(idx, direction, isInitial = false) {
     const viewerFilename = $('viewer-filename');
     if (viewerFilename) {
       viewerFilename.textContent = im.file.name;
-      if (im.file.path) {
+      if (im.file && im.file.path) {
         setCyberTooltip(viewerFilename, im.file.path);
         viewerFilename.classList.add('tooltip-bottom');
+      } else {
+        viewerFilename.removeAttribute('data-tooltip');
+        viewerFilename.classList.remove('cyber-tooltip', 'tooltip-bottom');
       }
     }
 
@@ -1791,7 +1829,9 @@ async function rotateAndSave(deg) {
 function updateSaveButton() {
   const btn = $('btn-save');
   if (!btn) return;
-  if (state.hasChanges || state.isCropping) btn.classList.add('active');
+  const im = state.images[state.current];
+  const unsavedClipboard = !!(im && !imageDiskPath(im));
+  if (state.hasChanges || state.isCropping || unsavedClipboard) btn.classList.add('active');
   else btn.classList.remove('active');
 }
 
@@ -1907,22 +1947,40 @@ window.addEventListener('mousemove', (e) => {
   } else if (cropState.isResizing) {
     const h = cropState.handle;
     const r = cropState.startRect;
-    
-    if (h.includes('-r')) cropState.w = Math.max(50, r.w + dx);
-    if (h.includes('-b')) cropState.h = Math.max(50, r.h + dy);
-    if (h.includes('-l')) {
-      const newW = Math.max(50, r.w - dx);
-      if (newW > 50) { cropState.x = r.x + dx; cropState.w = newW; }
+    const minSize = 50;
+
+    // Corner classes are ch-tl/tr/bl/br — substring checks like '-l' fail on those.
+    const resizeLeft = (h === 'ch-l' || h === 'ch-tl' || h === 'ch-bl');
+    const resizeRight = (h === 'ch-r' || h === 'ch-tr' || h === 'ch-br');
+    const resizeTop = (h === 'ch-t' || h === 'ch-tl' || h === 'ch-tr');
+    const resizeBottom = (h === 'ch-b' || h === 'ch-bl' || h === 'ch-br');
+
+    let x = r.x;
+    let y = r.y;
+    let w = r.w;
+    let ht = r.h;
+
+    if (resizeRight) {
+      w = Math.max(minSize, r.w + dx);
     }
-    if (h.includes('-t')) {
-      const newH = Math.max(50, r.h - dy);
-      if (newH > 50) { cropState.y = r.y + dy; cropState.h = newH; }
+    if (resizeBottom) {
+      ht = Math.max(minSize, r.h + dy);
     }
-    // Caso especial tiradores puros (t, b, l, r)
-    if (h === 'ch-t') { cropState.y = r.y + dy; cropState.h = Math.max(50, r.h - dy); }
-    if (h === 'ch-b') { cropState.h = Math.max(50, r.h + dy); }
-    if (h === 'ch-l') { cropState.x = r.x + dx; cropState.w = Math.max(50, r.w - dx); }
-    if (h === 'ch-r') { cropState.w = Math.max(50, r.w + dx); }
+    if (resizeLeft) {
+      const newW = Math.max(minSize, r.w - dx);
+      x = r.x + (r.w - newW);
+      w = newW;
+    }
+    if (resizeTop) {
+      const newH = Math.max(minSize, r.h - dy);
+      y = r.y + (r.h - newH);
+      ht = newH;
+    }
+
+    cropState.x = x;
+    cropState.y = y;
+    cropState.w = w;
+    cropState.h = ht;
   }
   
   updateCropUI();
@@ -1974,11 +2032,11 @@ $('btn-crop-confirm').onclick = async () => {
   cctx.drawImage(fullCanvas, relX, relY, finalW, finalH, 0, 0, finalW, finalH);
   
   const im = state.images[state.current];
-  const fpath = im.path || (im.file ? im.file.path : null);
-  
+  let fpath = imageDiskPath(im);
+
   if (!fpath) {
-    showToast(I18N[state.settings.app.language || 'en'].toast_path_not_found, 'error');
-    return;
+    fpath = await ensureImageDiskPath(im);
+    if (!fpath) return;
   }
 
   const exported = canvasExport(cropCanvas, fpath);
@@ -2032,13 +2090,15 @@ $('btn-crop-confirm').onclick = async () => {
 };
 
 async function saveCurrent() {
-  if (!state.hasChanges || state.current === -1) return;
+  if (state.current === -1) return;
   const im = state.images[state.current];
-  const fpath = im.file ? im.file.path : null;
-  
+  const needsSave = state.hasChanges || !imageDiskPath(im);
+  if (!needsSave) return;
+
+  let fpath = imageDiskPath(im);
   if (!fpath) {
-    showToast(I18N[state.settings.app.language || 'en'].toast_path_not_found, 'error');
-    return;
+    fpath = await ensureImageDiskPath(im);
+    if (!fpath) return;
   }
   if (!mainImg.complete || mainImg.naturalWidth === 0) {
     showToast(I18N[state.settings.app.language || 'en'].toast_image_not_ready, 'error');
@@ -2079,8 +2139,11 @@ async function saveCurrent() {
     });
 
     if (result.success) {
-      const safePath = fpath.replace(/\\/g, '/');
-      
+      bindImageToDiskPath(im, result.filePath || fpath);
+      if (window.electronAPI.registerPaths) {
+        await window.electronAPI.registerPaths([result.filePath || fpath]);
+      }
+
       // Escuchar el load de la nueva imagen para actualizar dimensiones en el estado
       mainImg.onload = () => {
         // RESETEAR TRANSFORMACIONES SOLO CUANDO LA IMAGEN ESTÁ LISTA
@@ -2104,7 +2167,7 @@ async function saveCurrent() {
         mainImg.onload = null;
       };
 
-      mainImg.src = mediaUrl(im.file.path, Date.now());
+      mainImg.src = mediaUrl(imageDiskPath(im), Date.now());
       showToast(I18N[state.settings.app.language || 'en'].toast_changes_saved, 'success');
     } else {
       showToast(result.error || 'ERROR', 'error');
@@ -2440,13 +2503,13 @@ $('btn-confirm-resize').addEventListener('click', async () => {
     if (idx === undefined || idx === -1) return;
     const im = state.images[idx];
     if (!im) return;
-    const fpath = im.file ? im.file.path : null;
+    let fpath = imageDiskPath(im);
     const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
     const i18nLang = I18N[lang] || I18N.en || {};
 
     if (!fpath) {
-      showToast(i18nLang.toast_path_not_found || 'PATH NOT FOUND', 'error');
-      return;
+      fpath = await ensureImageDiskPath(im);
+      if (!fpath) return;
     }
     
     const targetW = parseInt($('resize-width').value) || 0;
@@ -2663,12 +2726,24 @@ function next() {
 }
 
 // ── UI UPDATES ──
+function visibleImageCount() {
+  return state.images.filter(im => !im.hidden).length;
+}
+
+function updateNavVisibility() {
+  const nav = $('nav-container');
+  if (!nav) return;
+  nav.classList.toggle('nav-useless', visibleImageCount() <= 1);
+}
+
 function updateCounter() {
   if (state.images.length === 0) {
     $('img-counter').textContent = '';
+    updateNavVisibility();
     return;
   }
   $('img-counter').textContent = (state.current + 1) + ' / ' + state.images.length;
+  updateNavVisibility();
 }
 
 // ── MOUSE / TOUCH ──
@@ -2796,6 +2871,7 @@ document.addEventListener('keydown', e => {
         break;
       case 's': e.preventDefault(); if (checkImageLoaded()) saveCurrent(); break;
       case 'c': e.preventDefault(); if (checkImageLoaded()) copyToClipboard(); break;
+      case 'v': e.preventDefault(); pasteFromClipboard(); break;
       case 'd': e.preventDefault(); if (checkImageLoaded()) toggleFavorite(); break;
       case ',': e.preventDefault(); openConfig(); break;
       case 'f': e.preventDefault(); if (checkImageLoaded()) toggleFullscreen(); break;
@@ -2958,15 +3034,135 @@ async function copyToClipboard() {
     }
   } else {
     try {
-      const response = await fetch(im.url);
+      const response = await fetch(im.url || getUrl(idx));
       const blob = await response.blob();
-      const item = new ClipboardItem({ [blob.type]: blob });
+      const item = new ClipboardItem({ [blob.type || 'image/png']: blob });
       await navigator.clipboard.write([item]);
       showToast(i18nLang.toast_copied || 'IMAGEN COPIADA', 'success');
     } catch (err) {
       console.error('Error al copiar:', err);
       showToast(i18nLang.toast_copy_error || 'ERROR AL COPIAR', 'error');
     }
+  }
+}
+
+function clipboardDefaultName() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `clipboard-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.png`;
+}
+
+function imageDiskPath(im) {
+  if (!im) return null;
+  return (im.file && im.file.path) || im.path || null;
+}
+
+function bindImageToDiskPath(im, diskPath, { revokeBlob = true } = {}) {
+  if (!im || !diskPath) return;
+  const name = diskPath.split(/[\\/]/).pop();
+  if (revokeBlob && im.url && String(im.url).startsWith('blob:')) {
+    try { URL.revokeObjectURL(im.url); } catch (_) { /* ignore */ }
+    im.url = null;
+  }
+  im.file = { name, path: diskPath, size: im.size || 0 };
+  im.path = diskPath;
+  im.fromClipboard = false;
+  if (revokeBlob) {
+    im.loaded = false;
+  }
+}
+
+async function promptSavePathForImage(im) {
+  if (!isElectron || !window.electronAPI.showSaveDialog) return null;
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  const defaultName = (im && im.file && im.file.name) || clipboardDefaultName();
+  const result = await window.electronAPI.showSaveDialog({
+    title: lang === 'es' ? 'Guardar imagen' : 'Save image',
+    defaultPath: defaultName,
+    filters: [
+      { name: 'PNG', extensions: ['png'] },
+      { name: 'JPEG', extensions: ['jpg', 'jpeg'] },
+      { name: 'All Files', extensions: ['*'] }
+    ]
+  });
+  if (!result || result.canceled || !result.filePath) return null;
+  // Keep blob URL alive until pixels are written / reloaded from disk
+  bindImageToDiskPath(im, result.filePath, { revokeBlob: false });
+  return result.filePath;
+}
+
+async function ensureImageDiskPath(im) {
+  const existing = imageDiskPath(im);
+  if (existing) return existing;
+  return promptSavePathForImage(im);
+}
+
+function insertPastedImage(blob, mime = 'image/png') {
+  const name = clipboardDefaultName();
+  const file = new File([blob], name, { type: mime || 'image/png' });
+  const url = URL.createObjectURL(file);
+  const im = {
+    file: { name, path: null, size: blob.size || file.size || 0 },
+    url,
+    w: 0,
+    h: 0,
+    loaded: false,
+    size: blob.size || file.size || 0,
+    fromClipboard: true
+  };
+
+  dropZone.style.display = 'none';
+
+  if (!state.images.length) {
+    state.images = [im];
+    buildSidebar();
+    showImage(0, null, true);
+  } else {
+    const insertAt = state.current >= 0 ? state.current + 1 : state.images.length;
+    state.images.splice(insertAt, 0, im);
+    buildSidebar();
+    showImage(insertAt, null, true);
+  }
+  updateSaveButton();
+}
+
+async function pasteFromClipboard() {
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  const t = I18N[lang] || I18N.en || {};
+
+  try {
+    if (isElectron && window.electronAPI.readClipboardImage) {
+      const res = await window.electronAPI.readClipboardImage();
+      if (!res || !res.ok) {
+        showToast(t.toast_paste_empty || 'NO IMAGE IN CLIPBOARD', 'info');
+        return;
+      }
+      const raw = atob(res.buffer);
+      const bytes = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+      const blob = new Blob([bytes], { type: res.mime || 'image/png' });
+      insertPastedImage(blob, res.mime || 'image/png');
+      showToast(t.toast_pasted || 'IMAGE PASTED', 'success');
+      return;
+    }
+
+    if (!navigator.clipboard || !navigator.clipboard.read) {
+      showToast(t.toast_paste_error || 'COULD NOT PASTE IMAGE', 'error');
+      return;
+    }
+    const items = await navigator.clipboard.read();
+    for (const item of items) {
+      const type = item.types.find((t) => t.startsWith('image/'));
+      if (!type) continue;
+      const blob = await item.getType(type);
+      insertPastedImage(blob, type);
+      showToast(t.toast_pasted || 'IMAGE PASTED', 'success');
+      return;
+    }
+    showToast(t.toast_paste_empty || 'NO IMAGE IN CLIPBOARD', 'info');
+  } catch (err) {
+    console.error('Error pegando desde clipboard:', err);
+    showToast(t.toast_paste_error || 'COULD NOT PASTE IMAGE', 'error');
   }
 }
 
@@ -3083,8 +3279,14 @@ $('btn-trash').addEventListener('click', () => {
 
 
 
-$('btn-prev').addEventListener('click', prev);
-$('btn-next').addEventListener('click', next);
+$('btn-prev').addEventListener('click', (e) => {
+  e.currentTarget.blur();
+  prev();
+});
+$('btn-next').addEventListener('click', (e) => {
+  e.currentTarget.blur();
+  next();
+});
 
 $('sidebar-handle').addEventListener('click', () => {
   state.sidebarOpen = !state.sidebarOpen;
@@ -3381,12 +3583,21 @@ if (isElectron) {
   window.electronAPI.getSettings().then(s => {
     if (s && s.app) {
       state.settings.app = { ...state.settings.app, ...s.app };
+      if (state.settings.app.checkUpdatesOnStartup === undefined) {
+        state.settings.app.checkUpdatesOnStartup = state.settings.app.manualUpdateOnly === undefined
+          ? true
+          : !state.settings.app.manualUpdateOnly;
+      }
       applySettings();
-      maybeShowOnboarding();
       // Startup update check is owned by main (electron-updater); listen for notify
       if (window.electronAPI.onUpdateStatus) {
         window.electronAPI.onUpdateStatus((status) => {
-          if (status && status.state === 'available' && !state.settings.app.manualUpdateOnly) {
+          if (window.__cvApplyUpdateStatus) window.__cvApplyUpdateStatus(status);
+          if (
+            status &&
+            status.state === 'available' &&
+            state.settings.app.checkUpdatesOnStartup !== false
+          ) {
             const lang = state.settings.app.language || 'en';
             const msg = (I18N[lang].about_notify_startup || 'Update available: v{version}')
               .replace('{version}', status.version || '');
@@ -3399,24 +3610,6 @@ if (isElectron) {
 } else {
   // Modo browser
   applySettings();
-}
-
-function maybeShowOnboarding() {
-  const tip = $('onboarding-tip');
-  const text = $('onboarding-text');
-  const btn = $('btn-onboarding-dismiss');
-  if (!tip || !text || !btn) return;
-  if (state.settings.app.onboardingSeen) return;
-  const lang = state.settings.app.language || 'en';
-  const t = I18N[lang] || I18N.en;
-  text.textContent = t.onboarding_tip || '';
-  btn.textContent = t.onboarding_dismiss || 'OK';
-  tip.hidden = false;
-  btn.onclick = () => {
-    tip.hidden = true;
-    state.settings.app.onboardingSeen = true;
-    if (isElectron) window.electronAPI.saveSettings(state.settings.app);
-  };
 }
 
 // ── HUD SYNC ──
@@ -3481,16 +3674,24 @@ $('btn-center').addEventListener('click', () => {
     return I18N[lang] || I18N.en;
   }
 
+  function applyUpdateStatus(status) {
+    updateStatus = status || { state: 'idle' };
+    syncUpdateActions(overlay);
+  }
+  window.__cvApplyUpdateStatus = applyUpdateStatus;
+
   function renderUpdateStatusText(el) {
     if (!el) return;
     const t = tAbout();
     const s = updateStatus;
     el.style.color = 'var(--cyber-muted)';
+    // Banner already covers available/downloaded
+    if (s.state === 'available' || s.state === 'downloaded') {
+      el.textContent = '';
+      return;
+    }
     if (s.state === 'checking') {
       el.textContent = t.about_checking;
-    } else if (s.state === 'available') {
-      el.textContent = `${t.about_update_avail} (v${s.version || ''})`;
-      el.style.color = 'var(--cyber-accent2)';
     } else if (s.state === 'not-available') {
       el.textContent = t.about_up_to_date;
       el.style.color = 'var(--cyber-accent3)';
@@ -3498,14 +3699,29 @@ $('btn-center').addEventListener('click', () => {
       el.textContent = (t.about_downloading || 'Downloading… {percent}%')
         .replace('{percent}', String(s.percent || 0));
       el.style.color = 'var(--cyber-accent)';
-    } else if (s.state === 'downloaded') {
-      el.textContent = `${t.about_downloaded}${s.version ? ' (v' + s.version + ')' : ''}`;
-      el.style.color = 'var(--cyber-accent3)';
     } else if (s.state === 'error') {
       el.textContent = `${t.about_update_err}${s.message ? ' (' + s.message + ')' : ''}`;
       el.style.color = 'var(--cyber-accent2)';
     } else {
       el.textContent = '';
+    }
+  }
+
+  function syncUpdateBanner(root) {
+    if (!root) return;
+    const banner = root.querySelector('#about-update-banner');
+    if (!banner) return;
+    const t = tAbout();
+    const s = updateStatus;
+    banner.classList.remove('visible', 'ready');
+    if (s.state === 'available') {
+      banner.textContent = `${t.about_update_avail} (v${s.version || ''})`;
+      banner.classList.add('visible');
+    } else if (s.state === 'downloaded') {
+      banner.textContent = `${t.about_downloaded}${s.version ? ' (v' + s.version + ')' : ''}`;
+      banner.classList.add('visible', 'ready');
+    } else {
+      banner.textContent = '';
     }
   }
 
@@ -3537,6 +3753,7 @@ $('btn-center').addEventListener('click', () => {
       bar.style.width = Math.max(0, Math.min(100, s === 'downloading' ? (updateStatus.percent || 0) : 0)) + '%';
     }
     renderUpdateStatusText(statusEl);
+    syncUpdateBanner(root);
   }
 
   window.checkUpdatesGlobal = async function(manual = true) {
@@ -3595,7 +3812,7 @@ $('btn-center').addEventListener('click', () => {
             [Cyber<span style="color:var(--cyber-accent3)">Viewer</span>]
           </div>
           <div style="font-size:11px;color:var(--cyber-muted);margin-bottom:20px">${subtitle}</div>
-          <img src="assets/icon.png" style="width:64px;height:64px;margin-bottom:20px;filter:drop-shadow(0 0 10px var(--cyber-accent))" alt="Logo">
+          <img src="assets/icon.png" style="width:64px;height:64px;margin-bottom:20px;filter:drop-shadow(0 0 5px rgba(var(--cyber-icon-rgb), 0.45))" alt="Logo">
           <div style="font-size:12px;color:var(--cyber-text);line-height:1.8">
             ${t.about_desc}
           </div>
@@ -3606,13 +3823,14 @@ $('btn-center').addEventListener('click', () => {
           <div style="margin-top:20px; border-top: 1px solid var(--cyber-border); padding-top: 15px; text-align: left;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
               <span style="font-size:11px; color:var(--cyber-text); font-family:var(--font-ui); text-transform:uppercase;">
-                ${t.about_manual_only}
+                ${t.about_check_on_startup}
               </span>
               <label class="switch">
-                <input type="checkbox" id="about-manual-toggle" ${state.settings.app.manualUpdateOnly ? 'checked' : ''}>
+                <input type="checkbox" id="about-startup-update-toggle" ${state.settings.app.checkUpdatesOnStartup !== false ? 'checked' : ''}>
                 <span class="slider"></span>
               </label>
             </div>
+            <div id="about-update-banner" class="about-update-banner" aria-live="polite"></div>
             <div id="about-update-progress" class="about-update-progress" style="display:none;margin-bottom:10px;">
               <div class="about-update-track"><div id="about-update-bar" class="about-update-bar"></div></div>
             </div>
@@ -3648,9 +3866,9 @@ $('btn-center').addEventListener('click', () => {
       closeAbout();
     });
     
-    const toggle = overlay.querySelector('#about-manual-toggle');
+    const toggle = overlay.querySelector('#about-startup-update-toggle');
     toggle.addEventListener('change', () => {
-      state.settings.app.manualUpdateOnly = toggle.checked;
+      state.settings.app.checkUpdatesOnStartup = toggle.checked;
       if (isElectron) {
         window.electronAPI.saveSettings(state.settings.app);
       }
@@ -3678,8 +3896,7 @@ $('btn-center').addEventListener('click', () => {
     if (unsubUpdateStatus) unsubUpdateStatus();
     if (window.electronAPI.onUpdateStatus) {
       unsubUpdateStatus = window.electronAPI.onUpdateStatus((status) => {
-        updateStatus = status || { state: 'idle' };
-        syncUpdateActions(overlay);
+        applyUpdateStatus(status);
       });
     }
 
@@ -3745,6 +3962,7 @@ $('btn-config').addEventListener('click', openConfig);
   function runAction(action) {
     switch (action) {
       case 'open-folder':    $('btn-open-hud').click(); break;
+      case 'paste-image':    pasteFromClipboard(); break;
       case 'close-image':    closeImage(); break;
       case 'show-folder':    $('btn-show-folder').click(); break;
       case 'save':           saveCurrent(); break;

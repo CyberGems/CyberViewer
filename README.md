@@ -58,8 +58,8 @@ Outputs land in `dist/`:
 
 Place these under `assets/` before a production build:
 
-- `icon.png` — 256×256 PNG (dev)
-- `icon.ico` — 256×256 ICO (packaged exe)
+- `icon.png` — PNG for window/tray/UI (dev)
+- `icon.ico` — multi-size ICO (packaged exe / Windows)
 
 ## Updates
 
@@ -69,7 +69,7 @@ Installed (NSIS) builds use **electron-updater** against GitHub Releases:
 2. **Download update** when a newer version is available
 3. **Install & restart** to run the NSIS installer
 
-Download/install is always user-requested. With “Manual check only” off, the app may notify on startup that an update exists (toast), but will not download until you ask.
+Download/install is always user-requested. With “Check for updates on startup” on (default), the app may notify on startup that an update exists (toast + About banner), but will not download until you ask.
 
 Portable builds cannot self-update in-app — use **Open releases page**.
 
