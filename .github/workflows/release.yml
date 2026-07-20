@@ -33,9 +33,7 @@ jobs:
       - name: Unit Tests
         run: npm test
 
-      # Build only — do NOT let electron-builder publish on tag.
-      # GitHub API blips (503) used to fail the whole job after artifacts were already built.
-      # softprops/action-gh-release uploads exe + latest.yml below (CyberFeeds pattern).
+      # Build only — never let electron-builder publish on tag (avoids double-upload + API flakes).
       - name: Compile and Package Electron App
         run: npm run build
         env:
@@ -51,15 +49,53 @@ jobs:
             dist/latest.yml
           if-no-files-found: error
 
+      # Prefer gh CLI with retries over a single softprops call — GitHub has been
+      # returning intermittent 503s during release create/upload.
       - name: Create GitHub Release and Upload Assets
-        uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: |
-            dist/*.exe
-            dist/*.blockmap
-            dist/latest.yml
-          generate_release_notes: true
-          fail_on_unmatched_files: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          FILES=(dist/*.exe dist/*.blockmap dist/latest.yml)
+
+          retry() {
+            local attempt=1
+            local max=6
+            local delay=8
+            until "$@"; do
+              if [ "$attempt" -ge "$max" ]; then
+                echo "Giving up after ${max} attempts: $*" >&2
+                return 1
+              fi
+              echo "Attempt ${attempt}/${max} failed; retrying in ${delay}s..." >&2
+              sleep "$delay"
+              attempt=$((attempt + 1))
+              delay=$((delay * 2))
+            done
+          }
+
+          ensure_release() {
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              # Publish draft leftovers from a previous flaky run
+              gh release edit "$TAG" --draft=false >/dev/null 2>&1 || true
+              return 0
+            fi
+            gh release create "$TAG" \
+              --title "$TAG" \
+              --generate-notes \
+              --latest
+          }
+
+          retry ensure_release
+
+          shopt -s nullglob
+          for f in "${FILES[@]}"; do
+            echo "Uploading $f"
+            retry gh release upload "$TAG" "$f" --clobber
+          done
+
+          echo "Release ${TAG} published:"
+          gh release view "$TAG" --json url,isDraft,assets --jq '{url,isDraft,assets:[.assets[].name]}'
