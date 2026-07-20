@@ -56,4 +56,22 @@ describe('clampWindowBounds', () => {
     assert.equal(r.displayId, 2);
     assert.ok(r.x >= secondary.workArea.x);
   });
+
+  it('restores last displayId when preferred is auto', () => {
+    const r = clampWindowBounds(
+      { x: 100, y: 100, width: 1000, height: 700, displayId: 2 },
+      { displays, primary, preferredDisplayId: 'auto' }
+    );
+    assert.equal(r.displayId, 2);
+    assert.ok(r.x >= secondary.workArea.x);
+  });
+
+  it('preferredDisplayId wins over saved displayId', () => {
+    const r = clampWindowBounds(
+      { x: 2100, y: 100, width: 1000, height: 700, displayId: 2 },
+      { displays, primary, preferredDisplayId: 1 }
+    );
+    assert.equal(r.displayId, 1);
+    assert.ok(r.x < secondary.workArea.x);
+  });
 });

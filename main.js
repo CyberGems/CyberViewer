@@ -160,12 +160,22 @@ function persistWindowState() {
   if (!win || win.isDestroyed()) return;
   try {
     const isMax = win.isMaximized();
+    // Live bounds identify the monitor even while maximized
+    const live = win.getBounds();
+    const liveDisplay =
+      (typeof screen.getDisplayMatching === 'function' && screen.getDisplayMatching(live)) ||
+      screen.getDisplayNearestPoint({
+        x: Math.round(live.x + live.width / 2),
+        y: Math.round(live.y + live.height / 2)
+      });
+
     // getNormalBounds avoids DPI-inflated maximized metrics on Windows
-    const raw = typeof win.getNormalBounds === 'function' ? win.getNormalBounds() : win.getBounds();
+    const raw = typeof win.getNormalBounds === 'function' ? win.getNormalBounds() : live;
     const clamped = clampWindowBounds(raw, {
       displays: screen.getAllDisplays(),
       primary: screen.getPrimaryDisplay(),
-      preferredDisplayId: loadSettings().app.preferredDisplayId
+      preferredDisplayId: loadSettings().app.preferredDisplayId,
+      savedDisplayId: liveDisplay && liveDisplay.id
     });
     saveSettings({
       window: {
@@ -174,7 +184,8 @@ function persistWindowState() {
           x: clamped.x,
           y: clamped.y,
           width: clamped.width,
-          height: clamped.height
+          height: clamped.height,
+          displayId: (liveDisplay && liveDisplay.id) || clamped.displayId
         }
       }
     });
@@ -204,8 +215,9 @@ function createWindow() {
     icon: path.join(__dirname, 'assets', 'icon.png'),
     frame: false,
     titleBarStyle: 'hidden',
-    // Win11 rounding needs Electron 34+; harmless/ignored on older Windows builds.
+    // Native rounded corners only on Windows 11 (build >= 22000). No effect on Win10.
     roundedCorners: true,
+    thickFrame: true,
     show: false,
     webPreferences: {
       nodeIntegration: false,
@@ -249,32 +261,44 @@ function createWindow() {
     // Last-resort flash mitigation: show at opacity 0, settle layout, then fade in
     try { win.setOpacity(0); } catch (_) { /* ignore */ }
 
+    // Place on the resolved startup display (keeps last-used monitor)
     try {
-      const display = screen.getDisplayNearestPoint({ x: startup.x + 10, y: startup.y + 10 });
-      const wa = display.workArea || display.bounds;
-      if (startMaximized) {
-        // Size to work area first (avoids maximize white flash), then maximize for OS state
-        win.setBounds({ x: wa.x, y: wa.y, width: wa.width, height: wa.height });
-      } else {
-        win.setBounds({
-          x: startup.x,
-          y: startup.y,
-          width: startup.width,
-          height: startup.height
-        });
-      }
-    } catch (_) {
       win.setBounds({
         x: startup.x,
         y: startup.y,
         width: startup.width,
         height: startup.height
       });
-    }
+    } catch (_) { /* ignore */ }
 
     win.show();
-    if (startMaximized && !win.isMaximized()) {
-      try { win.maximize(); } catch (_) { /* ignore */ }
+
+    if (startMaximized) {
+      try {
+        // Nudge onto the target display before maximize if needed
+        const target =
+          screen.getDisplayNearestPoint({
+            x: startup.x + Math.floor(startup.width / 2),
+            y: startup.y + Math.floor(startup.height / 2)
+          });
+        const cur = win.getBounds();
+        const curDisp =
+          (typeof screen.getDisplayMatching === 'function' && screen.getDisplayMatching(cur)) ||
+          screen.getDisplayNearestPoint({
+            x: Math.round(cur.x + cur.width / 2),
+            y: Math.round(cur.y + cur.height / 2)
+          });
+        if (target && curDisp && target.id !== curDisp.id) {
+          const wa = target.workArea || target.bounds;
+          win.setBounds({
+            x: wa.x + 48,
+            y: wa.y + 48,
+            width: Math.min(startup.width, Math.max(800, wa.width - 96)),
+            height: Math.min(startup.height, Math.max(500, wa.height - 96))
+          });
+        }
+        if (!win.isMaximized()) win.maximize();
+      } catch (_) { /* ignore */ }
     }
 
     const fadeIn = () => {
@@ -308,11 +332,16 @@ function createWindow() {
   win.on('close', (event) => {
     if (!isQuitting && loadSettings().app.closeToTray) {
       event.preventDefault();
-      win.hide();
+      hideToTray();
       return false;
     }
     persistWindowState();
   });
+
+  win.on('show', () => updateTrayMenu());
+  win.on('hide', () => updateTrayMenu());
+  win.on('minimize', () => updateTrayMenu());
+  win.on('restore', () => updateTrayMenu());
 
   win.on('maximize', () => {
     win.webContents.send('win-state', 'maximized');
@@ -349,31 +378,63 @@ function createWindow() {
   });
 }
 
-function createTray() {
-  if (tray) return;
+function hideToTray() {
+  if (!win || win.isDestroyed()) return;
+  persistWindowState();
+  if (win.isVisible()) win.hide();
+  updateTrayMenu();
+}
+
+function showFromTray() {
+  if (!win || win.isDestroyed()) return;
+  if (win.isMinimized()) win.restore();
+  if (!win.isVisible()) win.show();
+  win.focus();
+  updateTrayMenu();
+}
+
+function isWindowShown() {
+  return !!(win && !win.isDestroyed() && win.isVisible() && !win.isMinimized());
+}
+
+function updateTrayMenu() {
+  if (!tray) return;
   const settings = loadSettings();
   const lang = settings.app.language || 'en';
   const t = menuI18n[lang] || menuI18n.en;
+  const visible = isWindowShown();
 
-  tray = new Tray(path.join(__dirname, 'assets', 'icon.png'));
-  const contextMenu = Menu.buildFromTemplate([
+  tray.setContextMenu(Menu.buildFromTemplate([
     { label: `CyberViewer v${app.getVersion()}`, enabled: false },
     { type: 'separator' },
-    { label: t.tray_show, click: () => { win.show(); win.focus(); } },
-    { label: t.tray_settings, click: () => { win.show(); win.focus(); win.webContents.send('open-settings'); } },
+    {
+      label: visible ? (t.tray_hide || t.tray_show) : t.tray_show,
+      click: () => { visible ? hideToTray() : showFromTray(); }
+    },
+    {
+      label: t.tray_settings,
+      click: () => {
+        showFromTray();
+        if (win && !win.isDestroyed()) win.webContents.send('open-settings');
+      }
+    },
     { type: 'separator' },
-    { label: t.tray_exit, click: () => { isQuitting = true; app.quit(); } }
-  ]);
-  tray.setToolTip('CyberViewer');
-  tray.setContextMenu(contextMenu);
-  tray.on('click', () => {
-    if (win.isVisible()) {
-      win.hide();
-    } else {
-      win.show();
-      win.maximize();
-      win.focus();
+    {
+      label: t.tray_exit,
+      click: () => { isQuitting = true; app.quit(); }
     }
+  ]));
+}
+
+function createTray() {
+  if (tray) return;
+  tray = new Tray(path.join(__dirname, 'assets', 'icon.png'));
+  tray.setToolTip('CyberViewer');
+  updateTrayMenu();
+  tray.on('click', () => {
+    if (!win || win.isDestroyed()) return;
+    if (isWindowShown()) hideToTray();
+    else showFromTray();
   });
 }
 

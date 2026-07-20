@@ -35,6 +35,7 @@
     "favorite_add": "Add to Favorites",
     "favorite_remove": "Remove from Favorites",
     "tray_show": "Show CyberViewer",
+    "tray_hide": "Hide CyberViewer",
     "tray_settings": "Settings",
     "tray_exit": "Exit"
   },
@@ -74,6 +75,7 @@
     "favorite_add": "Añadir a Favoritos",
     "favorite_remove": "Quitar de Favoritos",
     "tray_show": "Mostrar CyberViewer",
+    "tray_hide": "Ocultar CyberViewer",
     "tray_settings": "Configuración",
     "tray_exit": "Salir"
   }

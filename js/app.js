@@ -146,15 +146,15 @@ const I18N = {
     fit_to_window: "FIT",
     fullscreen: "FULLSCREEN",
     save: "SAVE",
-    radar_tooltip: "RADAR: Total current folder scanned / Thumbnails in memory\nHint: Close the sidebar to PAUSE the Radar scan",
+    radar_tooltip: "SCAN: Folder preload progress / Thumbnails in memory\nHint: Close the sidebar to pause scanning",
     size_tooltip: "CANVAS: Physical resolution in pixels",
     weight_tooltip: "WEIGHT: File weight on disk",
     zoom_tooltip: "VIEW SCALE: Zoom percentage applied in the viewer",
-    radar_lbl: "RADAR:",
+    radar_lbl: "SCAN:",
     zoom_lbl: "ZOOM:",
     fs_badge: "FULLSCREEN",
     ghost_close_title: "Exit Fullscreen",
-    config_title: "[CYBERVIEWER CONFIG]",
+    config_title: "Configuration",
     personalization: "Personalization",
     accent_color: "Accent Color",
     accent_desc: "Define the primary neon accent color.",
@@ -169,12 +169,12 @@ const I18N = {
     auto_start: "Auto Start",
     auto_start_desc: "Launch with Windows (minimized).",
     context_menu: "Context Menu",
-    context_menu_desc: "Integrate CyberViewer into Windows right-click menu.",
+    context_menu_desc: "Add CyberViewer to the Windows Explorer right-click menu.",
     language_label: "Language",
     language_desc: "User interface language.",
     opening_monitor: "Target Monitor",
-    opening_monitor_desc: "Force open on a specific screen.",
-    monitor_auto: "Automatic",
+    opening_monitor_desc: "Last used monitor, or force a specific screen.",
+    monitor_auto: "Last used",
     config_cancel: "Cancel",
     save_config: "Save Changes",
     // Toasts
@@ -301,7 +301,7 @@ const I18N = {
     menu_prev: "Previous Image",
     menu_favorite: "Favorite",
     menu_favs_view: "Favorites View",
-    menu_prefs: "Preferences",
+    menu_prefs: "Configuration",
     menu_about: "About",
     menu_updates: "Check for Updates",
     menu_devtools: "Developer Tools",
@@ -311,7 +311,7 @@ const I18N = {
     fav_title: "Favorite (Ctrl+D)",
     toast_load_image_first: "LOAD AN IMAGE FIRST",
     show_favorites_lbl: "FAVORITES",
-    show_all_lbl: "ALL IMAGES",
+    show_all_lbl: "ALL",
     about_check_updates: "Check for Updates",
     about_check_on_startup: "Check for updates on startup",
     about_checking: "Checking updates...",
@@ -336,7 +336,9 @@ const I18N = {
     cfg_seconds: "{seconds}s",
     prev_title: "Previous Image (ArrowLeft / A)",
     next_title: "Next Image (ArrowRight / D / Space)",
-    center_title: "Center active thumbnail in sidebar"
+    center_title: "Center active thumbnail in sidebar",
+    sidebar_favorites: "Favorites",
+    sidebar_folder_empty: "—"
   },
   es: {
     no_images: "— sin imágenes —",
@@ -364,15 +366,15 @@ const I18N = {
     fit_to_window: "AJUSTAR",
     fullscreen: "PANTALLA",
     save: "GUARDAR",
-    radar_tooltip: "RADAR: Total de carpeta actual escaneado / Miniaturas en memoria\nConsejo: Cierra la barra lateral para pausar el escaneo del Radar",
-    size_tooltip: "LIENZO: Resolución física en píxeles",
+    radar_tooltip: "ESCANEO: Progreso de precarga de la carpeta / Miniaturas en memoria\nConsejo: Cierra la barra lateral para pausar el escaneo",
+    size_tooltip: "LIENZO: Resolución física en píxeles de la imagen",
     weight_tooltip: "PESO: Peso del archivo en disco",
     zoom_tooltip: "ESCALA DE VISTA: Porcentaje de zoom aplicado en el visor",
-    radar_lbl: "RADAR:",
+    radar_lbl: "ESCANEO:",
     zoom_lbl: "ZOOM:",
     fs_badge: "PANTALLA COMPLETA",
     ghost_close_title: "Salir de Pantalla Completa",
-    config_title: "[CYBERVIEWER CONFIG]",
+    config_title: "Configuración",
     personalization: "Personalización",
     accent_color: "Color de Acento",
     accent_desc: "Define el color principal de la interfaz neon.",
@@ -387,12 +389,12 @@ const I18N = {
     auto_start: "Inicio Automático",
     auto_start_desc: "Arrancar con Windows (minimizado).",
     context_menu: "Menú Contextual",
-    context_menu_desc: "Integrar CyberViewer en el menú de click derecho.",
+    context_menu_desc: "Añadir CyberViewer al menú contextual del Explorador de Windows.",
     language_label: "Idioma",
     language_desc: "Idioma de la interfaz de usuario.",
     opening_monitor: "Monitor de Apertura",
-    opening_monitor_desc: "Forzar apertura en una pantalla específica.",
-    monitor_auto: "Automático",
+    opening_monitor_desc: "Último monitor usado, o forzar una pantalla concreta.",
+    monitor_auto: "Último usado",
     config_cancel: "Cancelar",
     save_config: "Guardar Cambios",
     // Toasts
@@ -519,7 +521,7 @@ const I18N = {
     menu_prev: "Imagen anterior",
     menu_favorite: "Favorito",
     menu_favs_view: "Ver favoritos",
-    menu_prefs: "Preferencias",
+    menu_prefs: "Configuración",
     menu_about: "Acerca de",
     menu_updates: "Buscar actualizaciones",
     menu_devtools: "Herramientas de desarrollo",
@@ -554,7 +556,9 @@ const I18N = {
     cfg_seconds: "{seconds}s",
     prev_title: "Imagen Anterior (ArrowLeft / A)",
     next_title: "Imagen Siguiente (ArrowRight / D / Space)",
-    center_title: "Centrar miniatura activa en el panel lateral"
+    center_title: "Centrar miniatura activa en el panel lateral",
+    sidebar_favorites: "Favoritos",
+    sidebar_folder_empty: "—"
   }
 };
 
@@ -592,6 +596,9 @@ function updateLanguage(lang = 'en') {
   });
   if (typeof syncFavoritesToggleButtonState === 'function') {
     syncFavoritesToggleButtonState(lang);
+  }
+  if (typeof updateSidebarFolderHeader === 'function') {
+    updateSidebarFolderHeader();
   }
 }
 
@@ -747,6 +754,67 @@ async function startBackgroundScan() {
 }
 
 // ── SIDEBAR ──
+function folderDirFromPath(filePath) {
+  if (!filePath) return '';
+  const norm = String(filePath).replace(/[\\/]+$/, '');
+  const i = Math.max(norm.lastIndexOf('\\'), norm.lastIndexOf('/'));
+  return i >= 0 ? norm.slice(0, i) : '';
+}
+
+function folderNameFromPath(dirPath) {
+  if (!dirPath) return '';
+  const norm = String(dirPath).replace(/[\\/]+$/, '');
+  const parts = norm.split(/[\\/]/).filter(Boolean);
+  return parts.length ? parts[parts.length - 1] : '';
+}
+
+function updateSidebarFolderHeader() {
+  const el = $('sidebar-folder');
+  const nameEl = $('sidebar-folder-name');
+  if (!el || !nameEl) return;
+
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  const t = I18N[lang] || I18N.en;
+
+  if (state.showingFavs) {
+    el.classList.remove('is-empty');
+    el.classList.add('is-favs');
+    el.setAttribute('aria-hidden', 'false');
+    nameEl.textContent = t.sidebar_favorites || 'Favorites';
+    setCyberTooltip(el, t.sidebar_favorites || 'Favorites');
+    el.classList.add('tooltip-bottom');
+    return;
+  }
+
+  el.classList.remove('is-favs');
+
+  let filePath = null;
+  const cur = state.images[state.currentIdx] || state.images[state.current];
+  if (cur && cur.file && cur.file.path) {
+    filePath = cur.file.path;
+  } else {
+    const first = state.images.find((im) => im && !im.hidden && im.file && im.file.path);
+    if (first) filePath = first.file.path;
+  }
+
+  if (!filePath) {
+    el.classList.add('is-empty');
+    el.setAttribute('aria-hidden', 'true');
+    nameEl.textContent = t.sidebar_folder_empty || '—';
+    el.removeAttribute('data-tooltip');
+    el.classList.remove('cyber-tooltip', 'tooltip-bottom');
+    return;
+  }
+
+  const dir = folderDirFromPath(filePath);
+  const name = folderNameFromPath(dir) || folderNameFromPath(filePath) || (t.sidebar_folder_empty || '—');
+  el.classList.remove('is-empty');
+  el.setAttribute('aria-hidden', 'false');
+  nameEl.textContent = name;
+  setCyberTooltip(el, dir || filePath);
+  el.classList.add('tooltip-bottom');
+}
+
 function buildSidebar() {
   const container = $('sidebar-inner');
   if (!container) return;
@@ -805,6 +873,7 @@ function buildSidebar() {
 
   container.appendChild(fragment);
   updateNavVisibility();
+  updateSidebarFolderHeader();
 }
 
 // ── CONTEXT MENU ──
@@ -2716,6 +2785,12 @@ function updateZoomHUD() {
   $('zoom-pct').textContent = pct + '%';
   const slider = $('zoom-slider');
   if (slider) slider.value = zoomToSlider(state.zoom);
+  // Floating HUD only in fullscreen; statusbar zoom-% always updates
+  if (!state.isGhost) {
+    zoomHud.classList.remove('visible');
+    clearTimeout(state.zoomTimer);
+    return;
+  }
   zoomHud.classList.add('visible');
   clearTimeout(state.zoomTimer);
   state.zoomTimer = setTimeout(() => zoomHud.classList.remove('visible'), 1200);
@@ -3480,8 +3555,33 @@ function closeModal(id) {
   if (!el) return;
   el.classList.remove('active');
   el.removeAttribute('aria-modal');
+  if (id === 'modal-config') clearConfigAccentPreview();
 }
 window.closeModal = closeModal;
+
+function hexToRgbTriplet(hex) {
+  const h = String(hex || '').replace('#', '');
+  if (h.length !== 6) return '0, 212, 255';
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  if ([r, g, b].some((n) => Number.isNaN(n))) return '0, 212, 255';
+  return `${r}, ${g}, ${b}`;
+}
+
+function setConfigAccentPreview(hex) {
+  const modal = $('modal-config');
+  if (!modal || !hex) return;
+  modal.style.setProperty('--preview-accent', hex);
+  modal.style.setProperty('--preview-accent-rgb', hexToRgbTriplet(hex));
+}
+
+function clearConfigAccentPreview() {
+  const modal = $('modal-config');
+  if (!modal) return;
+  modal.style.removeProperty('--preview-accent');
+  modal.style.removeProperty('--preview-accent-rgb');
+}
 
 // Wire modal dismiss controls (CSP blocks inline onclick)
 document.querySelectorAll('[data-close-modal]').forEach(btn => {
@@ -3535,18 +3635,21 @@ function openConfig() {
     });
   }
 
-  // Set active color
-  document.querySelectorAll('.color-opt').forEach(opt => {
-    opt.classList.toggle('active', opt.dataset.color === s.accentColor);
+  // Set active color + live preview in modal
+  const accent = s.accentColor || '#00d4ff';
+  document.querySelectorAll('#modal-config .color-opt').forEach(opt => {
+    opt.classList.toggle('active', opt.dataset.color === accent);
   });
+  setConfigAccentPreview(accent);
   
   openModal('modal-config');
 }
 
-document.querySelectorAll('.color-opt').forEach(opt => {
+document.querySelectorAll('#modal-config .color-opt').forEach(opt => {
   opt.addEventListener('click', () => {
-    document.querySelectorAll('.color-opt').forEach(o => o.classList.remove('active'));
+    document.querySelectorAll('#modal-config .color-opt').forEach(o => o.classList.remove('active'));
     opt.classList.add('active');
+    setConfigAccentPreview(opt.dataset.color);
   });
 });
 
@@ -3559,7 +3662,8 @@ $('cfg-hud-autohide').addEventListener('change', (e) => {
 });
 
 $('btn-save-config').addEventListener('click', async () => {
-  const accentColor = document.querySelector('.color-opt.active').dataset.color;
+  const activeOpt = document.querySelector('#modal-config .color-opt.active');
+  const accentColor = (activeOpt && activeOpt.dataset.color) || '#00d4ff';
   const contextMenuEnabled = $('cfg-contextmenu').checked;
   const newSettings = {
     sidebarOpen: $('cfg-sidebar').checked,
@@ -3585,9 +3689,9 @@ $('btn-save-config').addEventListener('click', async () => {
     }).catch(err => console.error('Error saving context menu:', err));
   }
   
-  state.settings.app = newSettings;
+  state.settings.app = Object.assign({}, state.settings.app, newSettings);
   applySettings();
-  if (isElectron) window.electronAPI.saveSettings(newSettings);
+  if (isElectron) window.electronAPI.saveSettings(state.settings.app);
   closeModal('modal-config');
   const lang = newSettings.language || 'en';
   showToast(I18N[lang].toast_saved, 'success');
@@ -3956,7 +4060,6 @@ $('btn-center').addEventListener('click', () => {
           </div>
         </div>
         <div class="modal-footer">
-          <button id="btn-console" class="top-btn" style="border-color:var(--cyber-accent2);color:var(--cyber-accent2)">${t.about_dev_tools}</button>
           <button id="about-close" class="top-btn active">${t.about_understood}</button>
         </div>
       </div>
@@ -3964,10 +4067,6 @@ $('btn-center').addEventListener('click', () => {
 
     overlay.querySelector('#about-close').addEventListener('click', closeAbout);
     overlay.querySelector('#about-close-btn').addEventListener('click', closeAbout);
-    overlay.querySelector('#btn-console').addEventListener('click', () => {
-      window.electronAPI.openDevTools();
-      closeAbout();
-    });
     
     const toggle = overlay.querySelector('#about-startup-update-toggle');
     toggle.addEventListener('change', () => {
@@ -4125,9 +4224,6 @@ $('btn-config').addEventListener('click', openConfig);
           if (typeof window.checkUpdatesGlobal === 'function') window.checkUpdatesGlobal(true);
         }, 80);
         break;
-      case 'devtools':
-        if (isElectron && window.electronAPI.openDevTools) window.electronAPI.openDevTools();
-        break;
     }
   }
 
@@ -4282,7 +4378,7 @@ function syncFavoritesToggleButtonState(lang) {
   if (state.showingFavs) {
     btn.classList.add('active');
     setCyberTooltip(btn, lang === 'es' ? 'Mostrar galería completa' : 'Show full gallery');
-    if (favLbl) favLbl.textContent = lang === 'es' ? 'TODAS' : 'ALL IMAGES';
+    if (favLbl) favLbl.textContent = lang === 'es' ? 'TODAS' : 'ALL';
     if (favStar) favStar.innerHTML = '&#9734;';
   } else {
     btn.classList.remove('active');

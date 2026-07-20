@@ -50,8 +50,6 @@
   <div class="menu-wrap">
     <button class="win-btn tooltip-bottom" id="btn-menu" data-i18n-title="menu" title="Menú" style="margin-left:5px"><svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <div id="main-menu" class="menu-panel">
-      <div class="menu-brand">CYBER<span style="color:var(--cyber-accent3)">VIEWER</span></div>
-
       <div class="menu-cat" data-sub>
         <span class="menu-label" data-i18n="menu_file">Archivo</span><span class="menu-arrow">&#8250;</span>
         <div class="menu-sub">
@@ -104,15 +102,13 @@
       </div>
 
       <div class="menu-divider"></div>
-      <button class="menu-item menu-flat" data-action="preferences"><span class="menu-label" data-i18n="menu_prefs">Preferencias</span><span class="menu-shortcut">Ctrl+,</span></button>
+      <button class="menu-item menu-flat" data-action="preferences"><span class="menu-label" data-i18n="menu_prefs">Configuración</span><span class="menu-shortcut">Ctrl+,</span></button>
 
       <div class="menu-cat" data-sub>
         <span class="menu-label" data-i18n="menu_help">Ayuda</span><span class="menu-arrow">&#8250;</span>
         <div class="menu-sub">
           <button class="menu-item" data-action="about"><span class="menu-label" data-i18n="menu_about">Acerca de</span></button>
           <button class="menu-item" data-action="check-updates"><span class="menu-label" data-i18n="menu_updates">Buscar actualizaciones</span></button>
-          <div class="menu-divider"></div>
-          <button class="menu-item" data-action="devtools"><span class="menu-label" data-i18n="menu_devtools">Herramientas de desarrollo</span><span class="menu-shortcut">Ctrl+&#8679;I</span></button>
         </div>
       </div>
     </div>
@@ -122,7 +118,7 @@
   <div class="win-sep"></div>
   <button class="win-btn tooltip-bottom" id="win-min" data-i18n-title="minimize" title="Minimizar">&#8722;</button>
   <button class="win-btn tooltip-bottom" id="win-max" data-i18n-title="maximize" title="Maximizar"><svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg></button>
-  <button class="win-btn tooltip-bottom" id="win-close" data-i18n-title="close" title="Cerrar">&#10005;</button>
+  <button class="win-btn tooltip-bottom tooltip-align-right" id="win-close" data-i18n-title="close" title="Cerrar">&#10005;</button>
 </div>
 <div id="app">
 
@@ -131,14 +127,19 @@
 
     <!-- SIDEBAR -->
     <div id="sidebar">
+      <div id="sidebar-folder" class="sidebar-folder is-empty" aria-hidden="true">
+        <svg class="sidebar-folder-ico ico-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+        <span class="sidebar-folder-ico ico-star" aria-hidden="true">&#9733;</span>
+        <span id="sidebar-folder-name" class="sidebar-folder-name"></span>
+      </div>
       <div id="sidebar-scroll">
         <div id="sidebar-inner"></div>
       </div>
-      <div id="sidebar-controls" style="gap: 6px;">
+      <div id="sidebar-controls">
         <div id="img-counter"></div>
-        <button class="kbd-btn" id="btn-center" data-i18n="center" data-i18n-title="center_title" style="width: 100%; font-size:11px; height: 28px; padding: 4px 12px !important">CENTRAR</button>
-        <button class="kbd-btn" id="btn-toggle-favs" title="Mostrar Favoritos" style="width: 100%; font-size:11px; height: 28px; padding: 4px 12px !important; display: flex; align-items: center; justify-content: center; gap: 6px;">
-          <span class="fav-star">&#9733;</span> <span class="fav-lbl" data-i18n="show_favorites_lbl">FAVORITOS</span>
+        <button class="kbd-btn" id="btn-center" data-i18n="center" data-i18n-title="center_title">CENTRAR</button>
+        <button class="kbd-btn" id="btn-toggle-favs" title="Mostrar Favoritos">
+          <span class="fav-star">&#9733;</span><span class="fav-lbl" data-i18n="show_favorites_lbl">FAVORITOS</span>
         </button>
       </div>
     </div>
@@ -242,9 +243,9 @@
 
   <div id="statusbar">
     <div id="radar-wrapper">
-      <div class="footer-center cyber-tooltip" id="footer-radar" data-i18n-tooltip="radar_tooltip" data-tooltip="RADAR: Total de carpeta actual escaneado / Miniaturas en memoria">
+      <div class="footer-center cyber-tooltip" id="footer-radar" data-i18n-tooltip="radar_tooltip" data-tooltip="ESCANEO: Progreso de precarga de la carpeta / Miniaturas en memoria">
         <svg class="footer-ico" style="color:#aaff00" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
-        <span style="opacity:0.8" data-i18n="radar_lbl">RADAR:</span>
+        <span style="opacity:0.8" data-i18n="radar_lbl">ESCANEO:</span>
         <span id="radar-pct">0%</span>
         <span id="radar-count" style="color:var(--cyber-accent); margin-left: 5px"> [0/0] </span>
       </div>
@@ -337,11 +338,25 @@
 <div id="modal-config" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
-      <div class="modal-title" data-i18n="config_title">[CYBERVIEWER CONFIG]</div>
+      <div class="modal-title" data-i18n="config_title">Configuración</div>
       <button class="win-btn" data-close-modal="modal-config">&#10005;</button>
     </div>
     <div class="modal-body">
-      
+
+      <div class="config-section">
+        <label class="config-label" data-i18n="language_label">Idioma</label>
+        <div class="config-row">
+          <div class="config-info">
+            <div class="config-name" data-i18n="language_label">Idioma</div>
+            <div class="config-desc" data-i18n="language_desc">Idioma de la interfaz de usuario.</div>
+          </div>
+          <select id="cfg-lang" class="cfg-select">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+          </select>
+        </div>
+      </div>
+
       <div class="config-section">
         <label class="config-label" data-i18n="personalization">Personalización</label>
         <div class="config-row">
@@ -380,15 +395,24 @@
             <span class="slider"></span>
           </label>
         </div>
-        <div class="config-row">
-          <div class="config-info">
-            <div class="config-name" data-i18n="cfg_hud_autohide">Ocultar barra automáticamente</div>
-            <div class="config-desc" data-i18n="cfg_hud_autohide_desc">Ocultar barra flotante tras inactividad.</div>
+        <div class="config-cluster">
+          <div class="config-row">
+            <div class="config-info">
+              <div class="config-name" data-i18n="cfg_hud_autohide">Ocultar barra automáticamente</div>
+              <div class="config-desc" data-i18n="cfg_hud_autohide_desc">Ocultar barra flotante tras inactividad.</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="cfg-hud-autohide">
+              <span class="slider"></span>
+            </label>
           </div>
-          <label class="switch">
-            <input type="checkbox" id="cfg-hud-autohide">
-            <span class="slider"></span>
-          </label>
+          <div class="config-row config-row-nested" id="cfg-hud-delay-row">
+            <div class="config-info">
+              <div class="config-name" data-i18n="cfg_hud_delay">Retraso de ocultación</div>
+              <div class="config-desc" id="cfg-hud-delay-val">2.0s</div>
+            </div>
+            <input type="range" id="cfg-hud-delay" class="cfg-range" min="500" max="10000" step="500" value="2000">
+          </div>
         </div>
         <div class="config-row">
           <div class="config-info">
@@ -409,14 +433,6 @@
             <input type="checkbox" id="cfg-show-hints" checked>
             <span class="slider"></span>
           </label>
-        </div>
-
-        <div class="config-row" id="cfg-hud-delay-row">
-          <div class="config-info">
-            <div class="config-name" data-i18n="cfg_hud_delay">Retraso de ocultación</div>
-            <div class="config-desc" id="cfg-hud-delay-val">2.0s</div>
-          </div>
-          <input type="range" id="cfg-hud-delay" min="500" max="10000" step="500" value="2000" style="width:120px;accent-color:var(--cyber-accent);background:var(--cyber-dim);height:4px;border-radius:2px;cursor:pointer;">
         </div>
       </div>
 
@@ -445,7 +461,7 @@
         <div class="config-row">
           <div class="config-info">
             <div class="config-name" data-i18n="context_menu">Menú Contextual</div>
-            <div class="config-desc" data-i18n="context_menu_desc">Integrar CyberViewer en el menú de click derecho.</div>
+            <div class="config-desc" data-i18n="context_menu_desc">Añadir CyberViewer al menú contextual del Explorador de Windows.</div>
           </div>
           <label class="switch">
             <input type="checkbox" id="cfg-contextmenu">
@@ -454,21 +470,11 @@
         </div>
         <div class="config-row">
           <div class="config-info">
-            <div class="config-name" data-i18n="language_label">Idioma</div>
-            <div class="config-desc" data-i18n="language_desc">Idioma de la interfaz de usuario.</div>
-          </div>
-          <select id="cfg-lang" class="cfg-select" style="background:#080a0e;color:var(--cyber-accent);border:1px solid var(--cyber-dim);padding:4px;font-family: var(--font-ui);font-size:11px;width:120px">
-            <option value="en">English</option>
-            <option value="es">Español</option>
-          </select>
-        </div>
-        <div class="config-row">
-          <div class="config-info">
             <div class="config-name" data-i18n="opening_monitor">Monitor de Apertura</div>
-            <div class="config-desc" data-i18n="opening_monitor_desc">Forzar apertura en una pantalla específica.</div>
+            <div class="config-desc" data-i18n="opening_monitor_desc">Último monitor usado, o forzar una pantalla concreta.</div>
           </div>
-          <select id="cfg-monitor" class="cfg-select" style="background:#080a0e;color:var(--cyber-accent);border:1px solid var(--cyber-dim);padding:4px;font-family: var(--font-ui);font-size:11px;width:120px">
-            <option value="auto" data-i18n="monitor_auto">Automático</option>
+          <select id="cfg-monitor" class="cfg-select">
+            <option value="auto" data-i18n="monitor_auto">Último usado</option>
           </select>
         </div>
       </div>
