@@ -499,7 +499,7 @@
   /* ── BOTONES DE VENTANA ── */
   .win-btn {
     background: none;
-    border: 1px solid var(--cyber-border);
+    border: 1px solid transparent; /* idle sin marco; hover/open pinta el borde */
     color: var(--cyber-muted);
     cursor: pointer;
     width: 32px;
@@ -515,6 +515,12 @@
     -webkit-app-region: no-drag;
     flex-shrink: 0;
     padding: 0;
+    outline: none; /* evita el anillo de foco del navegador (recuadro claro) */
+  }
+
+  .win-btn:focus,
+  .win-btn:focus-visible {
+    outline: none;
   }
 
   .win-btn:hover { border-color: var(--cyber-accent); color: var(--cyber-accent); background: rgba(0,212,255,0.08); }
@@ -526,6 +532,7 @@
   /* ── MAIN MENU (☰) ── */
   .menu-wrap { position: relative; -webkit-app-region: no-drag; }
   .menu-ico { width: 18px; height: 18px; display: block; }
+  .win-ico { width: 14px; height: 14px; display: block; }
   #btn-menu.open { border-color: var(--cyber-accent); color: var(--cyber-accent); background: rgba(0,212,255,0.10); }
 
   .menu-panel {
@@ -610,14 +617,16 @@
   .menu-shortcut { color: var(--cyber-accent); opacity: 0.5; font-size: 10px; letter-spacing: .5px; flex-shrink: 0; }
 
   .menu-cat:hover, .menu-item:hover {
-    background: var(--cyber-accent);
-    color: var(--cyber-black);
-    box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.35);
+    background: rgba(var(--cyber-accent-rgb), 0.12);
+    color: var(--cyber-accent);
   }
-  .menu-cat:hover .menu-arrow { color: var(--cyber-black); }
+  .menu-cat:hover .menu-arrow { color: var(--cyber-accent); }
   .menu-cat:hover > .menu-shortcut,
-  .menu-item:hover > .menu-shortcut { color: var(--cyber-black); opacity: 0.8; }
-  .menu-item.danger:hover { background: var(--cyber-accent2); box-shadow: 0 0 12px rgba(var(--cyber-accent2-rgb), 0.4); }
+  .menu-item:hover > .menu-shortcut { color: var(--cyber-accent); opacity: 0.7; }
+  .menu-item.danger:hover {
+    background: rgba(var(--cyber-accent2-rgb), 0.14);
+    color: var(--cyber-accent2);
+  }
 
   .menu-divider { height: 1px; margin: 5px 8px; background: rgba(var(--cyber-accent-rgb), 0.16); }
 
@@ -641,7 +650,7 @@
 
   .menu-check { width: 13px; font-size: 11px; color: var(--cyber-accent3); flex-shrink: 0; }
   .menu-item:not(.checked) .menu-check { visibility: hidden; }
-  .menu-item.checked:hover .menu-check { color: var(--cyber-black); }
+  .menu-item.checked:hover .menu-check { color: var(--cyber-accent3); }
 
   .menu-item.disabled { opacity: .32; pointer-events: none; }
 

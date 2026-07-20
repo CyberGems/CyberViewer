@@ -254,11 +254,11 @@ const I18N = {
     show_folder: "SHOW",
     show_folder_title: "Show in Folder (Ctrl+Shift+O)",
     menu: "Menu",
-    menu_file: "FILE",
-    menu_edit: "EDIT",
-    menu_view: "VIEW",
-    menu_go: "GO",
-    menu_help: "HELP",
+    menu_file: "File",
+    menu_edit: "Edit",
+    menu_view: "View",
+    menu_go: "Go",
+    menu_help: "Help",
     menu_open: "Open image",
     menu_close_image: "Close image",
     menu_show: "Show in Explorer",
@@ -467,11 +467,11 @@ const I18N = {
     show_folder: "MOSTRAR",
     show_folder_title: "Mostrar en Carpeta (Ctrl+Shift+O)",
     menu: "Menú",
-    menu_file: "ARCHIVO",
-    menu_edit: "EDITAR",
-    menu_view: "VISTA",
-    menu_go: "NAVEGAR",
-    menu_help: "AYUDA",
+    menu_file: "Archivo",
+    menu_edit: "Editar",
+    menu_view: "Vista",
+    menu_go: "Navegar",
+    menu_help: "Ayuda",
     menu_open: "Abrir imagen",
     menu_close_image: "Cerrar imagen",
     menu_show: "Mostrar en explorador",
@@ -3335,16 +3335,21 @@ if (isElectron) {
   $('win-close').addEventListener('click', () => window.electronAPI.close());
   $('ghost-close').addEventListener('click', () => toggleFullscreen());
 
-  window.electronAPI.onWinState(state => {
+  const WIN_MAX_ICO = '<svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>';
+  const WIN_RESTORE_ICO = '<svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14h6v6"/><path d="M3 21l7-7"/><path d="M20 10h-6V4"/><path d="M21 3l-7 7"/></svg>';
+
+  window.electronAPI.onWinState(winState => {
     const btn = $('win-max');
-    if (state === 'maximized') {
+    const uiLang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+    const t = I18N[uiLang] || I18N.en;
+    if (winState === 'maximized') {
       btn.classList.add('maximized');
-      btn.title = 'Restaurar';
-      btn.innerHTML = '&#9635;';
+      btn.title = t.menu_restore || 'Restore';
+      btn.innerHTML = WIN_RESTORE_ICO;
     } else {
       btn.classList.remove('maximized');
-      btn.title = 'Maximizar';
-      btn.innerHTML = '&#9633;';
+      btn.title = t.maximize || 'Maximize';
+      btn.innerHTML = WIN_MAX_ICO;
     }
   });
 
