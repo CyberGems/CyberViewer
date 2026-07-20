@@ -84,8 +84,8 @@ src = src.replace(
     const buffer = canvasExport(canvas, fpath);`
 );
 
-src = src.replace(/v1\.2\.0 — Pro Viewer/g, 'v1.6.1 — Pro Viewer');
-src = src.replace(/v1\.2\.0 — Visor Pro/g, 'v1.6.1 — Visor Pro');
+src = src.replace(/v1\.2\.0 — Pro Viewer/g, 'v1.6.2 — Pro Viewer');
+src = src.replace(/v1\.2\.0 — Visor Pro/g, 'v1.6.2 — Visor Pro');
 src = src.replace(/\(e\.message \|\| 'Desconocido'\)/g, "(e.message || 'Unknown')");
 
 // Keep current/currentIdx in sync on key writes

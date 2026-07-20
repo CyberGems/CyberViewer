@@ -188,7 +188,7 @@ const I18N = {
     toast_restored: "IMAGES RESTORED",
     // About Modal
     about_title: "[ABOUT]",
-    about_subtitle: "v1.6.1 — Pro Viewer",
+    about_subtitle: "v1.6.2 — Pro Viewer",
     about_desc: "Copyright (C) 2026 By CyberGems<br><span style=\"color:var(--cyber-muted);font-size:11px\">High Performance Image Engine</span>",
     about_formats: "Formats: JPG · PNG · GIF · WEBP · BMP · TIFF<br>Electron · Hardware Accelerated",
     about_dev_tools: "OPEN DEVTOOLS",
@@ -408,7 +408,7 @@ const I18N = {
     toast_restored: "IMÁGENES RESTAURADAS",
     // About Modal
     about_title: "[ACERCA DE]",
-    about_subtitle: "v1.6.1 — Visor Pro",
+    about_subtitle: "v1.6.2 — Visor Pro",
     about_desc: "Copyright (C) 2026 By CyberGems<br><span style=\"color:var(--cyber-muted);font-size:11px\">High Performance Image Engine</span>",
     about_formats: "Formatos: JPG · PNG · GIF · WEBP · BMP · TIFF<br>Electron · Hardware Accelerated",
     about_dev_tools: "ABRIR CONSOLA",
@@ -4002,7 +4002,7 @@ $('btn-center').addEventListener('click', () => {
   async function openAbout() {
     const lang = state.settings.app.language || 'en';
     const t = I18N[lang] || I18N.en;
-    const version = isElectron ? await window.electronAPI.getVersion() : '1.6.1';
+    const version = isElectron ? await window.electronAPI.getVersion() : '1.6.2';
     const subtitle = lang === 'es' ? `v${version} — Visor Pro` : `v${version} — Pro Viewer`;
     const updateInfo = (isElectron && window.electronAPI.getUpdateInfo)
       ? await window.electronAPI.getUpdateInfo()
