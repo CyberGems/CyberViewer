@@ -3,8 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' blob: data: cvlocal:; connect-src 'self' blob: cvlocal:">
 <title>CyberViewer</title>
+<style>html,body{background:#080a0e;color:#c8d8e8;margin:0;height:100%;overflow:hidden}</style>
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
@@ -167,8 +169,20 @@
           <div class="crop-handle ch-l"></div>
           <div class="crop-handle ch-r"></div>
           <div id="crop-actions">
-            <button class="top-btn active" id="btn-crop-confirm" data-i18n="crop_confirm">RECORTAR Y GUARDAR</button>
-            <button class="top-btn" id="btn-crop-cancel" style="border-color:var(--cyber-accent2); color:var(--cyber-accent2)" data-i18n="crop_cancel">CANCELAR</button>
+            <div class="crop-actions-btns">
+              <button class="top-btn btn-primary" id="btn-crop-confirm" data-i18n="crop_confirm">RECORTAR Y GUARDAR</button>
+              <button class="top-btn btn-cancel" id="btn-crop-cancel" data-i18n="crop_cancel">CANCELAR</button>
+            </div>
+            <div class="crop-copy-row">
+              <div class="crop-copy-info">
+                <div class="config-name" data-i18n="crop_create_copy">Crear una Copia</div>
+                <div class="config-desc" data-i18n="crop_create_copy_desc">Guardar como archivo nuevo sin sobrescribir el original.</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="cfg-crop-copy" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
           </div>
         </div>
       </div>
@@ -270,7 +284,7 @@
   <div class="modal-box confirm-modal-box">
     <div class="modal-header confirm-modal-header">
       <div class="modal-title" id="confirm-title">MOVER A LA PAPELERA</div>
-      <button class="win-btn" onclick="closeModal('modal-cyber-confirm')">&#10005;</button>
+      <button class="win-btn" data-close-modal="modal-cyber-confirm">&#10005;</button>
     </div>
     <div class="modal-body confirm-modal-body">
       <div class="confirm-content-layout">
@@ -295,7 +309,7 @@
   <div class="modal-box props-modal-box">
     <div class="modal-header">
       <div class="modal-title" id="props-title">PROPIEDADES</div>
-      <button class="win-btn" onclick="closeModal('modal-properties')">&#10005;</button>
+      <button class="win-btn" data-close-modal="modal-properties">&#10005;</button>
     </div>
     <div class="modal-body">
       <div class="props-layout">
@@ -314,7 +328,7 @@
       <button class="props-native-btn" id="props-native-btn">
         <span style="font-size:13px">&#9881;&#xFE0E;</span> <span id="props-native-label">Propiedades de Windows</span>
       </button>
-      <button class="top-btn active" id="props-close-btn" onclick="closeModal('modal-properties')">CERRAR</button>
+      <button class="top-btn active" id="props-close-btn" data-close-modal="modal-properties">CERRAR</button>
     </div>
   </div>
 </div>
@@ -324,7 +338,7 @@
   <div class="modal-box">
     <div class="modal-header">
       <div class="modal-title" data-i18n="config_title">[CYBERVIEWER CONFIG]</div>
-      <button class="win-btn" onclick="closeModal('modal-config')">&#10005;</button>
+      <button class="win-btn" data-close-modal="modal-config">&#10005;</button>
     </div>
     <div class="modal-body">
       
@@ -461,7 +475,7 @@
 
     </div>
     <div class="modal-footer">
-      <button class="top-btn" onclick="closeModal('modal-config')" data-i18n="config_cancel">Cancelar</button>
+      <button class="top-btn" data-close-modal="modal-config" data-i18n="config_cancel">Cancelar</button>
       <button class="top-btn active" id="btn-save-config" data-i18n="save_config">Guardar Cambios</button>
     </div>
   </div>
@@ -472,7 +486,7 @@
   <div class="modal-box">
     <div class="modal-header">
       <div class="modal-title" data-i18n="resize_title">[CYBERVIEWER RESIZE]</div>
-      <button class="win-btn modal-close-btn tooltip-bottom tooltip-align-right" onclick="closeModal('modal-resize')" data-i18n-title="close" title="Cerrar">&#10005;</button>
+      <button class="win-btn modal-close-btn tooltip-bottom tooltip-align-right" data-close-modal="modal-resize" data-i18n-title="close" title="Cerrar">&#10005;</button>
     </div>
     <div class="modal-body">
       
@@ -590,8 +604,8 @@
 
     </div>
     <div class="modal-footer">
-      <button class="top-btn modal-cancel-btn tooltip-align-left" onclick="closeModal('modal-resize')" data-i18n="config_cancel" data-i18n-title="resize_cancel_tooltip">Cancelar</button>
-      <button class="top-btn active tooltip-align-right" id="btn-confirm-resize" data-i18n="resize_apply" data-i18n-title="resize_apply_tooltip">Redimensionar y Guardar</button>
+      <button class="top-btn btn-cancel modal-cancel-btn tooltip-align-left" data-close-modal="modal-resize" data-i18n="config_cancel" data-i18n-title="resize_cancel_tooltip">Cancelar</button>
+      <button class="top-btn btn-primary tooltip-align-right" id="btn-confirm-resize" data-i18n="resize_apply" data-i18n-title="resize_apply_tooltip">Redimensionar y Guardar</button>
     </div>
   </div>
 </div>

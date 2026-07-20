@@ -34,16 +34,19 @@
 
   html, body {
     width: 100%; height: 100%;
+    background: #080a0e;
     background: var(--cyber-black);
     font-family: var(--font-ui);
     color: var(--cyber-text);
     overflow: hidden;
     user-select: none;
+    color-scheme: dark;
   }
 
   #app {
     width: 100vw;
     height: 100vh;
+    background: #080a0e;
     background: var(--cyber-black);
     overflow: hidden;
     position: absolute;
@@ -1269,24 +1272,79 @@
   
   #crop-actions {
     position: absolute;
-    bottom: -60px;
+    top: calc(100% + 14px);
+    bottom: auto;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 12px;
+    flex-direction: column;
+    gap: 8px;
     background: var(--cyber-panel);
-    padding: 8px 16px;
+    padding: 8px 12px;
     border: 1px solid var(--cyber-border);
     border-radius: 4px;
     box-shadow: 0 5px 25px rgba(0,0,0,0.8);
     white-space: nowrap;
     z-index: 2100;
+    min-width: 280px;
+    cursor: default;
+  }
+  .crop-copy-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .crop-copy-info .config-name {
+    font-size: 11px;
+    line-height: 1.2;
+  }
+  .crop-copy-info .config-desc {
+    font-size: 9px;
+    margin-top: 1px;
+    white-space: nowrap;
+    max-width: none;
+    line-height: 1.2;
+  }
+  .crop-actions-btns {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
   }
   #crop-actions .top-btn {
     font-size: 14px !important;
     padding: 8px 16px !important;
     height: auto !important;
     min-width: 120px;
+  }
+  #crop-actions .switch {
+    transform: scale(0.92);
+    transform-origin: right center;
+    flex-shrink: 0;
+  }
+
+  /* Shared primary / cancel actions (crop, resize, etc.) */
+  .top-btn.btn-primary {
+    border-color: var(--cyber-accent) !important;
+    color: var(--cyber-accent) !important;
+    background: rgba(var(--cyber-accent-rgb), 0.08) !important;
+  }
+  .top-btn.btn-primary:hover {
+    border-color: var(--cyber-accent) !important;
+    color: var(--cyber-accent) !important;
+    background: rgba(var(--cyber-accent-rgb), 0.16) !important;
+    box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.35) !important;
+  }
+  .top-btn.btn-cancel {
+    border-color: var(--cyber-accent2) !important;
+    color: var(--cyber-accent2) !important;
+    background: rgba(var(--cyber-accent2-rgb), 0.08) !important;
+  }
+  .top-btn.btn-cancel:hover {
+    border-color: var(--cyber-accent2) !important;
+    color: var(--cyber-accent2) !important;
+    background: rgba(var(--cyber-accent2-rgb), 0.16) !important;
+    box-shadow: 0 0 12px rgba(var(--cyber-accent2-rgb), 0.35) !important;
   }
   .kbd-btn:hover {
     background: var(--cyber-accent);
@@ -2028,20 +2086,6 @@
     color: var(--cyber-accent2) !important;
     background: rgba(255, 45, 120, 0.12) !important;
     box-shadow: 0 0 12px rgba(255, 45, 120, 0.4) !important;
-  }
-  .modal-cancel-btn:hover {
-    border-color: var(--cyber-accent2) !important;
-    color: var(--cyber-accent2) !important;
-    background: rgba(255, 45, 120, 0.08) !important;
-    box-shadow: 0 0 12px rgba(255, 45, 120, 0.3) !important;
-  }
-
-  /* Dialog confirm button green hover */
-  #btn-confirm-resize:hover {
-    border-color: var(--cyber-accent3) !important;
-    color: var(--cyber-accent3) !important;
-    background: rgba(168, 255, 62, 0.08) !important;
-    box-shadow: 0 0 12px rgba(168, 255, 62, 0.3) !important;
   }
 
   /* Override tooltip positioning for elements inside modal bodies to prevent clipping */

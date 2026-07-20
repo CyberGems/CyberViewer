@@ -136,6 +136,9 @@ const I18N = {
     main_img_alt: "Main Image",
     crop_confirm: "CROP & SAVE",
     crop_cancel: "CANCEL",
+    crop_create_copy: "Create a Copy",
+    crop_create_copy_desc: "Save as a new file without overwriting the original.",
+    crop_copy_tooltip: "Enable to save as a new file, disable to overwrite original",
     drop_title: "CYBERVIEWER",
     drop_sub: "Drag images here<br>or click to select",
     drop_btn: "Select Files",
@@ -351,6 +354,9 @@ const I18N = {
     main_img_alt: "Imagen principal",
     crop_confirm: "RECORTAR Y GUARDAR",
     crop_cancel: "CANCELAR",
+    crop_create_copy: "Crear una Copia",
+    crop_create_copy_desc: "Guardar como archivo nuevo sin sobrescribir el original.",
+    crop_copy_tooltip: "Activar para guardar como archivo nuevo, desactivar para sobrescribir",
     drop_title: "CYBERVIEWER",
     drop_sub: "Arrastra imágenes aquí<br>o haz clic para seleccionar",
     drop_btn: "Seleccionar archivos",
@@ -1853,25 +1859,36 @@ function startCrop() {
     return;
   }
   
-  // FOCUS FOR CROP: Centrado y zoom panorámico (80% del visor)
-  const vw = viewerWrap.clientWidth, vh = viewerWrap.clientHeight;
-  const iw = mainImg.naturalWidth, ih = mainImg.naturalHeight;
+  // Smart crop framing: leave room below for crop action panel + handles
+  const vw = viewerWrap.clientWidth;
+  const vh = viewerWrap.clientHeight;
+  const iw = mainImg.naturalWidth;
+  const ih = mainImg.naturalHeight;
   const isVert = state.currentRotation === 90 || state.currentRotation === 270;
   const curW = isVert ? ih : iw;
   const curH = isVert ? iw : ih;
-  
-  state.zoom = Math.min((vw * 0.8) / curW, (vh * 0.8) / curH, 1);
+
+  const SIDE = 28;
+  const ABOVE = 28;
+  const BELOW = 118; // gap + crop-actions (buttons + copy toggle)
+  const availW = Math.max(120, vw - SIDE * 2);
+  const availH = Math.max(120, vh - ABOVE - BELOW);
+
+  state.viewMode = 'custom';
+  state.zoom = Math.min(availW / curW, availH / curH, 1);
   state.panX = 0;
-  state.panY = 0;
+  // Bias upward so leftover space sits under the image for controls
+  state.panY = (ABOVE - BELOW) / 2;
   applyTransform(true);
   
-  showToast(I18N[state.settings.app.language || 'en'].toast_focusing_workspace);
+  showToast(I18N[state.settings.app.language || 'en'].toast_focusing_workspace, 'info', 700);
   
-  // Pausa para que el navegador aplique el transform antes de medir
-  setTimeout(() => { calibrateAndShowCrop(); }, 250);
+  // Wait for transform, then calibrate crop overlay to the visible image
+  setTimeout(() => { calibrateAndShowCrop(); }, 260);
 }
 
 function calibrateAndShowCrop() {
+  dismissToasts();
   // DETECCIÓN POR CONTACTO FÍSICO
   const imgB = mainImg.getBoundingClientRect();
   const wrapB = viewerWrap.getBoundingClientRect();
@@ -1885,6 +1902,10 @@ function calibrateAndShowCrop() {
   state.isCropping = true;
   $('crop-overlay').classList.add('active');
   $('kbd-hint').classList.add('hud-hidden');
+  const filename = $('viewer-filename');
+  if (filename) filename.classList.add('hud-hidden-fade');
+  const nav = $('nav-container');
+  if (nav) nav.classList.add('hud-hidden-fade');
   
   // El marco nace ABRAZANDO los bordes reales
   cropState.x = realX;
@@ -1900,12 +1921,29 @@ function calibrateAndShowCrop() {
   updateHUDStates();
 }
 
+function updateCropActionsPlacement() {
+  const actions = $('crop-actions');
+  if (!actions || !cropState.active) return;
+  const wrapH = viewerWrap.clientHeight;
+  const gap = 14;
+  const needed = actions.offsetHeight + gap;
+  const spaceBelow = wrapH - (cropState.y + cropState.h);
+  if (spaceBelow < needed + 4) {
+    actions.style.top = 'auto';
+    actions.style.bottom = `calc(100% + ${gap}px)`;
+  } else {
+    actions.style.top = `calc(100% + ${gap}px)`;
+    actions.style.bottom = 'auto';
+  }
+}
+
 function updateCropUI() {
   const rect = $('crop-rect');
   rect.style.left = cropState.x + 'px';
   rect.style.top = cropState.y + 'px';
   rect.style.width = cropState.w + 'px';
   rect.style.height = cropState.h + 'px';
+  updateCropActionsPlacement();
 }
 
 $('btn-crop').onclick = startCrop;
@@ -1914,12 +1952,16 @@ $('btn-crop-cancel').onclick = () => {
   state.isCropping = false;
   $('crop-overlay').classList.remove('active');
   $('kbd-hint').classList.remove('hud-hidden');
+  const filename = $('viewer-filename');
+  if (filename) filename.classList.remove('hud-hidden-fade');
   updateSaveButton();
   updateHUDStates();
+  if (typeof resetHudTimer === 'function') resetHudTimer();
 };
 
 $('crop-rect').onmousedown = (e) => {
   if (!cropState.active) return;
+  if (e.target.closest('#crop-actions')) return;
   e.stopPropagation();
   
   if (e.target.classList.contains('crop-handle')) {
@@ -2032,6 +2074,7 @@ $('btn-crop-confirm').onclick = async () => {
   cctx.drawImage(fullCanvas, relX, relY, finalW, finalH, 0, 0, finalW, finalH);
   
   const im = state.images[state.current];
+  const idx = state.current;
   let fpath = imageDiskPath(im);
 
   if (!fpath) {
@@ -2039,10 +2082,13 @@ $('btn-crop-confirm').onclick = async () => {
     if (!fpath) return;
   }
 
+  const createCopy = !!($('cfg-crop-copy') && $('cfg-crop-copy').checked);
   const exported = canvasExport(cropCanvas, fpath);
   const result = await window.electronAPI.saveImage({
     filePath: exported.filePath,
-    buffer: exported.buffer
+    buffer: exported.buffer,
+    createCopy,
+    copySuffix: '_cropped'
   });
 
   if (result.success) {
@@ -2051,8 +2097,30 @@ $('btn-crop-confirm').onclick = async () => {
     state.isCropping = false;
     $('crop-overlay').classList.remove('active');
     $('kbd-hint').classList.remove('hud-hidden');
+    const filenameEl = $('viewer-filename');
+    if (filenameEl) filenameEl.classList.remove('hud-hidden-fade');
+    if (typeof resetHudTimer === 'function') resetHudTimer();
 
     const savedPath = result.filePath || exported.filePath;
+
+    if (createCopy) {
+      const newImg = {
+        file: {
+          name: savedPath.split(/[\\/]/).pop(),
+          path: savedPath,
+          size: 0
+        }
+      };
+      state.images.splice(idx + 1, 0, newImg);
+      if (window.electronAPI.registerPaths) {
+        await window.electronAPI.registerPaths([savedPath]);
+      }
+      buildSidebar();
+      showImage(idx + 1, null);
+      updateHUDStates();
+      return;
+    }
+
     if (im.file) im.file.path = savedPath;
     im.path = savedPath;
     
@@ -2855,6 +2923,27 @@ viewerWrap.addEventListener('touchend', e => {
 
 // ── KEYBOARD ──
 document.addEventListener('keydown', e => {
+  // Escape always closes overlays, even when an input has focus
+  if (e.key === 'Escape' || e.key === 'Esc') {
+    const menuPanel = $('main-menu');
+    if (menuPanel && menuPanel.classList.contains('open')) {
+      menuPanel.classList.remove('open');
+      const btnMenu = $('btn-menu');
+      if (btnMenu) btnMenu.classList.remove('open');
+      e.preventDefault();
+      return;
+    }
+    if (state.isGhost) toggleFullscreen();
+    closeModal('modal-config');
+    closeModal('modal-resize');
+    closeModal('modal-properties');
+    closeModal('modal-cyber-confirm');
+    const aboutOverlay = $('about-overlay');
+    if (aboutOverlay) aboutOverlay.classList.remove('active');
+    e.preventDefault();
+    return;
+  }
+
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   const isCtrl = e.ctrlKey || e.metaKey;
 
@@ -2912,14 +3001,6 @@ document.addEventListener('keydown', e => {
     case '1': if (!isCtrl && checkImageLoaded()) $('btn-orig-hud').click(); break;
     case 'delete': 
       if (checkImageLoaded()) removeCurrentImage();
-      break;
-    case 'escape':
-      if (state.isGhost) toggleFullscreen();
-      closeModal('modal-config');
-      closeModal('modal-resize');
-      closeModal('modal-properties');
-      const aboutOverlay = $('about-overlay');
-      if (aboutOverlay) aboutOverlay.classList.remove('active');
       break;
     case 'enter':
       e.preventDefault();
@@ -3176,10 +3257,12 @@ function checkImageLoaded() {
   return true;
 }
 
-function showToast(txt, type = 'info') {
-  // Eliminar toasts previos para evitar solapamiento visual
-  const existing = document.querySelectorAll('.cyber-toast');
-  existing.forEach(el => el.remove());
+function dismissToasts() {
+  document.querySelectorAll('.cyber-toast').forEach(el => el.remove());
+}
+
+function showToast(txt, type = 'info', durationMs = 2500) {
+  dismissToasts();
 
   const t = document.createElement('div');
   t.className = 'cyber-toast';
@@ -3188,26 +3271,30 @@ function showToast(txt, type = 'info') {
   if (type === 'error') bg = 'rgba(255, 80, 80, 0.95)';
   if (type === 'success') bg = 'rgba(0, 255, 170, 0.95)';
 
+  const duration = Math.max(400, Number(durationMs) || 2500);
+  const fadeAt = Math.max(200, duration - 300);
+
+  // Keep toasts near the top so they don't cover crop/action panels
   t.style.cssText = `
-    position:fixed;bottom:120px;left:50%;transform:translateX(-50%);
+    position:fixed;top:64px;bottom:auto;left:50%;transform:translateX(-50%);
     background:${bg};color:#000;padding:8px 24px;
     border-radius:2px;font-family:var(--font-ui);
-    font-size:12px;font-weight:700;z-index:9000;
+    font-size:12px;font-weight:700;z-index:12000;
     box-shadow: 0 0 20px ${bg.replace('0.95', '0.4')};
-    animation: toast-in 300ms ease, toast-out 300ms ease 2.2s forwards;
+    animation: toast-in 220ms ease, toast-out 280ms ease ${fadeAt}ms forwards;
     pointer-events: none;
     letter-spacing: 1px;
     white-space: nowrap;
   `;
   t.textContent = txt;
   document.body.appendChild(t);
-  setTimeout(() => { if (t.parentNode) t.remove(); }, 2500);
+  setTimeout(() => { if (t.parentNode) t.remove(); }, duration);
 }
 
 const style = document.createElement('style');
 style.textContent = `
-  @keyframes toast-in { from { opacity:0; transform:translateX(-50%) translateY(20px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
-  @keyframes toast-out { to { opacity:0; transform:translateX(-50%) translateY(-20px); } }
+  @keyframes toast-in { from { opacity:0; transform:translateX(-50%) translateY(-12px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+  @keyframes toast-out { to { opacity:0; transform:translateX(-50%) translateY(-12px); } }
 `;
 document.head.appendChild(style);
 
@@ -3394,6 +3481,22 @@ function closeModal(id) {
   el.classList.remove('active');
   el.removeAttribute('aria-modal');
 }
+window.closeModal = closeModal;
+
+// Wire modal dismiss controls (CSP blocks inline onclick)
+document.querySelectorAll('[data-close-modal]').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    closeModal(btn.getAttribute('data-close-modal'));
+  });
+});
+['modal-resize', 'modal-config', 'modal-properties', 'modal-cyber-confirm'].forEach(id => {
+  const overlay = $(id);
+  if (!overlay) return;
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeModal(id);
+  });
+});
 
 // ── CONFIG LOGIC ──
 function openConfig() {
@@ -3955,11 +4058,21 @@ $('btn-config').addEventListener('click', openConfig);
   document.addEventListener('click', e => {
     if (panel.classList.contains('open') && !e.target.closest('.menu-wrap')) closeMenu();
   });
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && panel.classList.contains('open')) closeMenu();
-  });
+
+  function closeOpenModals() {
+    closeModal('modal-config');
+    closeModal('modal-resize');
+    closeModal('modal-properties');
+    closeModal('modal-cyber-confirm');
+    const aboutOverlay = $('about-overlay');
+    if (aboutOverlay) aboutOverlay.classList.remove('active');
+  }
 
   function runAction(action) {
+    // Leave modal context so menu actions (and subsequent UI) aren't blocked
+    if (action !== 'resize' && action !== 'preferences' && action !== 'about' && action !== 'check-updates') {
+      closeOpenModals();
+    }
     switch (action) {
       case 'open-folder':    $('btn-open-hud').click(); break;
       case 'paste-image':    pasteFromClipboard(); break;
@@ -4041,11 +4154,22 @@ const elementsToHide = [
 ];
 
 function resetHudTimer() {
+  clearTimeout(hudTimer);
+
+  // During crop, keep chrome out of the way — never re-reveal filename/HUD
+  if (state.isCropping) {
+    const filename = $('viewer-filename');
+    if (filename) filename.classList.add('hud-hidden-fade');
+    const kbd = $('kbd-hint');
+    if (kbd) kbd.classList.add('hud-hidden');
+    const nav = $('nav-container');
+    if (nav) nav.classList.add('hud-hidden-fade');
+    return;
+  }
+
   elementsToHide.forEach(item => {
     if (item.el) item.el.classList.remove(item.hideClass);
   });
-  
-  clearTimeout(hudTimer);
   
   const hudEnabled = state.settings?.app?.hudAutoHide !== false;
   const navEnabled = state.settings?.app?.navAutoHide !== false;
@@ -4054,9 +4178,9 @@ function resetHudTimer() {
     return;
   }
   
-  // No ocultar si estamos en medio de un recorte o si el ratón está sobre el HUD
+  // No ocultar si el ratón está sobre el HUD
   const isHovering = elementsToHide.some(item => item.el && item.el.matches(':hover'));
-  if (state.isCropping || isHovering) return;
+  if (isHovering) return;
 
   const delay = (state.settings && state.settings.app && state.settings.app.hudAutoHideDelay !== undefined)
     ? state.settings.app.hudAutoHideDelay
@@ -4394,3 +4518,16 @@ $('props-native-btn').addEventListener('click', () => {
 // ── INIT ──
 updateCounter();
 resetHudTimer();
+
+// Tell main process the first paint is ready (avoids white flash on win.show)
+if (isElectron && window.electronAPI && typeof window.electronAPI.uiReady === 'function') {
+  const notifyReady = () => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        try { window.electronAPI.uiReady(); } catch (_) { /* ignore */ }
+      });
+    });
+  };
+  if (document.readyState === 'complete') notifyReady();
+  else window.addEventListener('load', notifyReady, { once: true });
+}

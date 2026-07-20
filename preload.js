@@ -34,6 +34,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   validatePaths: (paths) => ipcRenderer.invoke('validate-paths', paths),
   showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),
   registerContextMenu: (enable, lang) => ipcRenderer.invoke('register-context-menu', enable, lang),
+  uiReady: () => ipcRenderer.send('ui-ready'),
 
   // Updates (electron-updater) — download/install always user-requested
   getUpdateInfo: () => ipcRenderer.invoke('update:get-info'),

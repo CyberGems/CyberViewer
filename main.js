@@ -204,6 +204,8 @@ function createWindow() {
     icon: path.join(__dirname, 'assets', 'icon.png'),
     frame: false,
     titleBarStyle: 'hidden',
+    // Win11 rounding needs Electron 34+; harmless/ignored on older Windows builds.
+    roundedCorners: true,
     show: false,
     webPreferences: {
       nodeIntegration: false,
@@ -214,6 +216,10 @@ function createWindow() {
       webSecurity: true
     }
   });
+
+  try {
+    win.setBackgroundColor('#080a0e');
+  } catch (_) { /* ignore */ }
 
   // Debounce persistence — move/resize fire often and mixed-DPI getBounds is noisy
   let persistTimer = null;
@@ -227,27 +233,36 @@ function createWindow() {
   win.on('move', schedulePersist);
   win.on('resize', schedulePersist);
 
-  const htmlPath = path.join(__dirname, 'CyberViewer.html');
-  const loadUrl = !app.isPackaged
-    ? pathToFileURL(htmlPath).href + '?v=' + Date.now()
-    : pathToFileURL(htmlPath).href;
-  win.loadURL(loadUrl);
+  let shown = false;
+  const revealWindow = () => {
+    if (shown || !win || win.isDestroyed()) return;
+    shown = true;
 
-  win.once('ready-to-show', () => {
     const isStartupLaunch = process.argv.includes('--startup');
     const shouldStartMinimized = settings.app.autoStart && isStartupLaunch;
 
-    // DPI workaround: park on target display origin, then apply clamped bounds
+    if (shouldStartMinimized) {
+      if (!tray) createTray();
+      return;
+    }
+
+    // Last-resort flash mitigation: show at opacity 0, settle layout, then fade in
+    try { win.setOpacity(0); } catch (_) { /* ignore */ }
+
     try {
       const display = screen.getDisplayNearestPoint({ x: startup.x + 10, y: startup.y + 10 });
-      const origin = display.workArea || display.bounds;
-      win.setBounds({ x: origin.x, y: origin.y, width: startup.width, height: startup.height });
-      win.setBounds({
-        x: startup.x,
-        y: startup.y,
-        width: startup.width,
-        height: startup.height
-      });
+      const wa = display.workArea || display.bounds;
+      if (startMaximized) {
+        // Size to work area first (avoids maximize white flash), then maximize for OS state
+        win.setBounds({ x: wa.x, y: wa.y, width: wa.width, height: wa.height });
+      } else {
+        win.setBounds({
+          x: startup.x,
+          y: startup.y,
+          width: startup.width,
+          height: startup.height
+        });
+      }
     } catch (_) {
       win.setBounds({
         x: startup.x,
@@ -257,13 +272,38 @@ function createWindow() {
       });
     }
 
-    if (!shouldStartMinimized) {
-      if (startMaximized) win.maximize();
-      win.show();
-    } else if (!tray) {
-      createTray();
+    win.show();
+    if (startMaximized && !win.isMaximized()) {
+      try { win.maximize(); } catch (_) { /* ignore */ }
     }
+
+    const fadeIn = () => {
+      if (!win || win.isDestroyed()) return;
+      try { win.setOpacity(1); } catch (_) { /* ignore */ }
+    };
+    // Two ticks: let Chromium/DWM composite the dark frame before becoming visible
+    setTimeout(fadeIn, 32);
+  };
+
+  // Register before loadURL to avoid missing a fast ui-ready
+  const onUiReady = () => {
+    ipcMain.removeListener('ui-ready', onUiReady);
+    revealWindow();
+  };
+  ipcMain.on('ui-ready', onUiReady);
+  win.once('ready-to-show', () => {
+    // Fallback if renderer never acks
+    setTimeout(() => revealWindow(), 1500);
   });
+  win.on('closed', () => {
+    ipcMain.removeListener('ui-ready', onUiReady);
+  });
+
+  const htmlPath = path.join(__dirname, 'CyberViewer.html');
+  const loadUrl = !app.isPackaged
+    ? pathToFileURL(htmlPath).href + '?v=' + Date.now()
+    : pathToFileURL(htmlPath).href;
+  win.loadURL(loadUrl);
 
   win.on('close', (event) => {
     if (!isQuitting && loadSettings().app.closeToTray) {
@@ -450,7 +490,7 @@ ipcMain.handle('get-thumbnail', async (event, filePath) => {
   }
 });
 
-ipcMain.handle('save-image', async (event, { filePath, rotation, buffer, createCopy }) => {
+ipcMain.handle('save-image', async (event, { filePath, rotation, buffer, createCopy, copySuffix }) => {
   try {
     if (!filePath) return { success: false, error: 'Ruta no proporcionada' };
 
@@ -461,11 +501,12 @@ ipcMain.handle('save-image', async (event, { filePath, rotation, buffer, createC
       const dir = path.dirname(cleanPath);
       const ext = path.extname(cleanPath);
       const base = path.basename(cleanPath, ext);
-      let candidate = path.join(dir, `${base}_resized${ext}`);
+      const suffix = (typeof copySuffix === 'string' && copySuffix) ? copySuffix : '_resized';
+      let candidate = path.join(dir, `${base}${suffix}${ext}`);
       let counter = 1;
       while (fs.existsSync(candidate)) {
         counter++;
-        candidate = path.join(dir, `${base}_resized (${counter})${ext}`);
+        candidate = path.join(dir, `${base}${suffix} (${counter})${ext}`);
       }
       targetPath = candidate;
       pathAllowlist.allow(targetPath);
