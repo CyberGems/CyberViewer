@@ -25,7 +25,7 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci
 
       - name: Lint
         run: npm run lint
@@ -33,10 +33,13 @@ jobs:
       - name: Unit Tests
         run: npm test
 
+      # Build only — do NOT let electron-builder publish on tag.
+      # GitHub API blips (503) used to fail the whole job after artifacts were already built.
+      # softprops/action-gh-release uploads exe + latest.yml below (CyberFeeds pattern).
       - name: Compile and Package Electron App
         run: npm run build
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Upload Build Artifacts to Actions Run
         uses: actions/upload-artifact@v4
@@ -57,5 +60,6 @@ jobs:
             dist/*.blockmap
             dist/latest.yml
           generate_release_notes: true
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -7,8 +7,8 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win --x64",
-    "build:portable": "electron-builder --win portable --x64",
+    "build": "electron-builder --win --x64 --publish never",
+    "build:portable": "electron-builder --win portable --x64 --publish never",
     "test": "node --test test/**/*.test.js",
     "lint": "eslint main.js preload.js lib test"
   },
