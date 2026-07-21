@@ -1456,26 +1456,42 @@
     pointer-events: auto;
   }
 
-  /* Floating — fullscreen only: one compact row, never wraps */
+  /* Floating — fullscreen only: one compact row, no scrollbar */
   body.ghost-mode #kbd-hint {
     position: absolute;
     left: 50%;
     right: auto;
     bottom: 36px;
     width: max-content;
-    max-width: calc(100vw - 32px);
+    max-width: none;
     height: auto;
     transform: translateX(-50%);
     justify-content: center;
-    padding: 10px 12px;
+    gap: 6px;
+    padding: 8px 10px;
     background: rgba(8, 10, 14, 0.88);
     border: 1px solid rgba(var(--cyber-accent-rgb), 0.22);
     border-radius: 10px;
     backdrop-filter: blur(12px);
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45), 0 0 20px rgba(var(--cyber-accent-rgb), 0.08);
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: thin;
+    overflow: visible;
+  }
+  body.ghost-mode #kbd-hint .kbd-btn {
+    min-height: 34px;
+    padding: 6px 11px;
+    font-size: 10px;
+  }
+  body.ghost-mode #kbd-hint .kbd-btn.kbd-icon {
+    width: 34px;
+    min-width: 34px;
+  }
+  body.ghost-mode #kbd-hint .kbd-ico {
+    width: 13px;
+    height: 13px;
+    margin-right: 5px;
+  }
+  body.ghost-mode #kbd-hint .kbd-sep {
+    height: 18px;
   }
   body.ghost-mode #kbd-hint.hud-hidden,
   body.ghost-mode #kbd-hint.hud-hidden-fade {
@@ -1746,29 +1762,25 @@
   }
   .kbd-btn:active:not(:disabled):not(.is-disabled) { transform: translateY(0); }
 
-  /* Save sits in the same row; collapses when inactive so rotate icons stay aligned */
+  /*
+   * Save always reserves its slot (no layout shift under the cursor).
+   * Inactive: invisible but same box size as active.
+   */
   #kbd-hint .save-btn {
     border-color: var(--cyber-accent2);
     color: var(--cyber-accent2);
-    max-width: 0;
-    min-width: 0;
-    padding-left: 0;
-    padding-right: 0;
-    margin: 0;
+    min-width: 5.75rem;
+    padding-left: 12px;
+    padding-right: 12px;
     opacity: 0;
-    overflow: hidden;
+    visibility: hidden;
     pointer-events: none;
-    border-width: 0;
     box-shadow: none;
   }
   #kbd-hint .save-btn.active {
-    max-width: 120px;
-    min-width: auto;
-    padding-left: 14px;
-    padding-right: 14px;
     opacity: 1;
+    visibility: visible;
     pointer-events: auto;
-    border-width: 1px;
     box-shadow: 0 0 12px rgba(255, 45, 120, 0.2);
   }
   #kbd-hint .save-btn.active:hover:not(:disabled):not(.is-disabled) {
@@ -1776,6 +1788,16 @@
     color: #fff;
     border-color: var(--cyber-accent2);
     box-shadow: 0 0 22px rgba(255, 45, 120, 0.45);
+  }
+
+  /* Kill stuck CSS tooltips after minimize / blur until next real hover path */
+  body.suppress-tooltips .cyber-tooltip::after,
+  body.suppress-tooltips .cyber-tooltip::before,
+  body.suppress-tooltips .cyber-tooltip:hover::after,
+  body.suppress-tooltips .cyber-tooltip:hover::before {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    transition: none !important;
   }
   #kbd-hint #btn-trash:hover:not(:disabled):not(.is-disabled) {
     background: var(--cyber-accent2);

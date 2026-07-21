@@ -3366,11 +3366,41 @@ function applySettings() {
 // ── ELECTRON WINDOW CONTROLS ──
 
 
+/** Hide CSS :hover tooltips (e.g. stuck after minimize/restore). */
+function suppressTooltips() {
+  document.body.classList.add('suppress-tooltips');
+  // Blur focused chrome so :hover can clear on next interaction
+  const ae = document.activeElement;
+  if (ae && typeof ae.blur === 'function' && ae !== document.body) {
+    try { ae.blur(); } catch (_) { /* ignore */ }
+  }
+}
+function releaseTooltipsOnNextPointer() {
+  if (!document.body.classList.contains('suppress-tooltips')) return;
+  const unlock = () => {
+    document.body.classList.remove('suppress-tooltips');
+    window.removeEventListener('pointermove', unlock, true);
+    window.removeEventListener('pointerdown', unlock, true);
+  };
+  window.addEventListener('pointermove', unlock, true);
+  window.addEventListener('pointerdown', unlock, true);
+}
+
 if (isElectron) {
-  $('win-min').addEventListener('click', () => window.electronAPI.minimize());
+  $('win-min').addEventListener('click', () => {
+    suppressTooltips();
+    window.electronAPI.minimize();
+  });
   $('win-max').addEventListener('click', () => window.electronAPI.maximize());
   $('win-close').addEventListener('click', () => window.electronAPI.close());
   $('ghost-close').addEventListener('click', () => toggleFullscreen());
+
+  window.addEventListener('blur', suppressTooltips);
+  window.addEventListener('focus', releaseTooltipsOnNextPointer);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) suppressTooltips();
+    else releaseTooltipsOnNextPointer();
+  });
 
   // Classic Windows maximize / restore glyphs
   const WIN_MAX_ICO = '<svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="1"/></svg>';
@@ -3380,15 +3410,18 @@ if (isElectron) {
     const btn = $('win-max');
     const uiLang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
     const t = I18N[uiLang] || I18N.en;
+    // Avoid native title tooltips (they can stick after minimize/restore)
     if (winState === 'maximized') {
       btn.classList.add('maximized');
-      btn.title = t.menu_restore || 'Restore';
       btn.innerHTML = WIN_RESTORE_ICO;
+      setCyberTooltip(btn, t.menu_restore || 'Restore');
     } else {
       btn.classList.remove('maximized');
-      btn.title = t.maximize || 'Maximize';
       btn.innerHTML = WIN_MAX_ICO;
+      setCyberTooltip(btn, t.maximize || 'Maximize');
     }
+    suppressTooltips();
+    releaseTooltipsOnNextPointer();
   });
 
   window.electronAPI.onOpenFile(async path => {
