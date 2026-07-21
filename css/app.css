@@ -319,7 +319,22 @@
     transform: translateX(-50%) translateY(0) !important;
   }
 
-  /* Keep edge tooltips inside the window (e.g. close button) */
+  /* Keep edge tooltips inside the window (e.g. close button, toolbar end items) */
+  .cyber-tooltip.tooltip-align-right::after {
+    left: auto !important;
+    right: 0 !important;
+    transform: translateX(0) translateY(8px) !important;
+  }
+  .cyber-tooltip.tooltip-align-right::before {
+    left: auto !important;
+    right: 12px !important;
+    transform: translateX(0) translateY(8px) !important;
+  }
+  .cyber-tooltip.tooltip-align-right:hover::after,
+  .cyber-tooltip.tooltip-align-right:hover::before {
+    transform: translateX(0) translateY(0) !important;
+  }
+
   .cyber-tooltip.tooltip-bottom.tooltip-align-right::after {
     left: auto !important;
     right: 0 !important;

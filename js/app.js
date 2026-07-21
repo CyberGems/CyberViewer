@@ -376,6 +376,13 @@ function updateSidebarFolderHeader() {
   el.classList.add('tooltip-bottom');
 }
 
+function updateCenterBtnVisibility() {
+  const btn = $('btn-center');
+  if (!btn) return;
+  const count = (state.images || []).filter(im => im && !im.hidden).length;
+  btn.style.display = count > 1 ? '' : 'none';
+}
+
 function buildSidebar() {
   const container = $('sidebar-inner');
   if (!container) return;
@@ -435,6 +442,7 @@ function buildSidebar() {
   container.appendChild(fragment);
   updateNavVisibility();
   updateSidebarFolderHeader();
+  updateCenterBtnVisibility();
 }
 
 // ── CONTEXT MENU ──
@@ -2582,6 +2590,7 @@ function syncEmptyState() {
   });
 
   updateHUDStates();
+  updateCenterBtnVisibility();
 }
 
 // ── MOUSE / TOUCH ──
