@@ -849,7 +849,6 @@
   #sidebar-edge-rail {
     position: absolute;
     top: 0;
-    /* Stop at statusbar so hover glow never runs under the footer */
     bottom: 0;
     left: var(--panel-w);
     width: 1px;
@@ -861,7 +860,7 @@
     pointer-events: none;
     transition: background 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
   }
-  body.statusbar-visible #sidebar-edge-rail {
+  body.statusbar-visible:not(.empty-state):not(.ghost-mode) #sidebar-edge-rail {
     bottom: 36px;
   }
   body:not(.sidebar-open) #sidebar-edge-rail {
