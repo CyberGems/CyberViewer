@@ -1382,8 +1382,7 @@ function displayImage(url, w, h, direction) {
     state.panX = 0;
     state.panY = 0;
   } else { // 'fit'
-    const vw = viewerWrap.clientWidth - 24;
-    const vh = viewerWrap.clientHeight - 24;
+    const { vw, vh } = viewerFitSize();
     if (w && h) {
       state.zoom = Math.min(vw / w, vh / h);
     } else {
@@ -2307,9 +2306,27 @@ $('btn-confirm-resize').addEventListener('click', async () => {
 });
 
 // ── ZOOM & PAN ──
+/** Usable viewer size (excludes docked toolbar strip in window mode). */
+function viewerFitSize() {
+  const pad = 24;
+  // Prefer live canvas-layer box (CSS already insets bottom for docked chrome)
+  const layer = $('canvas-layer');
+  if (layer && layer.clientWidth > 40 && layer.clientHeight > 40) {
+    return {
+      vw: Math.max(1, layer.clientWidth - pad),
+      vh: Math.max(1, layer.clientHeight - pad)
+    };
+  }
+  const docked = !state.isGhost && state.images.length > 0 && !document.body.classList.contains('empty-state');
+  const dockH = docked ? 56 : 0;
+  return {
+    vw: Math.max(1, viewerWrap.clientWidth - pad),
+    vh: Math.max(1, viewerWrap.clientHeight - pad - dockH)
+  };
+}
+
 function fitToWindow(w, h) {
-  const vw = viewerWrap.clientWidth - 24;
-  const vh = viewerWrap.clientHeight - 24;
+  const { vw, vh } = viewerFitSize();
   if (!w || !h) { state.zoom = 1; return; }
   const scale = Math.min(vw / w, vh / h);
   state.zoom = scale;

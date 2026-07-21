@@ -534,15 +534,17 @@
     z-index: 100;
   }
   
+  /* Legacy (sidebar / unused stacks) */
   .control-group {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    flex-direction: row;
+    gap: 6px;
     align-items: center;
   }
   .rotate-row {
     display: flex;
-    gap: 4px;
+    gap: 6px;
+    align-items: center;
   }
 
   .top-btn.active {
@@ -1050,9 +1052,15 @@
   body.statusbar-visible:not(.ghost-mode):not(.empty-state) #viewer-wrap {
     margin-bottom: 36px;
   }
-  /* Docked tool strip height reserved in normal mode (not empty) */
+  /* Docked tool strip: keep image/canvas above the chrome (not under it) */
   body:not(.ghost-mode):not(.empty-state) #viewer-wrap {
-    padding-bottom: 58px;
+    --dock-h: 56px;
+  }
+  body:not(.ghost-mode):not(.empty-state) #canvas-layer,
+  body:not(.ghost-mode):not(.empty-state) #crop-overlay,
+  body:not(.ghost-mode):not(.empty-state) #drop-zone,
+  body:not(.ghost-mode):not(.empty-state) #drag-overlay {
+    bottom: var(--dock-h, 56px);
   }
 
   #viewer-wrap.dragging { cursor: grabbing; }
@@ -1412,13 +1420,14 @@
 
   /* ── TOOLBAR (kbd-hint) ──
      Normal window: docked chrome strip at bottom of viewer (not floating).
-     Fullscreen (ghost): floating glass bar with auto-hide.
+     Fullscreen (ghost): floating glass bar with auto-hide (single row).
      Empty state: hidden in window mode (CTA lives in drop-zone). */
   #kbd-hint {
     z-index: 1000;
     display: flex;
     align-items: center;
-    gap: 10px;
+    flex-wrap: nowrap;
+    gap: 8px;
     opacity: 1;
     transition: opacity 0.35s ease, transform 0.35s ease, background 0.25s ease;
     pointer-events: auto;
@@ -1432,12 +1441,11 @@
     bottom: 0;
     transform: none;
     width: 100%;
+    height: var(--dock-h, 56px);
     box-sizing: border-box;
     justify-content: center;
-    flex-wrap: wrap;
-    min-height: 58px;
-    padding: 8px 16px;
-    background: linear-gradient(180deg, rgba(11, 14, 20, 0.92) 0%, rgba(8, 10, 14, 0.98) 100%);
+    padding: 0 12px;
+    background: linear-gradient(180deg, rgba(11, 14, 20, 0.94) 0%, rgba(8, 10, 14, 0.99) 100%);
     border-top: 1px solid var(--cyber-border);
     backdrop-filter: blur(10px);
   }
@@ -1448,22 +1456,26 @@
     pointer-events: auto;
   }
 
-  /* Floating — fullscreen only */
+  /* Floating — fullscreen only: one compact row, never wraps */
   body.ghost-mode #kbd-hint {
     position: absolute;
     left: 50%;
     right: auto;
     bottom: 36px;
-    width: auto;
-    max-width: calc(100% - 48px);
+    width: max-content;
+    max-width: calc(100vw - 32px);
+    height: auto;
     transform: translateX(-50%);
     justify-content: center;
-    flex-wrap: wrap;
-    padding: 0;
-    background: transparent;
-    border: none;
-    backdrop-filter: none;
-    min-height: 0;
+    padding: 10px 12px;
+    background: rgba(8, 10, 14, 0.88);
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.22);
+    border-radius: 10px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45), 0 0 20px rgba(var(--cyber-accent-rgb), 0.08);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
   }
   body.ghost-mode #kbd-hint.hud-hidden,
   body.ghost-mode #kbd-hint.hud-hidden-fade {
@@ -1507,24 +1519,54 @@
     border: 1px solid var(--cyber-accent);
     border-radius: 4px;
     padding: 8px 14px;
+    min-height: 36px;
     font-family: var(--font-ui);
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 1px;
     color: var(--cyber-accent);
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease,
+      box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease, max-width 0.25s ease,
+      padding 0.2s ease, margin 0.2s ease;
     box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.1);
     -webkit-app-region: no-drag;
     outline: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    line-height: 1;
   }
   body:not(.ghost-mode) .kbd-btn {
     background: rgba(13, 17, 23, 0.95);
     box-shadow: none;
   }
+  /* Higher specificity than body:not(.ghost-mode) .kbd-btn so hover works when docked */
+  #kbd-hint .kbd-btn:hover:not(:disabled):not(.is-disabled) {
+    background: var(--cyber-accent);
+    color: var(--cyber-black);
+    border-color: var(--cyber-accent);
+    box-shadow: 0 0 18px rgba(var(--cyber-accent-rgb), 0.45);
+    transform: translateY(-1px);
+  }
+  #kbd-hint .kbd-btn:active:not(:disabled):not(.is-disabled) {
+    transform: translateY(0);
+  }
+  #kbd-hint .kbd-btn.active:hover:not(:disabled):not(.is-disabled) {
+    background: var(--cyber-accent3);
+    color: var(--cyber-black);
+    border-color: var(--cyber-accent3);
+  }
   .kbd-btn:focus,
   .kbd-btn:focus-visible {
     outline: none;
+  }
+  .kbd-btn.kbd-icon {
+    width: 36px;
+    min-width: 36px;
+    padding: 0;
+    font-size: 15px;
   }
   .kbd-btn:disabled,
   .kbd-btn.is-disabled {
@@ -1541,6 +1583,7 @@
     border-color: var(--cyber-border);
     color: var(--cyber-muted);
     box-shadow: none;
+    transform: none;
   }
   .kbd-ico {
     width: 14px;
@@ -1551,10 +1594,10 @@
   }
   .kbd-sep {
     width: 1px;
-    height: 28px;
-    background: var(--cyber-border);
-    opacity: 0.7;
+    height: 22px;
+    background: rgba(var(--cyber-accent-rgb), 0.28);
     flex-shrink: 0;
+    align-self: center;
   }
 
   /* ── EMPTY STATE chrome ── */
@@ -1694,34 +1737,51 @@
     background: rgba(var(--cyber-accent2-rgb), 0.16) !important;
     box-shadow: 0 0 12px rgba(var(--cyber-accent2-rgb), 0.35) !important;
   }
-  .kbd-btn:hover {
+  /* Generic kbd-btn hover (sidebar, etc.) — toolbar uses #kbd-hint rules above */
+  .kbd-btn:hover:not(:disabled):not(.is-disabled) {
     background: var(--cyber-accent);
     color: var(--cyber-black);
     box-shadow: 0 0 20px rgba(var(--cyber-accent-rgb), 0.4);
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
-  .kbd-btn:active { transform: translateY(0); }
-  .kbd-sep { width: 1px; height: 20px; background: rgba(var(--cyber-accent-rgb), 0.3); align-self: center; }
-  
-  .save-btn {
+  .kbd-btn:active:not(:disabled):not(.is-disabled) { transform: translateY(0); }
+
+  /* Save sits in the same row; collapses when inactive so rotate icons stay aligned */
+  #kbd-hint .save-btn {
     border-color: var(--cyber-accent2);
     color: var(--cyber-accent2);
-    box-shadow: 0 0 15px rgba(255, 45, 120, 0.2);
-    /* ARMADURA DE POSICIÓN: Siempre ocupa espacio */
-    visibility: hidden;
+    max-width: 0;
+    min-width: 0;
+    padding-left: 0;
+    padding-right: 0;
+    margin: 0;
     opacity: 0;
+    overflow: hidden;
     pointer-events: none;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    border-width: 0;
+    box-shadow: none;
   }
-  .save-btn.active {
-    visibility: visible;
+  #kbd-hint .save-btn.active {
+    max-width: 120px;
+    min-width: auto;
+    padding-left: 14px;
+    padding-right: 14px;
     opacity: 1;
     pointer-events: auto;
+    border-width: 1px;
+    box-shadow: 0 0 12px rgba(255, 45, 120, 0.2);
   }
-  .save-btn:hover {
+  #kbd-hint .save-btn.active:hover:not(:disabled):not(.is-disabled) {
     background: var(--cyber-accent2);
-    color: white;
-    box-shadow: 0 0 25px rgba(255, 45, 120, 0.5);
+    color: #fff;
+    border-color: var(--cyber-accent2);
+    box-shadow: 0 0 22px rgba(255, 45, 120, 0.45);
+  }
+  #kbd-hint #btn-trash:hover:not(:disabled):not(.is-disabled) {
+    background: var(--cyber-accent2);
+    color: #fff;
+    border-color: var(--cyber-accent2);
+    box-shadow: 0 0 18px rgba(var(--cyber-accent2-rgb), 0.45);
   }
 
   .kbd-key {
