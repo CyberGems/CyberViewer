@@ -243,8 +243,10 @@
   body:not(.ghost-mode) #zoom-hud {
     display: none !important;
   }
+  /* Stack under exit (X): 16 + 32 + 8 gap = 56 */
   body.ghost-mode #zoom-hud {
-    top: 120px;
+    top: 56px;
+    right: 20px;
   }
 
   /* ── CYBER STATUSBAR TOOLTIPS ── */
@@ -741,8 +743,9 @@
   
   #ghost-close {
     position: fixed;
-    top: 76px;
-    right: 32px;
+    /* True fullscreen has no title bar — keep controls near the top-right edge */
+    top: 16px;
+    right: 20px;
     width: 32px;
     height: 32px;
     background: rgba(13, 17, 23, 0.85);
@@ -1528,15 +1531,17 @@
     flex-shrink: 0;
   }
 
-  /* ── ZOOM HUD ── */
+  /* ── ZOOM HUD (fullscreen floating; auto-hide synced with other HUD) ── */
   #zoom-hud {
     position: absolute;
     top: 12px;
-    right: 32px;
+    right: 20px;
     z-index: 6;
+    min-height: 32px;
+    box-sizing: border-box;
     background: rgba(13,17,23,0.9);
     border: 1px solid var(--cyber-border);
-    border-radius: 3px;
+    border-radius: 4px;
     padding: 6px 10px;
     font-family: var(--font-ui);
     font-weight: 700;
@@ -1546,13 +1551,17 @@
     color: var(--cyber-accent);
     pointer-events: none;
     opacity: 0;
-    transition: opacity 300ms ease;
+    transition: opacity 0.4s ease;
     display: flex;
     align-items: center;
     gap: 6px;
   }
 
   #zoom-hud.visible { opacity: 1; }
+  /* Same fade used by ghost-close / nav when HUD auto-hides */
+  #zoom-hud.hud-hidden-fade {
+    opacity: 0 !important;
+  }
 
   #radar-wrapper {
     display: flex;

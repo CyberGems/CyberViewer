@@ -2416,15 +2416,18 @@ function updateZoomHUD() {
   $('zoom-pct').textContent = pct + '%';
   const slider = $('zoom-slider');
   if (slider) slider.value = zoomToSlider(state.zoom);
-  // Floating HUD only in fullscreen; statusbar zoom-% always updates
+  // Floating zoom badge only in fullscreen; statusbar zoom-% always updates
+  if (!zoomHud) return;
   if (!state.isGhost) {
-    zoomHud.classList.remove('visible');
+    zoomHud.classList.remove('visible', 'hud-hidden-fade');
     clearTimeout(state.zoomTimer);
     return;
   }
+  // Show with the rest of the floating HUD and share the same auto-hide timer
   zoomHud.classList.add('visible');
+  zoomHud.classList.remove('hud-hidden-fade');
   clearTimeout(state.zoomTimer);
-  state.zoomTimer = setTimeout(() => zoomHud.classList.remove('visible'), 1200);
+  if (typeof resetHudTimer === 'function') resetHudTimer();
 }
 
 $('zoom-slider').addEventListener('input', (e) => {
@@ -3250,35 +3253,81 @@ if (sidebarHandleEl) {
   });
 }
 
-// ── FULLSCREEN ──
-function toggleFullscreen() {
+// ── FULLSCREEN (OS exclusive + immersive ghost UI) ──
+/**
+ * Apply immersive UI (hide chrome, floating HUD). Internal name remains ghost-mode
+ * for CSS compatibility; user-facing label is Fullscreen.
+ * @param {boolean} on
+ * @param {{ skipOs?: boolean }} [opts]
+ */
+function applyImmersiveFullscreen(on, opts = {}) {
+  const want = !!on;
+  if (state.isGhost === want) {
+    // Still reflow image if size may have changed (e.g. OS fullscreen settled)
+    scheduleFullscreenRefit();
+    return;
+  }
+
   document.body.classList.add('no-hud-transition');
-  
-  state.isGhost = !state.isGhost;
-  if (state.isGhost) state.isCropping = false; // AISLAMIENTO TOTAL
-  document.body.classList.toggle('ghost-mode', state.isGhost);
+  state.isGhost = want;
+  if (want) state.isCropping = false; // AISLAMIENTO TOTAL
+  document.body.classList.toggle('ghost-mode', want);
   updateHUDStates();
-  resetHudTimer();
-  
+  if (typeof resetHudTimer === 'function') resetHudTimer();
+
   // Forzar reflow para aplicar los cambios de layout instantáneamente sin animación
   document.body.offsetHeight;
-  
+
+  scheduleFullscreenRefit();
+
+  // OS exclusive fullscreen (Electron) or Fullscreen API (browser fallback)
+  if (!opts.skipOs) {
+    if (isElectron && window.electronAPI && typeof window.electronAPI.setFullScreen === 'function') {
+      window.electronAPI.setFullScreen(want).catch((err) => {
+        console.error('setFullScreen failed:', err);
+      });
+    } else if (typeof document !== 'undefined') {
+      try {
+        if (want) {
+          const el = document.documentElement;
+          if (el && el.requestFullscreen && !document.fullscreenElement) {
+            el.requestFullscreen().catch(() => { /* ignore */ });
+          }
+        } else if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => { /* ignore */ });
+        }
+      } catch (_) { /* ignore */ }
+    }
+  }
+}
+
+function scheduleFullscreenRefit() {
   setTimeout(() => {
     document.body.classList.remove('no-hud-transition');
     const im = state.images[state.current];
-    if (im) {
-      if (state.viewMode === 'original') {
-        state.zoom = 1;
-        state.panX = 0;
-        state.panY = 0;
-        applyTransform(false);
-      } else if (state.viewMode === 'fit') {
-        fitToWindow(im.w, im.h);
-      } else {
-        applyTransform(false);
-      }
+    if (!im) return;
+    if (state.viewMode === 'original') {
+      state.zoom = 1;
+      state.panX = 0;
+      state.panY = 0;
+      applyTransform(false);
+    } else if (state.viewMode === 'fit') {
+      fitToWindow(im.w, im.h);
+    } else {
+      applyTransform(false);
     }
   }, 100);
+}
+
+function toggleFullscreen() {
+  applyImmersiveFullscreen(!state.isGhost);
+}
+
+// Browser / non-Electron: keep UI in sync with Fullscreen API
+if (typeof document !== 'undefined' && !isElectron) {
+  document.addEventListener('fullscreenchange', () => {
+    applyImmersiveFullscreen(!!document.fullscreenElement, { skipOs: true });
+  });
 }
 
 // ── DRAG & DROP ──
@@ -3611,6 +3660,14 @@ if (isElectron) {
     suppressTooltips();
     releaseTooltipsOnNextPointer();
   });
+
+  // Keep immersive UI in sync if OS fullscreen ends/starts externally
+  if (typeof window.electronAPI.onFullscreenChanged === 'function') {
+    window.electronAPI.onFullscreenChanged((isFs) => {
+      // skipOs: main already changed exclusive fullscreen state
+      applyImmersiveFullscreen(isFs, { skipOs: true });
+    });
+  }
 
   window.electronAPI.onOpenFile(async path => {
     // 1. Escanear la carpeta para obtener vecinos
@@ -4106,6 +4163,7 @@ const elementsToHide = [
   { el: $('statusbar'), hideClass: 'hud-hidden-bottom', ghostOnly: false },
   { el: $('kbd-hint'), hideClass: 'hud-hidden', ghostOnly: true },
   { el: $('ghost-close'), hideClass: 'hud-hidden-fade', ghostOnly: true },
+  { el: $('zoom-hud'), hideClass: 'hud-hidden-fade', ghostOnly: true },
   { el: $('viewer-filename'), hideClass: 'hud-hidden-fade', ghostOnly: false },
   { el: $('nav-container'), hideClass: 'hud-hidden-fade', ghostOnly: false }
 ];
@@ -4121,6 +4179,8 @@ function resetHudTimer() {
     if (kbd && state.isGhost) kbd.classList.add('hud-hidden');
     const nav = $('nav-container');
     if (nav) nav.classList.add('hud-hidden-fade');
+    const zh = $('zoom-hud');
+    if (zh && state.isGhost) zh.classList.add('hud-hidden-fade');
     return;
   }
 
@@ -4130,6 +4190,10 @@ function resetHudTimer() {
     // Ensure docked toolbar never stays hidden after leaving fullscreen
     if (item.el.id === 'kbd-hint' && !state.isGhost) {
       item.el.classList.remove('hud-hidden', 'hud-hidden-fade');
+    }
+    // Zoom badge only reappears after a zoom gesture (class "visible"), not on every mouse move
+    if (item.el.id === 'zoom-hud' && !item.el.classList.contains('visible')) {
+      item.el.classList.add('hud-hidden-fade');
     }
   });
 
@@ -4163,6 +4227,10 @@ function resetHudTimer() {
       const isTopbarOrStatusbar = (item.el.id === 'topbar' || item.el.id === 'statusbar');
       if (isTopbarOrStatusbar && !state.isGhost) return;
       item.el.classList.add(item.hideClass);
+      // Clear sticky "visible" so mouse-move doesn't flash zoom again until next zoom
+      if (item.el.id === 'zoom-hud') {
+        item.el.classList.remove('visible');
+      }
     });
   }, delay);
 }

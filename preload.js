@@ -6,7 +6,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   minimize: () => ipcRenderer.send('win-minimize'),
   maximize: () => ipcRenderer.send('win-maximize'),
   close: () => ipcRenderer.send('win-close'),
+  setFullScreen: (flag) => ipcRenderer.invoke('win-set-fullscreen', !!flag),
+  isFullScreen: () => ipcRenderer.invoke('win-is-fullscreen'),
   onWinState: (cb) => ipcRenderer.on('win-state', (_, state) => cb(state)),
+  onFullscreenChanged: (cb) => {
+    const handler = (_, isFs) => cb(!!isFs);
+    ipcRenderer.on('fullscreen-changed', handler);
+    return () => ipcRenderer.removeListener('fullscreen-changed', handler);
+  },
 
   getSettings: () => ipcRenderer.invoke('get-settings'),
   getVersion: () => ipcRenderer.invoke('get-version'),

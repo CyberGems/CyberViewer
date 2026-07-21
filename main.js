@@ -190,6 +190,9 @@ function resolveStartupBounds(settings) {
 function persistWindowState() {
   if (!win || win.isDestroyed()) return;
   try {
+    // Do not persist exclusive-fullscreen metrics as normal window bounds
+    if (typeof win.isFullScreen === 'function' && win.isFullScreen()) return;
+
     const isMax = win.isMaximized();
     // Live bounds identify the monitor even while maximized
     const live = win.getBounds();
@@ -270,7 +273,10 @@ function createWindow() {
     if (persistTimer) clearTimeout(persistTimer);
     persistTimer = setTimeout(() => {
       persistTimer = null;
-      if (!win.isMaximized()) persistWindowState();
+      if (!win || win.isDestroyed()) return;
+      if (win.isMaximized()) return;
+      if (typeof win.isFullScreen === 'function' && win.isFullScreen()) return;
+      persistWindowState();
     }, 400);
   };
   win.on('move', schedulePersist);
@@ -379,10 +385,13 @@ function createWindow() {
     persistWindowState();
   });
   win.on('unmaximize', () => {
+    // Ignore transient unmaximize while entering exclusive fullscreen
+    if (typeof win.isFullScreen === 'function' && win.isFullScreen()) return;
     win.webContents.send('win-state', 'normal');
     // Re-clamp after unmaximize — Windows/DPI often restores oversized bounds
     setTimeout(() => {
       if (!win || win.isDestroyed() || win.isMaximized()) return;
+      if (typeof win.isFullScreen === 'function' && win.isFullScreen()) return;
       try {
         const raw = win.getBounds();
         const clamped = clampWindowBounds(raw, {
@@ -401,6 +410,21 @@ function createWindow() {
       } catch (_) { /* ignore */ }
       persistWindowState();
     }, 0);
+  });
+
+  // OS exclusive fullscreen ↔ renderer immersive (ghost) UI
+  win.on('enter-full-screen', () => {
+    if (!win || win.isDestroyed()) return;
+    win.webContents.send('fullscreen-changed', true);
+  });
+  win.on('leave-full-screen', () => {
+    if (!win || win.isDestroyed()) return;
+    win.webContents.send('fullscreen-changed', false);
+    // Restore maximize glyph after exclusive fullscreen ends
+    try {
+      win.webContents.send('win-state', win.isMaximized() ? 'maximized' : 'normal');
+    } catch (_) { /* ignore */ }
+    persistWindowState();
   });
 
   win.webContents.setWindowOpenHandler(({ url }) => {
@@ -471,12 +495,42 @@ function createTray() {
 
 // ── IPC ──
 ipcMain.on('win-minimize', () => win.minimize());
-ipcMain.on('win-maximize', () => (win.isMaximized() ? win.unmaximize() : win.maximize()));
+ipcMain.on('win-maximize', () => {
+  if (!win || win.isDestroyed()) return;
+  // Leave exclusive fullscreen before toggle maximize/restore
+  if (typeof win.isFullScreen === 'function' && win.isFullScreen()) {
+    win.setFullScreen(false);
+  }
+  if (win.isMaximized()) win.unmaximize();
+  else win.maximize();
+});
 ipcMain.on('win-close', () => win.close());
 ipcMain.on('win-devtools', () => {
   // DevTools only outside packaged builds
   if (!app.isPackaged && win && !win.isDestroyed()) {
     win.webContents.openDevTools();
+  }
+});
+
+ipcMain.handle('win-set-fullscreen', (event, flag) => {
+  if (!win || win.isDestroyed()) return false;
+  const want = !!flag;
+  try {
+    if (win.isFullScreen() === want) return want;
+    win.setFullScreen(want);
+    return win.isFullScreen();
+  } catch (e) {
+    console.error('setFullScreen failed:', e);
+    return false;
+  }
+});
+
+ipcMain.handle('win-is-fullscreen', () => {
+  if (!win || win.isDestroyed()) return false;
+  try {
+    return !!win.isFullScreen();
+  } catch (_) {
+    return false;
   }
 });
 
