@@ -844,16 +844,17 @@
   
   /*
    * Sidebar edge control:
-   * - Hit area wide enough for the pill (overflow visible — never clip the arrow).
-   * - Thin rail via ::before (discrete idle; accent only on hover).
-   * - Open: full panel height. Closed: stop above full-width statusbar.
+   * - Same height always (top→bottom of #main); no open/closed height jump.
+   * - Full-height rail (::before) behind the pill; pill paints on top.
+   * - Discrete idle rail; accent only on hover.
    */
   #sidebar-handle {
     position: absolute;
     top: 0;
     bottom: 0;
     left: var(--panel-w);
-    width: 22px;
+    width: 24px;
+    height: auto;
     z-index: 35;
     background: transparent;
     border: none;
@@ -861,12 +862,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: width 0.2s ease;
+    transition: left 0.15s ease;
     user-select: none;
     overflow: visible;
     -webkit-app-region: no-drag;
   }
-  /* Thin vertical rail (idle = panel border tone, not neon) */
+  /* Full-height rail — always top/bottom of the handle (same in open & closed) */
   #sidebar-handle::before {
     content: '';
     position: absolute;
@@ -874,61 +875,56 @@
     bottom: 0;
     left: 0;
     width: 2px;
-    background: rgba(48, 64, 88, 0.85);
+    height: 100%;
+    background: rgba(48, 64, 88, 0.9);
     border-radius: 1px;
-    transition: width 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    z-index: 0;
+    transition: width 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
     pointer-events: none;
   }
   body.sidebar-open #sidebar-handle {
     left: var(--panel-w);
-    bottom: 0;
   }
   body:not(.sidebar-open) #sidebar-handle {
     left: 0;
-    width: 28px; /* room for pill when panel is closed */
-  }
-  body:not(.sidebar-open).statusbar-visible #sidebar-handle {
-    bottom: 36px;
-  }
-  body:not(.sidebar-open):not(.statusbar-visible) #sidebar-handle {
-    bottom: 0;
+    width: 28px;
   }
   #sidebar-handle:hover::before {
     width: 3px;
     background: var(--cyber-accent);
     box-shadow:
-      0 0 10px rgba(var(--cyber-accent-rgb), 0.45),
-      -4px 0 12px rgba(var(--cyber-accent-rgb), 0.25);
+      0 0 8px rgba(var(--cyber-accent-rgb), 0.5),
+      -3px 0 10px rgba(var(--cyber-accent-rgb), 0.22);
   }
+  /* Pill sits above the rail so the glow never covers the control */
   #sidebar-handle-arrow {
     position: relative;
-    z-index: 1;
+    z-index: 2;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 24px;
     height: 42px;
-    background: linear-gradient(180deg, #1a2230 0%, #10161f 100%);
-    border: 1px solid rgba(var(--cyber-accent-rgb), 0.5);
+    background: #121820;
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.55);
     border-radius: 11px;
     font-size: 12px;
     color: var(--cyber-accent);
     box-shadow:
-      0 2px 10px rgba(0, 0, 0, 0.7),
-      0 0 12px rgba(var(--cyber-accent-rgb), 0.28),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, background 0.2s ease;
+      0 2px 10px rgba(0, 0, 0, 0.75),
+      0 0 10px rgba(var(--cyber-accent-rgb), 0.25);
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, color 0.18s ease, background 0.18s ease;
     flex-shrink: 0;
-    pointer-events: none; /* clicks go to #sidebar-handle */
+    pointer-events: none;
   }
   #sidebar-handle:hover #sidebar-handle-arrow {
-    background: linear-gradient(180deg, #121a26 0%, #0a0e16 100%);
+    background: #0a1018;
     border-color: var(--cyber-accent);
     color: #e8fbff;
     box-shadow:
-      0 0 18px rgba(var(--cyber-accent-rgb), 0.55),
-      0 2px 10px rgba(0, 0, 0, 0.75);
-    transform: scale(1.06);
+      0 0 16px rgba(var(--cyber-accent-rgb), 0.5),
+      0 2px 10px rgba(0, 0, 0, 0.8);
+    transform: scale(1.05);
   }
 
   #sidebar-scroll {
