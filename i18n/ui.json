@@ -222,7 +222,7 @@
     "discard_title": "Discard changes",
     "toast_changes_discarded": "CHANGES DISCARDED",
     "sidebar_show_tip": "Show folder images and enable scan",
-    "sidebar_hide_tip": "Hide sidebar"
+    "sidebar_hide_tip": "Hide panel and pause scan"
   },
   "es": {
     "no_images": "— sin imágenes —",
@@ -446,7 +446,7 @@
     "status_ready": "Listo",
     "discard_title": "Descartar cambios",
     "toast_changes_discarded": "CAMBIOS DESCARTADOS",
-    "sidebar_show_tip": "Mostrar imágenes en carpeta y activar scan",
-    "sidebar_hide_tip": "Ocultar panel lateral"
+    "sidebar_show_tip": "Mostrar imágenes en carpeta y activar escaneo",
+    "sidebar_hide_tip": "Ocultar panel y pausar escaneo"
   }
 }
