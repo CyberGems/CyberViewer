@@ -846,7 +846,8 @@
     bottom: 0;
     left: var(--panel-w);
     width: 8px;
-    z-index: 999;
+    /* Below viewer chrome (toolbar) so hover glow never covers lower bars */
+    z-index: 15;
     background: rgba(var(--cyber-accent-rgb), 0.18);
     cursor: pointer;
     display: flex;
@@ -855,10 +856,20 @@
     transition: background 0.2s ease, box-shadow 0.2s ease, width 0.2s ease;
     user-select: none;
   }
+  /* Stop handle short of docked toolbar + statusbar so hover cannot bleed over them */
+  body:not(.ghost-mode):not(.empty-state) #sidebar-handle {
+    bottom: calc(var(--dock-h, 56px) + 36px);
+  }
+  body:not(.ghost-mode):not(.empty-state):not(.statusbar-visible) #sidebar-handle {
+    bottom: var(--dock-h, 56px);
+  }
+  body:not(.ghost-mode).empty-state #sidebar-handle {
+    bottom: 0;
+  }
   #sidebar-handle:hover {
     width: 10px;
     background: var(--cyber-accent);
-    box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.55);
+    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.4);
   }
   #sidebar-handle-arrow {
     display: flex;
@@ -959,7 +970,7 @@
     letter-spacing: 0.35px;
   }
 
-  /* Tooltips above bottom sidebar buttons — fit panel width */
+  /* Tooltips above bottom sidebar buttons — keep inside panel, never over lower chrome */
   #sidebar-controls .cyber-tooltip::after {
     bottom: calc(100% + 8px);
     left: 0;
@@ -973,11 +984,13 @@
     line-height: 1.35;
     letter-spacing: 0.2px;
     padding: 5px 6px;
+    z-index: 40;
   }
   #sidebar-controls .cyber-tooltip::before {
     bottom: calc(100% + 2px);
     left: 50%;
     transform: translateX(-50%) translateY(6px) !important;
+    z-index: 40;
   }
   #sidebar-controls .cyber-tooltip:hover::after {
     transform: translateY(0) !important;
@@ -1043,6 +1056,7 @@
   #viewer-wrap {
     flex: 1;
     position: relative;
+    z-index: 20; /* above sidebar (10) and handle (15) so chrome stays on top */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1055,7 +1069,11 @@
   }
   /* Docked tool strip: keep image/canvas above the chrome (not under it) */
   body:not(.ghost-mode):not(.empty-state) #viewer-wrap {
-    --dock-h: 56px;
+    --dock-h: 60px;
+  }
+  /* CSS var also on body so sidebar-handle can read the same dock height */
+  body:not(.ghost-mode):not(.empty-state) {
+    --dock-h: 60px;
   }
   body:not(.ghost-mode):not(.empty-state) #canvas-layer,
   body:not(.ghost-mode):not(.empty-state) #crop-overlay,
@@ -1428,7 +1446,7 @@
     display: flex;
     align-items: center;
     flex-wrap: nowrap;
-    gap: 8px;
+    gap: 12px;
     opacity: 1;
     transition: opacity 0.35s ease, transform 0.35s ease, background 0.25s ease;
     pointer-events: auto;
@@ -1442,11 +1460,12 @@
     bottom: 0;
     transform: none;
     width: 100%;
-    height: var(--dock-h, 56px);
+    height: var(--dock-h, 60px);
     box-sizing: border-box;
     justify-content: center;
-    padding: 0 12px;
-    background: linear-gradient(180deg, rgba(11, 14, 20, 0.94) 0%, rgba(8, 10, 14, 0.99) 100%);
+    padding: 0 20px;
+    gap: 14px;
+    background: linear-gradient(180deg, rgba(11, 14, 20, 0.96) 0%, rgba(8, 10, 14, 0.99) 100%);
     border-top: 1px solid var(--cyber-border);
     backdrop-filter: blur(10px);
   }
@@ -1468,8 +1487,8 @@
     height: auto;
     transform: translateX(-50%);
     justify-content: center;
-    gap: 6px;
-    padding: 8px 10px;
+    gap: 10px;
+    padding: 10px 14px;
     background: rgba(8, 10, 14, 0.88);
     border: 1px solid rgba(var(--cyber-accent-rgb), 0.22);
     border-radius: 10px;
@@ -1478,13 +1497,13 @@
     overflow: visible;
   }
   body.ghost-mode #kbd-hint .kbd-btn {
-    min-height: 34px;
-    padding: 6px 11px;
+    min-height: 36px;
+    padding: 6px 12px;
     font-size: 10px;
   }
   body.ghost-mode #kbd-hint .kbd-btn.kbd-icon {
-    width: 34px;
-    min-width: 34px;
+    width: 36px;
+    min-width: 36px;
   }
   body.ghost-mode #kbd-hint .kbd-ico {
     width: 13px;
@@ -1630,6 +1649,15 @@
     background: rgba(var(--cyber-accent-rgb), 0.28);
     flex-shrink: 0;
     align-self: center;
+    margin: 0 4px;
+  }
+  body:not(.ghost-mode) #kbd-hint .kbd-btn.kbd-icon {
+    width: 38px;
+    min-width: 38px;
+  }
+  body:not(.ghost-mode) #kbd-hint .kbd-btn:not(.kbd-icon) {
+    padding-left: 16px;
+    padding-right: 16px;
   }
 
   /* ── EMPTY STATE chrome ── */
@@ -1783,7 +1811,7 @@
     position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     flex-shrink: 0;
   }
 
