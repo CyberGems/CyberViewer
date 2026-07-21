@@ -2970,16 +2970,23 @@ function insertPastedImage(blob, mime = 'image/png') {
 
   dropZone.style.display = 'none';
 
-  if (!state.images.length) {
-    state.images = [im];
-    buildSidebar();
-    showImage(0, null, true);
-  } else {
-    const insertAt = state.current >= 0 ? state.current + 1 : state.images.length;
-    state.images.splice(insertAt, 0, im);
-    buildSidebar();
-    showImage(insertAt, null, true);
+  // Revoke previously un-saved paste blob URLs to prevent memory leaks
+  if (Array.isArray(state.images)) {
+    state.images.forEach(prev => {
+      if (prev && prev.fromClipboard && prev.url && String(prev.url).startsWith('blob:')) {
+        try { URL.revokeObjectURL(prev.url); } catch (_) { /* ignore */ }
+      }
+    });
   }
+
+  // Clear previous folder image list and isolate the pasted image session
+  state.images = [im];
+  state.current = 0;
+  state.currentIdx = 0;
+  state.showingFavs = false;
+  buildSidebar();
+  showImage(0, null, true);
+
   updateSaveButton();
   syncEmptyState();
 }
