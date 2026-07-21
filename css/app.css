@@ -1197,11 +1197,66 @@
     opacity: 0;
     visibility: hidden;
     transition: opacity 200ms ease, visibility 200ms ease;
+    /* Solid fallback when alpha grid is off */
+    background-color: transparent;
   }
 
   #main-img.loaded {
     opacity: 1;
     visibility: visible;
+  }
+
+  /* ── Alpha / transparency backgrounds (show through transparent pixels) ── */
+  :root {
+    --alpha-cell: 14px;
+    --alpha-dark-a: #1a2230;
+    --alpha-dark-b: #0f141c;
+    --alpha-light-a: #d8dde6;
+    --alpha-light-b: #f2f4f8;
+  }
+
+  body[data-alpha-bg="checker-dark"] #main-img {
+    background-color: var(--alpha-dark-a);
+    background-image: repeating-conic-gradient(
+      var(--alpha-dark-a) 0% 25%,
+      var(--alpha-dark-b) 0% 50%
+    );
+    background-size: var(--alpha-cell) var(--alpha-cell);
+    /* Softer frame so the grid defines the canvas, not a black glow */
+    box-shadow:
+      0 0 0 1px rgba(var(--cyber-accent-rgb), 0.22),
+      0 8px 28px rgba(0, 0, 0, 0.45);
+  }
+
+  body[data-alpha-bg="checker-light"] #main-img {
+    background-color: var(--alpha-light-b);
+    background-image: repeating-conic-gradient(
+      var(--alpha-light-a) 0% 25%,
+      var(--alpha-light-b) 0% 50%
+    );
+    background-size: var(--alpha-cell) var(--alpha-cell);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.18),
+      0 8px 28px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Thumbnails: same grid so transparent previews are readable */
+  body[data-alpha-bg="checker-dark"] .thumb-item img {
+    background-color: var(--alpha-dark-a);
+    background-image: repeating-conic-gradient(
+      var(--alpha-dark-a) 0% 25%,
+      var(--alpha-dark-b) 0% 50%
+    );
+    background-size: 10px 10px;
+  }
+
+  body[data-alpha-bg="checker-light"] .thumb-item img {
+    background-color: var(--alpha-light-b);
+    background-image: repeating-conic-gradient(
+      var(--alpha-light-a) 0% 25%,
+      var(--alpha-light-b) 0% 50%
+    );
+    background-size: 10px 10px;
   }
 
   /* transition classes */

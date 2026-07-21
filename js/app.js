@@ -78,7 +78,9 @@ const state = {
       language: 'en',
       favorites: [],
       showTopHints: true,
-      checkUpdatesOnStartup: true
+      checkUpdatesOnStartup: true,
+      // Transparency grid behind alpha pixels: checker-dark | checker-light | solid
+      alphaBackground: 'checker-dark'
     } 
   },
 };
@@ -3391,6 +3393,8 @@ function openConfig() {
   $('cfg-hud-delay-val').textContent = (s.hudAutoHideDelay / 1000).toFixed(1) + 's';
   $('cfg-hud-delay').disabled = !s.hudAutoHide;
   $('cfg-hud-delay-row').style.opacity = s.hudAutoHide ? '1' : '0.5';
+  const alphaBg = normalizeAlphaBackground(s.alphaBackground);
+  if ($('cfg-alpha-bg')) $('cfg-alpha-bg').value = alphaBg;
   
   // Monitor selection
   if (isElectron) {
@@ -3451,7 +3455,8 @@ $('btn-save-config').addEventListener('click', async () => {
     hudAutoHide: $('cfg-hud-autohide').checked,
     navAutoHide: $('cfg-nav-autohide').checked,
     showTopHints: $('cfg-show-hints').checked,
-    hudAutoHideDelay: parseInt($('cfg-hud-delay').value, 10)
+    hudAutoHideDelay: parseInt($('cfg-hud-delay').value, 10),
+    alphaBackground: normalizeAlphaBackground($('cfg-alpha-bg') && $('cfg-alpha-bg').value)
   };
   
   if (isElectron) {
@@ -3507,10 +3512,41 @@ function applySettings() {
     hintsEl.classList.toggle('hidden', !showHints);
   }
 
+  // Transparency / alpha checkerboard behind transparent pixels
+  applyAlphaBackground(s.alphaBackground);
+
   // Language
   const lang = s.language || 'en';
   updateLanguage(lang);
   syncEmptyState();
+}
+
+/** Normalize alpha background mode setting. */
+function normalizeAlphaBackground(value) {
+  if (value === 'checker-light' || value === 'solid' || value === 'checker-dark') return value;
+  return 'checker-dark';
+}
+
+/** Apply body data attribute for CSS alpha grid. */
+function applyAlphaBackground(value) {
+  const mode = normalizeAlphaBackground(value);
+  document.body.setAttribute('data-alpha-bg', mode);
+  if (state.settings && state.settings.app) {
+    state.settings.app.alphaBackground = mode;
+  }
+}
+
+/** Toggle alpha grid on/off from the View menu (dark checker ↔ solid). */
+function toggleAlphaBackground() {
+  const cur = normalizeAlphaBackground(
+    state.settings && state.settings.app && state.settings.app.alphaBackground
+  );
+  // If light is selected, treat "off" as solid and "on" restore as light
+  const next = cur === 'solid'
+    ? (state._lastAlphaBg && state._lastAlphaBg !== 'solid' ? state._lastAlphaBg : 'checker-dark')
+    : (state._lastAlphaBg = cur, 'solid');
+  applyAlphaBackground(next);
+  if (isElectron) window.electronAPI.saveSettings(state.settings.app);
 }
 
 
@@ -3953,6 +3989,13 @@ $('btn-config').addEventListener('click', openConfig);
     if (sb) sb.classList.toggle('checked', !!state.sidebarOpen);
     const th = panel.querySelector('[data-action="toggle-hints"]');
     if (th) th.classList.toggle('checked', !!(state.settings && state.settings.app && state.settings.app.showTopHints !== false));
+    const ab = panel.querySelector('[data-action="toggle-alpha-bg"]');
+    if (ab) {
+      const mode = state.settings && state.settings.app
+        ? normalizeAlphaBackground(state.settings.app.alphaBackground)
+        : 'checker-dark';
+      ab.classList.toggle('checked', mode !== 'solid');
+    }
   }
   function openMenu() {
     if (typeof hideCustomContextMenu === 'function') hideCustomContextMenu();
@@ -4016,6 +4059,9 @@ $('btn-config').addEventListener('click', openConfig);
         if (isElectron) window.electronAPI.saveSettings(state.settings.app);
         applySettings();
         break;
+      case 'toggle-alpha-bg':
+        toggleAlphaBackground();
+        break;
       case 'next':           next(); break;
       case 'prev':           prev(); break;
       case 'favorite':       $('btn-fav').click(); break;
@@ -4044,7 +4090,10 @@ $('btn-config').addEventListener('click', openConfig);
       if (item.classList.contains('disabled')) return;
       const action = item.dataset.action;
       runAction(action);
-      if (action === 'autohide' || action === 'sidebar') { item.blur(); refreshMenuState(); } else closeMenu();
+      if (action === 'autohide' || action === 'sidebar' || action === 'toggle-hints' || action === 'toggle-alpha-bg') {
+        item.blur();
+        refreshMenuState();
+      } else closeMenu();
     });
   });
 })();

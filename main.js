@@ -67,6 +67,7 @@ function loadSettings() {
         }
         if (data.app.hudAutoHide === undefined) data.app.hudAutoHide = true;
         if (data.app.hudAutoHideDelay === undefined) data.app.hudAutoHideDelay = 2000;
+        if (data.app.alphaBackground === undefined) data.app.alphaBackground = 'checker-dark';
       }
       return data;
     }
@@ -88,7 +89,8 @@ function loadSettings() {
       checkUpdatesOnStartup: true,
       hudAutoHide: true,
       hudAutoHideDelay: 2000,
-      showTopHints: true
+      showTopHints: true,
+      alphaBackground: 'checker-dark'
     }
   };
 }
