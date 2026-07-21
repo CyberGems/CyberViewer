@@ -213,7 +213,12 @@
     "next_title": "Next image (→ / D / Space)",
     "center_title": "Center active thumbnail in sidebar",
     "sidebar_favorites": "Favorites",
-    "sidebar_folder_empty": "—"
+    "sidebar_folder_empty": "—",
+    "key_scroll": "Scroll",
+    "key_drag": "Drag",
+    "key_enter": "Enter",
+    "drop_paste": "Paste · Ctrl+V",
+    "status_ready": "Ready"
   },
   "es": {
     "no_images": "— sin imágenes —",
@@ -429,6 +434,11 @@
     "next_title": "Imagen siguiente (→ / D / Espacio)",
     "center_title": "Centrar miniatura activa en el panel lateral",
     "sidebar_favorites": "Favoritos",
-    "sidebar_folder_empty": "—"
+    "sidebar_folder_empty": "—",
+    "key_scroll": "Rueda",
+    "key_drag": "Arrastrar",
+    "key_enter": "Intro",
+    "drop_paste": "Pegar · Ctrl+V",
+    "status_ready": "Listo"
   }
 }

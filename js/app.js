@@ -128,7 +128,9 @@ function updateLanguage(lang = 'en') {
 
 function closeImage() {
   state.scanInProgress = false;
-  state.images.forEach(im => { if (im.url) URL.revokeObjectURL(im.url); });
+  state.images.forEach(im => {
+    if (im.url && String(im.url).startsWith('blob:')) URL.revokeObjectURL(im.url);
+  });
   state.preloadCache.clear();
   state.images = [];
   syncCurrentIndex(-1);
@@ -174,6 +176,7 @@ function closeImage() {
   if (zoomSlider) zoomSlider.value = 500;
 
   updateFavButtonState();
+  syncEmptyState();
 }
 
 // ── FILE HANDLING ──
@@ -212,6 +215,7 @@ function loadFiles(files, initialIdx = 0) {
     syncCurrentIndex(initialIdx);
     console.log('Archivos cargados:', state.images.length);
     dropZone.style.display = 'none';
+    syncEmptyState();
     buildSidebar();
     showImage(initialIdx, null, true);
     startBackgroundScan();
@@ -2443,10 +2447,44 @@ function updateCounter() {
   if (state.images.length === 0) {
     $('img-counter').textContent = '';
     updateNavVisibility();
+    syncEmptyState();
     return;
   }
   $('img-counter').textContent = (state.current + 1) + ' / ' + state.images.length;
   updateNavVisibility();
+  syncEmptyState();
+}
+
+/**
+ * Empty-state chrome: body.empty-state drives CSS (hide hints/status/nav noise).
+ * Toolbar tools that need an image are disabled (and hidden via CSS in empty).
+ */
+function syncEmptyState() {
+  const empty = !state.images.length || state.current < 0;
+  document.body.classList.toggle('empty-state', empty);
+
+  const needs = document.querySelectorAll('#kbd-hint .needs-image, #kbd-hint .needs-image .kbd-btn');
+  needs.forEach((el) => {
+    if (el.classList && el.classList.contains('kbd-sep')) return;
+    if (el.tagName === 'BUTTON' || el.classList.contains('kbd-btn')) {
+      el.disabled = empty;
+      el.classList.toggle('is-disabled', empty);
+      if (empty) el.setAttribute('aria-disabled', 'true');
+      else el.removeAttribute('aria-disabled');
+    }
+  });
+
+  // Nested buttons inside .control-group.needs-image
+  ['btn-show-folder', 'btn-fit-hud', 'btn-orig-hud', 'btn-fs-hud', 'btn-save',
+    'btn-rot-l', 'btn-rot-r', 'btn-crop', 'btn-resize', 'btn-copy', 'btn-trash', 'btn-fav'
+  ].forEach((id) => {
+    const el = $(id);
+    if (!el) return;
+    el.disabled = empty;
+    el.classList.toggle('is-disabled', empty);
+  });
+
+  updateHUDStates();
 }
 
 // ── MOUSE / TOUCH ──
@@ -2840,6 +2878,7 @@ function insertPastedImage(blob, mime = 'image/png') {
     showImage(insertAt, null, true);
   }
   updateSaveButton();
+  syncEmptyState();
 }
 
 async function pasteFromClipboard() {
@@ -2948,6 +2987,12 @@ $('btn-drop-open').addEventListener('click', () => {
     fileInput.click();
   }
 });
+const btnDropPaste = $('btn-drop-paste');
+if (btnDropPaste) {
+  btnDropPaste.addEventListener('click', () => {
+    if (typeof pasteFromClipboard === 'function') pasteFromClipboard();
+  });
+}
 fileInput.addEventListener('change', e => loadFiles(e.target.files));
 
 $('btn-show-folder').addEventListener('click', () => {
@@ -3278,10 +3323,15 @@ function applySettings() {
     handle.style.left = s.sidebarOpen ? 'var(--panel-w)' : '0';
     $('sidebar-handle-arrow').textContent = s.sidebarOpen ? '◂' : '▸';
   }
-  $('statusbar').style.display = s.statusbarVisible ? '' : 'none';
-  document.body.classList.toggle('statusbar-visible', s.statusbarVisible);
+  // Statusbar: user preference, but empty-state CSS hides it regardless
+  if (s.statusbarVisible) {
+    $('statusbar').style.display = '';
+  } else {
+    $('statusbar').style.display = 'none';
+  }
+  document.body.classList.toggle('statusbar-visible', !!s.statusbarVisible);
 
-  // Title bar hints visibility
+  // Title bar hints visibility (also forced off in empty-state via CSS)
   const showHints = s.showTopHints !== false;
   const hintsEl = $('top-hints');
   if (hintsEl) {
@@ -3291,6 +3341,7 @@ function applySettings() {
   // Language
   const lang = s.language || 'en';
   updateLanguage(lang);
+  syncEmptyState();
 }
 
 
@@ -3304,8 +3355,9 @@ if (isElectron) {
   $('win-close').addEventListener('click', () => window.electronAPI.close());
   $('ghost-close').addEventListener('click', () => toggleFullscreen());
 
-  const WIN_MAX_ICO = '<svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>';
-  const WIN_RESTORE_ICO = '<svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14h6v6"/><path d="M3 21l7-7"/><path d="M20 10h-6V4"/><path d="M21 3l-7 7"/></svg>';
+  // Classic Windows maximize / restore glyphs
+  const WIN_MAX_ICO = '<svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="1"/></svg>';
+  const WIN_RESTORE_ICO = '<svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="1"/><path d="M6 16V6h10"/></svg>';
 
   window.electronAPI.onWinState(winState => {
     const btn = $('win-max');
@@ -3798,14 +3850,15 @@ $('btn-config').addEventListener('click', openConfig);
 })();
 
 // ── HUD AUTO-HIDE (Sincronizado) ──
+// Docked toolbar (#kbd-hint) only auto-hides in fullscreen (ghost). In window mode it is chrome.
 let hudTimer = null;
 const elementsToHide = [
-  { el: $('topbar'), hideClass: 'hud-hidden-top' },
-  { el: $('statusbar'), hideClass: 'hud-hidden-bottom' },
-  { el: $('kbd-hint'), hideClass: 'hud-hidden-fade' },
-  { el: $('ghost-close'), hideClass: 'hud-hidden-fade' },
-  { el: $('viewer-filename'), hideClass: 'hud-hidden-fade' },
-  { el: $('nav-container'), hideClass: 'hud-hidden-fade' }
+  { el: $('topbar'), hideClass: 'hud-hidden-top', ghostOnly: false },
+  { el: $('statusbar'), hideClass: 'hud-hidden-bottom', ghostOnly: false },
+  { el: $('kbd-hint'), hideClass: 'hud-hidden', ghostOnly: true },
+  { el: $('ghost-close'), hideClass: 'hud-hidden-fade', ghostOnly: true },
+  { el: $('viewer-filename'), hideClass: 'hud-hidden-fade', ghostOnly: false },
+  { el: $('nav-container'), hideClass: 'hud-hidden-fade', ghostOnly: false }
 ];
 
 function resetHudTimer() {
@@ -3816,23 +3869,28 @@ function resetHudTimer() {
     const filename = $('viewer-filename');
     if (filename) filename.classList.add('hud-hidden-fade');
     const kbd = $('kbd-hint');
-    if (kbd) kbd.classList.add('hud-hidden');
+    if (kbd && state.isGhost) kbd.classList.add('hud-hidden');
     const nav = $('nav-container');
     if (nav) nav.classList.add('hud-hidden-fade');
     return;
   }
 
   elementsToHide.forEach(item => {
-    if (item.el) item.el.classList.remove(item.hideClass);
+    if (!item.el) return;
+    item.el.classList.remove(item.hideClass);
+    // Ensure docked toolbar never stays hidden after leaving fullscreen
+    if (item.el.id === 'kbd-hint' && !state.isGhost) {
+      item.el.classList.remove('hud-hidden', 'hud-hidden-fade');
+    }
   });
-  
+
   const hudEnabled = state.settings?.app?.hudAutoHide !== false;
   const navEnabled = state.settings?.app?.navAutoHide !== false;
-  
+
   if (!hudEnabled && !navEnabled) {
     return;
   }
-  
+
   // No ocultar si el ratón está sobre el HUD
   const isHovering = elementsToHide.some(item => item.el && item.el.matches(':hover'));
   if (isHovering) return;
@@ -3842,21 +3900,21 @@ function resetHudTimer() {
     : 2000;
 
   hudTimer = setTimeout(() => {
-    if (state.images.length > 0) {
-      elementsToHide.forEach(item => {
-        if (item.el) {
-          if (item.el.id === 'nav-container') {
-            if (navEnabled) item.el.classList.add(item.hideClass);
-          } else {
-            if (hudEnabled) {
-              const isTopbarOrStatusbar = (item.el.id === 'topbar' || item.el.id === 'statusbar');
-              if (isTopbarOrStatusbar && !state.isGhost) return;
-              item.el.classList.add(item.hideClass);
-            }
-          }
-        }
-      });
-    }
+    if (state.images.length === 0 && !state.isGhost) return;
+    elementsToHide.forEach(item => {
+      if (!item.el) return;
+      if (item.ghostOnly && !state.isGhost) return;
+
+      if (item.el.id === 'nav-container') {
+        if (navEnabled) item.el.classList.add(item.hideClass);
+        return;
+      }
+      if (!hudEnabled) return;
+
+      const isTopbarOrStatusbar = (item.el.id === 'topbar' || item.el.id === 'statusbar');
+      if (isTopbarOrStatusbar && !state.isGhost) return;
+      item.el.classList.add(item.hideClass);
+    });
   }, delay);
 }
 
@@ -4169,6 +4227,7 @@ $('props-native-btn').addEventListener('click', () => {
 });
 
 // ── INIT ──
+syncEmptyState();
 updateCounter();
 resetHudTimer();
 

@@ -23,12 +23,12 @@
     </div>
     <div class="hint-sep">|</div>
     <div class="hint-group">
-      <kbd class="cyber-key">Scroll</kbd>
+      <kbd class="cyber-key" data-i18n="key_scroll">Scroll</kbd>
       <span class="hint-txt" data-i18n="zoom_hint">ZOOM</span>
     </div>
     <div class="hint-sep">|</div>
     <div class="hint-group">
-      <kbd class="cyber-key">Drag</kbd>
+      <kbd class="cyber-key" data-i18n="key_drag">Drag</kbd>
       <span class="hint-txt" data-i18n="pan_hint">PAN</span>
     </div>
     <div class="hint-sep">|</div>
@@ -43,7 +43,7 @@
     </div>
     <div class="hint-sep">|</div>
     <div class="hint-group">
-      <kbd class="cyber-key">Enter</kbd>
+      <kbd class="cyber-key" data-i18n="key_enter">Enter</kbd>
       <span class="hint-txt" data-i18n="fullscreen">PANTALLA</span>
     </div>
   </div>
@@ -117,7 +117,7 @@
   <button class="win-btn tooltip-bottom" id="btn-about" data-i18n-title="about" title="Acerca de CyberViewer" style="display:none">&#9432;&#xFE0E;</button>
   <div class="win-sep"></div>
   <button class="win-btn tooltip-bottom" id="win-min" data-i18n-title="minimize" title="Minimizar">&#8722;</button>
-  <button class="win-btn tooltip-bottom" id="win-max" data-i18n-title="maximize" title="Maximizar"><svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg></button>
+  <button class="win-btn tooltip-bottom" id="win-max" data-i18n-title="maximize" title="Maximizar"><svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="1"/></svg></button>
   <button class="win-btn tooltip-bottom tooltip-align-right" id="win-close" data-i18n-title="close" title="Cerrar">&#10005;</button>
 </div>
 <div id="app">
@@ -195,10 +195,11 @@
           <div class="drop-corner tr"></div>
           <div class="drop-corner bl"></div>
           <div class="drop-corner br"></div>
-          <div class="drop-icon">&#9707;</div>
+          <img src="assets/icon.png" class="drop-logo" alt="" width="72" height="72" draggable="false">
           <div class="drop-title" data-i18n="drop_title">CYBERVIEWER</div>
           <div class="drop-sub" data-i18n="drop_sub">Arrastra imágenes aquí<br>o haz clic para seleccionar</div>
           <button class="drop-btn" id="btn-drop-open" data-i18n="drop_btn">Seleccionar archivo</button>
+          <button type="button" class="drop-paste" id="btn-drop-paste" data-i18n="drop_paste">Pegar · Ctrl+V</button>
         </div>
       </div>
 
@@ -213,29 +214,29 @@
       <!-- ZOOM HUD -->
       <div id="zoom-hud">&#9741; <span id="zoom-val">100%</span></div>
 
-      <!-- INTERACTIVE HUD -->
-      <div id="kbd-hint">
-        <button class="kbd-btn" id="btn-open-hud" data-i18n-title="open_title" title="Abrir imagen (Ctrl+O)"><svg class="kbd-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/></svg><span data-i18n="open_dir">ABRIR</span></button>
-        <button class="kbd-btn" id="btn-show-folder" data-i18n-title="show_folder_title" title="Mostrar en Carpeta (Ctrl+Shift+O)"><svg class="kbd-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><path d="m9.5 14.5 5-5"/><path d="M11 9.5h3.5V13"/></svg><span data-i18n="show_folder">SHOW</span></button>
-        <div class="kbd-sep"></div>
-        <button class="kbd-btn" id="btn-fit-hud" data-i18n-title="fit_title" title="Ajustar (F)"><span data-i18n="fit_to_window">AJUSTAR</span></button>
-        <button class="kbd-btn" id="btn-orig-hud" data-i18n-title="orig_title" title="Original (1)">1:1</button>
-        <button class="kbd-btn" id="btn-fs-hud" data-i18n-title="fs_title" title="Full (Enter)"><span data-i18n="fullscreen">PANTALLA</span></button>
-        <div class="kbd-sep"></div>
-        <div class="control-group">
+      <!-- INTERACTIVE HUD: docked chrome in window mode, floating in fullscreen -->
+      <div id="kbd-hint" role="toolbar" aria-label="Image tools">
+        <button class="kbd-btn kbd-always" id="btn-open-hud" data-i18n-title="open_title" title="Abrir imagen (Ctrl+O)"><svg class="kbd-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/></svg><span data-i18n="open_dir">ABRIR</span></button>
+        <button class="kbd-btn needs-image" id="btn-show-folder" data-i18n-title="show_folder_title" title="Mostrar en Carpeta (Ctrl+Shift+O)"><svg class="kbd-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><path d="m9.5 14.5 5-5"/><path d="M11 9.5h3.5V13"/></svg><span data-i18n="show_folder">SHOW</span></button>
+        <div class="kbd-sep needs-image"></div>
+        <button class="kbd-btn needs-image" id="btn-fit-hud" data-i18n-title="fit_title" title="Ajustar (F)"><span data-i18n="fit_to_window">AJUSTAR</span></button>
+        <button class="kbd-btn needs-image" id="btn-orig-hud" data-i18n-title="orig_title" title="Original (1)">1:1</button>
+        <button class="kbd-btn needs-image" id="btn-fs-hud" data-i18n-title="fs_title" title="Full (Enter)"><span data-i18n="fullscreen">PANTALLA</span></button>
+        <div class="kbd-sep needs-image"></div>
+        <div class="control-group needs-image">
           <button class="kbd-btn save-btn" id="btn-save" data-i18n-title="save_title" title="Guardar cambios (Ctrl+S)" style="width: 100%; height: 22px; font-size: 10px; padding: 0"><span data-i18n="save">GUARDAR</span></button>
           <div class="rotate-row">
             <button class="kbd-btn" id="btn-rot-l" data-i18n-title="rot_l_title" title="Rotar Izquierda (L)">&#8634;</button>
             <button class="kbd-btn" id="btn-rot-r" data-i18n-title="rot_r_title" title="Rotar Derecha (R)">&#8635;</button>
           </div>
         </div>
-        <button class="kbd-btn" id="btn-crop" data-i18n-title="crop_title" title="Recortar (C)">&#9986;</button>
-        <button class="kbd-btn" id="btn-resize" data-i18n-title="resize_title_btn" title="Redimensionar (R)">⇳</button>
-        <div class="kbd-sep"></div>
-        <button class="kbd-btn" id="btn-copy" data-i18n-title="copy_title" title="Copiar Imagen (Ctrl+C)">&#10697;</button>
-        <button class="kbd-btn" id="btn-trash" data-i18n-title="trash_title" title="Mover a la Papelera (Delete)" style="color:var(--cyber-accent2)">&#128465;&#xFE0E;</button>
-        <div class="kbd-sep"></div>
-        <button class="kbd-btn" id="btn-fav" data-i18n-title="fav_title" title="Favorito (Ctrl+D)">&#9734;</button>
+        <button class="kbd-btn needs-image" id="btn-crop" data-i18n-title="crop_title" title="Recortar (C)">&#9986;</button>
+        <button class="kbd-btn needs-image" id="btn-resize" data-i18n-title="resize_title_btn" title="Redimensionar (R)">⇳</button>
+        <div class="kbd-sep needs-image"></div>
+        <button class="kbd-btn needs-image" id="btn-copy" data-i18n-title="copy_title" title="Copiar Imagen (Ctrl+C)">&#10697;</button>
+        <button class="kbd-btn needs-image" id="btn-trash" data-i18n-title="trash_title" title="Mover a la Papelera (Delete)" style="color:var(--cyber-accent2)">&#128465;&#xFE0E;</button>
+        <div class="kbd-sep needs-image"></div>
+        <button class="kbd-btn needs-image" id="btn-fav" data-i18n-title="fav_title" title="Favorito (Ctrl+D)">&#9734;</button>
       </div>
     </div>
 
