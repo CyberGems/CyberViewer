@@ -848,7 +848,7 @@
     bottom: 0;
     left: var(--panel-w);
     width: 8px;
-    /* Above viewer, but bottom is clipped so glow never covers dock/statusbar */
+    /* Above viewer; full sidebar height (only statusbar reserves space below) */
     z-index: 35;
     background: rgba(var(--cyber-accent-rgb), 0.18);
     cursor: pointer;
@@ -857,21 +857,24 @@
     justify-content: center;
     transition: background 0.2s ease, box-shadow 0.2s ease, width 0.2s ease;
     user-select: none;
+    /* Keep hover glow from bleeding into the viewer / docked toolbar */
+    overflow: hidden;
   }
-  /* Stop handle short of docked toolbar + statusbar so hover cannot bleed over them */
-  body:not(.ghost-mode):not(.empty-state) #sidebar-handle {
-    bottom: calc(var(--dock-h, 60px) + 36px);
+  /* Align with statusbar — not the dock (dock lives only in the viewer column) */
+  body:not(.ghost-mode).statusbar-visible #sidebar-handle {
+    bottom: 36px;
   }
-  body:not(.ghost-mode):not(.empty-state):not(.statusbar-visible) #sidebar-handle {
-    bottom: var(--dock-h, 60px);
-  }
-  body:not(.ghost-mode).empty-state #sidebar-handle {
+  body:not(.ghost-mode):not(.statusbar-visible) #sidebar-handle {
     bottom: 0;
   }
   #sidebar-handle:hover {
     width: 10px;
     background: var(--cyber-accent);
-    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.4);
+    /* Glow mostly into the sidebar (left), not across the toolbar (right) */
+    box-shadow:
+      inset 0 0 0 1px rgba(var(--cyber-accent-rgb), 0.35),
+      -6px 0 14px rgba(var(--cyber-accent-rgb), 0.35),
+      0 0 8px rgba(var(--cyber-accent-rgb), 0.25);
   }
   #sidebar-handle-arrow {
     display: flex;

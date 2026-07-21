@@ -2429,7 +2429,8 @@ $('zoom-slider').addEventListener('wheel', (e) => {
   if (state.images.length === 0) return;
   e.preventDefault();
   e.stopPropagation();
-  const delta = e.deltaY < 0 ? -15 : 15;
+  // Slightly larger steps so the slider tracks wheel zoom better
+  const delta = e.deltaY < 0 ? -22 : 22;
   let val = parseInt($('zoom-slider').value, 10) + delta;
   val = Math.max(0, Math.min(1000, val));
   $('zoom-slider').value = val;
@@ -2492,6 +2493,9 @@ function updateFileStats() {
   }
 }
 
+/** Slightly faster than before (0.001 → 0.00145) so full range needs fewer wheel notches. */
+const WHEEL_ZOOM_FACTOR = 0.00145;
+
 function zoomAt(delta, cx, cy) {
   state.viewMode = 'custom';
   const rect = viewerWrap.getBoundingClientRect();
@@ -2499,7 +2503,7 @@ function zoomAt(delta, cx, cy) {
   const oy = cy - rect.top  - rect.height / 2;
 
   const oldZoom = state.zoom;
-  let newZoom = state.zoom * (1 + delta * 0.001);
+  let newZoom = state.zoom * (1 + delta * WHEEL_ZOOM_FACTOR);
   newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, newZoom));
 
   const ratio = newZoom / oldZoom;
