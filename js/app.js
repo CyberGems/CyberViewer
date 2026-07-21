@@ -2356,7 +2356,7 @@ function viewerFitSize() {
     };
   }
   const docked = !state.isGhost && state.images.length > 0 && !document.body.classList.contains('empty-state');
-  const dockH = docked ? 56 : 0;
+  const dockH = docked ? 60 : 0;
   return {
     vw: Math.max(1, viewerWrap.clientWidth - pad),
     vh: Math.max(1, viewerWrap.clientHeight - pad - dockH)

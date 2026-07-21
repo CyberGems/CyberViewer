@@ -764,7 +764,8 @@
     flex-direction: column;
     position: relative;
     z-index: 10;
-    overflow: visible; /* allow sidebar tooltips to paint; scroll child clips thumbs */
+    /* Clip glow/hover so it never paints over docked toolbar / statusbar */
+    overflow: hidden;
   }
 
   .sidebar-folder {
