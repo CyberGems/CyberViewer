@@ -757,15 +757,17 @@
   }
   #sidebar {
     width: var(--panel-w);
+    min-width: var(--panel-w);
     background: var(--cyber-panel);
     border-right: 1px solid var(--cyber-border);
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
     position: relative;
-    z-index: 10;
-    /* Clip glow/hover so it never paints over docked toolbar / statusbar */
-    overflow: hidden;
+    /* Above viewer so the panel is never covered by z-index stacking */
+    z-index: 30;
+    overflow-x: hidden;
+    overflow-y: hidden;
   }
 
   .sidebar-folder {
@@ -846,8 +848,8 @@
     bottom: 0;
     left: var(--panel-w);
     width: 8px;
-    /* Below viewer chrome (toolbar) so hover glow never covers lower bars */
-    z-index: 15;
+    /* Above viewer, but bottom is clipped so glow never covers dock/statusbar */
+    z-index: 35;
     background: rgba(var(--cyber-accent-rgb), 0.18);
     cursor: pointer;
     display: flex;
@@ -858,10 +860,10 @@
   }
   /* Stop handle short of docked toolbar + statusbar so hover cannot bleed over them */
   body:not(.ghost-mode):not(.empty-state) #sidebar-handle {
-    bottom: calc(var(--dock-h, 56px) + 36px);
+    bottom: calc(var(--dock-h, 60px) + 36px);
   }
   body:not(.ghost-mode):not(.empty-state):not(.statusbar-visible) #sidebar-handle {
-    bottom: var(--dock-h, 56px);
+    bottom: var(--dock-h, 60px);
   }
   body:not(.ghost-mode).empty-state #sidebar-handle {
     bottom: 0;
@@ -1055,8 +1057,10 @@
   /* ── VIEWER ── */
   #viewer-wrap {
     flex: 1;
+    min-width: 0;
     position: relative;
-    z-index: 20; /* above sidebar (10) and handle (15) so chrome stays on top */
+    /* Below sidebar (30) so the panel stays visible; toolbar still wins inside this box */
+    z-index: 1;
     display: flex;
     align-items: center;
     justify-content: center;

@@ -1470,19 +1470,18 @@ async function rotateAndSave(deg) {
 }
 
 /**
- * Floating discard/save chip — keeps the main toolbar stable when rotating.
- * Shown for pending rotation / unsaved clipboard image (not during crop UI).
+ * Floating discard/save chip — only for pending *rotation* preview.
+ * Clipboard paste is a different flow (save-as / path), so it must not open this chip.
  */
 function updateSaveButton() {
   const bar = $('pending-actions');
   const cluster = $('edit-cluster');
   if (!bar) return;
-  const im = state.images[state.current];
-  const unsavedClipboard = !!(im && !imageDiskPath(im));
-  const show = !state.isCropping && !!(state.hasChanges || unsavedClipboard) && state.current >= 0;
-  bar.hidden = !show;
-  bar.classList.toggle('visible', show);
-  if (cluster) cluster.classList.toggle('has-pending', show);
+  const pendingRotation = state.current >= 0 && !state.isCropping &&
+    !!state.hasChanges && state.currentRotation !== 0;
+  bar.hidden = !pendingRotation;
+  bar.classList.toggle('visible', pendingRotation);
+  if (cluster) cluster.classList.toggle('has-pending', pendingRotation);
 }
 
 /** Discard preview rotation (and leave toolbar layout untouched). */
@@ -3579,10 +3578,10 @@ function updateHUDStates() {
   const fsBtn = $('btn-fs-hud');
   const commit = $('btn-commit');
 
-  const hasChanges = (state.currentRotation !== 0) || state.hasChanges;
+  const pendingRotation = state.currentRotation !== 0 && state.hasChanges;
 
   // ROTACIÓN / floating commit
-  if (hasChanges) {
+  if (pendingRotation) {
     if (rotL) rotL.classList.add('active');
     if (rotR) rotR.classList.add('active');
     if (commit) commit.classList.add('active');
