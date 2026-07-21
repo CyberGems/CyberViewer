@@ -3166,14 +3166,21 @@ $('btn-next').addEventListener('click', (e) => {
 });
 
 function setSidebarOpen(open) {
+  // Drop hover styles before reflow so the rail never flashes over the scrollbar
+  document.body.classList.remove('sidebar-handle-hover');
+
   state.sidebarOpen = !!open;
   sidebar.style.display = state.sidebarOpen ? '' : 'none';
   document.body.classList.toggle('sidebar-open', state.sidebarOpen);
 
   const handle = $('sidebar-handle');
   if (handle) {
-    // Position is CSS-driven (body.sidebar-open); clear any stale inline left
     handle.style.left = '';
+    // Prevent :hover re-firing mid-toggle while the node jumps left/right
+    handle.style.pointerEvents = 'none';
+    requestAnimationFrame(() => {
+      handle.style.pointerEvents = '';
+    });
   }
   const arrow = $('sidebar-handle-arrow');
   if (arrow) arrow.textContent = state.sidebarOpen ? '◂' : '▸';
@@ -3193,11 +3200,20 @@ function setSidebarOpen(open) {
   }
 }
 
-$('sidebar-handle').addEventListener('click', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  setSidebarOpen(!state.sidebarOpen);
-});
+const sidebarHandleEl = $('sidebar-handle');
+if (sidebarHandleEl) {
+  sidebarHandleEl.addEventListener('mouseenter', () => {
+    document.body.classList.add('sidebar-handle-hover');
+  });
+  sidebarHandleEl.addEventListener('mouseleave', () => {
+    document.body.classList.remove('sidebar-handle-hover');
+  });
+  sidebarHandleEl.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSidebarOpen(!state.sidebarOpen);
+  });
+}
 
 // ── FULLSCREEN ──
 function toggleFullscreen() {
