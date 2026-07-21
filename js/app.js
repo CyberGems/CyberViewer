@@ -124,6 +124,9 @@ function updateLanguage(lang = 'en') {
   if (typeof updateSidebarFolderHeader === 'function') {
     updateSidebarFolderHeader();
   }
+  if (typeof syncSidebarHandleTooltip === 'function') {
+    syncSidebarHandleTooltip();
+  }
 }
 
 function closeImage() {
@@ -3165,6 +3168,22 @@ $('btn-next').addEventListener('click', (e) => {
   next();
 });
 
+function sidebarHandleTooltipText(open) {
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  const t = I18N[lang] || I18N.en || {};
+  if (open) {
+    return t.sidebar_hide_tip || t.sidebar_title || 'Hide sidebar';
+  }
+  return t.sidebar_show_tip || 'Show folder images and enable scan';
+}
+
+function syncSidebarHandleTooltip() {
+  const handle = $('sidebar-handle');
+  if (!handle) return;
+  setCyberTooltip(handle, sidebarHandleTooltipText(state.sidebarOpen));
+  handle.classList.add('tooltip-right');
+}
+
 function setSidebarOpen(open) {
   document.body.classList.remove('sidebar-handle-hover');
 
@@ -3182,6 +3201,7 @@ function setSidebarOpen(open) {
   }
   const arrow = $('sidebar-handle-arrow');
   if (arrow) arrow.textContent = state.sidebarOpen ? '◂' : '▸';
+  syncSidebarHandleTooltip();
 
   if (state.settings && state.settings.app) {
     state.settings.app.sidebarOpen = state.sidebarOpen;
@@ -3455,6 +3475,7 @@ function applySettings() {
   if (handle) handle.style.left = '';
   const arrow = $('sidebar-handle-arrow');
   if (arrow) arrow.textContent = state.sidebarOpen ? '◂' : '▸';
+  syncSidebarHandleTooltip();
   // Statusbar: user preference, but empty-state CSS hides it regardless
   if (s.statusbarVisible) {
     $('statusbar').style.display = '';

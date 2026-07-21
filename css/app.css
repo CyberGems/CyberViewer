@@ -849,6 +849,7 @@
   #sidebar-edge-rail {
     position: absolute;
     top: 0;
+    /* Stop at statusbar so hover glow never runs under the footer */
     bottom: 0;
     left: var(--panel-w);
     width: 1px;
@@ -860,14 +861,18 @@
     pointer-events: none;
     transition: background 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
   }
+  body.statusbar-visible #sidebar-edge-rail {
+    bottom: 36px;
+  }
   body:not(.sidebar-open) #sidebar-edge-rail {
     left: 0;
   }
   body.sidebar-handle-hover #sidebar-edge-rail {
     background: var(--cyber-accent);
+    /* Tight glow — no large blur that bleeds under the statusbar */
     box-shadow:
-      0 0 6px rgba(var(--cyber-accent-rgb), 0.55),
-      0 0 12px rgba(var(--cyber-accent-rgb), 0.25);
+      0 0 4px rgba(var(--cyber-accent-rgb), 0.5),
+      0 0 8px rgba(var(--cyber-accent-rgb), 0.22);
   }
   body.ghost-mode #sidebar-edge-rail {
     display: none;
