@@ -37,7 +37,15 @@
     "tray_show": "Show CyberViewer",
     "tray_hide": "Hide CyberViewer",
     "tray_settings": "Settings",
-    "tray_exit": "Exit"
+    "tray_exit": "Exit",
+    "dialog_open_title": "Open Image",
+    "dialog_open_filter_images": "Images",
+    "dialog_open_filter_all": "All files",
+    "dialog_save_as_title": "Save As",
+    "dialog_save_filter_images": "Images",
+    "dialog_save_filter_all": "All Files",
+    "monitor_primary": "[Primary] ",
+    "monitor_label": "Monitor {id}"
   },
   "es": {
     "file": "Archivo",
@@ -77,6 +85,14 @@
     "tray_show": "Mostrar CyberViewer",
     "tray_hide": "Ocultar CyberViewer",
     "tray_settings": "Configuración",
-    "tray_exit": "Salir"
+    "tray_exit": "Salir",
+    "dialog_open_title": "Abrir Imagen",
+    "dialog_open_filter_images": "Imágenes",
+    "dialog_open_filter_all": "Todos los archivos",
+    "dialog_save_as_title": "Guardar como",
+    "dialog_save_filter_images": "Imágenes",
+    "dialog_save_filter_all": "Todos los archivos",
+    "monitor_primary": "[Principal] ",
+    "monitor_label": "Monitor {id}"
   }
 }

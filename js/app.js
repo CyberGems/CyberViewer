@@ -1,45 +1,9 @@
 
-// ── Media / format helpers (cvlocal protocol) ──
-// Use ?p=<absolute path> so Windows drive letters are never parsed as URL hosts.
-function mediaUrl(fsPath, bust) {
-  if (!fsPath) return '';
-  const s = String(fsPath);
-  if (s.startsWith('blob:') || s.startsWith('data:')) return s;
-  if (s.startsWith('cvlocal:')) {
-    try {
-      const u = new URL(s.replace(/^cvlocal:/i, 'http:'));
-      const p = u.searchParams.get('p');
-      if (p) {
-        let url = 'cvlocal://media/?p=' + encodeURIComponent(p);
-        if (bust != null && bust !== false) url += '&t=' + encodeURIComponent(String(bust));
-        return url;
-      }
-    } catch (_) { /* fall through */ }
-  }
-  let url = 'cvlocal://media/?p=' + encodeURIComponent(s);
-  if (bust != null && bust !== false) url += '&t=' + encodeURIComponent(String(bust));
-  return url;
-}
-
-function canvasExport(canvas, filePath) {
-  const ext = (String(filePath || '').split('.').pop() || '').toLowerCase();
-  if (ext === 'jpg' || ext === 'jpeg') {
-    return {
-      buffer: canvas.toDataURL('image/jpeg', 0.95).split(',')[1],
-      filePath: filePath
-    };
-  }
-  // Canvas edits are rasterized; keep PNG for lossless/alpha. Re-home exotic
-  // containers (gif/webp/bmp/tiff) to .png so bytes match the extension.
-  let outPath = filePath;
-  if (ext !== 'png') {
-    outPath = String(filePath).replace(/\.[^.]+$/i, '.png');
-  }
-  return {
-    buffer: canvas.toDataURL('image/png').split(',')[1],
-    filePath: outPath
-  };
-}
+// ── Media / format helpers (from js/media-helpers.js) ──
+const CVMedia = (typeof window !== 'undefined' && window.CVMedia) ? window.CVMedia : {};
+const mediaUrl = CVMedia.mediaUrl || function () { return ''; };
+const canvasExport = CVMedia.canvasExport || function (c, p) { return { buffer: '', filePath: p }; };
+const formatBytes = CVMedia.formatBytes || function () { return '-'; };
 
 function syncCurrentIndex(idx) {
   state.currentIdx = idx;
@@ -119,448 +83,8 @@ const state = {
   },
 };
 
-const I18N = {
-  en: {
-    no_images: "— no images —",
-    navigate_hint: "NAVIGATE",
-    zoom_hint: "ZOOM",
-    pan_hint: "PAN",
-    sidebar_title: "Sidebar",
-    panel: "Panel",
-    config: "Configuration",
-    about: "About",
-    minimize: "Minimize",
-    maximize: "Maximize",
-    close: "Close",
-    center: "CENTER",
-    main_img_alt: "Main Image",
-    crop_confirm: "CROP & SAVE",
-    crop_cancel: "CANCEL",
-    crop_create_copy: "Create a Copy",
-    crop_create_copy_desc: "Save as a new file without overwriting the original.",
-    crop_copy_tooltip: "Enable to save as a new file, disable to overwrite original",
-    drop_title: "CYBERVIEWER",
-    drop_sub: "Drag images here<br>or click to select",
-    drop_btn: "Select Files",
-    open_dir: "OPEN",
-    fit_to_window: "FIT",
-    fullscreen: "FULLSCREEN",
-    save: "SAVE",
-    radar_tooltip: "SCAN: Folder preload progress / Thumbnails in memory\nHint: Close the sidebar to pause scanning",
-    size_tooltip: "CANVAS: Physical resolution in pixels",
-    weight_tooltip: "WEIGHT: File weight on disk",
-    zoom_tooltip: "VIEW SCALE: Zoom percentage applied in the viewer",
-    radar_lbl: "SCAN:",
-    zoom_lbl: "ZOOM:",
-    fs_badge: "FULLSCREEN",
-    ghost_close_title: "Exit Fullscreen",
-    config_title: "Configuration",
-    personalization: "Personalization",
-    accent_color: "Accent Color",
-    accent_desc: "Define the primary neon accent color.",
-    interface: "Interface",
-    sidebar: "Sidebar",
-    sidebar_desc: "Show thumbnail sidebar on start.",
-    statusbar: "Status Bar",
-    statusbar_desc: "Show bottom technical information.",
-    system: "System",
-    close_to_tray: "Close to Tray",
-    close_to_tray_desc: "The app will keep running in the background.",
-    auto_start: "Auto Start",
-    auto_start_desc: "Launch with Windows (minimized).",
-    context_menu: "Context Menu",
-    context_menu_desc: "Add CyberViewer to the Windows Explorer right-click menu.",
-    language_label: "Language",
-    language_desc: "User interface language.",
-    opening_monitor: "Target Monitor",
-    opening_monitor_desc: "Last used monitor, or force a specific screen.",
-    monitor_auto: "Last used",
-    config_cancel: "Cancel",
-    save_config: "Save Changes",
-    // Toasts
-    toast_saved: "SETTINGS SAVED",
-    toast_copied: "IMAGE COPIED TO CLIPBOARD",
-    toast_copy_error: "ERROR COPYING IMAGE",
-    toast_no_images: "NO IMAGES LOADED TO COPY",
-    toast_crop_confirm: "CROP APPLIED AND SAVED",
-    toast_crop_cancel: "CROP CANCELLED",
-    toast_hidden: "HIDDEN: ",
-    toast_restored: "IMAGES RESTORED",
-    // About Modal
-    about_title: "[ABOUT]",
-    about_subtitle: "v1.6.2 — Pro Viewer",
-    about_desc: "Copyright (C) 2026 By CyberGems<br><span style=\"color:var(--cyber-muted);font-size:11px\">High Performance Image Engine</span>",
-    about_formats: "Formats: JPG · PNG · GIF · WEBP · BMP · TIFF<br>Electron · Hardware Accelerated",
-    about_dev_tools: "OPEN DEVTOOLS",
-    about_understood: "UNDERSTOOD",
-    // Titles for HUD buttons
-    open_title: "Open image (Ctrl+O)",
-    fit_title: "Fit to Window (F)",
-    orig_title: "Original Size 1:1 (1)",
-    fs_title: "Fullscreen (Enter)",
-    save_title: "Save Changes (Ctrl+S)",
-    rot_l_title: "Rotate Left (L)",
-    rot_r_title: "Rotate Right (R)",
-    crop_title: "Crop (C)",
-    copy_title: "Copy Image (Ctrl+C)",
-    ghost_title: "Ghost Mode (G)",
-    trash_title: "Move to Trash (Delete)",
-    // Additional toasts
-    toast_saving_crop: "SAVING CROP...",
-    toast_invalid_crop: "INVALID CROP AREA",
-    toast_crop_saved: "CROP SAVED",
-    toast_initializing_engine: "INITIALIZING ENGINE...",
-    toast_focusing_workspace: "FOCUSING WORKSPACE...",
-    toast_saving_changes: "SAVING CHANGES...",
-    toast_changes_saved: "CHANGES SAVED",
-    toast_path_not_found: "PATH NOT FOUND",
-    toast_image_not_ready: "IMAGE NOT READY",
-    resize_orig_title: "Original Size",
-    resize_target_title: "Target Size",
-    resize_alteration_lbl: "Alteration:",
-    resize_est_weight_lbl: "Result:",
-    resize_lock_aspect: "Lock aspect ratio",
-    resize_width_tooltip: "Specify target width in pixels",
-    resize_height_tooltip: "Specify target height in pixels",
-    resize_slider_tooltip: "Adjust scale percentage",
-    resize_width_slider_tooltip: "Adjust width scale percentage",
-    resize_height_slider_tooltip: "Adjust height scale percentage",
-    resize_preset_1_1: "Square aspect ratio (1080x1080 px)",
-    resize_preset_720p: "High Definition 16:9 (1280x720 px)",
-    resize_preset_1080p: "Full HD 16:9 (1920x1080 px)",
-    resize_preset_25: "Scale down to 25%",
-    resize_preset_50: "Scale down to 50%",
-    resize_preset_200: "Scale up to 200%",
-    resize_algo_nearest: "Nearest Neighbor resampling (Fast & sharp)",
-    resize_algo_bilinear: "Bilinear resampling (Balanced & smooth)",
-    resize_algo_bicubic: "Bicubic resampling (High quality & ultra smooth)",
-    resize_algo_fast_lbl: "Fast",
-    resize_algo_balanced_lbl: "Balanced",
-    resize_algo_hq_lbl: "High Quality",
-    resize_width_lbl: "WIDTH",
-    resize_height_lbl: "HEIGHT",
-    resize_copy_tooltip: "Enable to save as a new file, disable to overwrite original",
-    resize_cancel_tooltip: "Cancel and close this dialog",
-    resize_apply_tooltip: "Resize and save the image",
-    resize_title: "[CYBERVIEWER RESIZE]",
-    resize_dimensions: "Target Dimensions",
-    width: "WIDTH (PX)",
-    height: "HEIGHT (PX)",
-    resize_percentage: "Percentage: ",
-    resize_presets: "Quick Presets",
-    resampling_quality: "Resampling Quality",
-    resize_apply: "Resize & Save",
-    resize_title_btn: "Resize Image (R)",
-    toast_resize_success: "IMAGE RESIZED AND SAVED",
-    toast_resize_error: "ERROR RESIZING IMAGE",
-    resize_create_copy: "Create a Copy",
-    resize_create_copy_desc: "Save as a new file without overwriting the original.",
-    show_folder: "SHOW",
-    show_folder_title: "Show in Folder (Ctrl+Shift+O)",
-    menu: "Menu",
-    menu_file: "File",
-    menu_edit: "Edit",
-    menu_view: "View",
-    menu_go: "Go",
-    menu_help: "Help",
-    menu_open: "Open image",
-    menu_paste: "Paste image",
-    menu_close_image: "Close image",
-    menu_show: "Show in Explorer",
-    menu_copy_original: "Copy Original",
-    menu_copy_path: "Copy Image Path",
-    menu_save_as: "Save As...",
-    menu_go_start: "Go to Start",
-    menu_go_end: "Go to End",
-    menu_hide_session: "Hide from this session",
-    menu_restore_hidden: "Restore hidden ({count})",
-    menu_maximize: "Maximize",
-    menu_restore: "Restore",
-    menu_quit: "Quit",
-    menu_autohide_nav: "Auto-hide Nav Buttons",
-    favorite_add: "Add to Favorites",
-    favorite_remove: "Remove from Favorites",
-    menu_save: "Save",
-    menu_copy: "Copy Image",
-    toast_pasted: "IMAGE PASTED FROM CLIPBOARD",
-    toast_paste_empty: "NO IMAGE IN CLIPBOARD",
-    toast_paste_error: "COULD NOT PASTE IMAGE",
-    menu_props: "Properties",
-    menu_trash: "Move to Trash",
-    menu_rotate_l: "Rotate Left",
-    menu_rotate_r: "Rotate Right",
-    menu_crop: "Crop",
-    menu_resize: "Resize",
-    menu_fit: "Fit to Window",
-    menu_original: "Actual Size (1:1)",
-    menu_fullscreen: "Fullscreen",
-    menu_sidebar: "Sidebar",
-    menu_autohide: "Auto-hide HUD",
-    menu_show_hints: "Keyboard Hints",
-    menu_next: "Next Image",
-    menu_prev: "Previous Image",
-    menu_favorite: "Favorite",
-    menu_favs_view: "Favorites View",
-    menu_prefs: "Configuration",
-    menu_about: "About",
-    menu_updates: "Check for Updates",
-    menu_devtools: "Developer Tools",
-    crop_hint_txt: "CROP",
-    resize_hint_txt: "RESIZE",
-    ghost_hint_txt: "GHOST",
-    fav_title: "Favorite (Ctrl+D)",
-    toast_load_image_first: "LOAD AN IMAGE FIRST",
-    show_favorites_lbl: "FAVORITES",
-    show_all_lbl: "ALL",
-    about_check_updates: "Check for Updates",
-    about_check_on_startup: "Check for updates on startup",
-    about_checking: "Checking updates...",
-    about_up_to_date: "CyberViewer is up to date.",
-    about_update_avail: "New version available!",
-    about_update_err: "Could not check updates.",
-    about_download_btn: "Download update",
-    about_install_btn: "Install & restart",
-    about_downloading: "Downloading… {percent}%",
-    about_downloaded: "Update ready to install",
-    about_open_releases: "Open releases page",
-    about_portable_hint: "Portable builds update via GitHub Releases.",
-    about_dev_hint: "Install the NSIS build to enable in-app updates.",
-    about_notify_startup: "Update available: v{version}",
-    cfg_hud_autohide: "Auto-hide Toolbar",
-    cfg_hud_autohide_desc: "Hide the floating toolbar after inactivity.",
-    cfg_nav_autohide: "Auto-hide Nav Buttons",
-    cfg_nav_autohide_desc: "Hide navigation buttons after inactivity.",
-    cfg_show_hints: "Title Bar Hints",
-    cfg_show_hints_desc: "Show keyboard shortcuts in the title bar.",
-    cfg_hud_delay: "Inactivity Hide Delay",
-    cfg_seconds: "{seconds}s",
-    prev_title: "Previous Image (ArrowLeft / A)",
-    next_title: "Next Image (ArrowRight / D / Space)",
-    center_title: "Center active thumbnail in sidebar",
-    sidebar_favorites: "Favorites",
-    sidebar_folder_empty: "—"
-  },
-  es: {
-    no_images: "— sin imágenes —",
-    navigate_hint: "NAVEGAR",
-    zoom_hint: "ZOOM",
-    pan_hint: "PAN",
-    sidebar_title: "Panel lateral",
-    panel: "Panel",
-    config: "Configuración",
-    about: "Acerca de",
-    minimize: "Minimizar",
-    maximize: "Maximizar",
-    close: "Cerrar",
-    center: "CENTRAR",
-    main_img_alt: "Imagen principal",
-    crop_confirm: "RECORTAR Y GUARDAR",
-    crop_cancel: "CANCELAR",
-    crop_create_copy: "Crear una Copia",
-    crop_create_copy_desc: "Guardar como archivo nuevo sin sobrescribir el original.",
-    crop_copy_tooltip: "Activar para guardar como archivo nuevo, desactivar para sobrescribir",
-    drop_title: "CYBERVIEWER",
-    drop_sub: "Arrastra imágenes aquí<br>o haz clic para seleccionar",
-    drop_btn: "Seleccionar archivos",
-    open_dir: "ABRIR",
-    fit_to_window: "AJUSTAR",
-    fullscreen: "PANTALLA",
-    save: "GUARDAR",
-    radar_tooltip: "ESCANEO: Progreso de precarga de la carpeta / Miniaturas en memoria\nConsejo: Cierra la barra lateral para pausar el escaneo",
-    size_tooltip: "LIENZO: Resolución física en píxeles de la imagen",
-    weight_tooltip: "PESO: Peso del archivo en disco",
-    zoom_tooltip: "ESCALA DE VISTA: Porcentaje de zoom aplicado en el visor",
-    radar_lbl: "ESCANEO:",
-    zoom_lbl: "ZOOM:",
-    fs_badge: "PANTALLA COMPLETA",
-    ghost_close_title: "Salir de Pantalla Completa",
-    config_title: "Configuración",
-    personalization: "Personalización",
-    accent_color: "Color de Acento",
-    accent_desc: "Define el color principal de la interfaz neon.",
-    interface: "Interfaz",
-    sidebar: "Panel Lateral",
-    sidebar_desc: "Mostrar miniaturas al iniciar.",
-    statusbar: "Barra de Estado",
-    statusbar_desc: "Mostrar información técnica inferior.",
-    system: "Sistema",
-    close_to_tray: "Cerrar a la Bandeja",
-    close_to_tray_desc: "La app seguirá corriendo en segundo plano.",
-    auto_start: "Inicio Automático",
-    auto_start_desc: "Arrancar con Windows (minimizado).",
-    context_menu: "Menú Contextual",
-    context_menu_desc: "Añadir CyberViewer al menú contextual del Explorador de Windows.",
-    language_label: "Idioma",
-    language_desc: "Idioma de la interfaz de usuario.",
-    opening_monitor: "Monitor de Apertura",
-    opening_monitor_desc: "Último monitor usado, o forzar una pantalla concreta.",
-    monitor_auto: "Último usado",
-    config_cancel: "Cancelar",
-    save_config: "Guardar Cambios",
-    // Toasts
-    toast_saved: "CONFIGURACIÓN GUARDADA",
-    toast_copied: "IMAGEN COPIADA AL PORTAPAPELES",
-    toast_copy_error: "ERROR AL COPIAR IMAGEN",
-    toast_no_images: "NO HAY IMÁGENES PARA COPIAR",
-    toast_crop_confirm: "RECORTE APLICADO Y GUARDADO",
-    toast_crop_cancel: "RECORTE CANCELADO",
-    toast_hidden: "OCULTO: ",
-    toast_restored: "IMÁGENES RESTAURADAS",
-    // About Modal
-    about_title: "[ACERCA DE]",
-    about_subtitle: "v1.6.2 — Visor Pro",
-    about_desc: "Copyright (C) 2026 By CyberGems<br><span style=\"color:var(--cyber-muted);font-size:11px\">High Performance Image Engine</span>",
-    about_formats: "Formatos: JPG · PNG · GIF · WEBP · BMP · TIFF<br>Electron · Hardware Accelerated",
-    about_dev_tools: "ABRIR CONSOLA",
-    about_understood: "ENTENDIDO",
-    // Titles for HUD buttons
-    open_title: "Abrir imagen (Ctrl+O)",
-    fit_title: "Ajustar a la ventana (F)",
-    orig_title: "Tamaño original 1:1 (1)",
-    fs_title: "Pantalla completa (Enter)",
-    save_title: "Guardar cambios (Ctrl+S)",
-    rot_l_title: "Rotar a la izquierda (L)",
-    rot_r_title: "Rotar a la derecha (R)",
-    crop_title: "Recortar (C)",
-    copy_title: "Copiar Imagen (Ctrl+C)",
-    ghost_title: "Modo Ghost (G)",
-    trash_title: "Mover a la Papelera (Delete)",
-    // Additional toasts
-    toast_saving_crop: "GUARDANDO RECORTE...",
-    toast_invalid_crop: "ÁREA DE RECORTE INVÁLIDA",
-    toast_crop_saved: "RECORTE GUARDADO",
-    toast_initializing_engine: "INICIALIZANDO MOTOR...",
-    toast_focusing_workspace: "ENFOCANDO ÁREA DE TRABAJO...",
-    toast_saving_changes: "GUARDANDO CAMBIOS...",
-    toast_changes_saved: "CAMBIOS GUARDADOS",
-    toast_path_not_found: "RUTA NO ENCONTRADA",
-    toast_image_not_ready: "IMAGEN NO LISTA",
-    resize_orig_title: "Tamaño Original",
-    resize_target_title: "Tamaño de Destino",
-    resize_alteration_lbl: "Alteración:",
-    resize_est_weight_lbl: "Resultado:",
-    resize_lock_aspect: "Mantener proporción de aspecto",
-    resize_width_tooltip: "Especificar ancho destino en píxeles",
-    resize_height_tooltip: "Especificar alto destino en píxeles",
-    resize_slider_tooltip: "Ajustar porcentaje de escala",
-    resize_width_slider_tooltip: "Ajustar porcentaje de escala del ancho",
-    resize_height_slider_tooltip: "Ajustar porcentaje de escala del alto",
-    resize_preset_1_1: "Relación cuadrada (1080x1080 px)",
-    resize_preset_720p: "Alta Definición 16:9 (1280x720 px)",
-    resize_preset_1080p: "Full HD 16:9 (1920x1080 px)",
-    resize_preset_25: "Reducir escala al 25%",
-    resize_preset_50: "Reducir escala al 50%",
-    resize_preset_200: "Aumentar escala al 200%",
-    resize_algo_nearest: "Remuestreo por Vecino Más Próximo (Rápido y nítido)",
-    resize_algo_bilinear: "Remuestreo Bilineal (Equilibrado y suave)",
-    resize_algo_bicubic: "Remuestreo Bicúbico (Alta calidad y ultra suave)",
-    resize_algo_fast_lbl: "Fast",
-    resize_algo_balanced_lbl: "Balanced",
-    resize_algo_hq_lbl: "High Quality",
-    resize_width_lbl: "ANCHO",
-    resize_height_lbl: "ALTO",
-    resize_copy_tooltip: "Activar para guardar como archivo nuevo, desactivar para sobrescribir",
-    resize_cancel_tooltip: "Cancelar y cerrar esta ventana",
-    resize_apply_tooltip: "Redimensionar y guardar la imagen",
-    resize_title: "[CYBERVIEWER REDIMENSIONAR]",
-    resize_dimensions: "Dimensiones de Destino",
-    width: "ANCHO (PX)",
-    height: "ALTO (PX)",
-    resize_percentage: "Porcentaje: ",
-    resize_presets: "Ajustes Rápidos",
-    resampling_quality: "Calidad de Remuestreo",
-    resize_apply: "Redimensionar y Guardar",
-    resize_title_btn: "Redimensionar Imagen (R)",
-    toast_resize_success: "IMAGEN REDIMENSIONADA Y GUARDADA",
-    toast_resize_error: "ERROR AL REDIMENSIONAR LA IMAGEN",
-    resize_create_copy: "Crear una Copia",
-    resize_create_copy_desc: "Guardar como archivo nuevo sin sobrescribir el original.",
-    show_folder: "MOSTRAR",
-    show_folder_title: "Mostrar en Carpeta (Ctrl+Shift+O)",
-    menu: "Menú",
-    menu_file: "Archivo",
-    menu_edit: "Editar",
-    menu_view: "Vista",
-    menu_go: "Navegar",
-    menu_help: "Ayuda",
-    menu_open: "Abrir imagen",
-    menu_paste: "Pegar imagen",
-    menu_close_image: "Cerrar imagen",
-    menu_show: "Mostrar en explorador",
-    menu_copy_original: "Copiar Original",
-    menu_copy_path: "Copiar ruta de la imagen",
-    menu_save_as: "Guardar Como...",
-    menu_go_start: "Ir al Principio",
-    menu_go_end: "Ir al Final",
-    menu_hide_session: "Ocultar de esta sesión",
-    menu_restore_hidden: "Restaurar ocultos ({count})",
-    menu_maximize: "Maximizar",
-    menu_restore: "Restaurar",
-    menu_quit: "Salir",
-    menu_autohide_nav: "Ocultar botones de navegación",
-    favorite_add: "Añadir a Favoritos",
-    favorite_remove: "Quitar de Favoritos",
-    menu_save: "Guardar",
-    menu_copy: "Copiar imagen",
-    toast_pasted: "IMAGEN PEGADA DESDE PORTAPAPELES",
-    toast_paste_empty: "NO HAY IMAGEN EN EL PORTAPAPELES",
-    toast_paste_error: "NO SE PUDO PEGAR LA IMAGEN",
-    menu_props: "Propiedades",
-    menu_trash: "Mover a papelera",
-    menu_rotate_l: "Rotar izquierda",
-    menu_rotate_r: "Rotar derecha",
-    menu_crop: "Recortar",
-    menu_resize: "Redimensionar",
-    menu_fit: "Ajustar a ventana",
-    menu_original: "Tamaño real (1:1)",
-    menu_fullscreen: "Pantalla completa",
-    menu_sidebar: "Barra lateral",
-    menu_autohide: "Auto-ocultar HUD",
-    menu_show_hints: "Atajos de teclado",
-    menu_next: "Imagen siguiente",
-    menu_prev: "Imagen anterior",
-    menu_favorite: "Favorito",
-    menu_favs_view: "Ver favoritos",
-    menu_prefs: "Configuración",
-    menu_about: "Acerca de",
-    menu_updates: "Buscar actualizaciones",
-    menu_devtools: "Herramientas de desarrollo",
-    crop_hint_txt: "RECORTAR",
-    resize_hint_txt: "REDIM",
-    ghost_hint_txt: "GHOST",
-    fav_title: "Favorito (Ctrl+D)",
-    toast_load_image_first: "CARGA UNA IMAGEN PRIMERO",
-    show_favorites_lbl: "FAVORITOS",
-    show_all_lbl: "TODAS",
-    about_check_updates: "Buscar Actualizaciones",
-    about_check_on_startup: "Buscar actualizaciones al iniciar",
-    about_checking: "Buscando actualizaciones...",
-    about_up_to_date: "CyberViewer está actualizado.",
-    about_update_avail: "¡Nueva versión disponible!",
-    about_update_err: "No se pudo buscar actualizaciones.",
-    about_download_btn: "Descargar actualización",
-    about_install_btn: "Instalar y reiniciar",
-    about_downloading: "Descargando… {percent}%",
-    about_downloaded: "Actualización lista para instalar",
-    about_open_releases: "Abrir página de releases",
-    about_portable_hint: "La versión portable se actualiza desde GitHub Releases.",
-    about_dev_hint: "Instala el setup NSIS para actualizar desde la app.",
-    about_notify_startup: "Actualización disponible: v{version}",
-    cfg_hud_autohide: "Ocultar barra automáticamente",
-    cfg_hud_autohide_desc: "Ocultar la barra de herramientas tras inactividad.",
-    cfg_nav_autohide: "Ocultar botones de navegación",
-    cfg_nav_autohide_desc: "Ocultar botones de navegación tras inactividad.",
-    cfg_show_hints: "Atajos de Título",
-    cfg_show_hints_desc: "Mostrar accesos rápidos de teclado en la barra superior.",
-    cfg_hud_delay: "Retraso de ocultación",
-    cfg_seconds: "{seconds}s",
-    prev_title: "Imagen Anterior (ArrowLeft / A)",
-    next_title: "Imagen Siguiente (ArrowRight / D / Space)",
-    center_title: "Centrar miniatura activa en el panel lateral",
-    sidebar_favorites: "Favoritos",
-    sidebar_folder_empty: "—"
-  }
-};
+// UI strings: i18n/ui.js → window.CV_I18N (source: i18n/ui.json)
+const I18N = (typeof window !== 'undefined' && window.CV_I18N) ? window.CV_I18N : { en: {}, es: {} };
 
 function updateLanguage(lang = 'en') {
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -662,22 +186,26 @@ function loadFiles(files, initialIdx = 0) {
       syncFavoritesToggleButtonState();
     }
   }
-  const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif'];
+  const allowedExts = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif']);
   const imgs = Array.from(files).filter(f => {
-    if (f.type.startsWith('image/')) return true;
-    const ext = f.name.split('.').pop().toLowerCase();
-    return allowedExts.includes(ext);
+    if (f.type && f.type.startsWith('image/')) return true;
+    const ext = (f.name && f.name.split('.').pop() || '').toLowerCase();
+    return allowedExts.has(ext);
   });
-  
+
   if (!imgs.length) {
     console.warn('No se encontraron imágenes válidas.');
     return;
   }
 
-  // Revoke old URLs
-  state.images.forEach(im => { if (im.url) URL.revokeObjectURL(im.url); });
+  // Revoke old blob URLs; drop preload entries for the previous folder
+  state.images.forEach(im => {
+    if (im.url && String(im.url).startsWith('blob:')) URL.revokeObjectURL(im.url);
+  });
   state.preloadCache.clear();
-  state.images = imgs.map(f => ({ file: f, url: null, w: 0, h: 0, loaded: false, size: f.size }));
+  state.images = imgs.map(f => ({
+    file: f, url: null, thumbUrl: null, w: 0, h: 0, loaded: false, size: f.size
+  }));
 
   const pathsToAllow = state.images.map(im => im.file && im.file.path).filter(Boolean);
   const finishLoad = () => {
@@ -714,18 +242,25 @@ async function scanFolder(filePath) {
 
 async function startBackgroundScan() {
   const total = state.images.length;
-  if (total === 0) return;
-  
+  if (total === 0 || !isElectron) return;
+
   let processed = 0;
   let completedAll = true;
   state.scanInProgress = true;
-  
-  // ORDEN DE ESCANEO: Empezar desde el actual y expandirse (prioridad de cercanía)
-  const start = state.currentIdx;
+  let lastProgressPaint = 0;
+
+  // Expand outward from the current index so nearby thumbs warm first
+  const start = Math.max(0, state.currentIdx);
   const order = [];
-  for (let i = 0; i < total; i++) {
-    const idx = (start + i) % total;
-    order.push(idx);
+  for (let d = 0; d < total; d++) {
+    if (d === 0) {
+      order.push(start);
+    } else {
+      const right = start + d;
+      const left = start - d;
+      if (right < total) order.push(right);
+      if (left >= 0) order.push(left);
+    }
   }
 
   for (const idx of order) {
@@ -735,38 +270,50 @@ async function startBackgroundScan() {
       break;
     }
     const im = state.images[idx];
-    if (im.hidden) continue;
-    
-    await window.electronAPI.getThumbnail(im.file.path);
+    if (!im || im.hidden || !im.file?.path) continue;
+
+    if (!im.thumbUrl) {
+      try {
+        const thumbUrl = await window.electronAPI.getThumbnail(im.file.path);
+        if (thumbUrl) im.thumbUrl = thumbUrl;
+      } catch (_) { /* skip */ }
+    }
     processed++;
-    updateThumbProgress(processed, total);
-    
-    // Si la imagen está a la vista, cargar el thumb ahora mismo
+
+    // Throttle radar HUD updates (~8/s) to cut layout thrash on large folders
+    const now = performance.now();
+    if (now - lastProgressPaint > 120 || processed === total) {
+      lastProgressPaint = now;
+      updateThumbProgress(processed, total);
+    }
+
     const imgEl = sidebar.querySelector(`.thumb-item[data-index="${idx}"] img`);
-    if (imgEl && imgEl.style.opacity === '0') {
-      loadThumb(idx, imgEl);
+    if (imgEl && im.thumbUrl && imgEl.style.opacity === '0') {
+      imgEl.onload = () => { imgEl.style.opacity = '1'; };
+      imgEl.src = im.thumbUrl;
     }
   }
-  
+
+  updateThumbProgress(processed, total);
   if (completedAll) {
     state.scanInProgress = false;
   }
 }
 
 // ── SIDEBAR ──
-function folderDirFromPath(filePath) {
+const folderDirFromPath = CVMedia.folderDirFromPath || function (filePath) {
   if (!filePath) return '';
   const norm = String(filePath).replace(/[\\/]+$/, '');
   const i = Math.max(norm.lastIndexOf('\\'), norm.lastIndexOf('/'));
   return i >= 0 ? norm.slice(0, i) : '';
-}
+};
 
-function folderNameFromPath(dirPath) {
+const folderNameFromPath = CVMedia.folderNameFromPath || function (dirPath) {
   if (!dirPath) return '';
   const norm = String(dirPath).replace(/[\\/]+$/, '');
   const parts = norm.split(/[\\/]/).filter(Boolean);
   return parts.length ? parts[parts.length - 1] : '';
-}
+};
 
 function updateSidebarFolderHeader() {
   const el = $('sidebar-folder');
@@ -1175,7 +722,6 @@ function buildMenuTemplate(type, data) {
     ];
   } else {
     // Canvas context menu
-    const hiddenCount = state.images.filter(im => im.hidden).length;
     return [
       {
         label: getTxt('menu_file'),
@@ -1302,7 +848,10 @@ function buildMenuTemplate(type, data) {
       },
       {
         label: getTxt('about'),
-        action: () => openAbout()
+        action: () => {
+          if (typeof window.openAbout === 'function') window.openAbout();
+          else if ($('btn-about')) $('btn-about').click();
+        }
       },
       { type: 'separator' },
       {
@@ -1427,7 +976,7 @@ function executeAction(data) {
         
         const visible = state.images.filter(im => !im.hidden);
         if (visible.length === 0) {
-          location.reload();
+          window.location.reload();
         } else {
           // Buscar siguiente visible
           let next = data.index;
@@ -1467,7 +1016,7 @@ function executeAction(data) {
           danger: true,
           onConfirm: async () => {
             try {
-              const result = await window.electronAPI.moveToTrashDirect(data.path);
+              const result = await window.electronAPI.moveToTrash(data.path);
               if (result && result.success) {
                 handleFileDeleted(data.index);
               }
@@ -1657,12 +1206,21 @@ async function saveAsPath(targetPath) {
 }
 
 async function loadThumb(i, imgEl) {
-  if (!state.sidebarOpen) return;
+  if (!state.sidebarOpen || !imgEl) return;
   const im = state.images[i];
-  
+  if (!im) return;
+
+  // Reuse cached thumb URL — avoids duplicate IPC when background scan already warmed the cache
+  if (im.thumbUrl) {
+    imgEl.onload = () => { imgEl.style.opacity = '1'; };
+    imgEl.src = im.thumbUrl;
+    return;
+  }
+
   if (isElectron && im.file?.path) {
     const thumbUrl = await window.electronAPI.getThumbnail(im.file.path);
     if (thumbUrl) {
+      im.thumbUrl = thumbUrl;
       imgEl.onload = () => { imgEl.style.opacity = '1'; };
       imgEl.src = thumbUrl;
       return;
@@ -1674,7 +1232,7 @@ async function loadThumb(i, imgEl) {
   imgEl.src = url;
 }
 
-function updateThumbProgress(p, t, paused = false) {
+function updateThumbProgress(p, t, _paused = false) {
   const total = t !== undefined ? t : state.images.length;
   const pct = total > 0 ? Math.round((p / total) * 100) : 0;
   $('radar-pct').textContent = pct + '%';
@@ -1683,11 +1241,12 @@ function updateThumbProgress(p, t, paused = false) {
 
 function getUrl(i) {
   const im = state.images[i];
+  if (!im) return '';
   if (im.url) return im.url;
-  
+
   if (im.file && im.file.path) {
-    // Serve via cvlocal:// (webSecurity-safe)
-    im.url = mediaUrl(im.file.path, Date.now());
+    // Stable cvlocal URL (no random bust) so preloadCache / browser cache can hit
+    im.url = mediaUrl(im.file.path);
   } else if (im.file) {
     im.url = URL.createObjectURL(im.file);
   }
@@ -1705,11 +1264,10 @@ function updateSidebarActive() {
 }
 
 // ── SHOW IMAGE ──
-// ── UI STABILIZER (LEVEL 9 NUCLEAR) ──
+// One-shot chrome settle after first paint (no polling).
 function stabilizeUI() {
   const tb = $('topbar');
   const sb = $('statusbar');
-  const app = $('app');
   if (tb) {
     tb.style.display = 'flex';
     tb.style.height = '48px';
@@ -1720,8 +1278,8 @@ function stabilizeUI() {
     sb.style.height = '28px';
   }
 }
-window.addEventListener('load', stabilizeUI);
-setInterval(stabilizeUI, 3000);
+if (document.readyState === 'complete') stabilizeUI();
+else window.addEventListener('load', stabilizeUI, { once: true });
 
 function showImage(idx, direction, isInitial = false) {
   if (idx < 0 || idx >= state.images.length) return;
@@ -1911,7 +1469,7 @@ function updateSaveButton() {
 }
 
 // ── CROP LOGIC PRO ──
-let cropState = {
+const cropState = {
   active: false,
   x: 50, y: 50, w: 200, h: 200,
   isResizing: false,
@@ -2315,7 +1873,7 @@ async function saveCurrent() {
   }
 }
 // ── RESIZE MODAL LOGIC ──
-let resizeState = {
+const resizeState = {
   aspectRatio: 1,
   lockAspect: true,
   currentAlgo: 'nearest'
@@ -2536,7 +2094,6 @@ function updateResizeDestInfo() {
 
   // 2. Calculate Scale Factor & Alteration percentage
   const scaleW = w / im.w;
-  const scaleH = h / im.h;
   const scalePercent = Math.round(scaleW * 100);
   const alteration = scalePercent - 100;
   const sign = alteration > 0 ? '+' : '';
@@ -2602,7 +2159,8 @@ function updatePresetActiveStates(w, h) {
   });
 }
 
-function applyResizePreset(w, h) {
+// Preset helpers kept for potential HUD bindings / future UI
+function _applyResizePreset(w, h) {
   $('resize-width').value = w;
   if (resizeState.lockAspect) {
     $('resize-height').value = Math.round(w / resizeState.aspectRatio);
@@ -2613,7 +2171,7 @@ function applyResizePreset(w, h) {
   updateResizeDestInfo();
 }
 
-function applyResizeScalePreset(scale) {
+function _applyResizeScalePreset(scale) {
   const idx = state.current;
   if (idx === undefined || idx === -1) return;
   const im = state.images[idx];
@@ -2766,6 +2324,7 @@ function applyTransform(animate) {
 }
 
 function sliderToZoom(val) {
+  if (CVMedia.sliderToZoom) return CVMedia.sliderToZoom(val, ZOOM_MIN, ZOOM_MAX);
   const minL = Math.log10(ZOOM_MIN);
   const maxL = Math.log10(ZOOM_MAX);
   const t = Math.max(0, Math.min(1, val / 1000));
@@ -2773,6 +2332,7 @@ function sliderToZoom(val) {
 }
 
 function zoomToSlider(zoom) {
+  if (CVMedia.zoomToSlider) return CVMedia.zoomToSlider(zoom, ZOOM_MIN, ZOOM_MAX);
   const minL = Math.log10(ZOOM_MIN);
   const maxL = Math.log10(ZOOM_MAX);
   const t = (Math.log10(zoom) - minL) / (maxL - minL);
@@ -3074,8 +2634,8 @@ document.addEventListener('keydown', e => {
     case 'g': case 'G': if (!isCtrl && checkImageLoaded()) toggleFullscreen(); break;
     case 'f': if (!isCtrl && checkImageLoaded()) $('btn-fit-hud').click(); break;
     case '1': if (!isCtrl && checkImageLoaded()) $('btn-orig-hud').click(); break;
-    case 'delete': 
-      if (checkImageLoaded()) removeCurrentImage();
+    case 'delete':
+      if (checkImageLoaded()) trashCurrentImage();
       break;
     case 'enter':
       e.preventDefault();
@@ -3159,7 +2719,7 @@ async function trashCurrentImage() {
     onConfirm: async () => {
       if (isElectron && im.file && im.file.path) {
         try {
-          const result = await window.electronAPI.moveToTrashDirect(im.file.path);
+          const result = await window.electronAPI.moveToTrash(im.file.path);
           if (result && result.success) {
             handleFileDeleted(idx);
           }
@@ -4002,61 +3562,59 @@ $('btn-center').addEventListener('click', () => {
   async function openAbout() {
     const lang = state.settings.app.language || 'en';
     const t = I18N[lang] || I18N.en;
-    const version = isElectron ? await window.electronAPI.getVersion() : '1.6.2';
-    const subtitle = lang === 'es' ? `v${version} — Visor Pro` : `v${version} — Pro Viewer`;
+    const version = (isElectron && window.electronAPI.getVersion)
+      ? await window.electronAPI.getVersion()
+      : '';
+    const subtitle = lang === 'es'
+      ? `v${version || '—'} — Visor Pro`
+      : `v${version || '—'} — Pro Viewer`;
     const updateInfo = (isElectron && window.electronAPI.getUpdateInfo)
       ? await window.electronAPI.getUpdateInfo()
       : { canUpdate: false, portable: false };
 
     overlay.innerHTML = `
-      <div class="modal-box" style="max-width:400px" role="dialog" aria-modal="true">
+      <div class="modal-box about-modal" role="dialog" aria-modal="true">
         <div class="modal-header">
           <div class="modal-title">${t.about_title}</div>
           <button class="win-btn" id="about-close-btn">&#10005;</button>
         </div>
         <div class="modal-body">
-          <div style="font-size:18px;color:var(--cyber-accent);letter-spacing:0.4px;margin-bottom:4px">
-            [Cyber<span style="color:var(--cyber-accent3)">Viewer</span>]
+          <div class="about-brand">
+            [Cyber<span class="about-brand-accent">Viewer</span>]
           </div>
-          <div style="font-size:11px;color:var(--cyber-muted);margin-bottom:20px">${subtitle}</div>
-          <img src="assets/icon.png" style="width:64px;height:64px;margin-bottom:20px;filter:drop-shadow(0 0 5px rgba(var(--cyber-icon-rgb), 0.45))" alt="Logo">
-          <div style="font-size:12px;color:var(--cyber-text);line-height:1.8">
-            ${t.about_desc}
-          </div>
-          <div style="margin-top:20px;font-size:11px;color:var(--cyber-muted)">
-            ${t.about_formats}
-          </div>
+          <div class="about-subtitle">${subtitle}</div>
+          <img src="assets/icon.png" class="about-logo" alt="Logo">
+          <div class="about-desc">${t.about_desc}</div>
+          <div class="about-formats">${t.about_formats}</div>
           
-          <div style="margin-top:20px; border-top: 1px solid var(--cyber-border); padding-top: 15px; text-align: left;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <span style="font-size:11px; color:var(--cyber-text); font-family:var(--font-ui); text-transform:uppercase;">
-                ${t.about_check_on_startup}
-              </span>
+          <div class="about-update-section">
+            <div class="about-startup-row">
+              <span class="about-startup-label">${t.about_check_on_startup}</span>
               <label class="switch">
                 <input type="checkbox" id="about-startup-update-toggle" ${state.settings.app.checkUpdatesOnStartup !== false ? 'checked' : ''}>
                 <span class="slider"></span>
               </label>
             </div>
             <div id="about-update-banner" class="about-update-banner" aria-live="polite"></div>
-            <div id="about-update-progress" class="about-update-progress" style="display:none;margin-bottom:10px;">
+            <div id="about-update-progress" class="about-update-progress" style="display:none">
               <div class="about-update-track"><div id="about-update-bar" class="about-update-bar"></div></div>
             </div>
-            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-              <button id="about-btn-update" class="top-btn" style="padding: 4px 12px; font-size:10px; border-color:var(--cyber-accent); color:var(--cyber-accent); cursor:pointer;">
+            <div class="about-update-actions">
+              <button id="about-btn-update" class="top-btn about-action-btn about-action-accent">
                 ${t.about_check_updates}
               </button>
-              <button id="about-btn-download" class="top-btn active" style="display:none;padding: 4px 12px; font-size:10px; cursor:pointer;">
+              <button id="about-btn-download" class="top-btn active about-action-btn" style="display:none">
                 ${t.about_download_btn}
               </button>
-              <button id="about-btn-install" class="top-btn active" style="display:none;padding: 4px 12px; font-size:10px; cursor:pointer;">
+              <button id="about-btn-install" class="top-btn active about-action-btn" style="display:none">
                 ${t.about_install_btn}
               </button>
-              <button id="about-btn-releases" class="top-btn" style="padding: 4px 12px; font-size:10px; border-color:var(--cyber-muted); color:var(--cyber-muted); cursor:pointer;">
+              <button id="about-btn-releases" class="top-btn about-action-btn about-action-muted">
                 ${t.about_open_releases}
               </button>
             </div>
-            <div id="about-update-status" style="margin-top:10px;font-size:10px; font-family:var(--font-ui); color:var(--cyber-muted);"></div>
-            ${!updateInfo.canUpdate ? `<div style="margin-top:8px;font-size:10px;color:var(--cyber-muted)">${updateInfo.portable ? t.about_portable_hint : t.about_dev_hint}</div>` : ''}
+            <div id="about-update-status" class="about-update-status"></div>
+            ${!updateInfo.canUpdate ? `<div class="about-update-hint">${updateInfo.portable ? t.about_portable_hint : t.about_dev_hint}</div>` : ''}
           </div>
         </div>
         <div class="modal-footer">
@@ -4115,6 +3673,7 @@ $('btn-center').addEventListener('click', () => {
   }
 
   overlay.addEventListener('click', e => { if (e.target === overlay) closeAbout(); });
+  window.openAbout = openAbout;
   $('btn-about').addEventListener('click', openAbout);
   $('logo-trigger').addEventListener('click', openAbout);
 })();
@@ -4185,7 +3744,7 @@ $('btn-config').addEventListener('click', openConfig);
         if (fpath) showPropertiesPanel(fpath);
         break;
       }
-      case 'trash':          removeCurrentImage(); break;
+      case 'trash':          trashCurrentImage(); break;
       case 'rotate-left':    rotate(-90); break;
       case 'rotate-right':   rotate(90); break;
       case 'crop':           $('btn-crop').click(); break;
@@ -4317,7 +3876,7 @@ function toggleFavorite() {
   if (!im || !im.file || !im.file.path) return;
   
   const path = im.file.path;
-  let favs = state.settings.app.favorites || [];
+  const favs = state.settings.app.favorites || [];
   const index = favs.indexOf(path);
   
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
@@ -4410,6 +3969,11 @@ async function toggleFavoritesView() {
       if (validFavs.length === 0) {
         showToast(lang === 'es' ? 'No hay favoritos guardados en disco' : 'No favorites found on disk', 'info');
         return;
+      }
+
+      // validate-paths does not expand the allowlist — register before loading
+      if (window.electronAPI.registerPaths) {
+        await window.electronAPI.registerPaths(validFavs);
       }
       
       state.nonFavImages = [...state.images];
@@ -4536,13 +4100,6 @@ function showCyberConfirm({ title, message, detail, danger = true, onConfirm }) 
 }
 
 // ── PROPERTIES PANEL ──
-function formatBytes(bytes) {
-  if (bytes === null || bytes === undefined) return '-';
-  if (bytes > 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
-  if (bytes > 1024) return (bytes / 1024).toFixed(1) + ' KB';
-  return bytes + ' B';
-}
-
 let propsNativePath = null;
 
 async function showPropertiesPanel(rawPath) {

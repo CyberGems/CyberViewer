@@ -10,7 +10,8 @@
     "build": "electron-builder --win --x64 --publish never",
     "build:portable": "electron-builder --win portable --x64 --publish never",
     "test": "node --test test/**/*.test.js",
-    "lint": "eslint main.js preload.js lib test"
+    "lint": "eslint main.js preload.js lib test js",
+    "i18n:sync": "node scripts/sync-i18n-ui.js"
   },
   "dependencies": {
     "electron-updater": "^6.6.2"

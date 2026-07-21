@@ -12,9 +12,14 @@ CyberViewer/
 ├── preload.js           contextBridge → window.electronAPI
 ├── CyberViewer.html     Shell markup
 ├── css/app.css          Styles
-├── js/app.js            Renderer logic
-├── lib/                 Shared Node helpers (paths, thumb cache)
-├── i18n/menu.json       Menu/tray strings (EN/ES)
+├── js/
+│   ├── app.js           Renderer UI logic
+│   └── media-helpers.js Pure helpers (mediaUrl, canvasExport, …)
+├── lib/                 Shared Node helpers (paths, thumb cache, updater, bounds)
+├── i18n/
+│   ├── menu.json        Menu/tray/dialog strings (EN/ES)
+│   ├── ui.json          Renderer UI strings (source of truth)
+│   └── ui.js            Generated loader for the renderer (`npm run i18n:sync`)
 ├── assets/              Icons
 ├── package.json
 └── test/                Node unit tests
@@ -77,9 +82,12 @@ Release tags (`v*`) must publish `latest.yml`, `.blockmap`, and the Setup `.exe`
 
 ## Security notes
 
-- `webSecurity` is enabled.
-- Local images are served through the `cvlocal://` protocol with a path allowlist (folders you open / register).
+- `webSecurity` is enabled; HTML ships a Content-Security-Policy.
+- Local images are served through the `cvlocal://` protocol (streamed) with a path allowlist.
+- Allowlist expansion from the renderer only accepts **existing image files** (`register-paths`); `validate-paths` checks existence without widening access.
+- Folder scans only run for neighbors of an existing image file.
 - Renderer has `nodeIntegration: false` and `contextIsolation: true`.
+- DevTools IPC is disabled in packaged builds.
 
 ## Supported formats
 
