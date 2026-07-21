@@ -759,8 +759,7 @@
     width: var(--panel-w);
     min-width: var(--panel-w);
     background: var(--cyber-panel);
-    /* Edge line is the handle rail — avoid a second thick border */
-    border-right: none;
+    border-right: none; /* edge line is #sidebar-edge-rail */
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
@@ -843,76 +842,88 @@
   }
   
   /*
-   * Same rail + pill for open and closed (collapsed style was the target look).
-   * Thin 2px rail always; hover only changes color/glow — never thickness.
+   * Edge rail = dedicated full-height element (never half-height flex bugs).
+   * Handle = only the pill hit target (not a full-height flex box).
+   * Hover: same 1px thickness; soft outer glow only.
    */
-  #sidebar-handle {
+  #sidebar-edge-rail {
     position: absolute;
     top: 0;
     bottom: 0;
     left: var(--panel-w);
-    width: 26px;
-    z-index: 35;
+    width: 1px;
+    z-index: 34;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: rgba(48, 64, 88, 0.75);
+    pointer-events: none;
+    transition: background 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  }
+  body:not(.sidebar-open) #sidebar-edge-rail {
+    left: 0;
+  }
+  body.sidebar-handle-hover #sidebar-edge-rail {
+    background: var(--cyber-accent);
+    box-shadow:
+      0 0 6px rgba(var(--cyber-accent-rgb), 0.55),
+      0 0 12px rgba(var(--cyber-accent-rgb), 0.25);
+  }
+  body.ghost-mode #sidebar-edge-rail {
+    display: none;
+  }
+
+  /* Pill + click strip — height comes from the pill, not the full viewport */
+  #sidebar-handle {
+    position: absolute;
+    top: 50%;
+    left: var(--panel-w);
+    width: 28px;
+    height: 48px;
+    margin: 0;
+    transform: translate(-50%, -50%);
+    z-index: 36;
     background: transparent;
     border: none;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: block;
     user-select: none;
     overflow: visible;
     -webkit-app-region: no-drag;
   }
-  body.sidebar-open #sidebar-handle {
-    left: var(--panel-w);
-  }
   body:not(.sidebar-open) #sidebar-handle {
     left: 0;
-    width: 30px;
+    transform: translate(0, -50%);
+    width: 32px;
   }
-  /* Full-height rail — open and closed (same language as collapsed look) */
-  #sidebar-handle::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    width: 2px;
-    height: 100%;
-    background: rgba(48, 64, 88, 0.95);
-    border-radius: 1px;
-    z-index: 0;
-    pointer-events: none;
-    transition: background 0.15s ease, box-shadow 0.15s ease;
+  body.ghost-mode #sidebar-handle {
+    display: none;
   }
-  body.sidebar-handle-hover #sidebar-handle::before,
-  #sidebar-handle:hover::before {
-    width: 2px; /* keep thin — no “fat” hover bar */
-    background: var(--cyber-accent);
-    box-shadow:
-      0 0 8px rgba(var(--cyber-accent-rgb), 0.55),
-      0 0 14px rgba(var(--cyber-accent-rgb), 0.28);
-  }
-  /* Pill above the rail */
+
   #sidebar-handle-arrow {
-    position: relative;
-    z-index: 2;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 42px;
+    width: 22px;
+    height: 40px;
     background: #121820;
-    border: 1px solid rgba(var(--cyber-accent-rgb), 0.55);
-    border-radius: 11px;
-    font-size: 12px;
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.5);
+    border-radius: 10px;
+    font-size: 11px;
     color: var(--cyber-accent);
     box-shadow:
-      0 2px 10px rgba(0, 0, 0, 0.75),
-      0 0 10px rgba(var(--cyber-accent-rgb), 0.25);
+      0 2px 8px rgba(0, 0, 0, 0.7),
+      0 0 8px rgba(var(--cyber-accent-rgb), 0.2);
     transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, background 0.15s ease;
-    flex-shrink: 0;
     pointer-events: none;
+  }
+  body:not(.sidebar-open) #sidebar-handle-arrow {
+    left: 11px;
+    transform: translate(0, -50%);
   }
   body.sidebar-handle-hover #sidebar-handle-arrow,
   #sidebar-handle:hover #sidebar-handle-arrow {
@@ -920,9 +931,16 @@
     border-color: var(--cyber-accent);
     color: #e8fbff;
     box-shadow:
-      0 0 16px rgba(var(--cyber-accent-rgb), 0.5),
-      0 2px 10px rgba(0, 0, 0, 0.8);
-    transform: scale(1.05);
+      0 0 14px rgba(var(--cyber-accent-rgb), 0.45),
+      0 2px 8px rgba(0, 0, 0, 0.75);
+  }
+  body.sidebar-open.sidebar-handle-hover #sidebar-handle-arrow,
+  body.sidebar-open #sidebar-handle:hover #sidebar-handle-arrow {
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+  body:not(.sidebar-open).sidebar-handle-hover #sidebar-handle-arrow,
+  body:not(.sidebar-open) #sidebar-handle:hover #sidebar-handle-arrow {
+    transform: translate(0, -50%) scale(1.05);
   }
 
   #sidebar-scroll {

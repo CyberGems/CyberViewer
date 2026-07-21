@@ -3166,7 +3166,6 @@ $('btn-next').addEventListener('click', (e) => {
 });
 
 function setSidebarOpen(open) {
-  // Drop hover styles before reflow so the rail never flashes over the scrollbar
   document.body.classList.remove('sidebar-handle-hover');
 
   state.sidebarOpen = !!open;
@@ -3176,7 +3175,6 @@ function setSidebarOpen(open) {
   const handle = $('sidebar-handle');
   if (handle) {
     handle.style.left = '';
-    // Prevent :hover re-firing mid-toggle while the node jumps left/right
     handle.style.pointerEvents = 'none';
     requestAnimationFrame(() => {
       handle.style.pointerEvents = '';
@@ -3202,12 +3200,11 @@ function setSidebarOpen(open) {
 
 const sidebarHandleEl = $('sidebar-handle');
 if (sidebarHandleEl) {
-  sidebarHandleEl.addEventListener('mouseenter', () => {
-    document.body.classList.add('sidebar-handle-hover');
-  });
-  sidebarHandleEl.addEventListener('mouseleave', () => {
-    document.body.classList.remove('sidebar-handle-hover');
-  });
+  const setHandleHover = (on) => {
+    document.body.classList.toggle('sidebar-handle-hover', !!on);
+  };
+  sidebarHandleEl.addEventListener('mouseenter', () => setHandleHover(true));
+  sidebarHandleEl.addEventListener('mouseleave', () => setHandleHover(false));
   sidebarHandleEl.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
