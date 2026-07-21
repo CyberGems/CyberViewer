@@ -1608,6 +1608,21 @@
     margin-right: 6px;
     flex-shrink: 0;
   }
+  .kbd-ico.kbd-ico-solo {
+    width: 16px;
+    height: 16px;
+    margin-right: 0;
+    vertical-align: middle;
+  }
+  #img-weight,
+  #img-dims {
+    color: var(--cyber-text);
+    font-variant-numeric: tabular-nums;
+    min-width: 4.5ch;
+  }
+  #footer-weight {
+    min-width: 5.5rem;
+  }
   .kbd-sep {
     width: 1px;
     height: 22px;

@@ -207,7 +207,14 @@ function loadFiles(files, initialIdx = 0) {
   });
   state.preloadCache.clear();
   state.images = imgs.map(f => ({
-    file: f, url: null, thumbUrl: null, w: 0, h: 0, loaded: false, size: f.size
+    file: f,
+    url: null,
+    thumbUrl: null,
+    w: 0,
+    h: 0,
+    loaded: false,
+    // File API uses .size; scan-folder returns size on the plain object
+    size: (f && (f.size || f.size === 0)) ? f.size : 0
   }));
 
   const pathsToAllow = state.images.map(im => im.file && im.file.path).filter(Boolean);
@@ -2431,23 +2438,59 @@ $('zoom-slider').addEventListener('wheel', (e) => {
 }, { passive: false });
 
 function updateFileStats() {
-  if (state.current === -1) {
-    $('img-dims').innerText = '0 x 0px';
-    $('img-weight').innerText = '0 KB';
+  const dimsEl = $('img-dims');
+  const weightEl = $('img-weight');
+  if (!dimsEl || !weightEl) return;
+
+  if (state.current === -1 || !state.images[state.current]) {
+    dimsEl.textContent = '—';
+    weightEl.textContent = '—';
     return;
   }
+
   const im = state.images[state.current];
-  $('img-dims').innerText = `${im.w || mainImg.naturalWidth} x ${im.h || mainImg.naturalHeight}px`;
-  
-  let sizeText = '0 KB';
-  if (im.size) {
-    if (im.size > 1024 * 1024) {
-      sizeText = (im.size / (1024 * 1024)).toFixed(2) + ' MB';
+  const w = im.w || mainImg.naturalWidth || 0;
+  const h = im.h || mainImg.naturalHeight || 0;
+  dimsEl.textContent = (w && h) ? `${w} × ${h}px` : '—';
+
+  // Prefer known size on the image entry / File object
+  let bytes = Number(im.size);
+  if (!Number.isFinite(bytes) || bytes <= 0) {
+    bytes = Number(im.file && im.file.size);
+  }
+  if (Number.isFinite(bytes) && bytes > 0) {
+    im.size = bytes;
+    weightEl.textContent = formatBytes(bytes);
+  } else {
+    weightEl.textContent = '…';
+    // Resolve from disk when size wasn't provided by the open/scan path
+    const fpath = im.file && im.file.path;
+    if (isElectron && fpath && window.electronAPI.getFileInfo) {
+      const token = fpath + '@' + state.current;
+      weightEl.dataset.pending = token;
+      window.electronAPI.getFileInfo(fpath).then((info) => {
+        if (!info || weightEl.dataset.pending !== token) return;
+        if (state.current < 0 || !state.images[state.current]) return;
+        const cur = state.images[state.current];
+        if (!cur.file || cur.file.path !== fpath) return;
+        if (Number.isFinite(info.size) && info.size >= 0) {
+          cur.size = info.size;
+          if (cur.file) cur.file.size = info.size;
+          weightEl.textContent = formatBytes(info.size);
+        } else {
+          weightEl.textContent = '—';
+        }
+        delete weightEl.dataset.pending;
+      }).catch(() => {
+        if (weightEl.dataset.pending === token) {
+          weightEl.textContent = '—';
+          delete weightEl.dataset.pending;
+        }
+      });
     } else {
-      sizeText = (im.size / 1024).toFixed(1) + ' KB';
+      weightEl.textContent = '—';
     }
   }
-  $('img-weight').innerText = sizeText;
 }
 
 function zoomAt(delta, cx, cy) {

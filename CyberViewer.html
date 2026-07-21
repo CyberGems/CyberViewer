@@ -208,9 +208,13 @@
         <button class="kbd-btn kbd-always" id="btn-open-hud" data-i18n-title="open_title" title="Abrir imagen (Ctrl+O)"><svg class="kbd-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/></svg><span data-i18n="open_dir">ABRIR</span></button>
         <button class="kbd-btn needs-image" id="btn-show-folder" data-i18n-title="show_folder_title" title="Mostrar en Carpeta (Ctrl+Shift+O)"><svg class="kbd-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><path d="m9.5 14.5 5-5"/><path d="M11 9.5h3.5V13"/></svg><span data-i18n="show_folder">SHOW</span></button>
         <div class="kbd-sep needs-image"></div>
-        <button class="kbd-btn needs-image" id="btn-fit-hud" data-i18n-title="fit_title" title="Ajustar (F)"><span data-i18n="fit_to_window">AJUSTAR</span></button>
-        <button class="kbd-btn needs-image" id="btn-orig-hud" data-i18n-title="orig_title" title="Original (1)">1:1</button>
-        <button class="kbd-btn needs-image" id="btn-fs-hud" data-i18n-title="fs_title" title="Full (Enter)"><span data-i18n="fullscreen">PANTALLA</span></button>
+        <button class="kbd-btn needs-image kbd-icon" id="btn-fit-hud" data-i18n-title="fit_title" data-tooltip="Ajustar a la ventana (F)" aria-label="Ajustar">
+          <svg class="kbd-ico kbd-ico-solo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+        </button>
+        <button class="kbd-btn needs-image kbd-icon" id="btn-orig-hud" data-i18n-title="orig_title" data-tooltip="Tamaño original 1:1 (1)" aria-label="1:1">1:1</button>
+        <button class="kbd-btn needs-image kbd-icon" id="btn-fs-hud" data-i18n-title="fs_title" data-tooltip="Pantalla completa (Enter)" aria-label="Pantalla completa">
+          <svg class="kbd-ico kbd-ico-solo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+        </button>
         <div class="kbd-sep needs-image"></div>
         <!-- Rotate cluster: floating save/discard anchors above these buttons -->
         <div class="edit-cluster needs-image" id="edit-cluster">
