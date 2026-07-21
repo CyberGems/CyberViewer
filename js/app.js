@@ -1462,13 +1462,42 @@ async function rotateAndSave(deg) {
   await saveCurrent();
 }
 
+/**
+ * Floating discard/save chip — keeps the main toolbar stable when rotating.
+ * Shown for pending rotation / unsaved clipboard image (not during crop UI).
+ */
 function updateSaveButton() {
-  const btn = $('btn-save');
-  if (!btn) return;
+  const bar = $('pending-actions');
+  if (!bar) return;
   const im = state.images[state.current];
   const unsavedClipboard = !!(im && !imageDiskPath(im));
-  if (state.hasChanges || state.isCropping || unsavedClipboard) btn.classList.add('active');
-  else btn.classList.remove('active');
+  const show = !state.isCropping && !!(state.hasChanges || unsavedClipboard) && state.current >= 0;
+  bar.hidden = !show;
+  bar.classList.toggle('visible', show);
+}
+
+/** Discard preview rotation (and leave toolbar layout untouched). */
+function discardPendingChanges() {
+  if (state.isCropping) {
+    // Crop has its own cancel path
+    const cancelBtn = $('btn-crop-cancel');
+    if (cancelBtn) cancelBtn.click();
+    return;
+  }
+
+  const hadRotation = state.currentRotation !== 0 || state.hasChanges;
+  state.currentRotation = 0;
+  state.hasChanges = false;
+  mainImg.style.transition = 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
+  mainImg.style.transform = 'rotate(0deg)';
+  updateSaveButton();
+  updateHUDStates();
+
+  if (hadRotation) {
+    const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+    const t = I18N[lang] || I18N.en || {};
+    showToast(t.toast_changes_discarded || 'CHANGES DISCARDED', 'info');
+  }
 }
 
 // ── CROP LOGIC PRO ──
@@ -2492,7 +2521,7 @@ function syncEmptyState() {
   });
 
   // Nested buttons inside .control-group.needs-image
-  ['btn-show-folder', 'btn-fit-hud', 'btn-orig-hud', 'btn-fs-hud', 'btn-save',
+  ['btn-show-folder', 'btn-fit-hud', 'btn-orig-hud', 'btn-fs-hud',
     'btn-rot-l', 'btn-rot-r', 'btn-crop', 'btn-resize', 'btn-copy', 'btn-trash', 'btn-fav'
   ].forEach((id) => {
     const el = $(id);
@@ -2620,6 +2649,12 @@ document.addEventListener('keydown', e => {
       menuPanel.classList.remove('open');
       const btnMenu = $('btn-menu');
       if (btnMenu) btnMenu.classList.remove('open');
+      e.preventDefault();
+      return;
+    }
+    // Discard pending rotation before other escapes
+    if (state.hasChanges && !state.isCropping) {
+      discardPendingChanges();
       e.preventDefault();
       return;
     }
@@ -3046,10 +3081,20 @@ $('btn-rot-r').addEventListener('click', () => {
   if (!checkImageLoaded()) return;
   rotate(90);
 });
-$('btn-save').addEventListener('click', () => {
-  if (!checkImageLoaded()) return;
-  saveCurrent();
-});
+const btnCommit = $('btn-commit');
+if (btnCommit) {
+  btnCommit.addEventListener('click', () => {
+    if (!checkImageLoaded()) return;
+    saveCurrent();
+  });
+}
+const btnDiscard = $('btn-discard');
+if (btnDiscard) {
+  btnDiscard.addEventListener('click', () => {
+    if (!checkImageLoaded()) return;
+    discardPendingChanges();
+  });
+}
 
 $('btn-copy').addEventListener('click', () => {
   if (!checkImageLoaded()) return;
@@ -3487,19 +3532,19 @@ function updateHUDStates() {
   const rotR = $('btn-rot-r');
   const crop = $('btn-crop');
   const fsBtn = $('btn-fs-hud');
-  const save = $('btn-save');
+  const commit = $('btn-commit');
 
-  const hasChanges = (state.currentRotation !== 0);
+  const hasChanges = (state.currentRotation !== 0) || state.hasChanges;
 
-  // ROTACIÓN / GUARDAR
+  // ROTACIÓN / floating commit
   if (hasChanges) {
     if (rotL) rotL.classList.add('active');
     if (rotR) rotR.classList.add('active');
-    if (save) save.classList.add('active');
+    if (commit) commit.classList.add('active');
   } else {
     if (rotL) rotL.classList.remove('active');
     if (rotR) rotR.classList.remove('active');
-    if (save) save.classList.remove('active');
+    if (commit) commit.classList.remove('active');
   }
 
   // RECORTE
@@ -3515,6 +3560,8 @@ function updateHUDStates() {
   } else {
     if (fsBtn) fsBtn.classList.remove('active');
   }
+
+  updateSaveButton();
 }
 
 $('btn-center').addEventListener('click', () => {

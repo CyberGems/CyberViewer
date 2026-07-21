@@ -18,7 +18,7 @@
   <div style="flex:1;-webkit-app-region:drag"></div>
   <div class="top-hints" id="top-hints">
     <div class="hint-group">
-      <kbd class="cyber-key">A</kbd><kbd class="cyber-key">D</kbd>
+      <kbd class="cyber-key cyber-key-arrow">←</kbd><kbd class="cyber-key cyber-key-arrow">→</kbd>
       <span class="hint-txt" data-i18n="navigate_hint">NAVEGAR</span>
     </div>
     <div class="hint-sep">|</div>
@@ -29,7 +29,7 @@
     <div class="hint-sep">|</div>
     <div class="hint-group">
       <kbd class="cyber-key" data-i18n="key_drag">Drag</kbd>
-      <span class="hint-txt" data-i18n="pan_hint">PAN</span>
+      <span class="hint-txt" data-i18n="pan_hint">MOVER</span>
     </div>
     <div class="hint-sep">|</div>
     <div class="hint-group">
@@ -222,7 +222,6 @@
         <button class="kbd-btn needs-image" id="btn-orig-hud" data-i18n-title="orig_title" title="Original (1)">1:1</button>
         <button class="kbd-btn needs-image" id="btn-fs-hud" data-i18n-title="fs_title" title="Full (Enter)"><span data-i18n="fullscreen">PANTALLA</span></button>
         <div class="kbd-sep needs-image"></div>
-        <button class="kbd-btn save-btn needs-image" id="btn-save" data-i18n-title="save_title" title="Guardar cambios (Ctrl+S)"><span data-i18n="save">GUARDAR</span></button>
         <button class="kbd-btn needs-image kbd-icon" id="btn-rot-l" data-i18n-title="rot_l_title" title="Rotar Izquierda (L)">&#8634;</button>
         <button class="kbd-btn needs-image kbd-icon" id="btn-rot-r" data-i18n-title="rot_r_title" title="Rotar Derecha (R)">&#8635;</button>
         <button class="kbd-btn needs-image kbd-icon" id="btn-crop" data-i18n-title="crop_title" title="Recortar (C)">&#9986;</button>
@@ -232,6 +231,16 @@
         <button class="kbd-btn needs-image kbd-icon" id="btn-trash" data-i18n-title="trash_title" title="Mover a la Papelera (Delete)" style="color:var(--cyber-accent2)">&#128465;&#xFE0E;</button>
         <div class="kbd-sep needs-image"></div>
         <button class="kbd-btn needs-image kbd-icon" id="btn-fav" data-i18n-title="fav_title" title="Favorito (Ctrl+D)">&#9734;</button>
+      </div>
+
+      <!-- Floating commit bar: appears above toolbar when there are pending changes -->
+      <div id="pending-actions" class="pending-actions" hidden aria-live="polite">
+        <button type="button" class="pending-btn pending-cancel cyber-tooltip tooltip-bottom" id="btn-discard" data-i18n-title="discard_title" data-tooltip="Cancelar">
+          <svg class="pending-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+        <button type="button" class="pending-btn pending-save cyber-tooltip tooltip-bottom" id="btn-commit" data-i18n-title="save_title" data-tooltip="Guardar (Ctrl+S)">
+          <svg class="pending-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+        </button>
       </div>
     </div>
 

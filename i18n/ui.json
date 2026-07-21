@@ -3,7 +3,7 @@
     "no_images": "— no images —",
     "navigate_hint": "NAVIGATE",
     "zoom_hint": "ZOOM",
-    "pan_hint": "PAN",
+    "pan_hint": "MOVE",
     "sidebar_title": "Sidebar",
     "panel": "Panel",
     "config": "Configuration",
@@ -74,7 +74,7 @@
     "fit_title": "Fit to Window (F)",
     "orig_title": "Original Size 1:1 (1)",
     "fs_title": "Fullscreen (Enter)",
-    "save_title": "Save Changes (Ctrl+S)",
+    "save_title": "Save changes (Ctrl+S)",
     "rot_l_title": "Rotate Left (L)",
     "rot_r_title": "Rotate Right (R)",
     "crop_title": "Crop (C)",
@@ -218,13 +218,15 @@
     "key_drag": "Drag",
     "key_enter": "Enter",
     "drop_paste": "Paste · Ctrl+V",
-    "status_ready": "Ready"
+    "status_ready": "Ready",
+    "discard_title": "Discard changes",
+    "toast_changes_discarded": "CHANGES DISCARDED"
   },
   "es": {
     "no_images": "— sin imágenes —",
     "navigate_hint": "NAVEGAR",
     "zoom_hint": "ZOOM",
-    "pan_hint": "PAN",
+    "pan_hint": "MOVER",
     "sidebar_title": "Panel lateral",
     "panel": "Panel",
     "config": "Configuración",
@@ -439,6 +441,8 @@
     "key_drag": "Arrastrar",
     "key_enter": "Intro",
     "drop_paste": "Pegar · Ctrl+V",
-    "status_ready": "Listo"
+    "status_ready": "Listo",
+    "discard_title": "Descartar cambios",
+    "toast_changes_discarded": "CAMBIOS DESCARTADOS"
   }
 }
