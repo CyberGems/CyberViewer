@@ -3165,28 +3165,38 @@ $('btn-next').addEventListener('click', (e) => {
   next();
 });
 
-$('sidebar-handle').addEventListener('click', () => {
-  state.sidebarOpen = !state.sidebarOpen;
+function setSidebarOpen(open) {
+  state.sidebarOpen = !!open;
   sidebar.style.display = state.sidebarOpen ? '' : 'none';
   document.body.classList.toggle('sidebar-open', state.sidebarOpen);
-  
+
   const handle = $('sidebar-handle');
-  handle.style.left = state.sidebarOpen ? 'var(--panel-w)' : '0';
-  $('sidebar-handle-arrow').textContent = state.sidebarOpen ? '◂' : '▸';
-  
+  if (handle) {
+    // Position is CSS-driven (body.sidebar-open); clear any stale inline left
+    handle.style.left = '';
+  }
+  const arrow = $('sidebar-handle-arrow');
+  if (arrow) arrow.textContent = state.sidebarOpen ? '◂' : '▸';
+
   if (state.settings && state.settings.app) {
     state.settings.app.sidebarOpen = state.sidebarOpen;
     if (isElectron) {
       window.electronAPI.saveSettings(state.settings.app);
     }
   }
-  
+
   if (state.sidebarOpen) {
     startBackgroundScan();
   } else {
     state.scanInProgress = false;
     updateThumbProgress(0, 0, true);
   }
+}
+
+$('sidebar-handle').addEventListener('click', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  setSidebarOpen(!state.sidebarOpen);
 });
 
 // ── FULLSCREEN ──
@@ -3424,15 +3434,14 @@ function applySettings() {
   document.documentElement.style.setProperty('--cyber-accent-rgb', `${r}, ${g}, ${b}`);
   
   // Visibility
-  state.sidebarOpen = s.sidebarOpen;
+  state.sidebarOpen = s.sidebarOpen !== false;
   if (s.preferredDisplayId) $('cfg-monitor').value = s.preferredDisplayId;
-  sidebar.style.display = s.sidebarOpen ? '' : 'none';
-  document.body.classList.toggle('sidebar-open', s.sidebarOpen);
+  sidebar.style.display = state.sidebarOpen ? '' : 'none';
+  document.body.classList.toggle('sidebar-open', state.sidebarOpen);
   const handle = $('sidebar-handle');
-  if (handle) {
-    handle.style.left = s.sidebarOpen ? 'var(--panel-w)' : '0';
-    $('sidebar-handle-arrow').textContent = s.sidebarOpen ? '◂' : '▸';
-  }
+  if (handle) handle.style.left = '';
+  const arrow = $('sidebar-handle-arrow');
+  if (arrow) arrow.textContent = state.sidebarOpen ? '◂' : '▸';
   // Statusbar: user preference, but empty-state CSS hides it regardless
   if (s.statusbarVisible) {
     $('statusbar').style.display = '';
