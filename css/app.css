@@ -1762,25 +1762,34 @@
   }
   .kbd-btn:active:not(:disabled):not(.is-disabled) { transform: translateY(0); }
 
+  /* Rotate cluster: chip sits directly above ↺ ↻ */
+  .edit-cluster {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
   /* ── Floating pending actions (discard / save) ── */
   .pending-actions {
     position: absolute;
     left: 50%;
-    bottom: calc(var(--dock-h, 56px) + 14px);
-    transform: translateX(-50%) translateY(8px);
-    z-index: 1100;
+    bottom: calc(100% + 10px);
+    transform: translateX(-50%) translateY(6px);
+    z-index: 1200;
     display: none;
     align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    background: rgba(8, 10, 14, 0.92);
-    border: 1px solid rgba(var(--cyber-accent-rgb), 0.28);
+    gap: 8px;
+    padding: 7px 9px;
+    background: rgba(8, 10, 14, 0.94);
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.3);
     border-radius: 999px;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45), 0 0 18px rgba(var(--cyber-accent-rgb), 0.12);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(var(--cyber-accent-rgb), 0.14);
     backdrop-filter: blur(12px);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.22s ease, transform 0.22s ease;
+    transition: opacity 0.2s ease, transform 0.2s ease;
   }
   .pending-actions.visible {
     display: flex;
@@ -1788,15 +1797,44 @@
     pointer-events: auto;
     transform: translateX(-50%) translateY(0);
   }
-  body.ghost-mode .pending-actions {
-    bottom: 96px;
-  }
   body.empty-state .pending-actions {
     display: none !important;
   }
+  /* Hide rotate tooltips while commit chip is open (avoids overlap) */
+  .edit-cluster:has(.pending-actions.visible) #btn-rot-l.cyber-tooltip::after,
+  .edit-cluster:has(.pending-actions.visible) #btn-rot-l.cyber-tooltip::before,
+  .edit-cluster:has(.pending-actions.visible) #btn-rot-r.cyber-tooltip::after,
+  .edit-cluster:has(.pending-actions.visible) #btn-rot-r.cyber-tooltip::before,
+  .edit-cluster:has(.pending-actions.visible) #btn-rot-l:hover::after,
+  .edit-cluster:has(.pending-actions.visible) #btn-rot-l:hover::before,
+  .edit-cluster:has(.pending-actions.visible) #btn-rot-r:hover::after,
+  .edit-cluster:has(.pending-actions.visible) #btn-rot-r:hover::before {
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
+  /* Pending tooltips open upward (default cyber-tooltip), not into the toolbar */
+  .pending-actions .cyber-tooltip::after {
+    bottom: calc(100% + 10px);
+    top: auto;
+    left: 50%;
+    transform: translateX(-50%) translateY(6px);
+    white-space: nowrap;
+  }
+  .pending-actions .cyber-tooltip::before {
+    bottom: calc(100% + 4px);
+    top: auto;
+    left: 50%;
+    transform: translateX(-50%) translateY(6px);
+    border-width: 6px 6px 0;
+    border-color: var(--cyber-accent) transparent transparent transparent;
+  }
+  .pending-actions .cyber-tooltip:hover::after,
+  .pending-actions .cyber-tooltip:hover::before {
+    transform: translateX(-50%) translateY(0);
+  }
   .pending-btn {
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     display: inline-flex;
     align-items: center;
@@ -1807,8 +1845,8 @@
     -webkit-app-region: no-drag;
   }
   .pending-ico {
-    width: 18px;
-    height: 18px;
+    width: 17px;
+    height: 17px;
     display: block;
   }
   .pending-cancel {
@@ -1835,10 +1873,10 @@
   }
 
   .cyber-key-arrow {
-    min-width: 1.35em;
+    min-width: 1.2em;
     text-align: center;
-    font-size: 12px;
-    padding: 2px 5px;
+    font-size: 11px;
+    padding: 1px 4px;
   }
 
   /* Kill stuck CSS tooltips after minimize / blur until next real hover path */
@@ -2313,41 +2351,43 @@
   #app.drag-over #drag-overlay { display: block; }
 
   /* scrollbar */
-  /* Hotkey hints style */
+  /* Hotkey hints style — compact so topbar never feels cramped */
   .cyber-key {
     background: rgba(var(--cyber-accent-rgb), 0.1);
-    border: 1px solid rgba(var(--cyber-accent-rgb), 0.4);
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.35);
     color: var(--cyber-accent);
-    padding: 2px 6px;
+    padding: 1px 5px;
     border-radius: 3px;
     font-family: var(--font-ui);
-    font-size: 11px;
-    font-weight: bold;
+    font-size: 10px;
+    font-weight: 700;
     text-transform: uppercase;
-    box-shadow: 0 0 5px rgba(var(--cyber-accent-rgb), 0.2);
-    margin-right: 4px;
+    box-shadow: none;
+    margin-right: 3px;
     display: inline-block;
     vertical-align: middle;
-    line-height: 1;
+    line-height: 1.15;
   }
   .hint-group {
     display: flex;
     align-items: center;
     font-family: var(--font-ui);
-    font-size: 11px;
+    font-size: 10px;
     color: var(--cyber-muted);
     font-weight: 600;
-    letter-spacing: 1px;
+    letter-spacing: 0.6px;
+    gap: 1px;
   }
   .hint-txt {
-    margin-left: 2px;
+    margin-left: 1px;
     text-transform: uppercase;
   }
   .hint-sep {
     color: var(--cyber-border);
-    opacity: 0.5;
+    opacity: 0.45;
     font-family: var(--font-ui);
-    font-size: 14px;
+    font-size: 11px;
+    margin: 0 1px;
   }
   .top-hints {
     position: absolute;
@@ -2355,7 +2395,8 @@
     transform: translate(-50%, 0);
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
+    max-width: min(52vw, 560px);
     pointer-events: none;
     z-index: 10;
     transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);

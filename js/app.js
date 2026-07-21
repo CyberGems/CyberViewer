@@ -1468,12 +1468,14 @@ async function rotateAndSave(deg) {
  */
 function updateSaveButton() {
   const bar = $('pending-actions');
+  const cluster = $('edit-cluster');
   if (!bar) return;
   const im = state.images[state.current];
   const unsavedClipboard = !!(im && !imageDiskPath(im));
   const show = !state.isCropping && !!(state.hasChanges || unsavedClipboard) && state.current >= 0;
   bar.hidden = !show;
   bar.classList.toggle('visible', show);
+  if (cluster) cluster.classList.toggle('has-pending', show);
 }
 
 /** Discard preview rotation (and leave toolbar layout untouched). */
