@@ -26,7 +26,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   copyImage: (path) => ipcRenderer.send('copy-image', path),
   readClipboardImage: () => ipcRenderer.invoke('clipboard:read-image'),
   moveToTrash: (path) => ipcRenderer.invoke('move-to-trash', path),
-  moveToTrashDirect: (path) => ipcRenderer.invoke('move-to-trash-direct', path),
   onOpenSettings: (cb) => ipcRenderer.on('open-settings', () => cb()),
   showItemInFolder: (path) => ipcRenderer.send('show-item-in-folder', path),
   openNativeProperties: (path) => ipcRenderer.send('open-native-properties', path),
@@ -47,7 +46,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('update:status', handler);
     return () => ipcRenderer.removeListener('update:status', handler);
   },
-  // Legacy alias used by older UI paths
   checkUpdates: () => ipcRenderer.invoke('update:check')
 });
 

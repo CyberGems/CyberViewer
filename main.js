@@ -8,10 +8,12 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const { pathToFileURL } = require('url');
+const { Readable } = require('stream');
 const { execFile } = require('child_process');
 
 const {
-  cleanFsPath, toMediaUrl, createPathAllowlist, IMAGE_EXTS, mimeForPath
+  cleanFsPath, toMediaUrl, createPathAllowlist, IMAGE_EXTS, mimeForPath,
+  isExistingImageFile
 } = require('./lib/paths');
 const { evictThumbCache } = require('./lib/thumb-cache');
 const { clampWindowBounds } = require('./lib/window-bounds');
@@ -37,6 +39,21 @@ const menuI18n = JSON.parse(
 );
 
 const pathAllowlist = createPathAllowlist([__dirname]);
+
+function getUiLang() {
+  try {
+    const s = loadSettings();
+    return (s.app && s.app.language) || 'en';
+  } catch (_) {
+    return 'en';
+  }
+}
+
+function tMenu(key, lang) {
+  const l = lang || getUiLang();
+  const pack = menuI18n[l] || menuI18n.en || {};
+  return pack[key] != null ? pack[key] : (menuI18n.en && menuI18n.en[key]) || key;
+}
 
 function loadSettings() {
   try {
@@ -119,14 +136,26 @@ function registerMediaProtocol() {
         console.warn('cvlocal forbidden:', abs);
         return new Response('Forbidden', { status: 403 });
       }
-      if (!fs.existsSync(abs)) {
+      let st;
+      try {
+        st = await fs.promises.stat(abs);
+      } catch (_) {
         return new Response('Not Found', { status: 404 });
       }
-      const data = await fs.promises.readFile(abs);
-      return new Response(data, {
+      if (!st.isFile()) {
+        return new Response('Not Found', { status: 404 });
+      }
+
+      // Stream file bytes — avoids loading multi-MB images fully into RAM.
+      const nodeStream = fs.createReadStream(abs);
+      const webStream = Readable.toWeb(nodeStream);
+      const isThumb = abs.toLowerCase().includes(`${path.sep}thumb_cache${path.sep}`) ||
+        abs.toLowerCase().includes('/thumb_cache/');
+      return new Response(webStream, {
         headers: {
           'Content-Type': mimeForPath(abs),
-          'Cache-Control': 'no-cache'
+          'Content-Length': String(st.size),
+          'Cache-Control': isThumb ? 'private, max-age=86400' : 'no-cache'
         }
       });
     } catch (e) {
@@ -442,14 +471,23 @@ function createTray() {
 ipcMain.on('win-minimize', () => win.minimize());
 ipcMain.on('win-maximize', () => (win.isMaximized() ? win.unmaximize() : win.maximize()));
 ipcMain.on('win-close', () => win.close());
-ipcMain.on('win-devtools', () => win.webContents.openDevTools());
+ipcMain.on('win-devtools', () => {
+  // DevTools only outside packaged builds
+  if (!app.isPackaged && win && !win.isDestroyed()) {
+    win.webContents.openDevTools();
+  }
+});
 
 ipcMain.handle('open-file-dialog', async () => {
+  const lang = getUiLang();
   const result = await dialog.showOpenDialog(win, {
-    title: 'Abrir Imagen',
+    title: tMenu('dialog_open_title', lang),
     filters: [
-      { name: 'Imágenes', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif'] },
-      { name: 'Todos los archivos', extensions: ['*'] }
+      {
+        name: tMenu('dialog_open_filter_images', lang),
+        extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif']
+      },
+      { name: tMenu('dialog_open_filter_all', lang), extensions: ['*'] }
     ],
     properties: ['openFile']
   });
@@ -470,9 +508,13 @@ ipcMain.handle('show-save-dialog', async (event, options) => {
 });
 
 ipcMain.handle('get-monitors', () => {
+  const lang = getUiLang();
+  const primaryId = screen.getPrimaryDisplay().id;
+  const primaryPrefix = tMenu('monitor_primary', lang);
+  const monLabel = tMenu('monitor_label', lang);
   return screen.getAllDisplays().map((d) => ({
     id: d.id,
-    label: `${d.id === screen.getPrimaryDisplay().id ? '[Principal] ' : ''}Monitor ${d.id}`,
+    label: `${d.id === primaryId ? primaryPrefix : ''}${monLabel.replace('{id}', String(d.id))}`,
     bounds: d.bounds
   }));
 });
@@ -486,37 +528,52 @@ ipcMain.handle('to-media-url', (event, filePath) => {
   }
 });
 
+/** Register only existing image files (widens allowlist to their parent dirs). */
 ipcMain.handle('register-paths', (event, paths) => {
   try {
-    if (!Array.isArray(paths)) return { success: false };
-    for (const p of paths) {
-      if (p) pathAllowlist.allow(cleanFsPath(p));
+    if (!Array.isArray(paths)) return { success: false, registered: [] };
+    const registered = [];
+    const max = 5000;
+    for (let i = 0; i < paths.length && registered.length < max; i++) {
+      const p = paths[i];
+      if (!p) continue;
+      const abs = pathAllowlist.allowImageFile(p);
+      if (abs) registered.push(abs);
     }
-    return { success: true };
+    return { success: true, registered, count: registered.length };
   } catch (e) {
-    return { success: false, error: e.message };
+    return { success: false, error: e.message, registered: [] };
   }
 });
 
-ipcMain.handle('scan-folder', (event, filePath) => {
+ipcMain.handle('scan-folder', async (event, filePath) => {
   try {
     const absFile = cleanFsPath(filePath);
+    // Only scan neighbors of an existing image file (prevents arbitrary directory reads).
+    if (!isExistingImageFile(absFile)) {
+      return [];
+    }
     pathAllowlist.allow(absFile);
     const dir = path.dirname(absFile);
-    pathAllowlist.allow(dir);
 
-    const files = fs.readdirSync(dir);
+    const files = await fs.promises.readdir(dir);
     const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 
-    const filtered = files
+    const imageNames = files
       .filter((f) => IMAGE_EXTS.has(path.extname(f).toLowerCase()))
       .sort((a, b) => collator.compare(a, b));
 
-    return filtered.map((f) => {
+    const results = [];
+    for (const f of imageNames) {
       const fullPath = path.resolve(dir, f);
-      const stats = fs.statSync(fullPath);
-      return { path: fullPath, size: stats.size };
-    });
+      try {
+        const stats = await fs.promises.stat(fullPath);
+        if (stats.isFile()) {
+          results.push({ path: fullPath, size: stats.size });
+        }
+      } catch (_) { /* skip unreadable */ }
+    }
+    return results;
   } catch (e) {
     console.error('Error escaneando carpeta:', e);
     return [];
@@ -527,10 +584,33 @@ const thumbCachePath = path.join(app.getPath('userData'), 'thumb_cache');
 if (!fs.existsSync(thumbCachePath)) fs.mkdirSync(thumbCachePath, { recursive: true });
 pathAllowlist.allow(thumbCachePath);
 
+/** Limit concurrent nativeImage thumb work to avoid CPU spikes on large folders. */
+const THUMB_CONCURRENCY = 3;
+let thumbInFlight = 0;
+const thumbWaiters = [];
+
+function acquireThumbSlot() {
+  if (thumbInFlight < THUMB_CONCURRENCY) {
+    thumbInFlight++;
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    thumbWaiters.push(resolve);
+  }).then(() => {
+    thumbInFlight++;
+  });
+}
+
+function releaseThumbSlot() {
+  thumbInFlight = Math.max(0, thumbInFlight - 1);
+  const next = thumbWaiters.shift();
+  if (next) next();
+}
+
 ipcMain.handle('get-thumbnail', async (event, filePath) => {
   try {
     const abs = resolveAllowedPath(filePath);
-    const stats = fs.statSync(abs);
+    const stats = await fs.promises.stat(abs);
     const normalizedPath = abs.toLowerCase();
     const hash = crypto.createHash('md5').update(normalizedPath + stats.mtimeMs).digest('hex');
     const cacheFile = path.join(thumbCachePath, `${hash}.jpg`);
@@ -539,13 +619,21 @@ ipcMain.handle('get-thumbnail', async (event, filePath) => {
       return toMediaUrl(cacheFile);
     }
 
-    const img = nativeImage.createFromPath(abs);
-    if (img.isEmpty()) return null;
+    await acquireThumbSlot();
+    try {
+      if (fs.existsSync(cacheFile)) {
+        return toMediaUrl(cacheFile);
+      }
+      const img = nativeImage.createFromPath(abs);
+      if (img.isEmpty()) return null;
 
-    const thumb = img.resize({ height: 100, quality: 'better' });
-    fs.writeFileSync(cacheFile, thumb.toJPEG(80));
-    evictThumbCache(thumbCachePath);
-    return toMediaUrl(cacheFile);
+      const thumb = img.resize({ height: 100, quality: 'better' });
+      await fs.promises.writeFile(cacheFile, thumb.toJPEG(80));
+      evictThumbCache(thumbCachePath);
+      return toMediaUrl(cacheFile);
+    } finally {
+      releaseThumbSlot();
+    }
   } catch (e) {
     return null;
   }
@@ -677,15 +765,6 @@ ipcMain.handle('move-to-trash', async (event, filePath) => {
   }
 });
 
-ipcMain.handle('move-to-trash-direct', async (event, filePath) => {
-  try {
-    return await trashFile(filePath);
-  } catch (e) {
-    console.error('Error moving file to trash directly:', e);
-    return { success: false, error: e.message };
-  }
-});
-
 ipcMain.on('show-item-in-folder', (event, filePath) => {
   try {
     if (!filePath) return;
@@ -746,17 +825,24 @@ ipcMain.handle('get-file-info', (event, filePath) => {
   }
 });
 
+/**
+ * Check which paths still exist as image files.
+ * Does NOT expand the allowlist — call register-paths after for paths you will open.
+ */
 ipcMain.handle('validate-paths', (event, paths) => {
   try {
     if (!Array.isArray(paths)) return [];
     return paths.filter((p) => {
       try {
-        const abs = cleanFsPath(p);
-        if (!fs.existsSync(abs)) return false;
-        pathAllowlist.allow(abs);
-        return true;
+        return isExistingImageFile(p);
       } catch (_) {
         return false;
+      }
+    }).map((p) => {
+      try {
+        return cleanFsPath(p);
+      } catch (_) {
+        return p;
       }
     });
   } catch (e) {
@@ -922,11 +1008,14 @@ ipcMain.on('show-context-menu', (event, props) => {
             click: async () => {
               const ext = path.extname(props.path);
               const result = await dialog.showSaveDialog(browserWin, {
-                title: lang === 'es' ? 'Guardar como' : 'Save As',
+                title: tMenu('dialog_save_as_title', lang),
                 defaultPath: path.join(path.dirname(props.path), path.basename(props.path, ext) + '_copy' + ext),
                 filters: [
-                  { name: 'Images', extensions: [ext.substring(1)] },
-                  { name: 'All Files', extensions: ['*'] }
+                  {
+                    name: tMenu('dialog_save_filter_images', lang),
+                    extensions: [ext.substring(1) || 'png']
+                  },
+                  { name: tMenu('dialog_save_filter_all', lang), extensions: ['*'] }
                 ]
               });
               if (!result.canceled && result.filePath) {
