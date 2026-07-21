@@ -57,7 +57,7 @@ const state = {
   panStartX: 0,
   panStartY: 0,
   transitioning: false,
-  sidebarOpen: true,
+  sidebarOpen: false,
   scanInProgress: false,
   preloadCache: new Map(),
   currentRotation: 0,
@@ -70,7 +70,7 @@ const state = {
   nonFavCurrent: -1,
   settings: { 
     app: { 
-      sidebarOpen: true, 
+      sidebarOpen: false, 
       statusbarVisible: true, 
       closeToTray: false, 
       autoStart: false, 
@@ -3483,7 +3483,7 @@ function applySettings() {
   document.documentElement.style.setProperty('--cyber-accent-rgb', `${r}, ${g}, ${b}`);
   
   // Visibility
-  state.sidebarOpen = s.sidebarOpen !== false;
+  state.sidebarOpen = !!s.sidebarOpen;
   if (s.preferredDisplayId) $('cfg-monitor').value = s.preferredDisplayId;
   sidebar.style.display = state.sidebarOpen ? '' : 'none';
   document.body.classList.toggle('sidebar-open', state.sidebarOpen);

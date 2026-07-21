@@ -80,7 +80,7 @@ function loadSettings() {
       startMinimized: false,
       autoStart: false,
       accentColor: '#00d4ff',
-      sidebarOpen: true,
+      sidebarOpen: false,
       statusbarVisible: true,
       preferredDisplayId: 'auto',
       language: 'en',
