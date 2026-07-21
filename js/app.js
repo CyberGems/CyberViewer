@@ -3821,9 +3821,6 @@ $('btn-center').addEventListener('click', () => {
     const version = (isElectron && window.electronAPI.getVersion)
       ? await window.electronAPI.getVersion()
       : '';
-    const subtitle = lang === 'es'
-      ? `v${version || '—'} — Visor Pro`
-      : `v${version || '—'} — Pro Viewer`;
     const updateInfo = (isElectron && window.electronAPI.getUpdateInfo)
       ? await window.electronAPI.getUpdateInfo()
       : { canUpdate: false, portable: false };
@@ -3836,9 +3833,8 @@ $('btn-center').addEventListener('click', () => {
         </div>
         <div class="modal-body">
           <div class="about-brand">
-            [Cyber<span class="about-brand-accent">Viewer</span>]
+            <span class="about-brand-cyber">Cyber</span><span class="about-brand-viewer">Viewer</span> <span class="about-version">v${version || '—'}</span>
           </div>
-          <div class="about-subtitle">${subtitle}</div>
           <img src="assets/icon.png" class="about-logo" alt="Logo">
           <div class="about-desc">${t.about_desc}</div>
           <div class="about-formats">${t.about_formats}</div>

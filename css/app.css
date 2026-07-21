@@ -2929,16 +2929,25 @@
 /* ── About modal ── */
 .about-modal { max-width: 400px; }
 .about-brand {
-  font-size: 18px;
-  color: var(--cyber-accent);
-  letter-spacing: 0.4px;
-  margin-bottom: 4px;
+  font-size: 20px;
+  font-weight: 700;
+  font-family: var(--font-digits);
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
-.about-brand-accent { color: var(--cyber-accent3); }
-.about-subtitle {
-  font-size: 11px;
+.about-brand-cyber { color: var(--cyber-accent3); }
+.about-brand-viewer { color: var(--cyber-accent); }
+.about-version {
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-ui);
   color: var(--cyber-muted);
-  margin-bottom: 20px;
+  letter-spacing: 0.5px;
+  margin-left: 4px;
 }
 .about-logo {
   width: 64px;
