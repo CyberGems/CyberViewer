@@ -759,38 +759,15 @@
     width: var(--panel-w);
     min-width: var(--panel-w);
     background: var(--cyber-panel);
-    border-right: 1px solid var(--cyber-border);
+    /* Edge line is the handle rail — avoid a second thick border */
+    border-right: none;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
     position: relative;
-    /* Above viewer so the panel is never covered by z-index stacking */
     z-index: 30;
     overflow-x: hidden;
     overflow-y: hidden;
-  }
-  /*
-   * Full-height edge rail painted ON the sidebar (same height as the panel).
-   * Avoids half-height glow bugs from the absolute handle strip.
-   */
-  body.sidebar-open #sidebar::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: 2px;
-    background: rgba(48, 64, 88, 0.95);
-    z-index: 50;
-    pointer-events: none;
-    transition: width 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
-  }
-  body.sidebar-open.sidebar-handle-hover #sidebar::after {
-    width: 3px;
-    background: var(--cyber-accent);
-    box-shadow:
-      0 0 10px rgba(var(--cyber-accent-rgb), 0.5),
-      -4px 0 12px rgba(var(--cyber-accent-rgb), 0.2);
   }
 
   .sidebar-folder {
@@ -866,9 +843,8 @@
   }
   
   /*
-   * Hit target + pill only. Full-height rail when OPEN lives on #sidebar::after.
-   * When CLOSED, a local ::before draws the rail (sidebar is display:none).
-   * No left/width transitions — avoids the flash over the scrollbar on close.
+   * Same rail + pill for open and closed (collapsed style was the target look).
+   * Thin 2px rail always; hover only changes color/glow — never thickness.
    */
   #sidebar-handle {
     position: absolute;
@@ -888,14 +864,14 @@
     -webkit-app-region: no-drag;
   }
   body.sidebar-open #sidebar-handle {
-    left: calc(var(--panel-w) - 1px);
+    left: var(--panel-w);
   }
   body:not(.sidebar-open) #sidebar-handle {
     left: 0;
     width: 30px;
   }
-  /* Closed-only rail (panel is gone) */
-  body:not(.sidebar-open) #sidebar-handle::before {
+  /* Full-height rail — open and closed (same language as collapsed look) */
+  #sidebar-handle::before {
     content: '';
     position: absolute;
     top: 0;
@@ -903,21 +879,21 @@
     left: 0;
     width: 2px;
     height: 100%;
-    background: rgba(48, 64, 88, 0.9);
+    background: rgba(48, 64, 88, 0.95);
+    border-radius: 1px;
     z-index: 0;
     pointer-events: none;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
   }
-  body:not(.sidebar-open).sidebar-handle-hover #sidebar-handle::before {
-    width: 3px;
+  body.sidebar-handle-hover #sidebar-handle::before,
+  #sidebar-handle:hover::before {
+    width: 2px; /* keep thin — no “fat” hover bar */
     background: var(--cyber-accent);
     box-shadow:
-      0 0 8px rgba(var(--cyber-accent-rgb), 0.5),
-      -3px 0 10px rgba(var(--cyber-accent-rgb), 0.22);
+      0 0 8px rgba(var(--cyber-accent-rgb), 0.55),
+      0 0 14px rgba(var(--cyber-accent-rgb), 0.28);
   }
-  body.sidebar-open #sidebar-handle::before {
-    content: none;
-  }
-  /* Pill always above the rail */
+  /* Pill above the rail */
   #sidebar-handle-arrow {
     position: relative;
     z-index: 2;
