@@ -85,6 +85,11 @@ const state = {
       favorites: [],
       showTopHints: true,
       checkUpdatesOnStartup: true,
+      // Toast once per version; badge stays until update is applied
+      updateNotify: {
+        lastNotifiedAvailable: null,
+        lastNotifiedDownloaded: null
+      },
       // Transparency grid behind alpha pixels: checker-dark | checker-light | solid
       alphaBackground: 'checker-dark',
       recentFiles: [],
@@ -4818,19 +4823,11 @@ if (isElectron) {
         state.settings.app.recentFolders = [];
       }
       applySettings();
-      // Startup update check is owned by main (electron-updater); listen for notify
+      // Startup update check is owned by main (electron-updater); badge + 1× toast
       if (window.electronAPI.onUpdateStatus) {
         window.electronAPI.onUpdateStatus((status) => {
-          if (window.__cvApplyUpdateStatus) window.__cvApplyUpdateStatus(status);
-          if (
-            status &&
-            status.state === 'available' &&
-            state.settings.app.checkUpdatesOnStartup !== false
-          ) {
-            const lang = state.settings.app.language || 'en';
-            const msg = (I18N[lang].about_notify_startup || 'Update available: v{version}')
-              .replace('{version}', status.version || '');
-            showToast(msg, 'info');
+          if (window.__cvApplyUpdateStatus) {
+            window.__cvApplyUpdateStatus(status, { fromStartup: true });
           }
         });
       }
@@ -4905,11 +4902,112 @@ $('btn-center').addEventListener('click', () => {
     return I18N[lang] || I18N.en;
   }
 
-  function applyUpdateStatus(status) {
+  function ensureUpdateNotify() {
+    const app = ensureAppSettings();
+    if (!app.updateNotify || typeof app.updateNotify !== 'object') {
+      app.updateNotify = {
+        lastNotifiedAvailable: null,
+        lastNotifiedDownloaded: null
+      };
+    }
+    if (app.updateNotify.lastNotifiedAvailable === undefined) {
+      app.updateNotify.lastNotifiedAvailable = null;
+    }
+    if (app.updateNotify.lastNotifiedDownloaded === undefined) {
+      app.updateNotify.lastNotifiedDownloaded = null;
+    }
+    return app.updateNotify;
+  }
+
+  /** Soft badge on the menu button — always visible while an update is pending. */
+  function syncUpdateMenuBadge() {
+    const wrap = document.querySelector('.menu-wrap');
+    const btn = $('btn-menu');
+    if (!wrap || !btn) return;
+
+    let badge = $('update-menu-badge');
+    if (!badge) {
+      badge = document.createElement('button');
+      badge.type = 'button';
+      badge.id = 'update-menu-badge';
+      badge.className = 'update-menu-badge';
+      badge.setAttribute('aria-label', 'Update available');
+      wrap.appendChild(badge);
+      badge.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof window.openAbout === 'function') window.openAbout();
+        else if ($('btn-about')) $('btn-about').click();
+      });
+    }
+
+    const s = updateStatus;
+    const pending = s && (s.state === 'available' || s.state === 'downloaded');
+    const t = tAbout();
+    const ver = (s && s.version) ? String(s.version) : '';
+
+    badge.classList.toggle('visible', !!pending);
+    badge.classList.toggle('ready', !!(s && s.state === 'downloaded'));
+    btn.classList.toggle('has-update-badge', !!pending);
+
+    if (pending) {
+      const tip = s.state === 'downloaded'
+        ? (t.update_badge_ready || 'Update ready: v{version} — click to install')
+            .replace('{version}', ver)
+        : (t.update_badge_available || 'Update available: v{version} — click for details')
+            .replace('{version}', ver);
+      badge.setAttribute('aria-label', tip);
+      setCyberTooltip(badge, tip);
+      badge.classList.add('cyber-tooltip', 'tooltip-bottom', 'tooltip-align-right');
+    } else {
+      badge.removeAttribute('data-tooltip');
+      badge.classList.remove('cyber-tooltip');
+    }
+  }
+
+  /**
+   * Toast at most once per version for available / downloaded.
+   * Startup auto-check only toasts when checkUpdatesOnStartup is on;
+   * download-ready always toasts once (user already requested the download).
+   */
+  function maybeToastUpdateStatus(status, opts) {
+    if (!status || !status.state) return;
+    const fromStartup = !!(opts && opts.fromStartup);
+    const n = ensureUpdateNotify();
+    const t = tAbout();
+    const ver = status.version ? String(status.version) : '';
+    if (!ver) return;
+
+    if (status.state === 'available') {
+      if (fromStartup && state.settings.app.checkUpdatesOnStartup === false) return;
+      if (n.lastNotifiedAvailable === ver) return;
+      const msg = (t.about_notify_startup || 'Update available: v{version}')
+        .replace('{version}', ver);
+      showToast(msg, 'info');
+      n.lastNotifiedAvailable = ver;
+      persistAppSettings();
+      return;
+    }
+
+    if (status.state === 'downloaded') {
+      if (n.lastNotifiedDownloaded === ver) return;
+      const msg = (t.about_notify_ready || 'Update ready: v{version} — open About to install')
+        .replace('{version}', ver);
+      showToast(msg, 'success');
+      n.lastNotifiedDownloaded = ver;
+      persistAppSettings();
+    }
+  }
+
+  function applyUpdateStatus(status, opts) {
     updateStatus = status || { state: 'idle' };
+    window.__cvUpdateStatus = updateStatus;
     syncUpdateActions(overlay);
+    syncUpdateMenuBadge();
+    maybeToastUpdateStatus(updateStatus, opts);
   }
   window.__cvApplyUpdateStatus = applyUpdateStatus;
+  window.__cvSyncUpdateBadge = syncUpdateMenuBadge;
 
   function renderUpdateStatusText(el) {
     if (!el) return;

@@ -335,7 +335,10 @@
     "props_native_tooltip": "Open the native Windows dialog (may take a couple of seconds)",
     "props_close": "Close",
     "toast_path_copied": "PATH COPIED",
-    "toast_summary_copied": "SUMMARY COPIED"
+    "toast_summary_copied": "SUMMARY COPIED",
+    "update_badge_available": "Update available: v{version} — click for details",
+    "update_badge_ready": "Update ready: v{version} — click to install",
+    "about_notify_ready": "Update ready: v{version} — open About to install"
   },
   "es": {
     "no_images": "— sin imágenes —",
@@ -673,6 +676,9 @@
     "props_native_tooltip": "Abrir el diálogo nativo de Windows (puede tardar un par de segundos)",
     "props_close": "Cerrar",
     "toast_path_copied": "RUTA COPIADA",
-    "toast_summary_copied": "RESUMEN COPIADO"
+    "toast_summary_copied": "RESUMEN COPIADO",
+    "update_badge_available": "Actualización disponible: v{version} — clic para detalles",
+    "update_badge_ready": "Actualización lista: v{version} — clic para instalar",
+    "about_notify_ready": "Actualización lista: v{version} — abre Acerca de para instalar"
   }
 }

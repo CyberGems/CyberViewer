@@ -65,6 +65,12 @@ function loadSettings() {
             ? true
             : !data.app.manualUpdateOnly;
         }
+        if (!data.app.updateNotify || typeof data.app.updateNotify !== 'object') {
+          data.app.updateNotify = {
+            lastNotifiedAvailable: null,
+            lastNotifiedDownloaded: null
+          };
+        }
         if (data.app.hudAutoHide === undefined) data.app.hudAutoHide = true;
         if (data.app.hudAutoHideDelay === undefined) data.app.hudAutoHideDelay = 2000;
         if (data.app.alphaBackground === undefined) data.app.alphaBackground = 'checker-dark';
@@ -92,6 +98,10 @@ function loadSettings() {
       language: 'en',
       contextMenuEnabled: false,
       checkUpdatesOnStartup: true,
+      updateNotify: {
+        lastNotifiedAvailable: null,
+        lastNotifiedDownloaded: null
+      },
       hudAutoHide: true,
       hudAutoHideDelay: 2000,
       showTopHints: true,
