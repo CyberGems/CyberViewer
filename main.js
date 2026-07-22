@@ -1175,6 +1175,7 @@ ipcMain.on('show-context-menu', (event, props) => {
           },
           { label: t.crop, click: () => event.sender.send('menu-action', { action: 'crop' }) },
           { label: t.resize, click: () => event.sender.send('menu-action', { action: 'resize' }) },
+          { label: t.adjust, click: () => event.sender.send('menu-action', { action: 'adjust' }) },
           {
             label: props.isFavorite ? t.favorite_remove : t.favorite_add,
             click: () => event.sender.send('menu-action', { action: 'toggle-favorite' })
@@ -1327,6 +1328,7 @@ ipcMain.on('show-context-menu', (event, props) => {
           },
           { label: t.crop, click: () => event.sender.send('menu-action', { action: 'crop' }) },
           { label: t.resize, click: () => event.sender.send('menu-action', { action: 'resize' }) },
+          { label: t.adjust, click: () => event.sender.send('menu-action', { action: 'adjust' }) },
           {
             label: props.isFavorite ? t.favorite_remove : t.favorite_add,
             click: () => event.sender.send('menu-action', { action: 'toggle-favorite' })

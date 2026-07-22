@@ -37,6 +37,51 @@
   }
 
   /**
+   * Build a CSS Canvas filter string from basic adjust controls.
+   * Tone sliders use -100..100 with 0 as neutral (maps to factor 1.0).
+   * Blur uses 0..100 → 0..20px at the current canvas resolution.
+   * @param {{ brightness?: number, contrast?: number, saturation?: number, blur?: number, grayscale?: boolean, invert?: boolean }} opts
+   * @param {{ blurScale?: number }} [renderOpts] optional multiplier for blur px (e.g. preview scale)
+   * @returns {string}
+   */
+  function buildCssFilter(opts, renderOpts) {
+    const o = opts || {};
+    const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, Number(n) || 0));
+    const toFactor = (n) => 1 + clamp(n, -100, 100) / 100;
+    const blurScale = renderOpts && renderOpts.blurScale != null ? Number(renderOpts.blurScale) : 1;
+    const safeScale = Number.isFinite(blurScale) && blurScale > 0 ? blurScale : 1;
+    // Scale blur with canvas size so a downscaled preview matches full-res strength
+    const blurPx = (clamp(o.blur, 0, 100) / 100) * 20 * safeScale;
+    const parts = [
+      'brightness(' + toFactor(o.brightness) + ')',
+      'contrast(' + toFactor(o.contrast) + ')',
+      'saturate(' + toFactor(o.saturation) + ')',
+      'grayscale(' + (o.grayscale ? 1 : 0) + ')',
+      'invert(' + (o.invert ? 1 : 0) + ')'
+    ];
+    if (blurPx > 0.01) {
+      parts.push('blur(' + (Math.round(blurPx * 100) / 100) + 'px)');
+    }
+    return parts.join(' ');
+  }
+
+  /**
+   * True when adjust controls are all at neutral defaults.
+   * @param {{ brightness?: number, contrast?: number, saturation?: number, blur?: number, grayscale?: boolean, invert?: boolean }} opts
+   */
+  function isIdentityAdjust(opts) {
+    const o = opts || {};
+    return (
+      (Number(o.brightness) || 0) === 0 &&
+      (Number(o.contrast) || 0) === 0 &&
+      (Number(o.saturation) || 0) === 0 &&
+      (Number(o.blur) || 0) === 0 &&
+      !o.grayscale &&
+      !o.invert
+    );
+  }
+
+  /**
    * Export a canvas to base64 buffer + path for save-image IPC.
    * Rasterizes exotic containers (gif/webp/bmp/tiff) to PNG.
    * @param {HTMLCanvasElement} canvas
@@ -108,6 +153,8 @@
   return {
     mediaUrl,
     canvasExport,
+    buildCssFilter,
+    isIdentityAdjust,
     formatBytes,
     sliderToZoom,
     zoomToSlider,

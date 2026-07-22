@@ -5,6 +5,8 @@ const assert = require('node:assert/strict');
 const {
   mediaUrl,
   canvasExport,
+  buildCssFilter,
+  isIdentityAdjust,
   formatBytes,
   sliderToZoom,
   zoomToSlider,
@@ -72,6 +74,53 @@ describe('formatBytes', () => {
     assert.equal(formatBytes(500), '500 B');
     assert.equal(formatBytes(2048), '2.0 KB');
     assert.equal(formatBytes(2 * 1024 * 1024), '2.00 MB');
+  });
+});
+
+describe('buildCssFilter / isIdentityAdjust', () => {
+  it('maps neutral sliders to factor 1 and toggles off', () => {
+    const f = buildCssFilter({
+      brightness: 0,
+      contrast: 0,
+      saturation: 0,
+      blur: 0,
+      grayscale: false,
+      invert: false
+    });
+    assert.equal(f, 'brightness(1) contrast(1) saturate(1) grayscale(0) invert(0)');
+    assert.equal(isIdentityAdjust({}), true);
+  });
+
+  it('maps positive and negative slider values', () => {
+    const f = buildCssFilter({ brightness: 50, contrast: -25, saturation: 100 });
+    assert.match(f, /brightness\(1\.5\)/);
+    assert.match(f, /contrast\(0\.75\)/);
+    assert.match(f, /saturate\(2\)/);
+    assert.equal(isIdentityAdjust({ brightness: 50 }), false);
+  });
+
+  it('enables grayscale and invert toggles', () => {
+    const f = buildCssFilter({ grayscale: true, invert: true });
+    assert.match(f, /grayscale\(1\)/);
+    assert.match(f, /invert\(1\)/);
+    assert.equal(isIdentityAdjust({ invert: true }), false);
+  });
+
+  it('adds blur scaled by blurScale', () => {
+    const f = buildCssFilter({ blur: 50 }, { blurScale: 0.5 });
+    assert.match(f, /blur\(5px\)/);
+    assert.equal(isIdentityAdjust({ blur: 10 }), false);
+  });
+
+  it('omits blur when zero', () => {
+    const f = buildCssFilter({ blur: 0 });
+    assert.ok(!/blur\(/.test(f));
+  });
+
+  it('clamps out-of-range slider values', () => {
+    const f = buildCssFilter({ brightness: 999, contrast: -999 });
+    assert.match(f, /brightness\(2\)/);
+    assert.match(f, /contrast\(0\)/);
   });
 });
 

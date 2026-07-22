@@ -4,6 +4,8 @@ const CVMedia = (typeof window !== 'undefined' && window.CVMedia) ? window.CVMed
 const mediaUrl = CVMedia.mediaUrl || function () { return ''; };
 const canvasExport = CVMedia.canvasExport || function (c, p) { return { buffer: '', filePath: p }; };
 const formatBytes = CVMedia.formatBytes || function () { return '-'; };
+const buildCssFilter = CVMedia.buildCssFilter || function () { return 'none'; };
+const isIdentityAdjust = CVMedia.isIdentityAdjust || function () { return true; };
 
 function syncCurrentIndex(idx) {
   state.currentIdx = idx;
@@ -912,6 +914,11 @@ function buildMenuTemplate(type, data) {
             shortcut: 'R',
             action: () => $('btn-resize').click()
           },
+          {
+            label: getTxt('menu_adjust'),
+            shortcut: 'J',
+            action: () => { const b = $('btn-adjust'); if (b) b.click(); }
+          },
           { type: 'separator' },
           {
             label: isFav ? getTxt('favorite_remove') : getTxt('favorite_add'),
@@ -1070,6 +1077,11 @@ function buildMenuTemplate(type, data) {
             label: getTxt('menu_resize'),
             shortcut: 'R',
             action: () => $('btn-resize').click()
+          },
+          {
+            label: getTxt('menu_adjust'),
+            shortcut: 'J',
+            action: () => { const b = $('btn-adjust'); if (b) b.click(); }
           },
           { type: 'separator' },
           {
@@ -1363,6 +1375,11 @@ function executeAction(data) {
       const btnResize = $('btn-resize');
       if (btnResize) btnResize.click();
       break;
+    case 'adjust': {
+      const btnAdjust = $('btn-adjust');
+      if (btnAdjust) btnAdjust.click();
+      break;
+    }
     case 'toggle-favorite':
       toggleFavorite();
       break;
@@ -1819,9 +1836,10 @@ function startCrop() {
   const curW = isVert ? ih : iw;
   const curH = isVert ? iw : ih;
 
-  const SIDE = 28;
-  const ABOVE = 28;
-  const BELOW = 118; // gap + crop-actions (buttons + copy toggle)
+  // Keep handles clear of chrome: top handles stick out ~8px past the rect
+  const SIDE = 32;
+  const ABOVE = 48; // breathing room above top handles (was flush against edge)
+  const BELOW = 124; // gap + crop-actions (buttons + single-line copy toggle)
   const availW = Math.max(120, vw - SIDE * 2);
   const availH = Math.max(120, vh - ABOVE - BELOW);
 
@@ -2519,6 +2537,367 @@ function selectResampleAlgo(algo) {
 }
 
 $('btn-resize').addEventListener('click', openResizeModal);
+
+// ── ADJUST MODAL LOGIC ──
+const adjustState = {
+  brightness: 0,
+  contrast: 0,
+  saturation: 0,
+  blur: 0,
+  grayscale: false,
+  invert: false,
+  previewZoom: 100, // % relative to fit-in-stage
+  compareOriginal: false,
+  compareSticky: false,
+  previewRaf: 0,
+  fitScale: 1
+};
+
+function defaultAdjustControls() {
+  return {
+    brightness: 0,
+    contrast: 0,
+    saturation: 0,
+    blur: 0,
+    grayscale: false,
+    invert: false
+  };
+}
+
+function readAdjustControls() {
+  return {
+    brightness: parseInt($('adj-brightness') && $('adj-brightness').value, 10) || 0,
+    contrast: parseInt($('adj-contrast') && $('adj-contrast').value, 10) || 0,
+    saturation: parseInt($('adj-saturation') && $('adj-saturation').value, 10) || 0,
+    blur: parseInt($('adj-blur') && $('adj-blur').value, 10) || 0,
+    grayscale: !!( $('adj-grayscale') && $('adj-grayscale').checked ),
+    invert: !!( $('adj-invert') && $('adj-invert').checked )
+  };
+}
+
+function writeAdjustControls(vals) {
+  const v = Object.assign(defaultAdjustControls(), vals || {});
+  if ($('adj-brightness')) $('adj-brightness').value = v.brightness;
+  if ($('adj-contrast')) $('adj-contrast').value = v.contrast;
+  if ($('adj-saturation')) $('adj-saturation').value = v.saturation;
+  if ($('adj-blur')) $('adj-blur').value = v.blur;
+  if ($('adj-grayscale')) $('adj-grayscale').checked = !!v.grayscale;
+  if ($('adj-invert')) $('adj-invert').checked = !!v.invert;
+  syncAdjustValueLabels();
+}
+
+function syncAdjustValueLabels() {
+  const s = readAdjustControls();
+  Object.assign(adjustState, s);
+  const fmt = (n) => (n > 0 ? '+' : '') + String(n);
+  if ($('adj-brightness-val')) $('adj-brightness-val').textContent = fmt(s.brightness);
+  if ($('adj-contrast-val')) $('adj-contrast-val').textContent = fmt(s.contrast);
+  if ($('adj-saturation-val')) $('adj-saturation-val').textContent = fmt(s.saturation);
+  if ($('adj-blur-val')) $('adj-blur-val').textContent = String(s.blur);
+}
+
+function setAdjustPreviewZoom(pct) {
+  const z = Math.max(50, Math.min(300, Math.round(Number(pct) || 100)));
+  adjustState.previewZoom = z;
+  if ($('adj-preview-zoom')) $('adj-preview-zoom').value = z;
+  if ($('adj-zoom-val')) $('adj-zoom-val').textContent = z + '%';
+}
+
+function setAdjustCompare(on, opts) {
+  adjustState.compareOriginal = !!on;
+  if (opts && opts.sticky != null) adjustState.compareSticky = !!opts.sticky;
+  const btn = $('btn-adjust-compare');
+  if (btn) {
+    // Active style reflects sticky latch (not momentary hold)
+    const latched = !!adjustState.compareSticky;
+    btn.classList.toggle('active', latched);
+    btn.setAttribute('aria-pressed', latched ? 'true' : 'false');
+  }
+}
+
+function scheduleAdjustPreview() {
+  if (adjustState.previewRaf) cancelAnimationFrame(adjustState.previewRaf);
+  adjustState.previewRaf = requestAnimationFrame(() => {
+    adjustState.previewRaf = 0;
+    updateAdjustPreview();
+  });
+}
+
+function updateAdjustPreview() {
+  const canvas = $('adjust-preview-canvas');
+  if (!canvas || !mainImg || !mainImg.naturalWidth) return;
+
+  const stage = $('adjust-preview-stage');
+  // Leave a couple px so fit never overflows stage and creates ghost scrollbars
+  const maxW = stage ? Math.max(160, stage.clientWidth - 6) : 420;
+  const maxH = stage ? Math.max(140, Math.min(300, (stage.clientHeight || 260) - 6)) : 260;
+  const iw = mainImg.naturalWidth;
+  const ih = mainImg.naturalHeight;
+  const fitScale = Math.min(1, maxW / iw, maxH / ih);
+  adjustState.fitScale = fitScale;
+  const zoomMul = (adjustState.previewZoom || 100) / 100;
+  const scale = fitScale * zoomMul;
+  const w = Math.max(1, Math.floor(iw * scale));
+  const h = Math.max(1, Math.floor(ih * scale));
+
+  if (canvas.width !== w || canvas.height !== h) {
+    canvas.width = w;
+    canvas.height = h;
+  }
+  // Display size matches backing store (avoid CSS max-height fighting zoom)
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+
+  if (stage) {
+    stage.classList.toggle('is-zoomed', (adjustState.previewZoom || 100) > 100);
+  }
+
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, w, h);
+
+  let filters = readAdjustControls();
+  Object.assign(adjustState, filters);
+  if (adjustState.compareOriginal) {
+    filters = defaultAdjustControls();
+  }
+  // Blur in canvas px scales with draw size so preview ≈ full-res look
+  ctx.filter = buildCssFilter(filters, { blurScale: scale });
+  ctx.drawImage(mainImg, 0, 0, w, h);
+  ctx.filter = 'none';
+}
+
+function openAdjustModal() {
+  try {
+    const idx = state.current;
+    const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+    const i18nLang = I18N[lang] || I18N.en || {};
+
+    if (idx === undefined || idx === -1) {
+      showToast(i18nLang.toast_image_not_ready || 'IMAGE NOT READY', 'error');
+      return;
+    }
+    const im = state.images[idx];
+    if (!im || !mainImg || !mainImg.naturalWidth) {
+      showToast(i18nLang.toast_image_not_ready || 'IMAGE NOT READY', 'error');
+      return;
+    }
+
+    writeAdjustControls(defaultAdjustControls());
+    setAdjustPreviewZoom(100);
+    adjustState.compareSticky = false;
+    setAdjustCompare(false);
+
+    if (typeof pauseSlideshow === 'function') pauseSlideshow();
+    openModal('modal-adjust');
+    // Layout needs a frame before measuring the preview stage
+    requestAnimationFrame(() => {
+      updateAdjustPreview();
+      requestAnimationFrame(updateAdjustPreview);
+    });
+  } catch (e) {
+    console.error('Error opening adjust modal:', e);
+    showToast('ERROR: ' + e.message, 'error');
+  }
+}
+
+function onAdjustControlInput() {
+  syncAdjustValueLabels();
+  scheduleAdjustPreview();
+}
+
+['adj-brightness', 'adj-contrast', 'adj-saturation', 'adj-blur'].forEach((id) => {
+  const el = $(id);
+  if (el) el.addEventListener('input', onAdjustControlInput);
+});
+['adj-grayscale', 'adj-invert'].forEach((id) => {
+  const el = $(id);
+  if (el) el.addEventListener('change', onAdjustControlInput);
+});
+
+if ($('adj-preview-zoom')) {
+  $('adj-preview-zoom').addEventListener('input', (e) => {
+    setAdjustPreviewZoom(e.target.value);
+    scheduleAdjustPreview();
+  });
+}
+if ($('btn-adjust-zoom-out')) {
+  $('btn-adjust-zoom-out').addEventListener('click', () => {
+    setAdjustPreviewZoom((adjustState.previewZoom || 100) - 25);
+    scheduleAdjustPreview();
+  });
+}
+if ($('btn-adjust-zoom-in')) {
+  $('btn-adjust-zoom-in').addEventListener('click', () => {
+    setAdjustPreviewZoom((adjustState.previewZoom || 100) + 25);
+    scheduleAdjustPreview();
+  });
+}
+if ($('btn-adjust-zoom-fit')) {
+  $('btn-adjust-zoom-fit').addEventListener('click', () => {
+    setAdjustPreviewZoom(100);
+    scheduleAdjustPreview();
+  });
+}
+
+// Compare UX: short click toggles sticky A/B; hold peeks original until release
+(function wireAdjustCompare() {
+  const cmp = $('btn-adjust-compare');
+  if (!cmp) return;
+  let holdActive = false;
+  let pointerDownAt = 0;
+
+  cmp.addEventListener('pointerdown', (e) => {
+    if (e.button != null && e.button !== 0) return;
+    holdActive = true;
+    pointerDownAt = Date.now();
+    try { cmp.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+    setAdjustCompare(true);
+    scheduleAdjustPreview();
+  });
+  const releaseHold = (e) => {
+    if (!holdActive) return;
+    holdActive = false;
+    try { cmp.releasePointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+    const brief = Date.now() - pointerDownAt < 220;
+    if (brief) {
+      adjustState.compareSticky = !adjustState.compareSticky;
+    }
+    setAdjustCompare(adjustState.compareSticky);
+    scheduleAdjustPreview();
+  };
+  cmp.addEventListener('pointerup', releaseHold);
+  cmp.addEventListener('pointercancel', () => {
+    holdActive = false;
+    setAdjustCompare(adjustState.compareSticky);
+    scheduleAdjustPreview();
+  });
+  cmp.addEventListener('lostpointercapture', () => {
+    if (!holdActive) return;
+    holdActive = false;
+    setAdjustCompare(adjustState.compareSticky);
+    scheduleAdjustPreview();
+  });
+})();
+
+if ($('btn-adjust-reset')) {
+  $('btn-adjust-reset').addEventListener('click', () => {
+    writeAdjustControls(defaultAdjustControls());
+    scheduleAdjustPreview();
+  });
+}
+
+if ($('btn-adjust')) {
+  $('btn-adjust').addEventListener('click', openAdjustModal);
+}
+
+if ($('btn-confirm-adjust')) {
+  $('btn-confirm-adjust').addEventListener('click', async () => {
+    try {
+      const idx = state.current;
+      if (idx === undefined || idx === -1) return;
+      const im = state.images[idx];
+      if (!im || !mainImg || !mainImg.naturalWidth) return;
+
+      const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+      const i18nLang = I18N[lang] || I18N.en || {};
+      const filters = readAdjustControls();
+      Object.assign(adjustState, filters);
+
+      if (isIdentityAdjust(filters)) {
+        showToast(i18nLang.toast_adjust_none || 'NO CHANGES TO APPLY', 'info');
+        return;
+      }
+
+      let fpath = imageDiskPath(im);
+      if (!fpath) {
+        fpath = await ensureImageDiskPath(im);
+        if (!fpath) return;
+      }
+
+      showToast(i18nLang.toast_adjusting || 'APPLYING ADJUSTMENTS...', 'info');
+
+      const iw = mainImg.naturalWidth;
+      const ih = mainImg.naturalHeight;
+      const rotation = state.currentRotation || 0;
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      if (rotation === 90 || rotation === 270) {
+        canvas.width = ih;
+        canvas.height = iw;
+      } else {
+        canvas.width = iw;
+        canvas.height = ih;
+      }
+
+      // Bake pending rotation first, then apply color filters (full-res blurScale = 1)
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      if (rotation) ctx.rotate((rotation * Math.PI) / 180);
+      ctx.filter = buildCssFilter(filters, { blurScale: 1 });
+      ctx.drawImage(mainImg, -iw / 2, -ih / 2);
+      ctx.restore();
+
+      const exported = canvasExport(canvas, fpath);
+      const createCopy = !!( $('cfg-adjust-copy') && $('cfg-adjust-copy').checked );
+
+      const result = await window.electronAPI.saveImage({
+        filePath: exported.filePath,
+        buffer: exported.buffer,
+        createCopy: createCopy
+      });
+
+      if (result.success) {
+        showToast(i18nLang.toast_adjust_success || 'ADJUSTMENTS APPLIED', 'success');
+        closeModal('modal-adjust');
+
+        if (createCopy) {
+          const newImg = {
+            file: {
+              name: result.filePath.split(/[\\/]/).pop(),
+              path: result.filePath,
+              size: 0
+            }
+          };
+          state.images.splice(idx + 1, 0, newImg);
+          buildSidebar();
+          showImage(idx + 1, null);
+        } else {
+          const savedPath = result.filePath || exported.filePath;
+          if (im.file) im.file.path = savedPath;
+          im.path = savedPath;
+          mainImg.src = mediaUrl(savedPath, Date.now());
+
+          mainImg.onload = () => {
+            state.currentRotation = 0;
+            state.panX = 0;
+            state.panY = 0;
+            mainImg.style.transition = 'none';
+            mainImg.style.transform = 'none';
+
+            im.w = mainImg.naturalWidth;
+            im.h = mainImg.naturalHeight;
+            state.hasChanges = false;
+            updateSaveButton();
+            updateHUDStates();
+            updateFileStats();
+            fitToWindow(im.w, im.h);
+
+            requestAnimationFrame(() => {
+              mainImg.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+            });
+            mainImg.onload = null;
+          };
+        }
+      } else {
+        showToast((i18nLang.toast_adjust_error || 'ERROR') + ': ' + (result.error || ''), 'error');
+      }
+    } catch (e) {
+      console.error('Error confirming adjust:', e);
+      showToast('ERROR: ' + e.message, 'error');
+    }
+  });
+}
 
 $('btn-confirm-resize').addEventListener('click', async () => {
   try {
@@ -3232,7 +3611,7 @@ function syncEmptyState() {
 
   // Nested buttons inside .control-group.needs-image
   ['btn-show-folder', 'btn-fit-hud', 'btn-orig-hud', 'btn-fs-hud', 'btn-slideshow',
-    'btn-rot-l', 'btn-rot-r', 'btn-crop', 'btn-resize', 'btn-copy', 'btn-trash', 'btn-fav'
+    'btn-rot-l', 'btn-rot-r', 'btn-crop', 'btn-resize', 'btn-adjust', 'btn-copy', 'btn-trash', 'btn-fav'
   ].forEach((id) => {
     const el = $(id);
     if (!el) return;
@@ -3378,6 +3757,7 @@ document.addEventListener('keydown', e => {
     if (state.isGhost) toggleFullscreen();
     closeModal('modal-config');
     closeModal('modal-resize');
+    closeModal('modal-adjust');
     closeModal('modal-properties');
     closeModal('modal-cyber-confirm');
     const aboutOverlay = $('about-overlay');
@@ -3454,6 +3834,15 @@ document.addEventListener('keydown', e => {
         e.preventDefault();
         if (checkImageLoaded()) {
           const btn = $('btn-resize');
+          if (btn) btn.click();
+        }
+      }
+      break;
+    case 'j':
+      if (!isCtrl) {
+        e.preventDefault();
+        if (checkImageLoaded()) {
+          const btn = $('btn-adjust');
           if (btn) btn.click();
         }
       }
@@ -4116,7 +4505,7 @@ document.querySelectorAll('[data-close-modal]').forEach(btn => {
     closeModal(btn.getAttribute('data-close-modal'));
   });
 });
-['modal-resize', 'modal-config', 'modal-properties', 'modal-cyber-confirm'].forEach(id => {
+['modal-resize', 'modal-adjust', 'modal-config', 'modal-properties', 'modal-cyber-confirm'].forEach(id => {
   const overlay = $(id);
   if (!overlay) return;
   overlay.addEventListener('click', (e) => {
@@ -4865,6 +5254,7 @@ $('btn-config').addEventListener('click', openConfig);
   function closeOpenModals() {
     closeModal('modal-config');
     closeModal('modal-resize');
+    closeModal('modal-adjust');
     closeModal('modal-properties');
     closeModal('modal-cyber-confirm');
     const aboutOverlay = $('about-overlay');
@@ -4873,7 +5263,7 @@ $('btn-config').addEventListener('click', openConfig);
 
   function runAction(action, itemEl) {
     // Leave modal context so menu actions (and subsequent UI) aren't blocked
-    if (action !== 'resize' && action !== 'preferences' && action !== 'about' && action !== 'check-updates') {
+    if (action !== 'resize' && action !== 'adjust' && action !== 'preferences' && action !== 'about' && action !== 'check-updates') {
       closeOpenModals();
     }
     switch (action) {
@@ -4907,6 +5297,7 @@ $('btn-config').addEventListener('click', openConfig);
       case 'rotate-right':   rotate(90); break;
       case 'crop':           $('btn-crop').click(); break;
       case 'resize':         $('btn-resize').click(); break;
+      case 'adjust':         { const b = $('btn-adjust'); if (b) b.click(); break; }
       case 'fit':            $('btn-fit-hud').click(); break;
       case 'original':       $('btn-orig-hud').click(); break;
       case 'fullscreen':     toggleFullscreen(); break;

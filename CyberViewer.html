@@ -74,6 +74,7 @@
           <div class="menu-divider"></div>
           <button class="menu-item" data-action="crop" data-needs-image><span class="menu-label" data-i18n="menu_crop">Recortar</span><span class="menu-shortcut">C</span></button>
           <button class="menu-item" data-action="resize" data-needs-image><span class="menu-label" data-i18n="menu_resize">Redimensionar</span><span class="menu-shortcut">R</span></button>
+          <button class="menu-item" data-action="adjust" data-needs-image><span class="menu-label" data-i18n="menu_adjust">Ajustes</span><span class="menu-shortcut">J</span></button>
         </div>
       </div>
 
@@ -177,13 +178,14 @@
           <div class="crop-handle ch-r"></div>
           <div id="crop-actions">
             <div class="crop-actions-btns">
-              <button class="top-btn btn-primary" id="btn-crop-confirm" data-i18n="crop_confirm">RECORTAR Y GUARDAR</button>
               <button class="top-btn btn-cancel" id="btn-crop-cancel" data-i18n="crop_cancel">CANCELAR</button>
+              <button class="top-btn btn-primary" id="btn-crop-confirm" data-i18n="crop_confirm">RECORTAR Y GUARDAR</button>
             </div>
             <div class="crop-copy-row">
               <div class="crop-copy-info">
-                <div class="config-name" data-i18n="crop_create_copy">Crear una Copia</div>
-                <div class="config-desc" data-i18n="crop_create_copy_desc">Guardar como archivo nuevo sin sobrescribir el original.</div>
+                <span class="config-name" data-i18n="crop_create_copy">Crear una copia</span>
+                <span class="crop-copy-sep" aria-hidden="true">·</span>
+                <span class="config-desc" data-i18n="crop_create_copy_desc">sin sobrescribir el original</span>
               </div>
               <label class="switch">
                 <input type="checkbox" id="cfg-crop-copy" checked>
@@ -282,6 +284,7 @@
         </div>
         <button class="kbd-btn needs-image kbd-icon" id="btn-crop" data-i18n-title="crop_title" title="Recortar (C)">&#9986;</button>
         <button class="kbd-btn needs-image kbd-icon" id="btn-resize" data-i18n-title="resize_title_btn" title="Redimensionar (R)">⇳</button>
+        <button class="kbd-btn needs-image kbd-icon" id="btn-adjust" data-i18n-title="adjust_title_btn" title="Ajustes (J)">&#9681;</button>
         <div class="kbd-sep needs-image"></div>
         <button class="kbd-btn needs-image kbd-icon" id="btn-copy" data-i18n-title="copy_title" title="Copiar Imagen (Ctrl+C)">&#10697;</button>
         <button class="kbd-btn needs-image kbd-icon" id="btn-trash" data-i18n-title="trash_title" title="Mover a la Papelera (Delete)" style="color:var(--cyber-accent2)">&#128465;&#xFE0E;</button>
@@ -589,7 +592,7 @@
 <div id="modal-resize" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
-      <div class="modal-title" data-i18n="resize_title">[CYBERVIEWER RESIZE]</div>
+      <div class="modal-title" data-i18n="resize_title">REDIMENSIONAR</div>
       <button class="win-btn modal-close-btn tooltip-bottom tooltip-align-right" data-close-modal="modal-resize" data-i18n-title="close" title="Cerrar">&#10005;</button>
     </div>
     <div class="modal-body">
@@ -710,6 +713,120 @@
     <div class="modal-footer">
       <button class="top-btn btn-cancel modal-cancel-btn tooltip-align-left" data-close-modal="modal-resize" data-i18n="config_cancel" data-i18n-title="resize_cancel_tooltip">Cancelar</button>
       <button class="top-btn btn-primary tooltip-align-right" id="btn-confirm-resize" data-i18n="resize_apply" data-i18n-title="resize_apply_tooltip">Redimensionar y Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ADJUST (color / tone) -->
+<div id="modal-adjust" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title" data-i18n="adjust_title">AJUSTES</div>
+      <button class="win-btn modal-close-btn tooltip-bottom tooltip-align-right" data-close-modal="modal-adjust" data-i18n-title="close" title="Cerrar">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="adjust-grid-layout">
+        <!-- LEFT: CONTROLS -->
+        <div class="adjust-left-col">
+          <div class="config-section adjust-section">
+            <div class="adjust-section-head">
+              <label class="config-label" data-i18n="adjust_toggles_lbl">Efectos</label>
+              <button type="button" class="top-btn adjust-reset-btn" id="btn-adjust-reset" data-i18n="adjust_reset" data-i18n-title="adjust_reset_tooltip">Reset</button>
+            </div>
+            <div class="config-row adjust-toggle-row">
+              <div class="config-info">
+                <div class="config-name" data-i18n="adjust_grayscale">Escala de grises</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="adj-grayscale">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="config-row adjust-toggle-row">
+              <div class="config-info">
+                <div class="config-name" data-i18n="adjust_invert">Invertir colores</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="adj-invert">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="config-section adjust-section">
+            <label class="config-label" data-i18n="adjust_sliders_lbl">Tono</label>
+
+            <div class="adjust-slider-row">
+              <div class="adjust-slider-meta">
+                <span class="adjust-slider-name" data-i18n="adjust_brightness">Brillo</span>
+                <span class="adjust-slider-val" id="adj-brightness-val">0</span>
+              </div>
+              <input type="range" id="adj-brightness" class="adjust-range" min="-100" max="100" value="0" step="1">
+            </div>
+
+            <div class="adjust-slider-row">
+              <div class="adjust-slider-meta">
+                <span class="adjust-slider-name" data-i18n="adjust_contrast">Contraste</span>
+                <span class="adjust-slider-val" id="adj-contrast-val">0</span>
+              </div>
+              <input type="range" id="adj-contrast" class="adjust-range" min="-100" max="100" value="0" step="1">
+            </div>
+
+            <div class="adjust-slider-row">
+              <div class="adjust-slider-meta">
+                <span class="adjust-slider-name" data-i18n="adjust_saturation">Saturación</span>
+                <span class="adjust-slider-val" id="adj-saturation-val">0</span>
+              </div>
+              <input type="range" id="adj-saturation" class="adjust-range" min="-100" max="100" value="0" step="1">
+            </div>
+
+            <div class="adjust-slider-row">
+              <div class="adjust-slider-meta">
+                <span class="adjust-slider-name" data-i18n="adjust_blur">Desenfoque</span>
+                <span class="adjust-slider-val" id="adj-blur-val">0</span>
+              </div>
+              <input type="range" id="adj-blur" class="adjust-range" min="0" max="100" value="0" step="1">
+            </div>
+          </div>
+
+          <div class="config-section adjust-section adjust-section-last">
+            <div class="config-row adjust-toggle-row">
+              <div class="config-info tooltip-align-left" data-i18n-title="adjust_copy_tooltip" style="position: relative; cursor: help; display: inline-block;">
+                <div class="config-name" data-i18n="adjust_create_copy">Crear una copia</div>
+                <div class="config-desc" data-i18n="adjust_create_copy_desc">Guardar como archivo nuevo sin sobrescribir el original.</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="cfg-adjust-copy" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: LIVE PREVIEW -->
+        <div class="adjust-right-col">
+          <div class="adjust-preview-panel">
+            <div class="adjust-preview-head">
+              <span class="hud-label" data-i18n="adjust_preview_lbl">Vista previa</span>
+              <button type="button" class="top-btn adjust-compare-btn" id="btn-adjust-compare" data-i18n="adjust_compare" data-i18n-title="adjust_compare_tooltip" aria-pressed="false">A/B</button>
+            </div>
+            <div class="adjust-preview-stage" id="adjust-preview-stage">
+              <canvas id="adjust-preview-canvas" aria-label="Adjust preview"></canvas>
+            </div>
+            <div class="adjust-preview-tools">
+              <button type="button" class="top-btn adjust-zoom-btn" id="btn-adjust-zoom-out" data-i18n-title="adjust_zoom_out_tooltip" title="−" aria-label="Zoom out">&#8722;</button>
+              <input type="range" id="adj-preview-zoom" class="adjust-zoom-range" min="50" max="300" value="100" step="5" data-i18n-title="adjust_zoom_tooltip">
+              <button type="button" class="top-btn adjust-zoom-btn" id="btn-adjust-zoom-in" data-i18n-title="adjust_zoom_in_tooltip" title="+" aria-label="Zoom in">+</button>
+              <button type="button" class="top-btn adjust-zoom-btn adjust-zoom-fit" id="btn-adjust-zoom-fit" data-i18n="adjust_zoom_fit" data-i18n-title="adjust_zoom_fit_tooltip">FIT</button>
+              <span class="adjust-zoom-val" id="adj-zoom-val">100%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="top-btn btn-cancel modal-cancel-btn tooltip-align-left" data-close-modal="modal-adjust" data-i18n="config_cancel" data-i18n-title="adjust_cancel_tooltip">Cancelar</button>
+      <button class="top-btn btn-primary tooltip-align-right" id="btn-confirm-adjust" data-i18n="adjust_apply" data-i18n-title="adjust_apply_tooltip">Aplicar y Guardar</button>
     </div>
   </div>
 </div>
