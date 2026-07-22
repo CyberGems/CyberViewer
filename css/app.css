@@ -2018,7 +2018,8 @@
   #crop-rect {
     position: absolute;
     border: 1px solid var(--cyber-accent);
-    box-shadow: 0 0 20px var(--cyber-accent), inset 0 0 10px rgba(0,255,255,0.2);
+    /* Glow halved vs original 20px / inset 10px */
+    box-shadow: 0 0 10px var(--cyber-accent), inset 0 0 5px rgba(0,255,255,0.1);
     box-sizing: border-box;
     cursor: move;
     min-width: 50px;
@@ -2030,7 +2031,7 @@
     width: 12px; height: 12px;
     background: var(--cyber-accent);
     border: 1px solid #000;
-    box-shadow: 0 0 8px var(--cyber-accent);
+    box-shadow: 0 0 4px var(--cyber-accent);
   }
   /* Esquinas */
   .ch-tl { top: -6px; left: -6px; cursor: nw-resize; }
@@ -2069,7 +2070,19 @@
     justify-content: space-between;
     gap: 10px;
   }
-  .crop-copy-info {
+
+  /* Shared single-line "Create a copy · …" toggle (crop / resize / adjust) */
+  .copy-toggle-row {
+    border-bottom: none !important;
+    margin: 0 !important;
+    padding: 8px 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    cursor: help;
+  }
+  .copy-toggle-info {
     display: flex;
     align-items: baseline;
     gap: 6px;
@@ -2078,25 +2091,35 @@
     white-space: nowrap;
     overflow: hidden;
   }
-  .crop-copy-info .config-name {
-    font-size: 11px;
+  .copy-toggle-info .config-name {
+    font-size: 13px;
+    font-weight: 600;
     line-height: 1.2;
     flex-shrink: 0;
+    color: var(--cyber-text);
   }
-  .crop-copy-sep {
+  .copy-toggle-sep {
     color: var(--cyber-muted);
-    font-size: 10px;
+    font-size: 11px;
     flex-shrink: 0;
     opacity: 0.75;
   }
-  .crop-copy-info .config-desc {
-    font-size: 10px;
+  .copy-toggle-info .config-desc {
+    font-size: 11px;
     margin-top: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     min-width: 0;
     line-height: 1.2;
+    color: var(--cyber-muted);
+  }
+  #crop-actions .copy-toggle-info .config-name {
+    font-size: 11px;
+  }
+  #crop-actions .copy-toggle-info .config-desc,
+  #crop-actions .copy-toggle-sep {
+    font-size: 10px;
   }
   .crop-actions-btns {
     display: flex;
