@@ -43,7 +43,13 @@
       <div class="menu-cat" data-sub>
         <span class="menu-label" data-i18n="menu_file">Archivo</span><span class="menu-arrow">&#8250;</span>
         <div class="menu-sub">
-          <button class="menu-item" data-action="open-folder"><span class="menu-label" data-i18n="menu_open">Abrir imagen</span><span class="menu-shortcut">Ctrl+O</span></button>
+          <button class="menu-item" data-action="open-image"><span class="menu-label" data-i18n="menu_open">Abrir imagen</span><span class="menu-shortcut">Ctrl+O</span></button>
+          <button class="menu-item" data-action="open-folder"><span class="menu-label" data-i18n="menu_open_folder">Abrir carpeta</span><span class="menu-shortcut">Ctrl+&#8679;F</span></button>
+          <div class="menu-cat" data-sub id="menu-recent-cat">
+            <span class="menu-label" data-i18n="menu_recent">Recientes</span><span class="menu-arrow">&#8250;</span>
+            <div class="menu-sub menu-recent-sub" id="menu-recent-list"></div>
+          </div>
+          <div class="menu-divider"></div>
           <button class="menu-item" data-action="paste-image"><span class="menu-label" data-i18n="menu_paste">Pegar imagen</span><span class="menu-shortcut">Ctrl+V</span></button>
           <button class="menu-item" data-action="close-image" data-needs-image><span class="menu-label" data-i18n="menu_close_image">Cerrar imagen</span></button>
           <button class="menu-item" data-action="show-folder" data-needs-image><span class="menu-label" data-i18n="menu_show">Mostrar en explorador</span><span class="menu-shortcut">Ctrl+&#8679;O</span></button>

@@ -68,6 +68,7 @@ function loadSettings() {
         if (data.app.hudAutoHide === undefined) data.app.hudAutoHide = true;
         if (data.app.hudAutoHideDelay === undefined) data.app.hudAutoHideDelay = 2000;
         if (data.app.alphaBackground === undefined) data.app.alphaBackground = 'checker-dark';
+        if (!Array.isArray(data.app.recentFiles)) data.app.recentFiles = [];
       }
       return data;
     }
@@ -90,7 +91,8 @@ function loadSettings() {
       hudAutoHide: true,
       hudAutoHideDelay: 2000,
       showTopHints: true,
-      alphaBackground: 'checker-dark'
+      alphaBackground: 'checker-dark',
+      recentFiles: []
     }
   };
 }
@@ -551,6 +553,57 @@ ipcMain.handle('open-file-dialog', async () => {
   const filePath = result.filePaths[0];
   pathAllowlist.allow(filePath);
   return filePath;
+});
+
+/**
+ * Pick a folder, find the first image (natural sort), allowlist it, return its path.
+ * Renderer then uses existing scan-folder from that image.
+ */
+ipcMain.handle('open-folder-dialog', async () => {
+  const lang = getUiLang();
+  const result = await dialog.showOpenDialog(win, {
+    title: tMenu('dialog_open_folder_title', lang),
+    properties: ['openDirectory']
+  });
+  if (result.canceled || !result.filePaths.length) {
+    return { ok: false, canceled: true };
+  }
+  try {
+    const dir = path.resolve(result.filePaths[0]);
+    let st;
+    try {
+      st = await fs.promises.stat(dir);
+    } catch (_) {
+      return { ok: false, error: 'NOT_FOUND' };
+    }
+    if (!st.isDirectory()) return { ok: false, error: 'NOT_DIR' };
+
+    const files = await fs.promises.readdir(dir);
+    const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+    const imageNames = files
+      .filter((f) => IMAGE_EXTS.has(path.extname(f).toLowerCase()))
+      .sort((a, b) => collator.compare(a, b));
+
+    if (!imageNames.length) {
+      return { ok: false, empty: true, dir };
+    }
+
+    // Prefer first readable regular file
+    for (const name of imageNames) {
+      const fullPath = path.resolve(dir, name);
+      try {
+        const fst = await fs.promises.stat(fullPath);
+        if (!fst.isFile()) continue;
+        const allowed = pathAllowlist.allowImageFile(fullPath);
+        if (!allowed) continue;
+        return { ok: true, path: allowed, dir, count: imageNames.length };
+      } catch (_) { /* skip */ }
+    }
+    return { ok: false, empty: true, dir };
+  } catch (e) {
+    console.error('open-folder-dialog failed:', e);
+    return { ok: false, error: e.message || 'OPEN_FOLDER_FAILED' };
+  }
 });
 
 ipcMain.handle('get-settings', () => loadSettings());

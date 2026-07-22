@@ -687,6 +687,27 @@
   .menu-arrow { color: var(--cyber-muted); font-size: 17px; line-height: 1; }
   .menu-shortcut { color: var(--cyber-accent); opacity: 0.5; font-size: 11px; letter-spacing: .5px; flex-shrink: 0; }
 
+  /* Recent files flyout: show filename, truncate long names */
+  .menu-recent-sub {
+    min-width: 240px;
+    max-width: 320px;
+  }
+  .menu-item.menu-recent-item .menu-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 260px;
+  }
+  .menu-item.menu-recent-item {
+    font-size: 12px;
+    letter-spacing: 0.2px;
+  }
+  .menu-item.menu-recent-empty {
+    opacity: 0.45;
+    pointer-events: none;
+    cursor: default;
+  }
+
   .menu-cat:hover, .menu-item:hover {
     background: rgba(var(--cyber-accent-rgb), 0.12);
     color: var(--cyber-accent);
