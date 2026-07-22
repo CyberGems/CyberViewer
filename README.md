@@ -93,6 +93,16 @@ Release tags (`v*`) must publish `latest.yml`, `.blockmap`, and the Setup `.exe`
 
 JPG · JPEG · PNG · GIF · WEBP · BMP · TIFF
 
+## Default image viewer (installer)
+
+The NSIS setup includes a page with a checkbox (**checked by default**):
+
+> **Set CyberViewer as the default image viewer**
+
+When enabled, the installer writes per-user (HKCU) associations for common image extensions so double-click opens CyberViewer. Windows 10/11 may still ask you to confirm defaults under **Settings → Apps → Default apps**.
+
+The portable build does not register system associations; use the in-app **Context Menu** option or Windows defaults UI.
+
 ---
 
 **CyberGems © 2026**

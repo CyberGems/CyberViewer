@@ -89,6 +89,8 @@ const state = {
 
 /** Max entries in File → Recent images / folders (balance usefulness vs menu height). */
 const RECENT_MAX = 8;
+/** Shorter list for right-click menus (avoid tall nested flyouts). */
+const RECENT_CTX_MAX = 5;
 
 // UI strings: i18n/ui.js → window.CV_I18N (source: i18n/ui.json)
 const I18N = (typeof window !== 'undefined' && window.CV_I18N) ? window.CV_I18N : { en: {}, es: {} };
@@ -830,11 +832,14 @@ function buildMenuTemplate(type, data) {
     ];
   } else if (type === 'image') {
     const hiddenCount = state.images.filter(im => im.hidden).length;
+    const tMenu = I18N[lang] || I18N.en;
     return [
       {
         label: getTxt('menu_file'),
         isSub: true,
         items: [
+          ...buildOpenFileContextItems(tMenu),
+          { type: 'separator' },
           {
             label: getTxt('menu_copy'),
             shortcut: 'Ctrl+C',
@@ -946,22 +951,15 @@ function buildMenuTemplate(type, data) {
       }
     ];
   } else {
-    // Canvas context menu
+    // Canvas / empty-state context menu
+    const tMenu = I18N[lang] || I18N.en;
     return [
       {
         label: getTxt('menu_file'),
         isSub: true,
         items: [
-          {
-            label: getTxt('menu_open'),
-            shortcut: 'Ctrl+O',
-            action: () => openImageDialog()
-          },
-          {
-            label: getTxt('menu_open_folder'),
-            shortcut: 'Ctrl+Shift+F',
-            action: () => openFolderDialog()
-          },
+          ...buildOpenFileContextItems(tMenu),
+          { type: 'separator' },
           {
             label: getTxt('menu_paste'),
             shortcut: 'Ctrl+V',
@@ -1127,15 +1125,19 @@ function renderMenuTemplate(container, template) {
       cat.appendChild(arrow);
 
       const sub = document.createElement('div');
-      sub.className = 'menu-sub';
-      renderMenuTemplate(sub, item.items);
+      sub.className = 'menu-sub menu-recent-sub';
+      renderMenuTemplate(sub, item.items || []);
       cat.appendChild(sub);
 
       container.appendChild(cat);
     } else {
       const btn = document.createElement('button');
       btn.className = 'menu-item';
-      if (item.enabled === false) btn.classList.add('disabled');
+      if (item.enabled === false) {
+        btn.classList.add('disabled');
+        btn.classList.add('menu-recent-empty');
+      }
+      if (item.recent) btn.classList.add('menu-recent-item');
       if (item.type === 'checkbox') {
         const check = document.createElement('span');
         check.className = 'menu-check';
@@ -1148,6 +1150,7 @@ function renderMenuTemplate(container, template) {
       label.className = 'menu-label';
       label.textContent = item.label;
       btn.appendChild(label);
+      if (item.title) btn.title = item.title;
 
       if (item.shortcut) {
         const shortcut = document.createElement('span');
@@ -1162,6 +1165,7 @@ function renderMenuTemplate(container, template) {
 
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
+        if (item.enabled === false) return;
         hideCustomContextMenu();
         if (item.action) item.action();
       });
@@ -1169,6 +1173,57 @@ function renderMenuTemplate(container, template) {
       container.appendChild(btn);
     }
   });
+}
+
+/** Compact recent lists for context menus (top N). */
+function buildRecentContextItems(kind, t) {
+  const isFolder = kind === 'folder';
+  const all = isFolder ? getRecentFolders() : getRecentFiles();
+  const list = all.slice(0, RECENT_CTX_MAX);
+  if (!list.length) {
+    return [{
+      label: isFolder
+        ? (t.menu_recent_folders_empty || 'No recent folders')
+        : (t.menu_recent_empty || 'No recent images'),
+      enabled: false
+    }];
+  }
+  return list.map((entryPath) => ({
+    label: fileNameFromPath(entryPath),
+    title: entryPath,
+    recent: true,
+    action: () => {
+      if (isFolder) openRecentFolder(entryPath);
+      else openRecentPath(entryPath);
+    }
+  }));
+}
+
+/** Shared File-open block for canvas / empty context menus. */
+function buildOpenFileContextItems(t) {
+  return [
+    {
+      label: t.menu_open || 'Open image',
+      shortcut: 'Ctrl+O',
+      action: () => openImageDialog()
+    },
+    {
+      label: t.menu_open_folder || 'Open folder',
+      shortcut: 'Ctrl+Shift+F',
+      action: () => openFolderDialog()
+    },
+    { type: 'separator' },
+    {
+      label: t.menu_recent || 'Recent images',
+      isSub: true,
+      items: buildRecentContextItems('file', t)
+    },
+    {
+      label: t.menu_recent_folders || 'Recent folders',
+      isSub: true,
+      items: buildRecentContextItems('folder', t)
+    }
+  ];
 }
 
 async function showSaveAsDialog(filePath) {

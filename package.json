@@ -61,47 +61,45 @@
       "icon": "assets/icon.ico",
       "fileAssociations": [
         {
-          "ext": [
-            "jpg",
-            "jpeg"
-          ],
+          "ext": ["jpg", "jpeg"],
           "name": "JPEG Image",
+          "description": "JPEG Image",
+          "progId": "CyberViewer.jpg",
           "role": "Viewer"
         },
         {
-          "ext": [
-            "png"
-          ],
+          "ext": ["png"],
           "name": "PNG Image",
+          "description": "PNG Image",
+          "progId": "CyberViewer.png",
           "role": "Viewer"
         },
         {
-          "ext": [
-            "gif"
-          ],
+          "ext": ["gif"],
           "name": "GIF Image",
+          "description": "GIF Image",
+          "progId": "CyberViewer.gif",
           "role": "Viewer"
         },
         {
-          "ext": [
-            "webp"
-          ],
+          "ext": ["webp"],
           "name": "WebP Image",
+          "description": "WebP Image",
+          "progId": "CyberViewer.webp",
           "role": "Viewer"
         },
         {
-          "ext": [
-            "bmp"
-          ],
+          "ext": ["bmp"],
           "name": "BMP Image",
+          "description": "BMP Image",
+          "progId": "CyberViewer.bmp",
           "role": "Viewer"
         },
         {
-          "ext": [
-            "tiff",
-            "tif"
-          ],
+          "ext": ["tiff", "tif"],
           "name": "TIFF Image",
+          "description": "TIFF Image",
+          "progId": "CyberViewer.tiff",
           "role": "Viewer"
         }
       ]
@@ -114,7 +112,8 @@
       "createStartMenuShortcut": true,
       "shortcutName": "CyberViewer",
       "artifactName": "${productName}-Setup-${version}.${ext}",
-      "runAfterFinish": true
+      "runAfterFinish": true,
+      "include": "build/installer.nsh"
     },
     "portable": {
       "artifactName": "${productName}-Portable-${version}.${ext}"
