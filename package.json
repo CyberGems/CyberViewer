@@ -3,7 +3,7 @@
   "version": "1.8.0",
   "description": "CyberViewer — Visor de imágenes ultraligero por CyberGems",
   "main": "main.js",
-  "author": "CyberGems <info@cybergems.com>",
+  "author": "CyberGems <info@cybergems.org>",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
@@ -64,42 +64,36 @@
           "ext": ["jpg", "jpeg"],
           "name": "JPEG Image",
           "description": "JPEG Image",
-          "progId": "CyberViewer.jpg",
           "role": "Viewer"
         },
         {
           "ext": ["png"],
           "name": "PNG Image",
           "description": "PNG Image",
-          "progId": "CyberViewer.png",
           "role": "Viewer"
         },
         {
           "ext": ["gif"],
           "name": "GIF Image",
           "description": "GIF Image",
-          "progId": "CyberViewer.gif",
           "role": "Viewer"
         },
         {
           "ext": ["webp"],
           "name": "WebP Image",
           "description": "WebP Image",
-          "progId": "CyberViewer.webp",
           "role": "Viewer"
         },
         {
           "ext": ["bmp"],
           "name": "BMP Image",
           "description": "BMP Image",
-          "progId": "CyberViewer.bmp",
           "role": "Viewer"
         },
         {
           "ext": ["tiff", "tif"],
           "name": "TIFF Image",
           "description": "TIFF Image",
-          "progId": "CyberViewer.tiff",
           "role": "Viewer"
         }
       ]
