@@ -2662,11 +2662,11 @@ function fitToWindow(w, h) {
   applyTransform(false);
 }
 
-function applyTransform(animate) {
+function applyTransform(animate, opts = {}) {
   const t = `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom})`;
   canvasL.style.transition = animate ? 'transform 200ms cubic-bezier(.25,.46,.45,.94)' : 'none';
   canvasL.style.transform = t;
-  updateZoomHUD();
+  updateZoomHUD(opts);
 }
 
 function sliderToZoom(val) {
@@ -2685,27 +2685,34 @@ function zoomToSlider(zoom) {
   return Math.round(Math.max(0, Math.min(1000, t * 1000)));
 }
 
-function updateZoomHUD() {
+/**
+ * @param {{ userZoom?: boolean }} [opts]
+ *   userZoom — wheel/slider/keyboard zoom (show floating badge). Fit/slide advance never flashes it.
+ */
+function updateZoomHUD(opts = {}) {
   const pct = Math.round(state.zoom * 100);
   zoomVal.textContent = pct + '%';
   $('zoom-pct').textContent = pct + '%';
   const slider = $('zoom-slider');
   if (slider) slider.value = zoomToSlider(state.zoom);
-  // Floating zoom badge only in fullscreen; statusbar zoom-% always updates
   if (!zoomHud) return;
-  if (!state.isGhost) {
+
+  const allowFloat = state.isGhost || state.slideshowActive;
+  if (!allowFloat) {
     zoomHud.classList.remove('visible', 'hud-hidden-fade');
     clearTimeout(state.zoomTimer);
     return;
   }
-  // Slideshow fit/advance must NOT flash zoom + other floating chrome
-  if (state.slideshowActive) {
+
+  // During presentation: only show badge on intentional user zoom, never on fit/slide
+  if (state.slideshowActive && !opts.userZoom && state.viewMode === 'fit') {
     zoomHud.classList.remove('visible');
     zoomHud.classList.add('hud-hidden-fade');
     clearTimeout(state.zoomTimer);
     return;
   }
-  // Show with the rest of the floating HUD and share the same auto-hide timer
+
+  // User zoom in FS or presentation — show badge, share idle auto-hide
   zoomHud.classList.add('visible');
   zoomHud.classList.remove('hud-hidden-fade');
   clearTimeout(state.zoomTimer);
@@ -2720,7 +2727,7 @@ $('zoom-slider').addEventListener('input', (e) => {
   state.zoom = newZoom;
   state.panX = 0;
   state.panY = 0;
-  applyTransform(true);
+  applyTransform(true, { userZoom: true });
 });
 
 $('zoom-slider').addEventListener('wheel', (e) => {
@@ -2808,7 +2815,7 @@ function zoomAt(delta, cx, cy) {
   state.panX = ox + (state.panX - ox) * ratio;
   state.panY = oy + (state.panY - oy) * ratio;
   state.zoom = newZoom;
-  applyTransform(false);
+  applyTransform(false, { userZoom: true });
 }
 
 // ── NAVIGATION ──
@@ -3170,6 +3177,11 @@ function visibleImageCount() {
 function updateNavVisibility() {
   const nav = $('nav-container');
   if (!nav) return;
+  // Side arrows hidden entirely during presentation (slideshow HUD has prev/next)
+  if (state.slideshowActive) {
+    nav.classList.add('nav-useless');
+    return;
+  }
   nav.classList.toggle('nav-useless', visibleImageCount() <= 1);
 }
 

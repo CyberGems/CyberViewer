@@ -239,14 +239,20 @@
   }
   body.ghost-mode #sidebar { display: none !important; }
   body.ghost-mode #sidebar-handle { display: none !important; }
-  /* Floating zoom HUD only in fullscreen (ghost mode) */
-  body:not(.ghost-mode) #zoom-hud {
+  /* Floating zoom HUD: fullscreen, or presentation (user wheel zoom) */
+  body:not(.ghost-mode):not(.slideshow-active) #zoom-hud {
     display: none !important;
   }
   /* Stack under exit (X): 16 + 32 + 8 gap = 56 */
-  body.ghost-mode #zoom-hud {
+  body.ghost-mode #zoom-hud,
+  body.slideshow-active #zoom-hud {
     top: 56px;
     right: 20px;
+    display: flex;
+  }
+  /* Side prev/next are redundant with slideshow HUD arrows */
+  body.slideshow-active #nav-container {
+    display: none !important;
   }
 
   /* ── CYBER STATUSBAR TOOLTIPS ── */
