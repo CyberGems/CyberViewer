@@ -2698,6 +2698,13 @@ function updateZoomHUD() {
     clearTimeout(state.zoomTimer);
     return;
   }
+  // Slideshow fit/advance must NOT flash zoom + other floating chrome
+  if (state.slideshowActive) {
+    zoomHud.classList.remove('visible');
+    zoomHud.classList.add('hud-hidden-fade');
+    clearTimeout(state.zoomTimer);
+    return;
+  }
   // Show with the rest of the floating HUD and share the same auto-hide timer
   zoomHud.classList.add('visible');
   zoomHud.classList.remove('hud-hidden-fade');
@@ -2899,7 +2906,7 @@ function slideshowAdvance(dir, opts = {}) {
         if (opts.fromTimer && typeof showToast === 'function') {
           showToast(t.toast_slideshow_end || 'SLIDESHOW END', 'info');
         }
-        updateSlideshowUI({ reveal: true });
+        updateSlideshowUI(); // keep fade state; end of set
         return;
       }
     }
@@ -2909,7 +2916,7 @@ function slideshowAdvance(dir, opts = {}) {
       state.viewMode = 'fit';
       showImage(idx, dir > 0 ? 'left' : 'right');
       if (state.slideshowPlaying) scheduleSlideshowTick();
-      // Only update counter/play state — do not flash HUD or reset auto-hide
+      // Labels/counter only — do not reveal chrome or reset HUD timer
       updateSlideshowUI();
       return;
     }
@@ -2951,7 +2958,9 @@ function startSlideshow(opts = {}) {
   refit();
   requestAnimationFrame(refit);
 
-  updateSlideshowUI({ reveal: true });
+  // Presentation chrome: hidden until the user moves the mouse
+  updateSlideshowUI({ hide: true });
+  hideFloatingChromeForSlideshow();
   scheduleSlideshowTick();
 
   if (!wasActive && typeof showToast === 'function') {
@@ -2963,7 +2972,7 @@ function pauseSlideshow() {
   if (!state.slideshowActive) return;
   state.slideshowPlaying = false;
   clearSlideshowTimer();
-  updateSlideshowUI();
+  updateSlideshowUI(); // no force reveal
 }
 
 function resumeSlideshow() {
@@ -2973,7 +2982,27 @@ function resumeSlideshow() {
   }
   state.slideshowPlaying = true;
   scheduleSlideshowTick();
-  updateSlideshowUI({ reveal: true });
+  updateSlideshowUI(); // keep current visibility
+}
+
+/** Fade all floating chrome (incl. presentation bar). Mouse move re-shows via resetHudTimer. */
+function hideFloatingChromeForSlideshow() {
+  clearTimeout(hudTimer);
+  const fade = (id, cls) => {
+    const el = $(id);
+    if (el) el.classList.add(cls);
+  };
+  fade('slideshow-hud', 'hud-hidden-fade');
+  fade('ghost-close', 'hud-hidden-fade');
+  fade('viewer-filename', 'hud-hidden-fade');
+  fade('nav-container', 'hud-hidden-fade');
+  fade('zoom-hud', 'hud-hidden-fade');
+  const kbd = $('kbd-hint');
+  if (kbd && state.isGhost) kbd.classList.add('hud-hidden');
+  const zh = $('zoom-hud');
+  if (zh) zh.classList.remove('visible');
+
+  // Re-arm hide timer only after next mouse reveal (mousemove → resetHudTimer)
 }
 
 function toggleSlideshowPlay() {
@@ -3019,26 +3048,28 @@ function stopSlideshow(opts = {}) {
 }
 
 /**
- * Sync slideshow chrome. Does NOT toggle visibility/auto-hide classes on every
- * image change — that caused the HUD to flash in/out on each slide.
- * @param {{ reveal?: boolean }} [opts] reveal=true forces the bar visible (start/resume)
+ * Sync slideshow chrome.
+ * @param {{ reveal?: boolean, hide?: boolean }} [opts]
+ *   reveal — show bar (mouse interaction / explicit)
+ *   hide — start faded (presentation idle; mouse will reveal)
+ * Never thrash classes on every slide tick.
  */
 function updateSlideshowUI(opts = {}) {
   const hud = $('slideshow-hud');
   if (!hud) return;
   const active = !!state.slideshowActive;
-  const wasHiddenAttr = hud.hidden;
   hud.hidden = !active;
   hud.setAttribute('aria-hidden', active ? 'false' : 'true');
   hud.classList.toggle('visible', active);
 
-  // Only force-show when activating or when explicitly requested — never on tick/advance
-  if (active && (opts.reveal || wasHiddenAttr)) {
-    hud.classList.remove('hud-hidden-fade');
-  }
   if (!active) {
     hud.classList.remove('hud-hidden-fade', 'visible');
+  } else if (opts.hide) {
+    hud.classList.add('hud-hidden-fade');
+  } else if (opts.reveal) {
+    hud.classList.remove('hud-hidden-fade');
   }
+  // else: leave current fade state alone (advance/tick only updates labels)
 
   const playBtn = $('ss-play');
   if (playBtn) {
@@ -4870,8 +4901,7 @@ const elementsToHide = [
   { el: $('kbd-hint'), hideClass: 'hud-hidden', ghostOnly: true },
   { el: $('ghost-close'), hideClass: 'hud-hidden-fade', ghostOnly: true },
   { el: $('zoom-hud'), hideClass: 'hud-hidden-fade', ghostOnly: true },
-  // slideshow-hud is intentionally excluded: stays solid during presentation
-  // (auto-hide was re-showing it on every slide and causing flicker)
+  { el: $('slideshow-hud'), hideClass: 'hud-hidden-fade', ghostOnly: false },
   { el: $('viewer-filename'), hideClass: 'hud-hidden-fade', ghostOnly: false },
   { el: $('nav-container'), hideClass: 'hud-hidden-fade', ghostOnly: false }
 ];
@@ -4889,31 +4919,46 @@ function resetHudTimer() {
     if (nav) nav.classList.add('hud-hidden-fade');
     const zh = $('zoom-hud');
     if (zh && state.isGhost) zh.classList.add('hud-hidden-fade');
+    const ss = $('slideshow-hud');
+    if (ss && state.slideshowActive) ss.classList.add('hud-hidden-fade');
     return;
   }
 
   elementsToHide.forEach(item => {
     if (!item.el) return;
+    // Slideshow HUD only while presentation is active
+    if (item.el.id === 'slideshow-hud' && !state.slideshowActive) {
+      item.el.classList.add('hud-hidden-fade');
+      return;
+    }
     item.el.classList.remove(item.hideClass);
     // Ensure docked toolbar never stays hidden after leaving fullscreen
     if (item.el.id === 'kbd-hint' && !state.isGhost) {
       item.el.classList.remove('hud-hidden', 'hud-hidden-fade');
     }
-    // Zoom badge only reappears after a zoom gesture (class "visible"), not on every mouse move
-    if (item.el.id === 'zoom-hud' && !item.el.classList.contains('visible')) {
-      item.el.classList.add('hud-hidden-fade');
+    // Zoom badge: only when fullscreen and not in slideshow; needs .visible from zoom gesture
+    if (item.el.id === 'zoom-hud') {
+      if (state.slideshowActive || !item.el.classList.contains('visible')) {
+        item.el.classList.add('hud-hidden-fade');
+      }
     }
   });
 
   const hudEnabled = state.settings?.app?.hudAutoHide !== false;
   const navEnabled = state.settings?.app?.navAutoHide !== false;
+  // During slideshow always auto-hide floating chrome (incl. presentation bar)
+  const forceSlideshowHide = !!state.slideshowActive;
 
-  if (!hudEnabled && !navEnabled) {
+  if (!hudEnabled && !navEnabled && !forceSlideshowHide) {
     return;
   }
 
   // No ocultar si el ratón está sobre el HUD
-  const isHovering = elementsToHide.some(item => item.el && item.el.matches(':hover'));
+  const isHovering = elementsToHide.some(item => {
+    if (!item.el) return false;
+    if (item.el.id === 'slideshow-hud' && !state.slideshowActive) return false;
+    return item.el.matches(':hover');
+  });
   if (isHovering) return;
 
   const delay = (state.settings && state.settings.app && state.settings.app.hudAutoHideDelay !== undefined)
@@ -4921,21 +4966,24 @@ function resetHudTimer() {
     : 2000;
 
   hudTimer = setTimeout(() => {
-    if (state.images.length === 0 && !state.isGhost) return;
+    if (state.images.length === 0 && !state.isGhost && !state.slideshowActive) return;
     elementsToHide.forEach(item => {
       if (!item.el) return;
+      if (item.el.id === 'slideshow-hud') {
+        if (state.slideshowActive) item.el.classList.add(item.hideClass);
+        return;
+      }
       if (item.ghostOnly && !state.isGhost) return;
 
       if (item.el.id === 'nav-container') {
-        if (navEnabled) item.el.classList.add(item.hideClass);
+        if (navEnabled || forceSlideshowHide) item.el.classList.add(item.hideClass);
         return;
       }
-      if (!hudEnabled) return;
+      if (!hudEnabled && !forceSlideshowHide) return;
 
       const isTopbarOrStatusbar = (item.el.id === 'topbar' || item.el.id === 'statusbar');
       if (isTopbarOrStatusbar && !state.isGhost) return;
       item.el.classList.add(item.hideClass);
-      // Clear sticky "visible" so mouse-move doesn't flash zoom again until next zoom
       if (item.el.id === 'zoom-hud') {
         item.el.classList.remove('visible');
       }

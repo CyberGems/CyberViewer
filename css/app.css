@@ -1597,11 +1597,11 @@
   body.ghost-mode.slideshow-active #slideshow-hud {
     bottom: 48px;
   }
-  /* Keep presentation chrome solid — no auto-hide fade on slide change */
+  /* Mouse-idle hide (same pattern as other floating chrome) */
   #slideshow-hud.hud-hidden-fade {
-    opacity: 1 !important;
-    pointer-events: auto;
-    transform: translateX(-50%);
+    opacity: 0 !important;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(8px);
   }
   .ss-btn {
     width: 34px;
