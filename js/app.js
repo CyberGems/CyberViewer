@@ -81,12 +81,13 @@ const state = {
       checkUpdatesOnStartup: true,
       // Transparency grid behind alpha pixels: checker-dark | checker-light | solid
       alphaBackground: 'checker-dark',
-      recentFiles: []
+      recentFiles: [],
+      recentFolders: []
     } 
   },
 };
 
-/** Max entries in File → Recent (balance usefulness vs menu height). */
+/** Max entries in File → Recent images / folders (balance usefulness vs menu height). */
 const RECENT_MAX = 8;
 
 // UI strings: i18n/ui.js → window.CV_I18N (source: i18n/ui.json)
@@ -265,42 +266,92 @@ function getRecentFiles() {
   return Array.isArray(list) ? list : [];
 }
 
+function getRecentFolders() {
+  const list = state.settings && state.settings.app && state.settings.app.recentFolders;
+  return Array.isArray(list) ? list : [];
+}
+
 function fileNameFromPath(filePath) {
   if (!filePath) return '';
-  const parts = String(filePath).split(/[\\/]/);
+  const parts = String(filePath).replace(/[\\/]+$/, '').split(/[\\/]/);
   return parts[parts.length - 1] || filePath;
+}
+
+function ensureAppSettings() {
+  if (!state.settings) state.settings = { app: {} };
+  if (!state.settings.app) state.settings.app = {};
+  return state.settings.app;
+}
+
+function persistAppSettings() {
+  if (isElectron && window.electronAPI.saveSettings && state.settings && state.settings.app) {
+    window.electronAPI.saveSettings(state.settings.app);
+  }
+}
+
+/** Open sidebar if closed so folder thumbs + scan are visible. */
+function ensureSidebarOpen() {
+  if (!state.sidebarOpen && typeof setSidebarOpen === 'function') {
+    setSidebarOpen(true);
+  }
 }
 
 /** Record an opened image path (MRU). Skips blob/clipboard-only entries. */
 function pushRecentFile(filePath) {
   if (!filePath || typeof filePath !== 'string') return;
-  // Ignore non-filesystem paths
   if (filePath.startsWith('blob:') || filePath.startsWith('data:')) return;
-  if (!state.settings) state.settings = { app: {} };
-  if (!state.settings.app) state.settings.app = {};
+  const app = ensureAppSettings();
   const norm = filePath;
-  const prev = getRecentFiles().filter((p) => {
-    if (!p || typeof p !== 'string') return false;
-    return p.toLowerCase() !== norm.toLowerCase();
-  });
-  const next = [norm, ...prev].slice(0, RECENT_MAX);
-  state.settings.app.recentFiles = next;
-  if (isElectron && window.electronAPI.saveSettings) {
-    window.electronAPI.saveSettings(state.settings.app);
-  }
+  const prev = getRecentFiles().filter((p) => p && typeof p === 'string' && p.toLowerCase() !== norm.toLowerCase());
+  app.recentFiles = [norm, ...prev].slice(0, RECENT_MAX);
+  persistAppSettings();
+}
+
+/** Record an opened folder path (MRU). */
+function pushRecentFolder(dirPath) {
+  if (!dirPath || typeof dirPath !== 'string') return;
+  if (dirPath.startsWith('blob:') || dirPath.startsWith('data:')) return;
+  const app = ensureAppSettings();
+  const norm = dirPath.replace(/[\\/]+$/, '');
+  const prev = getRecentFolders().filter((p) => p && typeof p === 'string' && p.toLowerCase() !== norm.toLowerCase());
+  app.recentFolders = [norm, ...prev].slice(0, RECENT_MAX);
+  persistAppSettings();
 }
 
 function clearRecentFiles() {
-  if (!state.settings) state.settings = { app: {} };
-  if (!state.settings.app) state.settings.app = {};
-  state.settings.app.recentFiles = [];
-  if (isElectron && window.electronAPI.saveSettings) {
-    window.electronAPI.saveSettings(state.settings.app);
-  }
-  const lang = (state.settings.app.language) || 'en';
+  const app = ensureAppSettings();
+  app.recentFiles = [];
+  persistAppSettings();
+  const lang = app.language || 'en';
   if (typeof showToast === 'function') {
     showToast((I18N[lang] && I18N[lang].toast_recent_cleared) || 'RECENT LIST CLEARED', 'info');
   }
+}
+
+function clearRecentFolders() {
+  const app = ensureAppSettings();
+  app.recentFolders = [];
+  persistAppSettings();
+  const lang = app.language || 'en';
+  if (typeof showToast === 'function') {
+    showToast((I18N[lang] && I18N[lang].toast_recent_folders_cleared) || 'RECENT FOLDERS CLEARED', 'info');
+  }
+}
+
+function removeRecentFile(filePath) {
+  if (!filePath || !state.settings || !state.settings.app) return;
+  const key = String(filePath).toLowerCase();
+  state.settings.app.recentFiles = getRecentFiles().filter((p) => p && String(p).toLowerCase() !== key);
+  persistAppSettings();
+}
+
+function removeRecentFolder(dirPath) {
+  if (!dirPath || !state.settings || !state.settings.app) return;
+  const key = String(dirPath).replace(/[\\/]+$/, '').toLowerCase();
+  state.settings.app.recentFolders = getRecentFolders().filter(
+    (p) => p && String(p).replace(/[\\/]+$/, '').toLowerCase() !== key
+  );
+  persistAppSettings();
 }
 
 /** User-initiated open of a filesystem image (dialog, OS association, recent, folder). */
@@ -308,7 +359,21 @@ async function openImagePath(filePath, opts = {}) {
   if (!filePath) return false;
   const addRecent = opts.addRecent !== false;
   if (addRecent) pushRecentFile(filePath);
+  if (opts.openSidebar) ensureSidebarOpen();
   await scanFolder(filePath);
+  return true;
+}
+
+/**
+ * Load a folder by first image path + optional dir for recents.
+ * Opens sidebar so thumbs are usable right away.
+ */
+async function openFolderResult(res, opts = {}) {
+  if (!res || !res.ok || !res.path) return false;
+  if (res.dir) pushRecentFolder(res.dir);
+  // Always expand sidebar when the user explicitly opens a folder
+  if (opts.openSidebar !== false) ensureSidebarOpen();
+  await openImagePath(res.path, { addRecent: opts.addRecentFile !== false });
   return true;
 }
 
@@ -338,17 +403,7 @@ async function openFolderDialog() {
     }
     return;
   }
-  if (res.path) await openImagePath(res.path);
-}
-
-function removeRecentFile(filePath) {
-  if (!filePath || !state.settings || !state.settings.app) return;
-  const key = String(filePath).toLowerCase();
-  const rest = getRecentFiles().filter((p) => p && String(p).toLowerCase() !== key);
-  state.settings.app.recentFiles = rest;
-  if (isElectron && window.electronAPI.saveSettings) {
-    window.electronAPI.saveSettings(state.settings.app);
-  }
+  await openFolderResult(res);
 }
 
 async function openRecentPath(filePath) {
@@ -357,7 +412,6 @@ async function openRecentPath(filePath) {
   if (!filePath || !isElectron) return;
 
   try {
-    // Existence check first (does not expand allowlist)
     if (window.electronAPI.validatePaths) {
       const valid = await window.electronAPI.validatePaths([filePath]);
       if (!Array.isArray(valid) || !valid.length) {
@@ -383,6 +437,24 @@ async function openRecentPath(filePath) {
   }
 
   await openImagePath(filePath);
+}
+
+async function openRecentFolder(dirPath) {
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  const t = I18N[lang] || I18N.en;
+  if (!dirPath || !isElectron || !window.electronAPI.openFolderPath) return;
+
+  const res = await window.electronAPI.openFolderPath(dirPath);
+  if (!res || !res.ok) {
+    removeRecentFolder(dirPath);
+    if (res && res.empty) {
+      showToast(t.toast_folder_empty || 'NO IMAGES IN FOLDER', 'warning');
+    } else {
+      showToast(t.toast_recent_folder_missing || 'FOLDER NOT FOUND', 'warning');
+    }
+    return;
+  }
+  await openFolderResult(res);
 }
 
 async function startBackgroundScan() {
@@ -3816,6 +3888,9 @@ if (isElectron) {
       if (!Array.isArray(state.settings.app.recentFiles)) {
         state.settings.app.recentFiles = [];
       }
+      if (!Array.isArray(state.settings.app.recentFolders)) {
+        state.settings.app.recentFolders = [];
+      }
       applySettings();
       // Startup update check is owned by main (electron-updater); listen for notify
       if (window.electronAPI.onUpdateStatus) {
@@ -4162,42 +4237,56 @@ $('btn-config').addEventListener('click', openConfig);
     const a = document.activeElement;
     if (a && panel.contains(a)) a.blur();
   }
-  function rebuildRecentMenu() {
-    const listEl = panel.querySelector('#menu-recent-list');
+  function fillRecentList(listEl, items, opts) {
     if (!listEl) return;
-    const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
-    const t = I18N[lang] || I18N.en;
-    const recents = getRecentFiles();
     listEl.innerHTML = '';
 
-    if (!recents.length) {
+    if (!items.length) {
       const empty = document.createElement('button');
       empty.type = 'button';
       empty.className = 'menu-item menu-recent-empty';
-      empty.innerHTML = `<span class="menu-label">${t.menu_recent_empty || 'No recent images'}</span>`;
+      empty.innerHTML = `<span class="menu-label">${opts.emptyLabel}</span>`;
       listEl.appendChild(empty);
-    } else {
-      recents.forEach((filePath, idx) => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'menu-item menu-recent-item';
-        btn.dataset.action = 'open-recent';
-        btn.dataset.path = filePath;
-        const name = fileNameFromPath(filePath);
-        btn.title = filePath;
-        btn.innerHTML = `<span class="menu-label">${escapeHtmlMenu(name)}</span><span class="menu-shortcut">${idx + 1}</span>`;
-        listEl.appendChild(btn);
-      });
-      const div = document.createElement('div');
-      div.className = 'menu-divider';
-      listEl.appendChild(div);
-      const clearBtn = document.createElement('button');
-      clearBtn.type = 'button';
-      clearBtn.className = 'menu-item danger';
-      clearBtn.dataset.action = 'clear-recent';
-      clearBtn.innerHTML = `<span class="menu-label">${t.menu_clear_recent || 'Clear recent'}</span>`;
-      listEl.appendChild(clearBtn);
+      return;
     }
+
+    items.forEach((entryPath, idx) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'menu-item menu-recent-item';
+      btn.dataset.action = opts.action;
+      btn.dataset.path = entryPath;
+      const name = fileNameFromPath(entryPath);
+      btn.title = entryPath;
+      btn.innerHTML = `<span class="menu-label">${escapeHtmlMenu(name)}</span><span class="menu-shortcut">${idx + 1}</span>`;
+      listEl.appendChild(btn);
+    });
+    const div = document.createElement('div');
+    div.className = 'menu-divider';
+    listEl.appendChild(div);
+    const clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'menu-item danger';
+    clearBtn.dataset.action = opts.clearAction;
+    clearBtn.innerHTML = `<span class="menu-label">${opts.clearLabel}</span>`;
+    listEl.appendChild(clearBtn);
+  }
+
+  function rebuildRecentMenu() {
+    const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+    const t = I18N[lang] || I18N.en;
+    fillRecentList(panel.querySelector('#menu-recent-list'), getRecentFiles(), {
+      action: 'open-recent',
+      clearAction: 'clear-recent',
+      emptyLabel: t.menu_recent_empty || 'No recent images',
+      clearLabel: t.menu_clear_recent || 'Clear recent'
+    });
+    fillRecentList(panel.querySelector('#menu-recent-folders-list'), getRecentFolders(), {
+      action: 'open-recent-folder',
+      clearAction: 'clear-recent-folders',
+      emptyLabel: t.menu_recent_folders_empty || 'No recent folders',
+      clearLabel: t.menu_clear_recent_folders || 'Clear recent folders'
+    });
   }
 
   function escapeHtmlMenu(str) {
@@ -4263,7 +4352,13 @@ $('btn-config').addEventListener('click', openConfig);
         if (path) openRecentPath(path);
         break;
       }
+      case 'open-recent-folder': {
+        const path = itemEl && itemEl.dataset ? itemEl.dataset.path : null;
+        if (path) openRecentFolder(path);
+        break;
+      }
       case 'clear-recent':   clearRecentFiles(); break;
+      case 'clear-recent-folders': clearRecentFolders(); break;
       case 'paste-image':    pasteFromClipboard(); break;
       case 'close-image':    closeImage(); break;
       case 'show-folder':    $('btn-show-folder').click(); break;
@@ -4329,7 +4424,10 @@ $('btn-config').addEventListener('click', openConfig);
     const action = item.dataset.action;
     if (!action) return;
     runAction(action, item);
-    if (action === 'autohide' || action === 'sidebar' || action === 'toggle-hints' || action === 'toggle-alpha-bg' || action === 'clear-recent') {
+    if (
+      action === 'autohide' || action === 'sidebar' || action === 'toggle-hints' ||
+      action === 'toggle-alpha-bg' || action === 'clear-recent' || action === 'clear-recent-folders'
+    ) {
       item.blur();
       refreshMenuState();
     } else {

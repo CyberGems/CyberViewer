@@ -69,6 +69,7 @@ function loadSettings() {
         if (data.app.hudAutoHideDelay === undefined) data.app.hudAutoHideDelay = 2000;
         if (data.app.alphaBackground === undefined) data.app.alphaBackground = 'checker-dark';
         if (!Array.isArray(data.app.recentFiles)) data.app.recentFiles = [];
+        if (!Array.isArray(data.app.recentFolders)) data.app.recentFolders = [];
       }
       return data;
     }
@@ -92,7 +93,8 @@ function loadSettings() {
       hudAutoHideDelay: 2000,
       showTopHints: true,
       alphaBackground: 'checker-dark',
-      recentFiles: []
+      recentFiles: [],
+      recentFolders: []
     }
   };
 }
@@ -556,20 +558,13 @@ ipcMain.handle('open-file-dialog', async () => {
 });
 
 /**
- * Pick a folder, find the first image (natural sort), allowlist it, return its path.
- * Renderer then uses existing scan-folder from that image.
+ * Resolve first image in a directory (natural sort) and allowlist it.
+ * @param {string} dirPath
+ * @returns {Promise<{ok:boolean, path?:string, dir?:string, count?:number, empty?:boolean, error?:string}>}
  */
-ipcMain.handle('open-folder-dialog', async () => {
-  const lang = getUiLang();
-  const result = await dialog.showOpenDialog(win, {
-    title: tMenu('dialog_open_folder_title', lang),
-    properties: ['openDirectory']
-  });
-  if (result.canceled || !result.filePaths.length) {
-    return { ok: false, canceled: true };
-  }
+async function resolveFirstImageInDir(dirPath) {
   try {
-    const dir = path.resolve(result.filePaths[0]);
+    const dir = path.resolve(dirPath);
     let st;
     try {
       st = await fs.promises.stat(dir);
@@ -588,7 +583,6 @@ ipcMain.handle('open-folder-dialog', async () => {
       return { ok: false, empty: true, dir };
     }
 
-    // Prefer first readable regular file
     for (const name of imageNames) {
       const fullPath = path.resolve(dir, name);
       try {
@@ -601,9 +595,33 @@ ipcMain.handle('open-folder-dialog', async () => {
     }
     return { ok: false, empty: true, dir };
   } catch (e) {
-    console.error('open-folder-dialog failed:', e);
+    console.error('resolveFirstImageInDir failed:', e);
     return { ok: false, error: e.message || 'OPEN_FOLDER_FAILED' };
   }
+}
+
+/**
+ * Pick a folder, find the first image (natural sort), allowlist it, return its path.
+ * Renderer then uses existing scan-folder from that image.
+ */
+ipcMain.handle('open-folder-dialog', async () => {
+  const lang = getUiLang();
+  const result = await dialog.showOpenDialog(win, {
+    title: tMenu('dialog_open_folder_title', lang),
+    properties: ['openDirectory']
+  });
+  if (result.canceled || !result.filePaths.length) {
+    return { ok: false, canceled: true };
+  }
+  return resolveFirstImageInDir(result.filePaths[0]);
+});
+
+/** Open a known folder path (recent folders) without a dialog. */
+ipcMain.handle('open-folder-path', async (event, dirPath) => {
+  if (!dirPath || typeof dirPath !== 'string') {
+    return { ok: false, error: 'BAD_PATH' };
+  }
+  return resolveFirstImageInDir(dirPath);
 });
 
 ipcMain.handle('get-settings', () => loadSettings());

@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getMonitors: () => ipcRenderer.invoke('get-monitors'),
   openFile: () => ipcRenderer.invoke('open-file-dialog'),
   openFolder: () => ipcRenderer.invoke('open-folder-dialog'),
+  openFolderPath: (dirPath) => ipcRenderer.invoke('open-folder-path', dirPath),
   saveImage: (data) => ipcRenderer.invoke('save-image', data),
   copyImage: (path) => ipcRenderer.send('copy-image', path),
   readClipboardImage: () => ipcRenderer.invoke('clipboard:read-image'),
