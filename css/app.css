@@ -2011,19 +2011,25 @@
     z-index: 2000;
     display: none;
     cursor: crosshair;
-    background: rgba(0,0,0,0.4);
+    /* Dim comes from #crop-rect box-shadow hole, not a flat overlay */
+    background: transparent;
+    overflow: hidden;
   }
   #crop-overlay.active { display: block; }
   
   #crop-rect {
     position: absolute;
     border: 1px solid var(--cyber-accent);
-    /* Glow halved vs original 20px / inset 10px */
-    box-shadow: 0 0 10px var(--cyber-accent), inset 0 0 5px rgba(0,255,255,0.1);
+    /* Outside selection dimmed; inside stays full brightness (saved region) */
+    box-shadow:
+      0 0 0 9999px rgba(0, 0, 0, 0.62),
+      0 0 10px var(--cyber-accent),
+      inset 0 0 5px rgba(0, 255, 255, 0.1);
     box-sizing: border-box;
     cursor: move;
     min-width: 50px;
     min-height: 50px;
+    background: transparent;
   }
   
   .crop-handle {
