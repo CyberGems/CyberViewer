@@ -2963,8 +2963,13 @@ function startSlideshow(opts = {}) {
   hideFloatingChromeForSlideshow();
   scheduleSlideshowTick();
 
+  syncGhostCloseTooltip();
+
   if (!wasActive && typeof showToast === 'function') {
-    showToast(t.toast_slideshow_start || 'SLIDESHOW', 'info', 900);
+    const modeTip = state.isGhost
+      ? (t.toast_slideshow_start_fs || t.toast_slideshow_start || 'SLIDESHOW')
+      : (t.toast_slideshow_start_win || t.toast_slideshow_start || 'SLIDESHOW');
+    showToast(modeTip, 'info', 1000);
   }
 }
 
@@ -3014,6 +3019,11 @@ function toggleSlideshowPlay() {
   else resumeSlideshow();
 }
 
+/**
+ * End presentation. Optionally leave fullscreen only if we entered FS for this slideshow
+ * (or re-entered FS while it was running). X / Enter alone never call this.
+ * @param {{ silent?: boolean, keepFullscreen?: boolean }} [opts]
+ */
 function stopSlideshow(opts = {}) {
   const wasActive = state.slideshowActive;
   clearSlideshowTimer();
@@ -3021,12 +3031,15 @@ function stopSlideshow(opts = {}) {
   state.slideshowPlaying = false;
   document.body.classList.remove('slideshow-active');
 
+  // Leave FS only if presentation "owns" it (started in FS or user re-entered FS while playing)
   const leaveFs = state.slideshowEnteredFs && state.isGhost && opts.keepFullscreen !== true;
   state.slideshowEnteredFs = false;
 
   updateSlideshowUI();
+  syncGhostCloseTooltip();
 
   if (leaveFs && typeof applyImmersiveFullscreen === 'function') {
+    // keepFullscreen path handled above; avoid re-entrancy on slideshowEnteredFs
     applyImmersiveFullscreen(false);
   }
 
@@ -3117,6 +3130,8 @@ function updateSlideshowUI(opts = {}) {
   if (tb) {
     tb.classList.toggle('active', state.slideshowActive && state.slideshowPlaying);
   }
+
+  syncGhostCloseTooltip();
 }
 
 function toggleSlideshowLoop() {
@@ -3900,8 +3915,22 @@ function applyImmersiveFullscreen(on, opts = {}) {
   state.isGhost = want;
   if (want) state.isCropping = false; // AISLAMIENTO TOTAL
   document.body.classList.toggle('ghost-mode', want);
+
+  // Presentation is independent of fullscreen:
+  // entering FS during slideshow → Esc/stop may leave FS;
+  // leaving FS (X) during slideshow → hybrid window presentation continues.
+  if (state.slideshowActive) {
+    state.slideshowEnteredFs = !!want;
+  }
+
   updateHUDStates();
-  if (typeof resetHudTimer === 'function') resetHudTimer();
+  syncGhostCloseTooltip();
+  // Don't flash chrome on FS toggle during presentation — idle until mouse moves
+  if (state.slideshowActive) {
+    hideFloatingChromeForSlideshow();
+  } else if (typeof resetHudTimer === 'function') {
+    resetHudTimer();
+  }
 
   // Forzar reflow para aplicar los cambios de layout instantáneamente sin animación
   document.body.offsetHeight;
@@ -3927,6 +3956,27 @@ function applyImmersiveFullscreen(on, opts = {}) {
       } catch (_) { /* ignore */ }
     }
   }
+
+  // Hybrid presentation: reflow fit when leaving/entering FS with slideshow still on
+  if (state.slideshowActive) {
+    requestAnimationFrame(() => {
+      const im = state.images[state.current];
+      if (im && im.w && im.h && state.viewMode === 'fit') fitToWindow(im.w, im.h);
+    });
+  }
+}
+
+/** Tooltip on the fullscreen X: clarify that presentation keeps running. */
+function syncGhostCloseTooltip() {
+  const btn = $('ghost-close');
+  if (!btn) return;
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  const t = I18N[lang] || I18N.en;
+  let tip = t.ghost_close_title || 'Exit Fullscreen';
+  if (state.slideshowActive) {
+    tip = t.ghost_close_slideshow_title || tip;
+  }
+  setCyberTooltip(btn, tip);
 }
 
 function scheduleFullscreenRefit() {
@@ -4204,6 +4254,8 @@ function applySettings() {
   const lang = s.language || 'en';
   updateLanguage(lang);
   syncEmptyState();
+  if (typeof syncGhostCloseTooltip === 'function') syncGhostCloseTooltip();
+  if (typeof updateSlideshowUI === 'function' && state.slideshowActive) updateSlideshowUI();
 }
 
 /** Normalize alpha background mode setting. */
@@ -4266,7 +4318,18 @@ if (isElectron) {
   });
   $('win-max').addEventListener('click', () => window.electronAPI.maximize());
   $('win-close').addEventListener('click', () => window.electronAPI.close());
-  $('ghost-close').addEventListener('click', () => toggleFullscreen());
+  // X in fullscreen: leave immersive mode only — never stop presentation (window hybrid)
+  $('ghost-close').addEventListener('click', () => {
+    if (!state.isGhost) return;
+    applyImmersiveFullscreen(false);
+    if (state.slideshowActive) {
+      const lang = (state.settings.app && state.settings.app.language) || 'en';
+      const t = I18N[lang] || I18N.en;
+      if (typeof showToast === 'function') {
+        showToast(t.toast_slideshow_window || 'SLIDESHOW · WINDOW', 'info', 900);
+      }
+    }
+  });
 
   window.addEventListener('blur', suppressTooltips);
   window.addEventListener('focus', releaseTooltipsOnNextPointer);
@@ -5015,11 +5078,13 @@ function resetHudTimer() {
   }
   if (toolbar) toolbar.addEventListener('click', () => toggleSlideshowPlay());
 
-  // Hover keeps HUD visible (same pattern as other floating chrome)
+  // Hover keeps presentation bar visible; leave restarts idle hide
   const hud = $('slideshow-hud');
   if (hud) {
     hud.addEventListener('mouseenter', () => clearTimeout(hudTimer));
-    hud.addEventListener('mouseleave', () => { if (typeof resetHudTimer === 'function') resetHudTimer(); });
+    hud.addEventListener('mouseleave', () => {
+      if (typeof resetHudTimer === 'function') resetHudTimer();
+    });
   }
 })();
 
