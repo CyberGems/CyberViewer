@@ -1884,6 +1884,12 @@
     opacity: 1;
     transition: opacity 0.35s ease, transform 0.35s ease, background 0.25s ease;
     pointer-events: auto;
+    /* Don't inherit grab/pan cursor from #viewer-wrap on empty dock chrome */
+    cursor: default;
+  }
+  #kbd-hint .kbd-btn,
+  #kbd-hint .pending-btn {
+    cursor: pointer;
   }
 
   /* Docked — window mode */
