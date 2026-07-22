@@ -2942,10 +2942,14 @@ function startSlideshow(opts = {}) {
     }
   }
 
-  // Always fit for a clean presentation
+  // Always fit for a clean presentation (reflow after dock hides via .slideshow-active)
   state.viewMode = 'fit';
-  const im = state.images[state.current];
-  if (im && im.w && im.h) fitToWindow(im.w, im.h);
+  const refit = () => {
+    const im = state.images[state.current];
+    if (im && im.w && im.h) fitToWindow(im.w, im.h);
+  };
+  refit();
+  requestAnimationFrame(refit);
 
   updateSlideshowUI();
   scheduleSlideshowTick();
@@ -2997,6 +3001,14 @@ function stopSlideshow(opts = {}) {
 
   if (leaveFs && typeof applyImmersiveFullscreen === 'function') {
     applyImmersiveFullscreen(false);
+  }
+
+  // Dock strip returns — reflow fit layout
+  if (wasActive) {
+    requestAnimationFrame(() => {
+      const im = state.images[state.current];
+      if (im && im.w && im.h && state.viewMode === 'fit') fitToWindow(im.w, im.h);
+    });
   }
 
   if (wasActive && !opts.silent) {
