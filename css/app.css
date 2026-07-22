@@ -2379,18 +2379,41 @@
     overflow-y: auto;
   }
 
-  /* Wide tool modals: avoid ghost scrollbars when content fits */
+  /* Wide tool modals: avoid ghost scrollbars; keep overflow visible so tooltips aren't clipped */
   #modal-adjust .modal-body,
   #modal-resize .modal-body {
-    overflow: hidden;
-    overflow-x: hidden;
-    overflow-y: hidden;
+    overflow: visible;
     padding: 18px 20px;
   }
   #modal-adjust .modal-box,
   #modal-resize .modal-box {
     max-height: min(92vh, 900px);
-    overflow: hidden;
+    /* visible: tooltips near header/edges must paint outside body without clipping */
+    overflow: visible;
+  }
+  #modal-adjust .modal-header,
+  #modal-resize .modal-header,
+  #modal-adjust .modal-footer,
+  #modal-resize .modal-footer {
+    position: relative;
+    z-index: 2;
+    background: var(--cyber-panel);
+    border-radius: inherit;
+  }
+  #modal-adjust .modal-header,
+  #modal-resize .modal-header {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  #modal-adjust .modal-footer,
+  #modal-resize .modal-footer {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+  #modal-adjust .modal-body,
+  #modal-resize .modal-body {
+    position: relative;
+    z-index: 5; /* above header/footer so upward tooltips aren't covered */
   }
 
   .modal-body::-webkit-scrollbar {
@@ -3350,13 +3373,18 @@
     box-shadow: 0 0 12px rgba(255, 45, 120, 0.4) !important;
   }
 
-  /* Override tooltip positioning for elements inside modal bodies to prevent clipping */
+  /* Modal tooltips: sit just outside the control (not the statusbar 64px offset) */
   .modal-box .cyber-tooltip::after {
     bottom: calc(100% + 8px) !important;
     top: auto !important;
     left: 50% !important;
     right: auto !important;
     transform: translateX(-50%) translateY(4px) !important;
+    z-index: 1000010 !important;
+    max-width: min(280px, 70vw);
+    white-space: normal;
+    text-align: center;
+    line-height: 1.35;
   }
   .modal-box .cyber-tooltip::before {
     bottom: calc(100% + 2px) !important;
@@ -3366,11 +3394,15 @@
     transform: translateX(-50%) translateY(4px) !important;
     border-width: 6px 6px 0 !important;
     border-color: var(--cyber-accent) transparent transparent transparent !important;
+    z-index: 1000010 !important;
   }
   .modal-box .cyber-tooltip:hover::after,
   .modal-box .cyber-tooltip:hover::before {
     transform: translateX(-50%) translateY(0) !important;
     opacity: 1 !important;
+  }
+  .modal-box .cyber-tooltip:hover {
+    z-index: 1000020 !important;
   }
 
   /* Tooltip box alignment overrides to prevent edge overflow */
@@ -3378,8 +3410,15 @@
     left: 0 !important;
     right: auto !important;
     transform: translateY(4px) !important;
+    text-align: left;
   }
-  .modal-box .cyber-tooltip.tooltip-align-left:hover::after {
+  .modal-box .cyber-tooltip.tooltip-align-left::before {
+    left: 14px !important;
+    right: auto !important;
+    transform: translateY(4px) !important;
+  }
+  .modal-box .cyber-tooltip.tooltip-align-left:hover::after,
+  .modal-box .cyber-tooltip.tooltip-align-left:hover::before {
     transform: translateY(0) !important;
   }
 
@@ -3387,12 +3426,19 @@
     right: 0 !important;
     left: auto !important;
     transform: translateY(4px) !important;
+    text-align: right;
   }
-  .modal-box .cyber-tooltip.tooltip-align-right:hover::after {
+  .modal-box .cyber-tooltip.tooltip-align-right::before {
+    right: 14px !important;
+    left: auto !important;
+    transform: translateY(4px) !important;
+  }
+  .modal-box .cyber-tooltip.tooltip-align-right:hover::after,
+  .modal-box .cyber-tooltip.tooltip-align-right:hover::before {
     transform: translateY(0) !important;
   }
 
-  /* For top elements in modals, show tooltips below them */
+  /* Top-of-modal controls: open tooltips below (avoid header clip) */
   .modal-box .cyber-tooltip.tooltip-bottom::after {
     bottom: auto !important;
     top: calc(100% + 8px) !important;
@@ -3415,13 +3461,19 @@
     opacity: 1 !important;
   }
 
-  /* Bottom tooltips with left/right alignment overrides */
   .modal-box .cyber-tooltip.tooltip-bottom.tooltip-align-left::after {
     left: 0 !important;
     right: auto !important;
     transform: translateY(-4px) !important;
+    text-align: left;
   }
-  .modal-box .cyber-tooltip.tooltip-bottom.tooltip-align-left:hover::after {
+  .modal-box .cyber-tooltip.tooltip-bottom.tooltip-align-left::before {
+    left: 14px !important;
+    right: auto !important;
+    transform: translateY(-4px) !important;
+  }
+  .modal-box .cyber-tooltip.tooltip-bottom.tooltip-align-left:hover::after,
+  .modal-box .cyber-tooltip.tooltip-bottom.tooltip-align-left:hover::before {
     transform: translateY(0) !important;
   }
 
@@ -3429,9 +3481,23 @@
     right: 0 !important;
     left: auto !important;
     transform: translateY(-4px) !important;
+    text-align: right;
   }
-  .modal-box .cyber-tooltip.tooltip-bottom.tooltip-align-right:hover::after {
+  .modal-box .cyber-tooltip.tooltip-bottom.tooltip-align-right::before {
+    right: 14px !important;
+    left: auto !important;
+    transform: translateY(-4px) !important;
+  }
+  .modal-box .cyber-tooltip.tooltip-bottom.tooltip-align-right:hover::after,
+  .modal-box .cyber-tooltip.tooltip-bottom.tooltip-align-right:hover::before {
     transform: translateY(0) !important;
+  }
+
+  /* Footer actions: keep tip above button, aligned to edge */
+  .modal-box .modal-footer .cyber-tooltip.tooltip-align-left::after,
+  .modal-box .modal-footer .cyber-tooltip.tooltip-align-right::after {
+    white-space: nowrap;
+    max-width: none;
   }
 
 /* ── About modal ── */
