@@ -1,6 +1,10 @@
 ; CyberViewer NSIS customizations (electron-builder include)
 ; - Optional "Set as default image viewer" page (assisted installer)
 ; - Per-user HKCU associations when the checkbox is checked (default: on)
+;
+; Note: electron-builder compiles this script twice (installer + uninstaller with
+; BUILD_UNINSTALLER). Install-only pages/functions must be guarded or NSIS
+; treats "function not referenced" as a fatal warning.
 
 !include "nsDialogs.nsh"
 !include "LogicLib.nsh"
@@ -13,13 +17,16 @@ Var CV_SetAsDefault
   StrCpy $CV_SetAsDefault 1
 !macroend
 
-; Shown after directory page, before files are installed
+; Shown after directory page, before files are installed (installer pass only)
 !macro customPageAfterChangeDir
-  Page custom CV_DefaultViewerPage_Show CV_DefaultViewerPage_Leave
+  !ifndef BUILD_UNINSTALLER
+    Page custom CV_DefaultViewerPage_Show CV_DefaultViewerPage_Leave
+  !endif
 !macroend
 
+!ifndef BUILD_UNINSTALLER
 Function CV_DefaultViewerPage_Show
-  ; Avoid MUI_HEADER_TEXT here — not always defined when electron-builder includes this file.
+  ; Avoid MUI_HEADER_TEXT — not always defined in electron-builder include context
   nsDialogs::Create 1018
   Pop $0
   ${If} $0 == error
@@ -29,16 +36,15 @@ Function CV_DefaultViewerPage_Show
   ${NSD_CreateLabel} 0 0 100% 20u "Default image viewer"
   Pop $1
 
-  ${NSD_CreateLabel} 0 22u 100% 48u "CyberViewer can open JPG, JPEG, PNG, GIF, WEBP, BMP and TIFF.$\r$\n$\r$\nCheck the option below to use CyberViewer as your default image viewer for these formats (current user).$\r$\n$\r$\nYou can change defaults later in Windows Settings → Apps → Default apps."
+  ${NSD_CreateLabel} 0 22u 100% 48u "CyberViewer can open JPG, JPEG, PNG, GIF, WEBP, BMP and TIFF.$\r$\n$\r$\nCheck the option below to use CyberViewer as your default image viewer for these formats (current user).$\r$\n$\r$\nYou can change defaults later in Windows Settings > Apps > Default apps."
   Pop $2
 
   ${NSD_CreateCheckbox} 0 78u 100% 14u "Set CyberViewer as the default image viewer"
   Pop $CV_DefaultCheckbox
-  ; Default: checked — matches user expectation for an image viewer install
+  ; Default: checked
   ${NSD_Check} $CV_DefaultCheckbox
 
-  ; Spanish helper line (UI language of installer is typically English)
-  ${NSD_CreateLabel} 0 98u 100% 24u "ES: Establecer CyberViewer como visor de imágenes predeterminado"
+  ${NSD_CreateLabel} 0 98u 100% 24u "ES: Establecer CyberViewer como visor de imagenes predeterminado"
   Pop $3
 
   nsDialogs::Show
@@ -47,6 +53,7 @@ FunctionEnd
 Function CV_DefaultViewerPage_Leave
   ${NSD_GetState} $CV_DefaultCheckbox $CV_SetAsDefault
 FunctionEnd
+!endif
 
 ; Write a single ProgID + extension default under HKCU (current user)
 !macro CV_WriteImageAssoc EXT PROGID DESC
@@ -60,10 +67,8 @@ FunctionEnd
 !macroend
 
 !macro customInstall
-  ; electron-builder already registers fileAssociations when present.
-  ; When the user opts in, reinforce per-user defaults under HKCU so
-  ; Windows prefers CyberViewer for double-click (best-effort on Win10/11).
-  ; NSD_GetState: 1 = checked, 0 = unchecked (avoid BST_CHECKED macro dependency)
+  ; When the user opts in (or silent default), set per-user defaults under HKCU
+  ; NSD_GetState: 1 = checked, 0 = unchecked
   ${If} $CV_SetAsDefault == 1
     !insertmacro CV_WriteImageAssoc ".jpg"  "CyberViewer.jpg"  "JPEG Image"
     !insertmacro CV_WriteImageAssoc ".jpeg" "CyberViewer.jpg"  "JPEG Image"
@@ -74,7 +79,6 @@ FunctionEnd
     !insertmacro CV_WriteImageAssoc ".tif"  "CyberViewer.tiff" "TIFF Image"
     !insertmacro CV_WriteImageAssoc ".tiff" "CyberViewer.tiff" "TIFF Image"
 
-    ; Register under Default Programs capabilities (helps Win10/11 Settings list)
     WriteRegStr HKCU "Software\CyberViewer\Capabilities" "ApplicationName" "CyberViewer"
     WriteRegStr HKCU "Software\CyberViewer\Capabilities" "ApplicationDescription" "CyberViewer image viewer"
     WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".jpg" "CyberViewer.jpg"
@@ -87,13 +91,11 @@ FunctionEnd
     WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".tiff" "CyberViewer.tiff"
     WriteRegStr HKCU "Software\RegisteredApplications" "CyberViewer" "Software\CyberViewer\Capabilities"
 
-    ; Notify shell of association changes
     System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, p 0, p 0)'
   ${EndIf}
 !macroend
 
 !macro customUnInstall
-  ; Best-effort cleanup of per-user defaults we may have written
   DeleteRegKey HKCU "Software\Classes\CyberViewer.jpg"
   DeleteRegKey HKCU "Software\Classes\CyberViewer.png"
   DeleteRegKey HKCU "Software\Classes\CyberViewer.gif"
