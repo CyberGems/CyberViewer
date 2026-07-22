@@ -70,6 +70,9 @@ function loadSettings() {
         if (data.app.alphaBackground === undefined) data.app.alphaBackground = 'checker-dark';
         if (!Array.isArray(data.app.recentFiles)) data.app.recentFiles = [];
         if (!Array.isArray(data.app.recentFolders)) data.app.recentFolders = [];
+        if (data.app.slideshowIntervalMs === undefined) data.app.slideshowIntervalMs = 3000;
+        if (data.app.slideshowLoop === undefined) data.app.slideshowLoop = true;
+        if (data.app.slideshowEnterFullscreen === undefined) data.app.slideshowEnterFullscreen = true;
       }
       return data;
     }
@@ -94,7 +97,10 @@ function loadSettings() {
       showTopHints: true,
       alphaBackground: 'checker-dark',
       recentFiles: [],
-      recentFolders: []
+      recentFolders: [],
+      slideshowIntervalMs: 3000,
+      slideshowLoop: true,
+      slideshowEnterFullscreen: true
     }
   };
 }

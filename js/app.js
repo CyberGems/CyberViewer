@@ -82,9 +82,18 @@ const state = {
       // Transparency grid behind alpha pixels: checker-dark | checker-light | solid
       alphaBackground: 'checker-dark',
       recentFiles: [],
-      recentFolders: []
+      recentFolders: [],
+      // Slideshow
+      slideshowIntervalMs: 3000,
+      slideshowLoop: true,
+      slideshowEnterFullscreen: true
     } 
   },
+  // Runtime slideshow (not persisted)
+  slideshowActive: false,
+  slideshowPlaying: false,
+  slideshowTimer: null,
+  slideshowEnteredFs: false
 };
 
 /** Max entries in File → Recent images / folders (balance usefulness vs menu height). */
@@ -139,6 +148,7 @@ function updateLanguage(lang = 'en') {
 }
 
 function closeImage() {
+  if (typeof stopSlideshow === 'function') stopSlideshow({ silent: true });
   state.scanInProgress = false;
   state.images.forEach(im => {
     if (im.url && String(im.url).startsWith('blob:')) URL.revokeObjectURL(im.url);
@@ -1841,12 +1851,15 @@ function calibrateAndShowCrop() {
 
   cropState.active = true;
   state.isCropping = true;
+  if (typeof pauseSlideshow === 'function') pauseSlideshow();
   $('crop-overlay').classList.add('active');
   $('kbd-hint').classList.add('hud-hidden');
   const filename = $('viewer-filename');
   if (filename) filename.classList.add('hud-hidden-fade');
   const nav = $('nav-container');
   if (nav) nav.classList.add('hud-hidden-fade');
+  const ssHud = $('slideshow-hud');
+  if (ssHud) ssHud.classList.add('hud-hidden-fade');
   
   // El marco nace ABRAZANDO los bordes reales
   cropState.x = realX;
@@ -2229,7 +2242,8 @@ function openResizeModal() {
     
     $('hud-orig-dims').innerHTML = `${im.w} <span style="font-size: 13px; color: var(--cyber-muted);">×</span> ${im.h} <span style="font-size: 11px; color: var(--cyber-muted);">PX</span>`;
     updateResizeDestInfo();
-    
+
+    if (typeof pauseSlideshow === 'function') pauseSlideshow();
     openModal('modal-resize');
   } catch (e) {
     console.error('Error opening resize modal:', e);
@@ -2795,12 +2809,292 @@ function prev() {
   if (state.images.length === 0 || state.transitioning) return;
   const next = (state.current - 1 + state.images.length) % state.images.length;
   showImage(next, 'right');
+  if (state.slideshowPlaying) scheduleSlideshowTick();
 }
 
 function next() {
   if (state.images.length === 0 || state.transitioning) return;
   const nxt = (state.current + 1) % state.images.length;
   showImage(nxt, 'left');
+  if (state.slideshowPlaying) scheduleSlideshowTick();
+}
+
+// ── SLIDESHOW ──
+const SLIDESHOW_INTERVALS = [2000, 3000, 5000, 10000];
+
+function getSlideshowIntervalMs() {
+  const raw = state.settings && state.settings.app && state.settings.app.slideshowIntervalMs;
+  const n = parseInt(raw, 10);
+  if (SLIDESHOW_INTERVALS.includes(n)) return n;
+  return 3000;
+}
+
+function isSlideshowLoop() {
+  return !(state.settings && state.settings.app && state.settings.app.slideshowLoop === false);
+}
+
+function isSlideshowEnterFs() {
+  return !(state.settings && state.settings.app && state.settings.app.slideshowEnterFullscreen === false);
+}
+
+function setSlideshowLoop(on) {
+  const app = ensureAppSettings();
+  app.slideshowLoop = !!on;
+  persistAppSettings();
+  updateSlideshowUI();
+}
+
+function setSlideshowIntervalMs(ms) {
+  const app = ensureAppSettings();
+  const n = parseInt(ms, 10);
+  app.slideshowIntervalMs = SLIDESHOW_INTERVALS.includes(n) ? n : 3000;
+  persistAppSettings();
+  updateSlideshowUI();
+  if (state.slideshowPlaying) scheduleSlideshowTick();
+}
+
+function clearSlideshowTimer() {
+  if (state.slideshowTimer) {
+    clearTimeout(state.slideshowTimer);
+    state.slideshowTimer = null;
+  }
+}
+
+function scheduleSlideshowTick() {
+  clearSlideshowTimer();
+  if (!state.slideshowActive || !state.slideshowPlaying) return;
+  const ms = getSlideshowIntervalMs();
+  state.slideshowTimer = setTimeout(() => {
+    state.slideshowTimer = null;
+    slideshowAdvance(1, { fromTimer: true });
+  }, ms);
+}
+
+/**
+ * Advance slideshow by ±1, skipping hidden images.
+ * When loop is off, stop at ends instead of wrapping.
+ */
+function slideshowAdvance(dir, opts = {}) {
+  if (!state.slideshowActive) return;
+  const n = state.images.length;
+  if (n === 0) {
+    stopSlideshow({ silent: true });
+    return;
+  }
+
+  const loop = isSlideshowLoop();
+  let idx = state.current;
+  if (idx < 0) idx = 0;
+
+  for (let step = 0; step < n; step++) {
+    let candidate = idx + dir;
+    if (candidate < 0 || candidate >= n) {
+      if (loop) {
+        candidate = dir > 0 ? 0 : n - 1;
+      } else {
+        // End of set
+        pauseSlideshow();
+        const lang = (state.settings.app && state.settings.app.language) || 'en';
+        const t = I18N[lang] || I18N.en;
+        if (opts.fromTimer && typeof showToast === 'function') {
+          showToast(t.toast_slideshow_end || 'SLIDESHOW END', 'info');
+        }
+        updateSlideshowUI();
+        return;
+      }
+    }
+    idx = candidate;
+    const im = state.images[idx];
+    if (im && !im.hidden) {
+      state.viewMode = 'fit';
+      showImage(idx, dir > 0 ? 'left' : 'right');
+      if (state.slideshowPlaying) scheduleSlideshowTick();
+      updateSlideshowUI();
+      if (typeof resetHudTimer === 'function') resetHudTimer();
+      return;
+    }
+  }
+
+  // No visible images
+  stopSlideshow({ silent: true });
+}
+
+function startSlideshow(opts = {}) {
+  if (!checkImageLoaded()) return;
+  if (visibleImageCount() <= 0) return;
+
+  const lang = (state.settings.app && state.settings.app.language) || 'en';
+  const t = I18N[lang] || I18N.en;
+
+  const wasActive = state.slideshowActive;
+  state.slideshowActive = true;
+  state.slideshowPlaying = true;
+  document.body.classList.add('slideshow-active');
+
+  // Enter immersive fullscreen once when starting (optional)
+  const wantFs = opts.enterFullscreen !== undefined ? opts.enterFullscreen : isSlideshowEnterFs();
+  if (wantFs && !state.isGhost) {
+    state.slideshowEnteredFs = true;
+    if (typeof applyImmersiveFullscreen === 'function') {
+      applyImmersiveFullscreen(true);
+    } else if (typeof toggleFullscreen === 'function') {
+      toggleFullscreen();
+    }
+  }
+
+  // Always fit for a clean presentation
+  state.viewMode = 'fit';
+  const im = state.images[state.current];
+  if (im && im.w && im.h) fitToWindow(im.w, im.h);
+
+  updateSlideshowUI();
+  scheduleSlideshowTick();
+  if (typeof resetHudTimer === 'function') resetHudTimer();
+
+  if (!wasActive && typeof showToast === 'function') {
+    showToast(t.toast_slideshow_start || 'SLIDESHOW', 'info', 900);
+  }
+}
+
+function pauseSlideshow() {
+  if (!state.slideshowActive) return;
+  state.slideshowPlaying = false;
+  clearSlideshowTimer();
+  updateSlideshowUI();
+}
+
+function resumeSlideshow() {
+  if (!state.slideshowActive) {
+    startSlideshow();
+    return;
+  }
+  state.slideshowPlaying = true;
+  scheduleSlideshowTick();
+  updateSlideshowUI();
+  if (typeof resetHudTimer === 'function') resetHudTimer();
+}
+
+function toggleSlideshowPlay() {
+  if (!state.slideshowActive) {
+    startSlideshow();
+    return;
+  }
+  if (state.slideshowPlaying) pauseSlideshow();
+  else resumeSlideshow();
+}
+
+function stopSlideshow(opts = {}) {
+  const wasActive = state.slideshowActive;
+  clearSlideshowTimer();
+  state.slideshowActive = false;
+  state.slideshowPlaying = false;
+  document.body.classList.remove('slideshow-active');
+
+  const leaveFs = state.slideshowEnteredFs && state.isGhost && opts.keepFullscreen !== true;
+  state.slideshowEnteredFs = false;
+
+  updateSlideshowUI();
+
+  if (leaveFs && typeof applyImmersiveFullscreen === 'function') {
+    applyImmersiveFullscreen(false);
+  }
+
+  if (wasActive && !opts.silent) {
+    const lang = (state.settings.app && state.settings.app.language) || 'en';
+    const t = I18N[lang] || I18N.en;
+    if (typeof showToast === 'function') {
+      showToast(t.toast_slideshow_stop || 'SLIDESHOW STOPPED', 'info', 800);
+    }
+  }
+}
+
+function updateSlideshowUI() {
+  const hud = $('slideshow-hud');
+  if (!hud) return;
+  const active = !!state.slideshowActive;
+  hud.hidden = !active;
+  hud.setAttribute('aria-hidden', active ? 'false' : 'true');
+  hud.classList.toggle('visible', active);
+  if (active) hud.classList.remove('hud-hidden-fade');
+
+  const playBtn = $('ss-play');
+  if (playBtn) {
+    playBtn.classList.toggle('is-playing', state.slideshowPlaying);
+    const lang = (state.settings.app && state.settings.app.language) || 'en';
+    const t = I18N[lang] || I18N.en;
+    const tip = state.slideshowPlaying
+      ? (t.ss_pause_title || 'Pause (Space)')
+      : (t.ss_play_title || 'Play (Space)');
+    setCyberTooltip(playBtn, tip);
+    playBtn.setAttribute('aria-label', tip);
+    const iconPlay = playBtn.querySelector('.ss-ico-play');
+    const iconPause = playBtn.querySelector('.ss-ico-pause');
+    if (iconPlay) iconPlay.hidden = !!state.slideshowPlaying;
+    if (iconPause) iconPause.hidden = !state.slideshowPlaying;
+  }
+
+  const loopBtn = $('ss-loop');
+  if (loopBtn) {
+    const loopOn = isSlideshowLoop();
+    loopBtn.classList.toggle('active', loopOn);
+    loopBtn.setAttribute('aria-pressed', loopOn ? 'true' : 'false');
+    const lang = (state.settings.app && state.settings.app.language) || 'en';
+    const t = I18N[lang] || I18N.en;
+    setCyberTooltip(loopBtn, loopOn
+      ? (t.ss_loop_on_title || 'Loop: on (click to disable)')
+      : (t.ss_loop_off_title || 'Loop: off (click to enable)'));
+  }
+
+  const sel = $('ss-interval');
+  if (sel) {
+    const ms = getSlideshowIntervalMs();
+    if (String(sel.value) !== String(ms)) sel.value = String(ms);
+  }
+
+  const status = $('ss-status');
+  if (status && state.images.length && state.current >= 0) {
+    status.textContent = (state.current + 1) + ' / ' + state.images.length;
+  } else if (status) {
+    status.textContent = '';
+  }
+
+  // Toolbar play button
+  const tb = $('btn-slideshow');
+  if (tb) {
+    tb.classList.toggle('active', state.slideshowActive && state.slideshowPlaying);
+  }
+
+  if (typeof updateHUDStates === 'function') {
+    // Keep fs button etc. in sync; avoid deep recursion
+  }
+}
+
+function toggleSlideshowLoop() {
+  setSlideshowLoop(!isSlideshowLoop());
+  const lang = (state.settings.app && state.settings.app.language) || 'en';
+  const t = I18N[lang] || I18N.en;
+  if (typeof showToast === 'function') {
+    showToast(
+      isSlideshowLoop()
+        ? (t.toast_slideshow_loop_on || 'LOOP ON')
+        : (t.toast_slideshow_loop_off || 'LOOP OFF'),
+      'info',
+      800
+    );
+  }
+}
+
+function cycleSlideshowInterval() {
+  const cur = getSlideshowIntervalMs();
+  const i = SLIDESHOW_INTERVALS.indexOf(cur);
+  const next = SLIDESHOW_INTERVALS[(i + 1) % SLIDESHOW_INTERVALS.length];
+  setSlideshowIntervalMs(next);
+  const lang = (state.settings.app && state.settings.app.language) || 'en';
+  const t = I18N[lang] || I18N.en;
+  const sec = (next / 1000).toFixed(next % 1000 === 0 ? 0 : 1);
+  if (typeof showToast === 'function') {
+    showToast((t.toast_slideshow_interval || 'INTERVAL: {sec}s').replace('{sec}', sec), 'info', 800);
+  }
 }
 
 // ── UI UPDATES ──
@@ -2824,6 +3118,9 @@ function updateCounter() {
   $('img-counter').textContent = (state.current + 1) + ' / ' + state.images.length;
   updateNavVisibility();
   syncEmptyState();
+  if (state.slideshowActive && typeof updateSlideshowUI === 'function') {
+    updateSlideshowUI();
+  }
 }
 
 /**
@@ -2846,7 +3143,7 @@ function syncEmptyState() {
   });
 
   // Nested buttons inside .control-group.needs-image
-  ['btn-show-folder', 'btn-fit-hud', 'btn-orig-hud', 'btn-fs-hud',
+  ['btn-show-folder', 'btn-fit-hud', 'btn-orig-hud', 'btn-fs-hud', 'btn-slideshow',
     'btn-rot-l', 'btn-rot-r', 'btn-crop', 'btn-resize', 'btn-copy', 'btn-trash', 'btn-fav'
   ].forEach((id) => {
     const el = $(id);
@@ -2984,6 +3281,12 @@ document.addEventListener('keydown', e => {
       e.preventDefault();
       return;
     }
+    // Stop slideshow first (may also leave FS if we entered for it)
+    if (state.slideshowActive) {
+      stopSlideshow();
+      e.preventDefault();
+      return;
+    }
     if (state.isGhost) toggleFullscreen();
     closeModal('modal-config');
     closeModal('modal-resize');
@@ -3025,11 +3328,26 @@ document.addEventListener('keydown', e => {
   }
 
   switch (e.key.toLowerCase()) {
-    case 'arrowright': case 'arrowdown': case ' ': case 'd': 
-      if (!isCtrl) { e.preventDefault(); next(); }
+    case ' ':
+      if (!isCtrl) {
+        e.preventDefault();
+        if (state.slideshowActive) toggleSlideshowPlay();
+        else next();
+      }
+      break;
+    case 'arrowright': case 'arrowdown': case 'd':
+      if (!isCtrl) {
+        e.preventDefault();
+        if (state.slideshowActive) slideshowAdvance(1);
+        else next();
+      }
       break;
     case 'arrowleft':  case 'arrowup':   case 'a': 
-      if (!isCtrl) { e.preventDefault(); prev(); }
+      if (!isCtrl) {
+        e.preventDefault();
+        if (state.slideshowActive) slideshowAdvance(-1);
+        else prev();
+      }
       break;
     case 'q': if (checkImageLoaded()) rotate(-90); break;
     case 'e': if (checkImageLoaded()) rotate(90); break;
@@ -3053,6 +3371,12 @@ document.addEventListener('keydown', e => {
       }
       break;
     case 'g': case 'G': if (!isCtrl && checkImageLoaded()) toggleFullscreen(); break;
+    case 's':
+      if (!isCtrl && checkImageLoaded()) {
+        e.preventDefault();
+        toggleSlideshowPlay();
+      }
+      break;
     case 'f': if (!isCtrl && checkImageLoaded()) $('btn-fit-hud').click(); break;
     case '1': if (!isCtrl && checkImageLoaded()) $('btn-orig-hud').click(); break;
     case 'delete':
@@ -3698,6 +4022,11 @@ function openConfig() {
   $('cfg-hud-delay-row').style.opacity = s.hudAutoHide ? '1' : '0.5';
   const alphaBg = normalizeAlphaBackground(s.alphaBackground);
   if ($('cfg-alpha-bg')) $('cfg-alpha-bg').value = alphaBg;
+
+  // Slideshow settings
+  if ($('cfg-ss-interval')) $('cfg-ss-interval').value = String(getSlideshowIntervalMs());
+  if ($('cfg-ss-loop')) $('cfg-ss-loop').checked = isSlideshowLoop();
+  if ($('cfg-ss-fs')) $('cfg-ss-fs').checked = isSlideshowEnterFs();
   
   // Monitor selection
   if (isElectron) {
@@ -3759,7 +4088,10 @@ $('btn-save-config').addEventListener('click', async () => {
     navAutoHide: $('cfg-nav-autohide').checked,
     showTopHints: $('cfg-show-hints').checked,
     hudAutoHideDelay: parseInt($('cfg-hud-delay').value, 10),
-    alphaBackground: normalizeAlphaBackground($('cfg-alpha-bg') && $('cfg-alpha-bg').value)
+    alphaBackground: normalizeAlphaBackground($('cfg-alpha-bg') && $('cfg-alpha-bg').value),
+    slideshowIntervalMs: parseInt(($('cfg-ss-interval') && $('cfg-ss-interval').value) || '3000', 10),
+    slideshowLoop: !!( $('cfg-ss-loop') && $('cfg-ss-loop').checked ),
+    slideshowEnterFullscreen: !!( $('cfg-ss-fs') && $('cfg-ss-fs').checked )
   };
   
   if (isElectron) {
@@ -4368,6 +4700,15 @@ $('btn-config').addEventListener('click', openConfig);
         : 'checker-dark';
       ab.classList.toggle('checked', mode !== 'solid');
     }
+    const ssLoop = panel.querySelector('[data-action="slideshow-loop"]');
+    if (ssLoop) ssLoop.classList.toggle('checked', isSlideshowLoop());
+    const ssIntVal = panel.querySelector('#menu-ss-interval-val');
+    if (ssIntVal) {
+      const ms = getSlideshowIntervalMs();
+      ssIntVal.textContent = (ms / 1000) + 's';
+    }
+    const ssPlay = panel.querySelector('[data-action="slideshow"]');
+    if (ssPlay) ssPlay.classList.toggle('checked', !!(state.slideshowActive && state.slideshowPlaying));
     rebuildRecentMenu();
   }
   function openMenu() {
@@ -4448,6 +4789,15 @@ $('btn-config').addEventListener('click', openConfig);
       case 'toggle-alpha-bg':
         toggleAlphaBackground();
         break;
+      case 'slideshow':
+        toggleSlideshowPlay();
+        break;
+      case 'slideshow-loop':
+        toggleSlideshowLoop();
+        break;
+      case 'slideshow-interval':
+        cycleSlideshowInterval();
+        break;
       case 'next':           next(); break;
       case 'prev':           prev(); break;
       case 'favorite':       $('btn-fav').click(); break;
@@ -4481,7 +4831,8 @@ $('btn-config').addEventListener('click', openConfig);
     runAction(action, item);
     if (
       action === 'autohide' || action === 'sidebar' || action === 'toggle-hints' ||
-      action === 'toggle-alpha-bg' || action === 'clear-recent' || action === 'clear-recent-folders'
+      action === 'toggle-alpha-bg' || action === 'clear-recent' || action === 'clear-recent-folders' ||
+      action === 'slideshow-loop' || action === 'slideshow-interval' || action === 'slideshow'
     ) {
       item.blur();
       refreshMenuState();
@@ -4500,6 +4851,7 @@ const elementsToHide = [
   { el: $('kbd-hint'), hideClass: 'hud-hidden', ghostOnly: true },
   { el: $('ghost-close'), hideClass: 'hud-hidden-fade', ghostOnly: true },
   { el: $('zoom-hud'), hideClass: 'hud-hidden-fade', ghostOnly: true },
+  { el: $('slideshow-hud'), hideClass: 'hud-hidden-fade', ghostOnly: false },
   { el: $('viewer-filename'), hideClass: 'hud-hidden-fade', ghostOnly: false },
   { el: $('nav-container'), hideClass: 'hud-hidden-fade', ghostOnly: false }
 ];
@@ -4529,6 +4881,10 @@ function resetHudTimer() {
     }
     // Zoom badge only reappears after a zoom gesture (class "visible"), not on every mouse move
     if (item.el.id === 'zoom-hud' && !item.el.classList.contains('visible')) {
+      item.el.classList.add('hud-hidden-fade');
+    }
+    // Slideshow HUD only while presentation is active
+    if (item.el.id === 'slideshow-hud' && !state.slideshowActive) {
       item.el.classList.add('hud-hidden-fade');
     }
   });
@@ -4567,9 +4923,44 @@ function resetHudTimer() {
       if (item.el.id === 'zoom-hud') {
         item.el.classList.remove('visible');
       }
+      if (item.el.id === 'slideshow-hud' && !state.slideshowActive) {
+        return;
+      }
     });
   }, delay);
 }
+
+// Slideshow control wiring
+(function initSlideshowControls() {
+  const play = $('ss-play');
+  const stop = $('ss-stop');
+  const prevBtn = $('ss-prev');
+  const nextBtn = $('ss-next');
+  const loopBtn = $('ss-loop');
+  const interval = $('ss-interval');
+  const toolbar = $('btn-slideshow');
+
+  if (play) play.addEventListener('click', (e) => { e.stopPropagation(); toggleSlideshowPlay(); });
+  if (stop) stop.addEventListener('click', (e) => { e.stopPropagation(); stopSlideshow(); });
+  if (prevBtn) prevBtn.addEventListener('click', (e) => { e.stopPropagation(); slideshowAdvance(-1); });
+  if (nextBtn) nextBtn.addEventListener('click', (e) => { e.stopPropagation(); slideshowAdvance(1); });
+  if (loopBtn) loopBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleSlideshowLoop(); });
+  if (interval) {
+    interval.addEventListener('change', (e) => {
+      e.stopPropagation();
+      setSlideshowIntervalMs(interval.value);
+    });
+    interval.addEventListener('click', (e) => e.stopPropagation());
+  }
+  if (toolbar) toolbar.addEventListener('click', () => toggleSlideshowPlay());
+
+  // Hover keeps HUD visible (same pattern as other floating chrome)
+  const hud = $('slideshow-hud');
+  if (hud) {
+    hud.addEventListener('mouseenter', () => clearTimeout(hudTimer));
+    hud.addEventListener('mouseleave', () => { if (typeof resetHudTimer === 'function') resetHudTimer(); });
+  }
+})();
 
 window.addEventListener('mousemove', resetHudTimer);
 elementsToHide.forEach(item => {
