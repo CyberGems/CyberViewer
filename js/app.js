@@ -4434,9 +4434,11 @@ function syncToolbarHandle() {
   if (!handle) return;
   const open = state.toolbarOpen !== false;
   handle.setAttribute('aria-expanded', open ? 'true' : 'false');
-  if (chev) chev.textContent = open ? '▾' : '▴';
+  // Handle is only an “open” affordance when collapsed (menu hides the bar)
+  if (chev) chev.textContent = '▴';
   setCyberTooltip(handle, toolbarHandleTooltipText(open));
-  handle.classList.add('tooltip-bottom');
+  // Tooltip opens upward (default) — never tooltip-bottom near the statusbar
+  handle.classList.remove('tooltip-bottom');
 }
 
 /**
