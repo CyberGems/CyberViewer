@@ -2098,24 +2098,35 @@
     inset: 0;
     background: rgba(8,10,14,0.9);
     backdrop-filter: blur(8px);
-    z-index: 1000;
+    /* Above frameless topbar/statusbar (z-index 999999) so dimming + center are true */
+    z-index: 1000000;
     display: none;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: 24px;
+    overflow-y: auto;
+    box-sizing: border-box;
   }
 
-  .modal-overlay.active { display: flex; }
+  .modal-overlay.active {
+    display: flex;
+  }
 
   .modal-box {
     background: var(--cyber-panel);
     border: 1px solid var(--cyber-border);
     width: 100%;
     max-width: 500px;
+    max-height: calc(100vh - 48px);
     border-radius: 8px;
     position: relative;
+    /* margin:auto keeps the box centered when the overlay scrolls */
+    margin: auto;
+    flex-shrink: 0;
     box-shadow: 0 0 40px rgba(0,0,0,0.6);
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
     animation: modal-in 300ms cubic-bezier(.4,0,.2,1);
   }
 
@@ -2149,7 +2160,9 @@
 
   .modal-body {
     padding: 24px;
-    max-height: 70vh;
+    /* Flex child scrolls; header/footer stay put */
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
   }
 
@@ -2991,95 +3004,186 @@
   }
 
 /* ── About modal ── */
-.about-modal { max-width: 400px; }
-.about-modal .modal-body { text-align: center; }
-.about-brand {
-  font-size: 20px;
-  font-weight: 700;
-  font-family: var(--font-digits);
-  letter-spacing: 0.5px;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
+.about-modal {
+  max-width: 380px;
+  width: min(380px, calc(100vw - 48px));
+  /* Prefer fitting the dialog without an inner scrollbar on typical window sizes */
+  max-height: min(92vh, 720px);
 }
-.about-brand-cyber { color: var(--cyber-accent3); }
-.about-brand-viewer { color: var(--cyber-accent); }
-.about-version {
-  font-size: 13px;
-  font-weight: 600;
-  font-family: var(--font-ui);
-  color: var(--cyber-muted);
-  letter-spacing: 0.5px;
-  margin-left: 4px;
+.about-modal .modal-header {
+  flex-shrink: 0;
+  padding: 14px 20px;
+}
+.about-modal .modal-footer {
+  flex-shrink: 0;
+  justify-content: center;
+  padding: 12px 20px 16px;
+}
+.about-modal .modal-body {
+  text-align: center;
+  padding: 22px 24px 14px;
+  /* Hide scrollbar chrome; content is sized to fit. Scroll still works if needed. */
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge */
+}
+.about-modal .modal-body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* Hero identity block */
+.about-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
 }
 .about-logo {
   width: 64px;
   height: 64px;
   display: block;
-  margin: 0 auto 20px;
-  filter: drop-shadow(0 0 5px rgba(var(--cyber-icon-rgb), 0.45));
+  margin: 0 auto 12px;
+  border-radius: 12px;
+  filter: drop-shadow(0 0 12px rgba(var(--cyber-accent-rgb), 0.35));
+  user-select: none;
+  pointer-events: none;
+}
+.about-brand {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: var(--font-digits);
+  letter-spacing: 0.5px;
+  margin: 0 0 6px;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0;
+  line-height: 1.1;
+}
+.about-brand-cyber { color: var(--cyber-accent3); }
+.about-brand-viewer { color: var(--cyber-accent); }
+.about-version {
+  display: inline-block;
+  margin: 0 0 12px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-ui);
+  color: var(--cyber-accent);
+  letter-spacing: 1px;
+  border: 1px solid rgba(var(--cyber-accent-rgb), 0.28);
+  border-radius: 999px;
+  background: rgba(var(--cyber-accent-rgb), 0.06);
 }
 .about-desc {
   font-size: 12px;
   color: var(--cyber-text);
-  line-height: 1.8;
+  line-height: 1.5;
   text-align: center;
+  margin: 0;
 }
-.about-formats {
-  margin-top: 20px;
+.about-tagline {
+  display: block;
+  margin-top: 4px;
   font-size: 11px;
   color: var(--cyber-muted);
-  text-align: center;
+  font-weight: 400;
 }
+.about-formats {
+  margin: 12px 0 0;
+  padding: 8px 12px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--cyber-muted);
+  text-align: center;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(var(--cyber-accent-rgb), 0.08);
+}
+.about-formats-tech {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+/* Updates */
 .about-update-section {
-  margin-top: 20px;
+  margin-top: 16px;
   border-top: 1px solid var(--cyber-border);
-  padding-top: 15px;
+  padding-top: 14px;
   text-align: left;
+}
+.about-update-heading {
+  font-size: 10px;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--cyber-muted);
+  margin: 0 0 10px;
 }
 .about-startup-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   margin-bottom: 12px;
 }
 .about-startup-label {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--cyber-text);
   font-family: var(--font-ui);
-  text-transform: uppercase;
+  line-height: 1.35;
+  text-transform: none;
+  letter-spacing: 0;
+  flex: 1;
+  min-width: 0;
 }
 .about-update-actions {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
 }
 .about-action-btn {
-  padding: 4px 12px;
-  font-size: 10px;
+  width: 100%;
+  padding: 7px 12px;
+  font-size: 11px;
+  letter-spacing: 0.6px;
   cursor: pointer;
+  justify-content: center;
+  text-align: center;
 }
 .about-action-accent {
   border-color: var(--cyber-accent);
   color: var(--cyber-accent);
 }
 .about-action-muted {
-  border-color: var(--cyber-muted);
+  border-color: rgba(var(--cyber-accent-rgb), 0.22);
   color: var(--cyber-muted);
 }
 .about-update-status {
-  margin-top: 10px;
-  font-size: 10px;
+  margin-top: 8px;
+  min-height: 0;
+  font-size: 11px;
   font-family: var(--font-ui);
   color: var(--cyber-muted);
+  text-align: center;
+  line-height: 1.4;
+}
+.about-update-status:empty {
+  display: none;
 }
 .about-update-hint {
   margin-top: 8px;
   font-size: 10px;
+  line-height: 1.4;
   color: var(--cyber-muted);
+  text-align: center;
+  opacity: 0.9;
 }
 
 .about-update-banner {
@@ -3092,6 +3196,8 @@
   font-family: var(--font-ui);
   font-size: 11px;
   line-height: 1.4;
+  border-radius: 4px;
+  text-align: center;
 }
 .about-update-banner.visible { display: block; }
 .about-update-banner.ready {
@@ -3107,6 +3213,7 @@
   background: var(--cyber-dim);
   border: 1px solid var(--cyber-border);
   overflow: hidden;
+  border-radius: 2px;
 }
 .about-update-bar {
   height: 100%;

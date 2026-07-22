@@ -3918,21 +3918,32 @@ $('btn-center').addEventListener('click', () => {
       ? await window.electronAPI.getUpdateInfo()
       : { canUpdate: false, portable: false };
 
+    const verLabel = version ? `v${version}` : 'v—';
     overlay.innerHTML = `
-      <div class="modal-box about-modal" role="dialog" aria-modal="true">
+      <div class="modal-box about-modal" role="dialog" aria-modal="true" aria-labelledby="about-dialog-title">
         <div class="modal-header">
-          <div class="modal-title">${t.about_title}</div>
-          <button class="win-btn" id="about-close-btn">&#10005;</button>
+          <div class="modal-title" id="about-dialog-title">${t.about_title}</div>
+          <button class="win-btn" id="about-close-btn" aria-label="${t.close || 'Close'}">&#10005;</button>
         </div>
         <div class="modal-body">
-          <div class="about-brand">
-            <span class="about-brand-cyber">Cyber</span><span class="about-brand-viewer">Viewer</span> <span class="about-version">v${version || '—'}</span>
+          <div class="about-hero">
+            <img src="assets/icon.png" class="about-logo" alt="" width="64" height="64" draggable="false">
+            <div class="about-brand">
+              <span class="about-brand-cyber">Cyber</span><span class="about-brand-viewer">Viewer</span>
+            </div>
+            <span class="about-version">${verLabel}</span>
+            <p class="about-desc">
+              ${t.about_copyright || t.about_desc}
+              <span class="about-tagline">${t.about_tagline || ''}</span>
+            </p>
+            <div class="about-formats">
+              ${t.about_formats_list || t.about_formats}
+              <span class="about-formats-tech">${t.about_formats_tech || ''}</span>
+            </div>
           </div>
-          <img src="assets/icon.png" class="about-logo" alt="Logo">
-          <div class="about-desc">${t.about_desc}</div>
-          <div class="about-formats">${t.about_formats}</div>
-          
+
           <div class="about-update-section">
+            <div class="about-update-heading">${t.about_updates_heading || t.menu_updates || 'Updates'}</div>
             <div class="about-startup-row">
               <span class="about-startup-label">${t.about_check_on_startup}</span>
               <label class="switch">
@@ -3945,25 +3956,25 @@ $('btn-center').addEventListener('click', () => {
               <div class="about-update-track"><div id="about-update-bar" class="about-update-bar"></div></div>
             </div>
             <div class="about-update-actions">
-              <button id="about-btn-update" class="top-btn about-action-btn about-action-accent">
+              <button type="button" id="about-btn-update" class="top-btn about-action-btn about-action-accent">
                 ${t.about_check_updates}
               </button>
-              <button id="about-btn-download" class="top-btn active about-action-btn" style="display:none">
+              <button type="button" id="about-btn-download" class="top-btn active about-action-btn" style="display:none">
                 ${t.about_download_btn}
               </button>
-              <button id="about-btn-install" class="top-btn active about-action-btn" style="display:none">
+              <button type="button" id="about-btn-install" class="top-btn active about-action-btn" style="display:none">
                 ${t.about_install_btn}
               </button>
-              <button id="about-btn-releases" class="top-btn about-action-btn about-action-muted">
+              <button type="button" id="about-btn-releases" class="top-btn about-action-btn about-action-muted">
                 ${t.about_open_releases}
               </button>
             </div>
-            <div id="about-update-status" class="about-update-status"></div>
+            <div id="about-update-status" class="about-update-status" aria-live="polite"></div>
             ${!updateInfo.canUpdate ? `<div class="about-update-hint">${updateInfo.portable ? t.about_portable_hint : t.about_dev_hint}</div>` : ''}
           </div>
         </div>
         <div class="modal-footer">
-          <button id="about-close" class="top-btn active">${t.about_understood}</button>
+          <button type="button" id="about-close" class="top-btn active">${t.about_understood}</button>
         </div>
       </div>
     `;
