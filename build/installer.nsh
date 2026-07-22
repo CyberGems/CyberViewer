@@ -19,25 +19,27 @@ Var CV_SetAsDefault
 !macroend
 
 Function CV_DefaultViewerPage_Show
-  !insertmacro MUI_HEADER_TEXT "Default image viewer" "Associate CyberViewer with common image types"
-
+  ; Avoid MUI_HEADER_TEXT here — not always defined when electron-builder includes this file.
   nsDialogs::Create 1018
   Pop $0
   ${If} $0 == error
     Abort
   ${EndIf}
 
-  ${NSD_CreateLabel} 0 0 100% 48u "CyberViewer can open JPG, JPEG, PNG, GIF, WEBP, BMP and TIFF.$\r$\n$\r$\nCheck the option below to use CyberViewer as your default image viewer for these formats (current user).$\r$\n$\r$\nYou can change defaults later in Windows Settings → Apps → Default apps."
+  ${NSD_CreateLabel} 0 0 100% 20u "Default image viewer"
   Pop $1
 
-  ${NSD_CreateCheckbox} 0 70u 100% 14u "Set CyberViewer as the default image viewer"
+  ${NSD_CreateLabel} 0 22u 100% 48u "CyberViewer can open JPG, JPEG, PNG, GIF, WEBP, BMP and TIFF.$\r$\n$\r$\nCheck the option below to use CyberViewer as your default image viewer for these formats (current user).$\r$\n$\r$\nYou can change defaults later in Windows Settings → Apps → Default apps."
+  Pop $2
+
+  ${NSD_CreateCheckbox} 0 78u 100% 14u "Set CyberViewer as the default image viewer"
   Pop $CV_DefaultCheckbox
   ; Default: checked — matches user expectation for an image viewer install
   ${NSD_Check} $CV_DefaultCheckbox
 
   ; Spanish helper line (UI language of installer is typically English)
-  ${NSD_CreateLabel} 0 92u 100% 24u "ES: Establecer CyberViewer como visor de imágenes predeterminado"
-  Pop $2
+  ${NSD_CreateLabel} 0 98u 100% 24u "ES: Establecer CyberViewer como visor de imágenes predeterminado"
+  Pop $3
 
   nsDialogs::Show
 FunctionEnd
@@ -61,7 +63,8 @@ FunctionEnd
   ; electron-builder already registers fileAssociations when present.
   ; When the user opts in, reinforce per-user defaults under HKCU so
   ; Windows prefers CyberViewer for double-click (best-effort on Win10/11).
-  ${If} $CV_SetAsDefault == ${BST_CHECKED}
+  ; NSD_GetState: 1 = checked, 0 = unchecked (avoid BST_CHECKED macro dependency)
+  ${If} $CV_SetAsDefault == 1
     !insertmacro CV_WriteImageAssoc ".jpg"  "CyberViewer.jpg"  "JPEG Image"
     !insertmacro CV_WriteImageAssoc ".jpeg" "CyberViewer.jpg"  "JPEG Image"
     !insertmacro CV_WriteImageAssoc ".png"  "CyberViewer.png"  "PNG Image"
