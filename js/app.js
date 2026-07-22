@@ -66,6 +66,7 @@ const state = {
   panStartY: 0,
   transitioning: false,
   sidebarOpen: false,
+  toolbarOpen: true,
   scanInProgress: false,
   /** Resolves when the current main image has been displayed (or failed) */
   mainImageReady: Promise.resolve(),
@@ -96,6 +97,8 @@ const state = {
         lastNotifiedAvailable: null,
         lastNotifiedDownloaded: null
       },
+      // Bottom action bar (kbd-hint); collapsible like sidebar
+      toolbarOpen: true,
       // Transparency grid behind alpha pixels: checker-dark | checker-light | solid
       alphaBackground: 'checker-dark',
       recentFiles: [],
@@ -1058,6 +1061,12 @@ function buildMenuTemplate(type, data) {
             action: () => $('btn-orig-hud').click()
           },
           { type: 'separator' },
+          {
+            label: getTxt('menu_toolbar'),
+            type: 'checkbox',
+            checked: state.toolbarOpen !== false,
+            action: () => setToolbarOpen(!(state.toolbarOpen !== false))
+          },
           {
             label: getTxt('menu_autohide'),
             type: 'checkbox',
@@ -4411,6 +4420,59 @@ function setSidebarOpen(open) {
   }
 }
 
+function toolbarHandleTooltipText(open) {
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  const t = I18N[lang] || I18N.en || {};
+  return open
+    ? (t.toolbar_handle_hide || 'Hide action bar')
+    : (t.toolbar_handle_show || 'Show action bar');
+}
+
+function syncToolbarHandle() {
+  const handle = $('toolbar-handle');
+  const chev = $('toolbar-handle-chevron');
+  if (!handle) return;
+  const open = state.toolbarOpen !== false;
+  handle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (chev) chev.textContent = open ? '▾' : '▴';
+  setCyberTooltip(handle, toolbarHandleTooltipText(open));
+  handle.classList.add('tooltip-bottom');
+}
+
+/**
+ * Show/hide the bottom action bar (#kbd-hint).
+ * Collapsed state is persisted; a handle pill reopens it in place (like sidebar).
+ */
+function setToolbarOpen(open) {
+  state.toolbarOpen = open !== false;
+  document.body.classList.toggle('toolbar-collapsed', !state.toolbarOpen);
+  syncToolbarHandle();
+
+  if (state.settings && state.settings.app) {
+    state.settings.app.toolbarOpen = state.toolbarOpen;
+    if (isElectron) window.electronAPI.saveSettings(state.settings.app);
+  }
+
+  // Refit image when dock height changes in window mode
+  requestAnimationFrame(() => {
+    const im = state.images[state.current];
+    if (im && im.w && im.h && state.viewMode === 'fit' && typeof fitToWindow === 'function') {
+      fitToWindow(im.w, im.h);
+    } else if (typeof applyTransform === 'function') {
+      applyTransform(false);
+    }
+  });
+}
+
+const toolbarHandleEl = $('toolbar-handle');
+if (toolbarHandleEl) {
+  toolbarHandleEl.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setToolbarOpen(!state.toolbarOpen);
+  });
+}
+
 const sidebarHandleEl = $('sidebar-handle');
 if (sidebarHandleEl) {
   const setHandleHover = (on) => {
@@ -4761,6 +4823,10 @@ function applySettings() {
   const arrow = $('sidebar-handle-arrow');
   if (arrow) arrow.textContent = state.sidebarOpen ? '◂' : '▸';
   syncSidebarHandleTooltip();
+  // Action bar (default open)
+  state.toolbarOpen = s.toolbarOpen !== false;
+  document.body.classList.toggle('toolbar-collapsed', !state.toolbarOpen);
+  syncToolbarHandle();
   // Statusbar: user preference, but empty-state CSS hides it regardless
   if (s.statusbarVisible) {
     $('statusbar').style.display = '';
@@ -5426,6 +5492,8 @@ $('btn-config').addEventListener('click', openConfig);
     if (ah) ah.classList.toggle('checked', !!(state.settings && state.settings.app && state.settings.app.hudAutoHide));
     const sb = panel.querySelector('[data-action="sidebar"]');
     if (sb) sb.classList.toggle('checked', !!state.sidebarOpen);
+    const tb = panel.querySelector('[data-action="toolbar"]');
+    if (tb) tb.classList.toggle('checked', state.toolbarOpen !== false);
     const th = panel.querySelector('[data-action="toggle-hints"]');
     if (th) th.classList.toggle('checked', !!(state.settings && state.settings.app && state.settings.app.showTopHints !== false));
     const ab = panel.querySelector('[data-action="toggle-alpha-bg"]');
@@ -5509,6 +5577,9 @@ $('btn-config').addEventListener('click', openConfig);
       case 'original':       $('btn-orig-hud').click(); break;
       case 'fullscreen':     toggleFullscreen(); break;
       case 'sidebar':        $('sidebar-handle').click(); break;
+      case 'toolbar':
+        setToolbarOpen(!(state.toolbarOpen !== false));
+        break;
       case 'autohide':
         state.settings.app.hudAutoHide = !state.settings.app.hudAutoHide;
         if (isElectron) window.electronAPI.saveSettings(state.settings.app);
@@ -5617,7 +5688,8 @@ function resetHudTimer() {
     }
     item.el.classList.remove(item.hideClass);
     // Ensure docked toolbar never stays hidden after leaving fullscreen
-    if (item.el.id === 'kbd-hint' && !state.isGhost) {
+    // (unless the user collapsed the action bar permanently)
+    if (item.el.id === 'kbd-hint' && !state.isGhost && state.toolbarOpen !== false) {
       item.el.classList.remove('hud-hidden', 'hud-hidden-fade');
     }
     // Zoom badge needs .visible from a zoom gesture; keep it if user just zoomed in FS
@@ -5662,6 +5734,9 @@ function resetHudTimer() {
         return;
       }
       if (!hudEnabled && !forceSlideshowHide) return;
+
+      // User-collapsed action bar stays collapsed (separate from FS auto-hide)
+      if (item.el.id === 'kbd-hint' && state.toolbarOpen === false) return;
 
       const isTopbarOrStatusbar = (item.el.id === 'topbar' || item.el.id === 'statusbar');
       if (isTopbarOrStatusbar && !state.isGhost) return;

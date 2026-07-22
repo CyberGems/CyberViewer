@@ -338,7 +338,10 @@
     "toast_summary_copied": "SUMMARY COPIED",
     "update_badge_available": "Update available: v{version} — click for details",
     "update_badge_ready": "Update ready: v{version} — click to install",
-    "about_notify_ready": "Update ready: v{version} — open About to install"
+    "about_notify_ready": "Update ready: v{version} — open About to install",
+    "menu_toolbar": "Action bar",
+    "toolbar_handle_show": "Show action bar",
+    "toolbar_handle_hide": "Hide action bar"
   },
   "es": {
     "no_images": "— sin imágenes —",
@@ -679,6 +682,9 @@
     "toast_summary_copied": "RESUMEN COPIADO",
     "update_badge_available": "Actualización disponible: v{version} — clic para detalles",
     "update_badge_ready": "Actualización lista: v{version} — clic para instalar",
-    "about_notify_ready": "Actualización lista: v{version} — abre Acerca de para instalar"
+    "about_notify_ready": "Actualización lista: v{version} — abre Acerca de para instalar",
+    "menu_toolbar": "Barra de acciones",
+    "toolbar_handle_show": "Mostrar barra de acciones",
+    "toolbar_handle_hide": "Ocultar barra de acciones"
   }
 }

@@ -1225,6 +1225,11 @@
   body:not(.ghost-mode):not(.empty-state) {
     --dock-h: 60px;
   }
+  /* Collapsed action bar frees the full viewer height */
+  body.toolbar-collapsed:not(.ghost-mode):not(.empty-state) #viewer-wrap,
+  body.toolbar-collapsed:not(.ghost-mode):not(.empty-state) {
+    --dock-h: 0px;
+  }
   body:not(.ghost-mode):not(.empty-state) #canvas-layer,
   body:not(.ghost-mode):not(.empty-state) #crop-overlay,
   body:not(.ghost-mode):not(.empty-state) #drop-zone,
@@ -1773,6 +1778,84 @@
     overflow: hidden;
   }
 
+  /* ── TOOLBAR HANDLE (collapse / reopen in place, like sidebar) ── */
+  #toolbar-handle {
+    position: absolute;
+    left: 50%;
+    z-index: 1001;
+    width: 44px;
+    height: 22px;
+    margin: 0;
+    padding: 0;
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.45);
+    border-radius: 11px;
+    background: #121820;
+    color: var(--cyber-accent);
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transform: translateX(-50%);
+    box-shadow:
+      0 2px 10px rgba(0, 0, 0, 0.65),
+      0 0 10px rgba(var(--cyber-accent-rgb), 0.2);
+    transition: transform 0.18s ease, border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, opacity 0.2s ease;
+    -webkit-app-region: no-drag;
+    pointer-events: auto;
+  }
+  #toolbar-handle-chevron {
+    font-size: 11px;
+    line-height: 1;
+    pointer-events: none;
+    display: block;
+    transform: translateY(-0.5px);
+  }
+  /* Visible whenever there is a toolbar to manage (not empty, not slideshow) */
+  body:not(.empty-state):not(.slideshow-active) #toolbar-handle {
+    display: flex;
+  }
+  /* Open (window): sit on the top edge of the dock */
+  body:not(.toolbar-collapsed):not(.ghost-mode):not(.empty-state) #toolbar-handle {
+    bottom: var(--dock-h, 60px);
+    transform: translate(-50%, 50%);
+  }
+  /* Collapsed (window): pill floats at bottom of viewer */
+  body.toolbar-collapsed:not(.ghost-mode):not(.empty-state) #toolbar-handle {
+    bottom: 10px;
+    transform: translateX(-50%);
+  }
+  body.statusbar-visible.toolbar-collapsed:not(.ghost-mode):not(.empty-state) #toolbar-handle {
+    bottom: 10px;
+  }
+  /* Fullscreen: always near bottom center (dock is floating) */
+  body.ghost-mode:not(.empty-state):not(.slideshow-active) #toolbar-handle {
+    bottom: 14px;
+    transform: translateX(-50%);
+  }
+  body.ghost-mode:not(.toolbar-collapsed):not(.empty-state) #toolbar-handle {
+    /* When open, keep handle just under the floating bar area */
+    bottom: 12px;
+    opacity: 0.85;
+  }
+  #toolbar-handle:hover {
+    border-color: var(--cyber-accent);
+    color: #e8fbff;
+    background: #0a1018;
+    box-shadow:
+      0 0 14px rgba(var(--cyber-accent-rgb), 0.45),
+      0 2px 10px rgba(0, 0, 0, 0.75);
+  }
+  body:not(.toolbar-collapsed) #toolbar-handle:hover {
+    transform: translate(-50%, 50%) scale(1.06);
+  }
+  body.toolbar-collapsed #toolbar-handle:hover,
+  body.ghost-mode #toolbar-handle:hover {
+    transform: translateX(-50%) scale(1.06);
+  }
+  body:not(.toolbar-collapsed).ghost-mode #toolbar-handle:hover {
+    transform: translateX(-50%) scale(1.06);
+  }
+
   /* ── TOOLBAR (kbd-hint) ──
      Normal window: docked chrome strip at bottom of viewer (not floating).
      Fullscreen (ghost): floating glass bar with auto-hide (single row).
@@ -1804,6 +1887,21 @@
     background: linear-gradient(180deg, rgba(11, 14, 20, 0.96) 0%, rgba(8, 10, 14, 0.99) 100%);
     border-top: 1px solid var(--cyber-border);
     backdrop-filter: blur(10px);
+  }
+
+  /* User-collapsed action bar (persisted) — distinct from temporary hud-hidden in FS */
+  body.toolbar-collapsed:not(.ghost-mode) #kbd-hint {
+    opacity: 0;
+    transform: translateY(110%);
+    pointer-events: none;
+    height: 0;
+    border: none;
+    overflow: hidden;
+  }
+  body.toolbar-collapsed.ghost-mode #kbd-hint {
+    opacity: 0 !important;
+    transform: translateX(-50%) translateY(24px) !important;
+    pointer-events: none !important;
   }
 
   /* Open / Show: icon-only (tooltips keep labels) — frees dock width in restored windows */
