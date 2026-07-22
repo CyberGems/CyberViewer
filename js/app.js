@@ -6,6 +6,10 @@ const canvasExport = CVMedia.canvasExport || function (c, p) { return { buffer: 
 const formatBytes = CVMedia.formatBytes || function () { return '-'; };
 const buildCssFilter = CVMedia.buildCssFilter || function () { return 'none'; };
 const isIdentityAdjust = CVMedia.isIdentityAdjust || function () { return true; };
+const mimeFromPath = CVMedia.mimeFromPath || function () { return ''; };
+const formatAspectRatio = CVMedia.formatAspectRatio || function () { return '-'; };
+const formatMegapixels = CVMedia.formatMegapixels || function () { return '-'; };
+const formatLikelyHasAlpha = CVMedia.formatLikelyHasAlpha || function () { return false; };
 
 function syncCurrentIndex(idx) {
   state.currentIdx = idx;
@@ -939,6 +943,7 @@ function buildMenuTemplate(type, data) {
           },
           {
             label: getTxt('menu_props'),
+            shortcut: 'Ctrl+I',
             action: () => showPropertiesPanel(data.path)
           }
         ]
@@ -3611,7 +3616,7 @@ function syncEmptyState() {
 
   // Nested buttons inside .control-group.needs-image
   ['btn-show-folder', 'btn-fit-hud', 'btn-orig-hud', 'btn-fs-hud', 'btn-slideshow',
-    'btn-rot-l', 'btn-rot-r', 'btn-crop', 'btn-resize', 'btn-adjust', 'btn-copy', 'btn-trash', 'btn-fav'
+    'btn-rot-l', 'btn-rot-r', 'btn-crop', 'btn-resize', 'btn-adjust', 'btn-props', 'btn-copy', 'btn-trash', 'btn-fav'
   ].forEach((id) => {
     const el = $(id);
     if (!el) return;
@@ -3791,7 +3796,16 @@ document.addEventListener('keydown', e => {
       case 'v': e.preventDefault(); pasteFromClipboard(); break;
       case 'd': e.preventDefault(); if (checkImageLoaded()) toggleFavorite(); break;
       case ',': e.preventDefault(); openConfig(); break;
-      case 'i': if (e.shiftKey) { e.preventDefault(); window.electronAPI.openDevTools(); } break;
+      case 'i':
+        e.preventDefault();
+        if (e.shiftKey) {
+          if (isElectron && window.electronAPI && window.electronAPI.openDevTools) {
+            window.electronAPI.openDevTools();
+          }
+        } else if (checkImageLoaded()) {
+          openPropertiesForCurrent();
+        }
+        break;
     }
   }
 
@@ -5286,12 +5300,9 @@ $('btn-config').addEventListener('click', openConfig);
       case 'show-folder':    $('btn-show-folder').click(); break;
       case 'save':           saveCurrent(); break;
       case 'copy':           copyToClipboard(); break;
-      case 'properties': {
-        const im = state.images[state.current];
-        const fpath = im && (im.path || (im.file ? im.file.path : null));
-        if (fpath) showPropertiesPanel(fpath);
+      case 'properties':
+        openPropertiesForCurrent();
         break;
-      }
       case 'trash':          trashCurrentImage(); break;
       case 'rotate-left':    rotate(-90); break;
       case 'rotate-right':   rotate(90); break;
@@ -5741,6 +5752,48 @@ function showCyberConfirm({ title, message, detail, danger = true, onConfirm }) 
 
 // ── PROPERTIES PANEL ──
 let propsNativePath = null;
+let propsSummaryText = '';
+
+function openPropertiesForCurrent() {
+  if (!checkImageLoaded()) return;
+  const im = state.images[state.current];
+  const fpath = im ? imageDiskPath(im) : '';
+  showPropertiesPanel(fpath);
+}
+
+function buildPropsBadges(name, fpath, isFav) {
+  const host = $('props-badges');
+  if (!host) return;
+  host.innerHTML = '';
+  const ext = name.includes('.') ? name.split('.').pop().toUpperCase() : '';
+  if (ext) {
+    const b = document.createElement('span');
+    b.className = 'props-badge';
+    b.textContent = ext;
+    host.appendChild(b);
+  }
+  if (formatLikelyHasAlpha(name || fpath)) {
+    const b = document.createElement('span');
+    b.className = 'props-badge badge-alpha';
+    b.textContent = 'ALPHA';
+    host.appendChild(b);
+  }
+  if (isFav) {
+    const b = document.createElement('span');
+    b.className = 'props-badge badge-fav';
+    b.textContent = 'FAV';
+    host.appendChild(b);
+  }
+}
+
+function formatPropsDate(ms, lang) {
+  if (ms == null || !Number.isFinite(Number(ms))) return '-';
+  try {
+    return new Date(Number(ms)).toLocaleString(lang === 'es' ? 'es-ES' : undefined);
+  } catch (_) {
+    return '-';
+  }
+}
 
 async function showPropertiesPanel(rawPath) {
   const im = state.images[state.current];
@@ -5748,65 +5801,206 @@ async function showPropertiesPanel(rawPath) {
 
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
   const es = lang === 'es';
+  const i18nLang = I18N[lang] || I18N.en || {};
 
   const fpath = (im.file && im.file.path) || im.path || rawPath || '';
   const name = (im.file && im.file.name) || (fpath ? fpath.split(/[\\/]/).pop() : '-');
   propsNativePath = fpath;
 
-  // Etiquetas i18n
-  $('props-title').textContent = es ? 'PROPIEDADES' : 'PROPERTIES';
-  $('props-k-name').textContent = es ? 'Nombre' : 'Name';
-  $('props-k-format').textContent = es ? 'Formato' : 'Format';
-  $('props-k-dims').textContent = es ? 'Dimensiones' : 'Dimensions';
-  $('props-k-size').textContent = es ? 'Tamaño' : 'Size';
-  $('props-k-modified').textContent = es ? 'Modificado' : 'Modified';
-  $('props-k-path').textContent = es ? 'Ruta' : 'Path';
-  $('props-native-label').textContent = es ? 'Propiedades de Windows' : 'Windows properties';
-  setCyberTooltip($('props-native-btn'), es
-    ? 'Abrir el diálogo nativo de Windows (puede tardar un par de segundos)'
-    : 'Open the native Windows dialog (may take a couple of seconds)');
-  $('props-close-btn').textContent = es ? 'CERRAR' : 'CLOSE';
-
-  // Datos disponibles al instante
-  $('props-name').textContent = name;
-  const ext = name.includes('.') ? name.split('.').pop().toUpperCase() : '';
-  $('props-format').textContent = ext || '-';
   const w = im.w || mainImg.naturalWidth || 0;
   const h = im.h || mainImg.naturalHeight || 0;
-  $('props-dims').textContent = (w && h) ? `${w} x ${h} px` : '-';
-  $('props-size').textContent = im.size ? formatBytes(im.size) : '…';
-  $('props-modified').textContent = '…';
-  $('props-path').textContent = fpath || '-';
-  setCyberTooltip($('props-path'), fpath || '');
+  const ext = name.includes('.') ? name.split('.').pop().toUpperCase() : '';
+  const mime = mimeFromPath(name || fpath);
+  const ratio = formatAspectRatio(w, h);
+  const mp = formatMegapixels(w, h);
+  const idx = state.current >= 0 ? (state.current + 1) : 0;
+  const total = state.images.length || 0;
+  const favs = (state.settings && state.settings.app && state.settings.app.favorites) || [];
+  const isFav = !!(fpath && favs.includes(fpath));
 
-  // Vista previa (imagen ya cargada en memoria)
+  // Instant fields
+  if ($('props-name')) $('props-name').textContent = name || '-';
+  if ($('props-format')) {
+    $('props-format').textContent = mime ? (ext + ' · ' + mime) : (ext || '-');
+  }
+  if ($('props-dims')) $('props-dims').textContent = (w && h) ? (w + ' × ' + h + ' px') : '-';
+  if ($('props-ratio')) $('props-ratio').textContent = ratio;
+  if ($('props-mp')) $('props-mp').textContent = mp;
+  if ($('props-index')) {
+    $('props-index').textContent = total ? (idx + ' / ' + total) : '-';
+  }
+  if ($('props-fav')) {
+    $('props-fav').textContent = isFav
+      ? (i18nLang.props_fav_yes || (es ? 'Sí' : 'Yes'))
+      : (i18nLang.props_fav_no || (es ? 'No' : 'No'));
+  }
+  if ($('props-size')) {
+    $('props-size').textContent = (im.size || im.size === 0) ? formatBytes(im.size) : '…';
+  }
+  if ($('props-created')) $('props-created').textContent = '…';
+  if ($('props-modified')) $('props-modified').textContent = '…';
+  if ($('props-path')) {
+    $('props-path').textContent = fpath || '-';
+    setCyberTooltip($('props-path'), fpath || '');
+  }
+  if ($('props-readout')) {
+    $('props-readout').textContent = (w && h)
+      ? (w + ' × ' + h + ' PX  ·  ' + ratio + '  ·  ' + mp)
+      : '—';
+  }
+  buildPropsBadges(name, fpath, isFav);
+
   const preview = $('props-preview');
-  if (mainImg.src) { preview.src = mainImg.src; preview.style.display = ''; }
-  else { preview.style.display = 'none'; }
+  if (preview) {
+    if (mainImg && mainImg.src) {
+      preview.src = mainImg.src;
+      preview.style.display = '';
+    } else {
+      preview.removeAttribute('src');
+      preview.style.display = 'none';
+    }
+  }
 
+  // Footer tooltips (i18n may already set via data-i18n-title; reinforce native tip)
+  if ($('props-native-btn')) {
+    setCyberTooltip($('props-native-btn'),
+      i18nLang.props_native_tooltip ||
+      (es
+        ? 'Abrir el diálogo nativo de Windows (puede tardar un par de segundos)'
+        : 'Open the native Windows dialog (may take a couple of seconds)'));
+  }
+
+  propsSummaryText = [
+    name,
+    (w && h) ? (w + '×' + h + ' px') : '',
+    ratio !== '-' ? ratio : '',
+    mp !== '-' ? mp : '',
+    (im.size || im.size === 0) ? formatBytes(im.size) : '',
+    fpath
+  ].filter(Boolean).join('\n');
+
+  if (typeof pauseSlideshow === 'function') pauseSlideshow();
   openModal('modal-properties');
 
-  // Tamaño y fecha frescos desde disco
-  let size = im.size, modified = null;
+  // Fresh size / dates from disk
+  let size = im.size;
+  let modified = null;
+  let created = null;
   if (isElectron && fpath && window.electronAPI.getFileInfo) {
     try {
       const info = await window.electronAPI.getFileInfo(fpath);
-      if (info) { size = info.size; modified = info.modified; }
-    } catch (e) { /* se mantienen los valores de fallback */ }
+      if (info) {
+        size = info.size;
+        modified = info.modified;
+        created = info.created;
+        if (Number.isFinite(info.size)) {
+          im.size = info.size;
+          if (im.file) im.file.size = info.size;
+        }
+      }
+    } catch (_) { /* keep fallbacks */ }
   }
-  // Evita pisar un panel ya cerrado o cambiado a otra imagen
-  if (!$('modal-properties').classList.contains('active') || propsNativePath !== fpath) return;
-  $('props-size').textContent = (size || size === 0) ? formatBytes(size) : '-';
-  $('props-modified').textContent = modified
-    ? new Date(modified).toLocaleString(es ? 'es-ES' : undefined)
-    : '-';
+  if (!$('modal-properties') || !$('modal-properties').classList.contains('active') || propsNativePath !== fpath) {
+    return;
+  }
+  if ($('props-size')) {
+    $('props-size').textContent = (size || size === 0) ? formatBytes(size) : '-';
+  }
+  if ($('props-modified')) $('props-modified').textContent = formatPropsDate(modified, lang);
+  if ($('props-created')) $('props-created').textContent = formatPropsDate(created, lang);
+
+  propsSummaryText = [
+    name,
+    (w && h) ? (w + '×' + h + ' px') : '',
+    ratio !== '-' ? ratio : '',
+    mp !== '-' ? mp : '',
+    (size || size === 0) ? formatBytes(size) : '',
+    created != null ? ('created: ' + formatPropsDate(created, lang)) : '',
+    modified != null ? ('modified: ' + formatPropsDate(modified, lang)) : '',
+    fpath
+  ].filter(Boolean).join('\n');
 }
 
-$('props-native-btn').addEventListener('click', () => {
-  if (propsNativePath && isElectron && window.electronAPI.openNativeProperties) {
-    window.electronAPI.openNativeProperties(propsNativePath);
-  }
-});
+if ($('props-native-btn')) {
+  $('props-native-btn').addEventListener('click', () => {
+    if (propsNativePath && isElectron && window.electronAPI.openNativeProperties) {
+      window.electronAPI.openNativeProperties(propsNativePath);
+    }
+  });
+}
+
+if ($('props-copy-path')) {
+  $('props-copy-path').addEventListener('click', async () => {
+    const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+    const i18nLang = I18N[lang] || I18N.en || {};
+    if (!propsNativePath) {
+      showToast(i18nLang.toast_path_not_found || 'PATH NOT FOUND', 'error');
+      return;
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(propsNativePath);
+      } else if (isElectron && window.electronAPI && window.electronAPI.copyText) {
+        await window.electronAPI.copyText(propsNativePath);
+      } else {
+        throw new Error('no clipboard');
+      }
+      showToast(i18nLang.toast_path_copied || 'PATH COPIED', 'success');
+    } catch (_) {
+      showToast(i18nLang.toast_copy_error || 'ERROR COPYING', 'error');
+    }
+  });
+}
+
+if ($('props-copy-summary')) {
+  $('props-copy-summary').addEventListener('click', async () => {
+    const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+    const i18nLang = I18N[lang] || I18N.en || {};
+    const text = propsSummaryText || '';
+    if (!text) return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else if (isElectron && window.electronAPI && window.electronAPI.copyText) {
+        await window.electronAPI.copyText(text);
+      } else {
+        throw new Error('no clipboard');
+      }
+      showToast(i18nLang.toast_summary_copied || 'SUMMARY COPIED', 'success');
+    } catch (_) {
+      showToast(i18nLang.toast_copy_error || 'ERROR COPYING', 'error');
+    }
+  });
+}
+
+if ($('props-show-folder')) {
+  $('props-show-folder').addEventListener('click', () => {
+    if (propsNativePath && isElectron && window.electronAPI.showItemInFolder) {
+      window.electronAPI.showItemInFolder(propsNativePath);
+    } else if ($('btn-show-folder')) {
+      $('btn-show-folder').click();
+    }
+  });
+}
+
+if ($('btn-props')) {
+  $('btn-props').addEventListener('click', openPropertiesForCurrent);
+}
+
+function wireFooterPropsHit(id) {
+  const el = $(id);
+  if (!el) return;
+  const open = (e) => {
+    if (e) e.preventDefault();
+    if (state.current >= 0 && state.images[state.current]) openPropertiesForCurrent();
+  };
+  el.addEventListener('click', open);
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') open(e);
+  });
+}
+wireFooterPropsHit('footer-size');
+wireFooterPropsHit('footer-weight');
 
 // ── INIT ──
 syncEmptyState();

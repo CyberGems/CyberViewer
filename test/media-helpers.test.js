@@ -8,6 +8,10 @@ const {
   buildCssFilter,
   isIdentityAdjust,
   formatBytes,
+  mimeFromPath,
+  formatAspectRatio,
+  formatMegapixels,
+  formatLikelyHasAlpha,
   sliderToZoom,
   zoomToSlider,
   folderDirFromPath,
@@ -74,6 +78,30 @@ describe('formatBytes', () => {
     assert.equal(formatBytes(500), '500 B');
     assert.equal(formatBytes(2048), '2.0 KB');
     assert.equal(formatBytes(2 * 1024 * 1024), '2.00 MB');
+  });
+});
+
+describe('image props helpers', () => {
+  it('maps extensions to mime types', () => {
+    assert.equal(mimeFromPath('a.JPG'), 'image/jpeg');
+    assert.equal(mimeFromPath('C:\\\\x\\\\b.png'), 'image/png');
+    assert.equal(mimeFromPath('noext'), '');
+  });
+
+  it('formats common aspect ratios', () => {
+    assert.equal(formatAspectRatio(1920, 1080), '16:9');
+    assert.equal(formatAspectRatio(1080, 1080), '1:1');
+    assert.equal(formatAspectRatio(0, 10), '-');
+  });
+
+  it('formats megapixels', () => {
+    assert.equal(formatMegapixels(1920, 1080), '2.07 MP');
+    assert.equal(formatMegapixels(0, 0), '-');
+  });
+
+  it('detects likely alpha formats', () => {
+    assert.equal(formatLikelyHasAlpha('a.png'), true);
+    assert.equal(formatLikelyHasAlpha('a.jpg'), false);
   });
 });
 

@@ -117,6 +117,95 @@
   }
 
   /**
+   * Guess image MIME from filename extension (display only; not sniffing).
+   * @param {string} fileNameOrPath
+   */
+  function mimeFromPath(fileNameOrPath) {
+    const base = String(fileNameOrPath || '').split(/[\\/]/).pop() || '';
+    const dot = base.lastIndexOf('.');
+    if (dot <= 0 || dot === base.length - 1) return '';
+    const ext = base.slice(dot + 1).toLowerCase();
+    const map = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      gif: 'image/gif',
+      webp: 'image/webp',
+      bmp: 'image/bmp',
+      tif: 'image/tiff',
+      tiff: 'image/tiff',
+      ico: 'image/x-icon',
+      svg: 'image/svg+xml'
+    };
+    return map[ext] || '';
+  }
+
+  /**
+   * Format aspect ratio for HUD (named common ratios or decimal).
+   * @param {number} w
+   * @param {number} h
+   */
+  function formatAspectRatio(w, h) {
+    const width = Number(w) || 0;
+    const height = Number(h) || 0;
+    if (width < 1 || height < 1) return '-';
+    const r = width / height;
+    const named = [
+      [1, '1:1'],
+      [4 / 3, '4:3'],
+      [3 / 2, '3:2'],
+      [16 / 10, '16:10'],
+      [16 / 9, '16:9'],
+      [21 / 9, '21:9'],
+      [5 / 4, '5:4'],
+      [2 / 1, '2:1'],
+      [9 / 16, '9:16'],
+      [3 / 4, '3:4'],
+      [2 / 3, '2:3']
+    ];
+    for (let i = 0; i < named.length; i++) {
+      if (Math.abs(r - named[i][0]) < 0.02) return named[i][1];
+    }
+    // Reduced integer ratio when small
+    const g = function gcd(a, b) {
+      a = Math.round(Math.abs(a));
+      b = Math.round(Math.abs(b));
+      while (b) {
+        const t = b;
+        b = a % b;
+        a = t;
+      }
+      return a || 1;
+    };
+    const d = g(width, height);
+    const rw = Math.round(width / d);
+    const rh = Math.round(height / d);
+    if (rw <= 50 && rh <= 50) return rw + ':' + rh;
+    return r.toFixed(2) + ':1';
+  }
+
+  /**
+   * Megapixels label, e.g. "2.07 MP".
+   * @param {number} w
+   * @param {number} h
+   */
+  function formatMegapixels(w, h) {
+    const width = Number(w) || 0;
+    const height = Number(h) || 0;
+    if (width < 1 || height < 1) return '-';
+    const mp = (width * height) / 1e6;
+    if (mp < 0.01) return (mp * 1000).toFixed(0) + ' KP';
+    if (mp < 10) return mp.toFixed(2) + ' MP';
+    return mp.toFixed(1) + ' MP';
+  }
+
+  /** True for formats that commonly carry an alpha channel. */
+  function formatLikelyHasAlpha(fileNameOrPath) {
+    const ext = (String(fileNameOrPath || '').split('.').pop() || '').toLowerCase();
+    return ext === 'png' || ext === 'webp' || ext === 'gif' || ext === 'tif' || ext === 'tiff' || ext === 'svg';
+  }
+
+  /**
    * Slider 0–1000 ↔ zoom factor (log scale).
    */
   function sliderToZoom(val, zoomMin, zoomMax) {
@@ -156,6 +245,10 @@
     buildCssFilter,
     isIdentityAdjust,
     formatBytes,
+    mimeFromPath,
+    formatAspectRatio,
+    formatMegapixels,
+    formatLikelyHasAlpha,
     sliderToZoom,
     zoomToSlider,
     folderDirFromPath,

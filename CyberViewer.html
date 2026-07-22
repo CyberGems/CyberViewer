@@ -60,7 +60,7 @@
           <div class="menu-divider"></div>
           <button class="menu-item" data-action="save" data-needs-image><span class="menu-label" data-i18n="menu_save">Guardar</span><span class="menu-shortcut">Ctrl+S</span></button>
           <button class="menu-item" data-action="copy" data-needs-image><span class="menu-label" data-i18n="menu_copy">Copiar imagen</span><span class="menu-shortcut">Ctrl+C</span></button>
-          <button class="menu-item" data-action="properties" data-needs-image><span class="menu-label" data-i18n="menu_props">Propiedades</span></button>
+          <button class="menu-item" data-action="properties" data-needs-image><span class="menu-label" data-i18n="menu_props">Propiedades</span><span class="menu-shortcut">Ctrl+I</span></button>
           <div class="menu-divider"></div>
           <button class="menu-item danger" data-action="trash" data-needs-image><span class="menu-label" data-i18n="menu_trash">Mover a papelera</span><span class="menu-shortcut">Del</span></button>
         </div>
@@ -285,6 +285,7 @@
         <button class="kbd-btn needs-image kbd-icon" id="btn-crop" data-i18n-title="crop_title" title="Recortar (C)">&#9986;</button>
         <button class="kbd-btn needs-image kbd-icon" id="btn-resize" data-i18n-title="resize_title_btn" title="Redimensionar (R)">⇳</button>
         <button class="kbd-btn needs-image kbd-icon" id="btn-adjust" data-i18n-title="adjust_title_btn" title="Ajustes (J)">&#9681;</button>
+        <button class="kbd-btn needs-image kbd-icon" id="btn-props" data-i18n-title="props_title_btn" title="Propiedades (Ctrl+I)">&#9432;</button>
         <div class="kbd-sep needs-image"></div>
         <button class="kbd-btn needs-image kbd-icon" id="btn-copy" data-i18n-title="copy_title" title="Copiar Imagen (Ctrl+C)">&#10697;</button>
         <button class="kbd-btn needs-image kbd-icon" id="btn-trash" data-i18n-title="trash_title" title="Mover a la Papelera (Delete)" style="color:var(--cyber-accent2)">&#128465;&#xFE0E;</button>
@@ -307,14 +308,14 @@
       <div class="footer-sep"></div>
     </div>
 
-    <div class="footer-right cyber-tooltip" id="footer-size" data-i18n-tooltip="size_tooltip" data-tooltip="LIENZO: Resolución física en píxeles de la imagen">
+    <div class="footer-right cyber-tooltip footer-props-hit" id="footer-size" data-i18n-tooltip="size_tooltip" data-tooltip="LIENZO: Resolución física · Clic para propiedades" role="button" tabindex="0">
       <svg class="footer-ico" style="color:var(--cyber-accent2)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>
       <span id="img-dims">0 x 0px</span>
     </div>
 
     <div class="footer-sep"></div>
 
-    <div class="footer-right cyber-tooltip" id="footer-weight" data-i18n-tooltip="weight_tooltip" data-tooltip="PESO: Peso del archivo en disco">
+    <div class="footer-right cyber-tooltip footer-props-hit" id="footer-weight" data-i18n-tooltip="weight_tooltip" data-tooltip="PESO: Peso del archivo · Clic para propiedades" role="button" tabindex="0">
       <svg class="footer-ico" style="color:var(--cyber-accent)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
       <span id="img-weight">0 KB</span>
     </div>
@@ -359,31 +360,68 @@
   </div>
 </div>
 
-<!-- MODAL: PROPERTIES -->
+<!-- MODAL: PROPERTIES (file + image inspector) -->
 <div id="modal-properties" class="modal-overlay">
   <div class="modal-box props-modal-box">
     <div class="modal-header">
-      <div class="modal-title" id="props-title">PROPIEDADES</div>
-      <button class="win-btn" data-close-modal="modal-properties">&#10005;</button>
+      <div class="modal-title" data-i18n="props_title">PROPIEDADES</div>
+      <button class="win-btn modal-close-btn tooltip-bottom tooltip-align-right" data-close-modal="modal-properties" data-i18n-title="close" title="Cerrar">&#10005;</button>
     </div>
     <div class="modal-body">
-      <div class="props-layout">
-        <img id="props-preview" class="props-preview" alt="">
-        <div class="props-rows">
-          <div class="props-row"><span class="props-key" id="props-k-name">Nombre</span><span class="props-val" id="props-name">-</span></div>
-          <div class="props-row"><span class="props-key" id="props-k-format">Formato</span><span class="props-val" id="props-format">-</span></div>
-          <div class="props-row"><span class="props-key" id="props-k-dims">Dimensiones</span><span class="props-val" id="props-dims">-</span></div>
-          <div class="props-row"><span class="props-key" id="props-k-size">Tamaño</span><span class="props-val" id="props-size">-</span></div>
-          <div class="props-row"><span class="props-key" id="props-k-modified">Modificado</span><span class="props-val" id="props-modified">-</span></div>
-          <div class="props-row props-path-row"><span class="props-key" id="props-k-path">Ruta</span><span class="props-val" id="props-path">-</span></div>
+      <div class="props-grid-layout">
+        <!-- LEFT: structured data -->
+        <div class="props-left-col">
+          <div class="props-section">
+            <div class="props-section-label" data-i18n="props_section_file">Archivo</div>
+            <div class="props-row"><span class="props-key" data-i18n="props_k_name">Nombre</span><span class="props-val" id="props-name">-</span></div>
+            <div class="props-row"><span class="props-key" data-i18n="props_k_format">Formato</span><span class="props-val" id="props-format">-</span></div>
+            <div class="props-row"><span class="props-key" data-i18n="props_k_size">Tamaño</span><span class="props-val props-val-digit" id="props-size">-</span></div>
+            <div class="props-row"><span class="props-key" data-i18n="props_k_created">Creado</span><span class="props-val" id="props-created">-</span></div>
+            <div class="props-row"><span class="props-key" data-i18n="props_k_modified">Modificado</span><span class="props-val" id="props-modified">-</span></div>
+            <div class="props-row props-path-row">
+              <div class="props-path-head">
+                <span class="props-key" data-i18n="props_k_path">Ruta</span>
+                <button type="button" class="top-btn props-mini-btn" id="props-copy-path" data-i18n="props_copy_path" data-i18n-title="props_copy_path_tooltip">Copiar</button>
+              </div>
+              <span class="props-val props-path-val" id="props-path">-</span>
+            </div>
+          </div>
+
+          <div class="props-section">
+            <div class="props-section-label" data-i18n="props_section_image">Imagen</div>
+            <div class="props-row"><span class="props-key" data-i18n="props_k_dims">Dimensiones</span><span class="props-val props-val-digit" id="props-dims">-</span></div>
+            <div class="props-row"><span class="props-key" data-i18n="props_k_ratio">Proporción</span><span class="props-val props-val-digit" id="props-ratio">-</span></div>
+            <div class="props-row"><span class="props-key" data-i18n="props_k_mp">Megapíxeles</span><span class="props-val props-val-digit" id="props-mp">-</span></div>
+            <div class="props-row"><span class="props-key" data-i18n="props_k_index">En carpeta</span><span class="props-val props-val-digit" id="props-index">-</span></div>
+            <div class="props-row"><span class="props-key" data-i18n="props_k_fav">Favorito</span><span class="props-val" id="props-fav">-</span></div>
+          </div>
+        </div>
+
+        <!-- RIGHT: large preview + HUD readout -->
+        <div class="props-right-col">
+          <div class="props-preview-panel">
+            <div class="props-preview-head">
+              <span class="hud-label" data-i18n="props_preview_lbl">Vista previa</span>
+              <div class="props-badges" id="props-badges"></div>
+            </div>
+            <div class="props-preview-stage" id="props-preview-stage">
+              <img id="props-preview" class="props-preview" alt="">
+            </div>
+            <div class="props-preview-readout" id="props-readout">—</div>
+          </div>
         </div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="props-native-btn" id="props-native-btn">
-        <span style="font-size:13px">&#9881;&#xFE0E;</span> <span id="props-native-label">Propiedades de Windows</span>
-      </button>
-      <button class="top-btn active" id="props-close-btn" data-close-modal="modal-properties">CERRAR</button>
+    <div class="modal-footer props-footer">
+      <div class="props-footer-left">
+        <button type="button" class="props-native-btn tooltip-align-left" id="props-native-btn" data-i18n-title="props_native_tooltip">
+          <span style="font-size:13px" aria-hidden="true">&#9881;&#xFE0E;</span>
+          <span data-i18n="props_native_lbl">Propiedades de Windows</span>
+        </button>
+        <button type="button" class="top-btn props-action-btn tooltip-align-left" id="props-show-folder" data-i18n="props_show_folder" data-i18n-title="props_show_folder_tooltip">Mostrar</button>
+        <button type="button" class="top-btn props-action-btn tooltip-align-left" id="props-copy-summary" data-i18n="props_copy_summary" data-i18n-title="props_copy_summary_tooltip">Copiar resumen</button>
+      </div>
+      <button type="button" class="top-btn btn-primary tooltip-align-right" id="props-close-btn" data-close-modal="modal-properties" data-i18n="props_close" data-i18n-title="close">Cerrar</button>
     </div>
   </div>
 </div>
