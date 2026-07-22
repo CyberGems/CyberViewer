@@ -49,6 +49,8 @@ const btnAbout   = $('btn-about');
 
 // ── STATE ──
 let thumbObserver = null;
+/** Coalesce concurrent loadThumb IPC for the same index */
+const thumbLoadInflight = new Map();
 const state = {
   images: [],          // {file, url, w, h, loaded}
   currentIdx: -1,
@@ -65,6 +67,10 @@ const state = {
   transitioning: false,
   sidebarOpen: false,
   scanInProgress: false,
+  /** Resolves when the current main image has been displayed (or failed) */
+  mainImageReady: Promise.resolve(),
+  /** True after the active main image finished loading for this index */
+  mainImageReadyIdx: -1,
   preloadCache: new Map(),
   currentRotation: 0,
   hasChanges: false,
@@ -165,6 +171,9 @@ function closeImage() {
     if (im.url && String(im.url).startsWith('blob:')) URL.revokeObjectURL(im.url);
   });
   state.preloadCache.clear();
+  thumbLoadInflight.clear();
+  state.mainImageReady = Promise.resolve();
+  state.mainImageReadyIdx = -1;
   state.images = [];
   syncCurrentIndex(-1);
   state.zoom = 1;
@@ -239,6 +248,7 @@ function loadFiles(files, initialIdx = 0) {
     if (im.url && String(im.url).startsWith('blob:')) URL.revokeObjectURL(im.url);
   });
   state.preloadCache.clear();
+  thumbLoadInflight.clear();
   state.images = imgs.map(f => ({
     file: f,
     url: null,
@@ -257,8 +267,16 @@ function loadFiles(files, initialIdx = 0) {
     dropZone.style.display = 'none';
     syncEmptyState();
     buildSidebar();
+    // Main image first; thumbs after it paints (avoids large-folder decode thrash)
     showImage(initialIdx, null, true);
-    startBackgroundScan();
+    // Kick the active thumb immediately with priority (does not wait for full paint)
+    schedulePriorityThumb(initialIdx);
+    const ready = state.mainImageReady || Promise.resolve();
+    ready.then(() => {
+      if (state.currentIdx === initialIdx || state.current === initialIdx) {
+        startBackgroundScan();
+      }
+    });
   };
 
   if (isElectron && pathsToAllow.length && window.electronAPI.registerPaths) {
@@ -484,13 +502,18 @@ async function startBackgroundScan() {
   const total = state.images.length;
   if (total === 0 || !isElectron) return;
 
+  // Never compete with the main image decode on open
+  if (state.mainImageReady) {
+    try { await state.mainImageReady; } catch (_) { /* ignore */ }
+  }
+
   let processed = 0;
   let completedAll = true;
   state.scanInProgress = true;
   let lastProgressPaint = 0;
 
   // Expand outward from the current index so nearby thumbs warm first
-  const start = Math.max(0, state.currentIdx);
+  const start = Math.max(0, state.currentIdx >= 0 ? state.currentIdx : state.current);
   const order = [];
   for (let d = 0; d < total; d++) {
     if (d === 0) {
@@ -514,7 +537,10 @@ async function startBackgroundScan() {
 
     if (!im.thumbUrl) {
       try {
-        const thumbUrl = await window.electronAPI.getThumbnail(im.file.path);
+        const isCurrent = idx === state.currentIdx || idx === state.current;
+        const thumbUrl = await window.electronAPI.getThumbnail(im.file.path, {
+          priority: isCurrent
+        });
         if (thumbUrl) im.thumbUrl = thumbUrl;
       } catch (_) { /* skip */ }
     }
@@ -618,9 +644,13 @@ function buildSidebar() {
   thumbObserver = new IntersectionObserver(entries => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        const idx = parseInt(entry.target.dataset.index);
+        const idx = parseInt(entry.target.dataset.index, 10);
         const img = entry.target.querySelector('img');
-        if (img && img.style.opacity === '0') loadThumb(idx, img);
+        if (img && img.style.opacity === '0') {
+          const isCurrent = idx === state.currentIdx || idx === state.current;
+          // Current thumb: priority. Others wait until main image is ready.
+          loadThumb(idx, img, { priority: isCurrent });
+        }
       }
     });
   }, { root: $('sidebar-scroll'), rootMargin: '400px' });
@@ -1527,10 +1557,26 @@ async function saveAsPath(targetPath) {
   }
 }
 
-async function loadThumb(i, imgEl) {
+/**
+ * Load a sidebar thumbnail.
+ * Non-current thumbs wait for mainImageReady so opening a large file is not
+ * starved by bulk nativeImage thumb work on a heavy folder.
+ * @param {number} i
+ * @param {HTMLImageElement} imgEl
+ * @param {{ priority?: boolean }} [opts]
+ */
+async function loadThumb(i, imgEl, opts) {
   if (!state.sidebarOpen || !imgEl) return;
   const im = state.images[i];
   if (!im) return;
+
+  const isCurrent = i === state.currentIdx || i === state.current;
+  const priority = !!(opts && opts.priority) || isCurrent;
+
+  // Let the opened image claim disk/CPU first
+  if (!priority && state.mainImageReady && state.mainImageReadyIdx !== i) {
+    try { await state.mainImageReady; } catch (_) { /* ignore */ }
+  }
 
   // Reuse cached thumb URL — avoids duplicate IPC when background scan already warmed the cache
   if (im.thumbUrl) {
@@ -1539,19 +1585,50 @@ async function loadThumb(i, imgEl) {
     return;
   }
 
-  if (isElectron && im.file?.path) {
-    const thumbUrl = await window.electronAPI.getThumbnail(im.file.path);
-    if (thumbUrl) {
-      im.thumbUrl = thumbUrl;
+  // Coalesce concurrent requests for the same index
+  if (thumbLoadInflight.has(i)) {
+    try { await thumbLoadInflight.get(i); } catch (_) { /* ignore */ }
+    if (im.thumbUrl) {
       imgEl.onload = () => { imgEl.style.opacity = '1'; };
-      imgEl.src = thumbUrl;
-      return;
+      imgEl.src = im.thumbUrl;
     }
+    return;
+  }
+
+  const work = (async () => {
+    if (isElectron && im.file && im.file.path && window.electronAPI.getThumbnail) {
+      const thumbUrl = await window.electronAPI.getThumbnail(im.file.path, { priority });
+      if (thumbUrl) {
+        im.thumbUrl = thumbUrl;
+        return;
+      }
+    }
+  })();
+
+  thumbLoadInflight.set(i, work);
+  try {
+    await work;
+  } finally {
+    thumbLoadInflight.delete(i);
+  }
+
+  if (im.thumbUrl) {
+    imgEl.onload = () => { imgEl.style.opacity = '1'; };
+    imgEl.src = im.thumbUrl;
+    return;
   }
 
   const url = getUrl(i);
   imgEl.onload = () => { imgEl.style.opacity = '1'; };
   imgEl.src = url;
+}
+
+/** Ensure the active sidebar thumb is requested with high priority. */
+function schedulePriorityThumb(idx) {
+  if (!state.sidebarOpen) return;
+  const item = sidebar && sidebar.querySelector(`.thumb-item[data-index="${idx}"]`);
+  const img = item && item.querySelector('img');
+  if (img) loadThumb(idx, img, { priority: true });
 }
 
 function updateThumbProgress(p, t, _paused = false) {
@@ -1609,6 +1686,18 @@ function showImage(idx, direction, isInitial = false) {
 
   state.transitioning = true;
 
+  let resolveMainReady = null;
+  state.mainImageReadyIdx = idx;
+  state.mainImageReady = new Promise((resolve) => {
+    resolveMainReady = resolve;
+  });
+  const markMainReady = () => {
+    if (typeof resolveMainReady === 'function') {
+      resolveMainReady();
+      resolveMainReady = null;
+    }
+  };
+
   const doLoad = () => {
     syncCurrentIndex(idx);
     updateSidebarActive();
@@ -1635,6 +1724,9 @@ function showImage(idx, direction, isInitial = false) {
       });
     }
 
+    // Active thumb ASAP (priority IPC); bulk thumbs wait for main paint
+    schedulePriorityThumb(idx);
+
     const url = getUrl(idx);
     const im = state.images[idx];
     
@@ -1653,6 +1745,7 @@ function showImage(idx, direction, isInitial = false) {
 
     if (im.loaded) {
       displayImage(url, im.w, im.h, direction);
+      markMainReady();
     } else {
       const tmp = new Image();
       tmp.onload = () => {
@@ -1660,16 +1753,21 @@ function showImage(idx, direction, isInitial = false) {
         im.w = tmp.naturalWidth;
         im.h = tmp.naturalHeight;
         displayImage(url, im.w, im.h, direction);
+        markMainReady();
       };
       tmp.onerror = () => {
         spinner.classList.remove('active');
         state.transitioning = false;
+        markMainReady();
       };
       tmp.src = url;
     }
 
-    // Preload adjacent
-    setTimeout(() => preloadAdjacent(idx), 80);
+    // Preload adjacent only after main has a chance to start (and prefers short range)
+    setTimeout(() => {
+      // Delay adjacent full-res preload slightly more on initial open
+      preloadAdjacent(idx);
+    }, isInitial ? 200 : 80);
   };
 
   // Animate OUT current image

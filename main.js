@@ -727,18 +727,33 @@ const thumbCachePath = path.join(app.getPath('userData'), 'thumb_cache');
 if (!fs.existsSync(thumbCachePath)) fs.mkdirSync(thumbCachePath, { recursive: true });
 pathAllowlist.allow(thumbCachePath);
 
-/** Limit concurrent nativeImage thumb work to avoid CPU spikes on large folders. */
+/**
+ * Limit concurrent nativeImage thumb work to avoid CPU spikes on large folders.
+ * Priority waiters (current image) jump the queue so the open image is never
+ * stuck behind dozens of sibling thumbnails.
+ */
 const THUMB_CONCURRENCY = 3;
 let thumbInFlight = 0;
+/** @type {{ resolve: () => void, priority: boolean }[]} */
 const thumbWaiters = [];
 
-function acquireThumbSlot() {
+function acquireThumbSlot(priority) {
   if (thumbInFlight < THUMB_CONCURRENCY) {
     thumbInFlight++;
     return Promise.resolve();
   }
   return new Promise((resolve) => {
-    thumbWaiters.push(resolve);
+    const entry = { resolve, priority: !!priority };
+    if (entry.priority) {
+      // Ahead of the first non-priority waiter (preserve FIFO among priorities)
+      let insertAt = 0;
+      while (insertAt < thumbWaiters.length && thumbWaiters[insertAt].priority) {
+        insertAt++;
+      }
+      thumbWaiters.splice(insertAt, 0, entry);
+    } else {
+      thumbWaiters.push(entry);
+    }
   }).then(() => {
     thumbInFlight++;
   });
@@ -747,22 +762,24 @@ function acquireThumbSlot() {
 function releaseThumbSlot() {
   thumbInFlight = Math.max(0, thumbInFlight - 1);
   const next = thumbWaiters.shift();
-  if (next) next();
+  if (next) next.resolve();
 }
 
-ipcMain.handle('get-thumbnail', async (event, filePath) => {
+ipcMain.handle('get-thumbnail', async (event, filePath, opts) => {
   try {
     const abs = resolveAllowedPath(filePath);
+    const priority = !!(opts && opts.priority);
     const stats = await fs.promises.stat(abs);
     const normalizedPath = abs.toLowerCase();
     const hash = crypto.createHash('md5').update(normalizedPath + stats.mtimeMs).digest('hex');
     const cacheFile = path.join(thumbCachePath, `${hash}.jpg`);
 
+    // Cache hits never wait on the generation queue
     if (fs.existsSync(cacheFile)) {
       return toMediaUrl(cacheFile);
     }
 
-    await acquireThumbSlot();
+    await acquireThumbSlot(priority);
     try {
       if (fs.existsSync(cacheFile)) {
         return toMediaUrl(cacheFile);
