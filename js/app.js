@@ -2687,7 +2687,8 @@ function zoomToSlider(zoom) {
 
 /**
  * @param {{ userZoom?: boolean }} [opts]
- *   userZoom — wheel/slider/keyboard zoom (show floating badge). Fit/slide advance never flashes it.
+ *   userZoom — wheel/keyboard zoom. Floating badge only in fullscreen (not window slideshow;
+ *   restored window already has the statusbar slider + %).
  */
 function updateZoomHUD(opts = {}) {
   const pct = Math.round(state.zoom * 100);
@@ -2697,26 +2698,34 @@ function updateZoomHUD(opts = {}) {
   if (slider) slider.value = zoomToSlider(state.zoom);
   if (!zoomHud) return;
 
-  const allowFloat = state.isGhost || state.slideshowActive;
-  if (!allowFloat) {
+  // Floating badge is fullscreen-only
+  if (!state.isGhost) {
     zoomHud.classList.remove('visible', 'hud-hidden-fade');
     clearTimeout(state.zoomTimer);
     return;
   }
 
-  // During presentation: only show badge on intentional user zoom, never on fit/slide
-  if (state.slideshowActive && !opts.userZoom && state.viewMode === 'fit') {
+  // Fullscreen presentation: show badge only on intentional user zoom, never on fit/slide
+  if (state.slideshowActive && !opts.userZoom) {
     zoomHud.classList.remove('visible');
     zoomHud.classList.add('hud-hidden-fade');
     clearTimeout(state.zoomTimer);
     return;
   }
 
-  // User zoom in FS or presentation — show badge, share idle auto-hide
+  // User zoom (or normal FS zoom) — show badge; own short fade so slideshow idle-hide won't kill it instantly
   zoomHud.classList.add('visible');
   zoomHud.classList.remove('hud-hidden-fade');
   clearTimeout(state.zoomTimer);
-  if (typeof resetHudTimer === 'function') resetHudTimer();
+  // Don't call resetHudTimer here during slideshow — it was re-hiding the badge on every tick
+  if (state.slideshowActive) {
+    state.zoomTimer = setTimeout(() => {
+      zoomHud.classList.remove('visible');
+      zoomHud.classList.add('hud-hidden-fade');
+    }, 1200);
+  } else if (typeof resetHudTimer === 'function') {
+    resetHudTimer();
+  }
 }
 
 $('zoom-slider').addEventListener('input', (e) => {
@@ -2968,6 +2977,7 @@ function startSlideshow(opts = {}) {
   // Presentation chrome: hidden until the user moves the mouse
   updateSlideshowUI({ hide: true });
   hideFloatingChromeForSlideshow();
+  if (typeof updateNavVisibility === 'function') updateNavVisibility();
   scheduleSlideshowTick();
 
   syncGhostCloseTooltip();
@@ -3050,8 +3060,9 @@ function stopSlideshow(opts = {}) {
     applyImmersiveFullscreen(false);
   }
 
-  // Dock strip returns — reflow fit layout
+  // Dock strip + side nav return — reflow fit layout
   if (wasActive) {
+    if (typeof updateNavVisibility === 'function') updateNavVisibility();
     requestAnimationFrame(() => {
       const im = state.images[state.current];
       if (im && im.w && im.h && state.viewMode === 'fit') fitToWindow(im.w, im.h);
@@ -5011,11 +5022,9 @@ function resetHudTimer() {
     if (item.el.id === 'kbd-hint' && !state.isGhost) {
       item.el.classList.remove('hud-hidden', 'hud-hidden-fade');
     }
-    // Zoom badge: only when fullscreen and not in slideshow; needs .visible from zoom gesture
-    if (item.el.id === 'zoom-hud') {
-      if (state.slideshowActive || !item.el.classList.contains('visible')) {
-        item.el.classList.add('hud-hidden-fade');
-      }
+    // Zoom badge needs .visible from a zoom gesture; keep it if user just zoomed in FS
+    if (item.el.id === 'zoom-hud' && !item.el.classList.contains('visible')) {
+      item.el.classList.add('hud-hidden-fade');
     }
   });
 
