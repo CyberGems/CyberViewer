@@ -1,7 +1,7 @@
 {
   "name": "cyberviewer",
   "version": "1.8.1",
-  "description": "CyberViewer — Visor de imágenes ultraligero por CyberGems",
+  "description": "CyberViewer — Visor de imágenes rápido y centrado, por CyberGems",
   "main": "main.js",
   "author": "CyberGems <info@cybergems.org>",
   "license": "MIT",

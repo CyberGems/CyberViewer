@@ -1,6 +1,6 @@
 # CyberViewer
 
-Ultralight Windows image viewer by CyberGems — open, browse a folder, zoom/pan, and light edit (rotate, crop, resize, adjust).
+Fast Windows image viewer by CyberGems — open, browse a folder, zoom/pan, and light edit (rotate, crop, resize, adjust). Built with Electron and vanilla JS (small app layer; Chromium runtime included).
 
 **Version:** 1.8.1 · **Stack:** Electron 35 · Vanilla JS
 
