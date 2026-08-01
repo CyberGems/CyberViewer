@@ -2358,27 +2358,29 @@
   .pending-actions {
     position: absolute;
     left: 50%;
-    bottom: calc(100% + 10px);
-    transform: translateX(-50%) translateY(6px);
+    bottom: calc(100% + 12px);
+    transform: translateX(-50%) translateY(14px);
     z-index: 1200;
-    display: none;
+    display: flex;
+    visibility: hidden;
     align-items: center;
     gap: 8px;
     padding: 7px 9px;
     background: rgba(8, 10, 14, 0.94);
-    border: 1px solid rgba(var(--cyber-accent-rgb), 0.3);
-    border-radius: 999px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(var(--cyber-accent-rgb), 0.14);
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.45);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 20px rgba(var(--cyber-accent-rgb), 0.2);
     backdrop-filter: blur(12px);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transition: opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1), transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.28s;
   }
   .pending-actions.visible {
-    display: flex;
+    visibility: visible;
     opacity: 1;
     pointer-events: auto;
     transform: translateX(-50%) translateY(0);
+    transition: opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1), transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s;
   }
   body.empty-state .pending-actions {
     display: none !important;
@@ -2418,7 +2420,7 @@
   .pending-btn {
     width: 40px;
     height: 40px;
-    border-radius: 50%;
+    border-radius: 6px;
     display: inline-flex;
     align-items: center;
     justify-content: center;

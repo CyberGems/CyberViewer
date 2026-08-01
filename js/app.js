@@ -2068,9 +2068,23 @@ function updateSaveButton() {
   if (!bar) return;
   const pendingRotation = state.current >= 0 && !state.isCropping &&
     !!state.hasChanges && state.currentRotation !== 0;
-  bar.hidden = !pendingRotation;
+  // Keep the element rendered so the slide-up transition runs; .visible drives
+  // opacity/transform/visibility/pointer-events instead of display.
+  bar.hidden = false;
   bar.classList.toggle('visible', pendingRotation);
   if (cluster) cluster.classList.toggle('has-pending', pendingRotation);
+}
+
+/** Silently cancel any pending (unconfirmed) rotation so another action (crop/resize/adjust)
+ *  operates on the original orientation. No toast — mirrors the flip behaviour. */
+function discardPendingRotationSilently() {
+  if (!state.hasChanges && state.currentRotation === 0) return;
+  state.currentRotation = 0; state.visualRotation = 0;
+  state.hasChanges = false;
+  mainImg.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+  mainImg.style.transform = 'none';
+  updateSaveButton();
+  updateHUDStates();
 }
 
 /** Discard preview rotation (and leave toolbar layout untouched). */
@@ -2109,6 +2123,7 @@ const cropState = {
 };
 
 function startCrop() {
+  discardPendingRotationSilently();
   if (state.current === -1) return;
   if (!mainImg.complete || mainImg.naturalWidth === 0) {
     showToast(I18N[state.settings.app.language || 'en'].toast_initializing_engine, 'info');
@@ -2517,6 +2532,8 @@ function openResizeModal() {
     const idx = state.current;
     const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
     const i18nLang = I18N[lang] || I18N.en || {};
+
+    discardPendingRotationSilently();
 
     if (idx === undefined || idx === -1) {
       showToast(i18nLang.toast_image_not_ready || 'IMAGE NOT READY', 'error');
@@ -2959,6 +2976,8 @@ function openAdjustModal() {
     const idx = state.current;
     const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
     const i18nLang = I18N[lang] || I18N.en || {};
+
+    discardPendingRotationSilently();
 
     if (idx === undefined || idx === -1) {
       showToast(i18nLang.toast_image_not_ready || 'IMAGE NOT READY', 'error');
