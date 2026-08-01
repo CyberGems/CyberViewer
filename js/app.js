@@ -5946,6 +5946,7 @@ function syncFavoritesToggleButtonState(lang) {
 async function toggleFavoritesView() {
   const btn = $('btn-toggle-favs');
   if (!btn) return;
+  dismissToasts();
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
   
   if (!state.showingFavs) {
