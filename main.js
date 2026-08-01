@@ -1116,9 +1116,7 @@ ipcMain.on('save-settings', (event, newSettings) => {
     tray.destroy();
     tray = null;
   } else if (tray) {
-    tray.destroy();
-    tray = null;
-    createTray();
+    updateTrayMenu();
   }
 });
 
