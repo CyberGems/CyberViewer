@@ -1029,10 +1029,12 @@ function buildMenuTemplate(type, data) {
           { type: 'separator' },
           {
             label: getTxt('menu_flip_h'),
+            shortcut: 'H',
             action: () => flipImage('h')
           },
           {
             label: getTxt('menu_flip_v'),
+            shortcut: 'Shift+H',
             action: () => flipImage('v')
           },
           { type: 'separator' },
@@ -1209,10 +1211,12 @@ function buildMenuTemplate(type, data) {
           { type: 'separator' },
           {
             label: getTxt('menu_flip_h'),
+            shortcut: 'H',
             action: () => flipImage('h')
           },
           {
             label: getTxt('menu_flip_v'),
+            shortcut: 'Shift+H',
             action: () => flipImage('v')
           },
           { type: 'separator' },
@@ -1986,6 +1990,16 @@ async function flipImage(axis) {
   const im = state.images[idx];
   if (!im || !mainImg || !mainImg.naturalWidth) return;
 
+  // Cancel any pending (unconfirmed) rotation — flip always applies to the original
+  if (state.currentRotation !== 0 || state.hasChanges) {
+    state.currentRotation = 0;
+    state.hasChanges = false;
+    mainImg.style.transition = 'none';
+    mainImg.style.transform = 'none';
+    updateSaveButton();
+    updateHUDStates();
+  }
+
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
   const i18nLang = I18N[lang] || I18N.en || {};
 
@@ -2020,7 +2034,11 @@ async function flipImage(axis) {
   });
 
   if (result.success) {
-    showToast(i18nLang.toast_flip_success || 'IMAGE FLIPPED', 'success');
+    const successKey = axis === 'h' ? 'toast_flip_h_success' : 'toast_flip_v_success';
+    const fallback = axis === 'h'
+      ? 'IMAGE FLIPPED HORIZONTALLY (COPY CREATED)'
+      : 'IMAGE FLIPPED VERTICALLY (COPY CREATED)';
+    showToast(i18nLang[successKey] || fallback, 'success');
     const newImg = {
       file: {
         name: result.filePath.split(/[\\/]/).pop(),
@@ -4123,6 +4141,12 @@ document.addEventListener('keydown', e => {
         }
       }
       break;
+    case 'h':
+      if (!isCtrl) {
+        e.preventDefault();
+        if (checkImageLoaded()) flipImage(e.shiftKey ? 'v' : 'h');
+      }
+      break;
     case 'g': case 'G': if (!isCtrl && checkImageLoaded()) toggleFullscreen(); break;
     case 's':
       if (!isCtrl && checkImageLoaded()) {
@@ -5725,6 +5749,8 @@ $('btn-config').addEventListener('click', openConfig);
       case 'crop':           $('btn-crop').click(); break;
       case 'resize':         $('btn-resize').click(); break;
       case 'adjust':         { const b = $('btn-adjust'); if (b) b.click(); break; }
+      case 'flip-h':         flipImage('h'); break;
+      case 'flip-v':         flipImage('v'); break;
       case 'fit':            $('btn-fit-hud').click(); break;
       case 'original':       $('btn-orig-hud').click(); break;
       case 'fullscreen':     toggleFullscreen(); break;
