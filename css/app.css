@@ -301,6 +301,7 @@
   .cyber-tooltip:hover::before {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
+    transition-delay: 0.4s;
   }
 
   .cyber-tooltip:hover {
@@ -1520,8 +1521,8 @@
   }
 
   .nav-btn {
-    background: rgba(13,17,23,0.85);
-    border: 1px solid var(--cyber-border);
+    background: transparent;
+    border: 1px solid transparent;
     color: var(--cyber-muted);
     width: 44px;
     height: 44px;
@@ -1546,15 +1547,15 @@
 
   .nav-btn:focus:not(:hover),
   .nav-btn:focus-visible:not(:hover) {
-    border-color: var(--cyber-border);
+    border-color: transparent;
     color: var(--cyber-muted);
-    background: rgba(13,17,23,0.85);
+    background: transparent;
   }
 
   .nav-btn:hover {
     border-color: var(--cyber-accent);
     color: var(--cyber-accent);
-    background: rgba(0,212,255,0.08);
+    background: rgba(13,17,23,0.85);
     box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
   }
 
