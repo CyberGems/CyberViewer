@@ -1028,6 +1028,15 @@ function buildMenuTemplate(type, data) {
           },
           { type: 'separator' },
           {
+            label: getTxt('menu_flip_h'),
+            action: () => flipImage('h')
+          },
+          {
+            label: getTxt('menu_flip_v'),
+            action: () => flipImage('v')
+          },
+          { type: 'separator' },
+          {
             label: isFav ? getTxt('favorite_remove') : getTxt('favorite_add'),
             shortcut: 'Ctrl+D',
             action: () => toggleFavorite()
@@ -1196,6 +1205,15 @@ function buildMenuTemplate(type, data) {
             label: getTxt('menu_adjust'),
             shortcut: 'J',
             action: () => { const b = $('btn-adjust'); if (b) b.click(); }
+          },
+          { type: 'separator' },
+          {
+            label: getTxt('menu_flip_h'),
+            action: () => flipImage('h')
+          },
+          {
+            label: getTxt('menu_flip_v'),
+            action: () => flipImage('v')
           },
           { type: 'separator' },
           {
@@ -1957,6 +1975,65 @@ function rotate(deg) {
 async function rotateAndSave(deg) {
   rotate(deg);
   await saveCurrent();
+}
+
+// ── IMAGE FLIP (permanent copy) ──
+async function flipImage(axis) {
+  // 'h' = horizontal mirror (X), 'v' = vertical mirror (Y)
+  if (!checkImageLoaded()) return;
+  const idx = state.current;
+  if (idx === undefined || idx === -1) return;
+  const im = state.images[idx];
+  if (!im || !mainImg || !mainImg.naturalWidth) return;
+
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  const i18nLang = I18N[lang] || I18N.en || {};
+
+  let fpath = imageDiskPath(im);
+  if (!fpath) {
+    fpath = await ensureImageDiskPath(im);
+    if (!fpath) return;
+  }
+
+  showToast(i18nLang.toast_flipping || 'FLIPPING IMAGE...', 'info');
+
+  const iw = mainImg.naturalWidth;
+  const ih = mainImg.naturalHeight;
+  const canvas = document.createElement('canvas');
+  canvas.width = iw;
+  canvas.height = ih;
+  const ctx = canvas.getContext('2d');
+
+  ctx.save();
+  ctx.translate(iw / 2, ih / 2);
+  if (axis === 'h') ctx.scale(-1, 1);
+  else ctx.scale(1, -1);
+  ctx.drawImage(mainImg, -iw / 2, -ih / 2);
+  ctx.restore();
+
+  const exported = canvasExport(canvas, fpath);
+  const result = await window.electronAPI.saveImage({
+    filePath: exported.filePath,
+    buffer: exported.buffer,
+    createCopy: true,
+    copySuffix: '_flipped'
+  });
+
+  if (result.success) {
+    showToast(i18nLang.toast_flip_success || 'IMAGE FLIPPED', 'success');
+    const newImg = {
+      file: {
+        name: result.filePath.split(/[\\/]/).pop(),
+        path: result.filePath,
+        size: 0
+      }
+    };
+    state.images.splice(idx + 1, 0, newImg);
+    buildSidebar();
+    showImage(idx + 1, null);
+  } else {
+    showToast(lang === 'es' ? 'ERROR AL VOLTEAR' : 'ERROR FLIPPING IMAGE', 'error');
+  }
 }
 
 /**
