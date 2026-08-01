@@ -1559,6 +1559,13 @@
     box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
   }
 
+  /* Hide the tooltip once the user starts clicking a nav button; it only
+     comes back after the pointer leaves and re-enters (mouseleave clears the flag). */
+  .nav-btn.tooltip-interacted:hover::after,
+  .nav-btn.tooltip-interacted:hover::before {
+    display: none !important;
+  }
+
   /* ── LOGO ── */
 
   .cyber-status-btn {

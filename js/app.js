@@ -76,6 +76,7 @@ const state = {
   mainImageReadyIdx: -1,
   preloadCache: new Map(),
   currentRotation: 0,
+  visualRotation: 0,
   hasChanges: false,
   isCropping: false,
   isGhost: false,
@@ -184,7 +185,7 @@ function closeImage() {
   state.zoom = 1;
   state.panX = 0;
   state.panY = 0;
-  state.currentRotation = 0;
+  state.currentRotation = 0; state.visualRotation = 0;
   state.hasChanges = false;
   state.isCropping = false;
 
@@ -1639,7 +1640,7 @@ async function saveAsPath(targetPath) {
         }
       }
 
-      state.currentRotation = 0;
+      state.currentRotation = 0; state.visualRotation = 0;
       state.hasChanges = false;
       buildSidebar();
       showImage(state.current, null, true);
@@ -1802,7 +1803,7 @@ function showImage(idx, direction, isInitial = false) {
     updateFavButtonState();
 
     // Reset rotation al cambiar
-    state.currentRotation = 0;
+    state.currentRotation = 0; state.visualRotation = 0;
     state.hasChanges = false;
     updateSaveButton();
 
@@ -1966,11 +1967,14 @@ function rotate(deg) {
     $('crop-overlay').classList.remove('active');
   }
 
-  state.currentRotation = (state.currentRotation + deg) % 360;
-  if (state.currentRotation < 0) state.currentRotation += 360;
+  // visualRotation accumulates continuously (no wrap) so the CSS animation always
+  // turns the short way toward the pressed direction; currentRotation stays
+  // normalized [0,360) for save/dimension logic.
+  state.visualRotation += deg;
+  state.currentRotation = ((state.visualRotation % 360) + 360) % 360;
   
   mainImg.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-  mainImg.style.transform = `rotate(${state.currentRotation}deg)`;
+  mainImg.style.transform = `rotate(${state.visualRotation}deg)`;
   state.hasChanges = true;
   updateSaveButton();
   updateHUDStates();
@@ -1992,7 +1996,7 @@ async function flipImage(axis) {
 
   // Cancel any pending (unconfirmed) rotation — flip always applies to the original
   if (state.currentRotation !== 0 || state.hasChanges) {
-    state.currentRotation = 0;
+    state.currentRotation = 0; state.visualRotation = 0;
     state.hasChanges = false;
     mainImg.style.transition = 'none';
     mainImg.style.transform = 'none';
@@ -2079,7 +2083,7 @@ function discardPendingChanges() {
   }
 
   const hadRotation = state.currentRotation !== 0 || state.hasChanges;
-  state.currentRotation = 0;
+  state.currentRotation = 0; state.visualRotation = 0;
   state.hasChanges = false;
   mainImg.style.transition = 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
   mainImg.style.transform = 'rotate(0deg)';
@@ -2386,7 +2390,7 @@ $('btn-crop-confirm').onclick = async () => {
     // Esperar a que la imagen cargue para actualizar HUD y dimensiones en el estado
     mainImg.onload = () => {
       // RESETEAR TRANSFORMACIONES SOLO CUANDO LA IMAGEN ESTÁ LISTA
-      state.currentRotation = 0;
+      state.currentRotation = 0; state.visualRotation = 0;
       state.panX = 0;
       state.panY = 0;
       mainImg.style.transition = 'none';
@@ -2471,7 +2475,7 @@ async function saveCurrent() {
       // Escuchar el load de la nueva imagen para actualizar dimensiones en el estado
       mainImg.onload = () => {
         // RESETEAR TRANSFORMACIONES SOLO CUANDO LA IMAGEN ESTÁ LISTA
-        state.currentRotation = 0;
+        state.currentRotation = 0; state.visualRotation = 0;
         state.hasChanges = false;
         mainImg.style.transition = 'none';
         mainImg.style.transform = 'none';
@@ -3154,7 +3158,7 @@ if ($('btn-confirm-adjust')) {
           mainImg.src = mediaUrl(savedPath, Date.now());
 
           mainImg.onload = () => {
-            state.currentRotation = 0;
+            state.currentRotation = 0; state.visualRotation = 0;
             state.panX = 0;
             state.panY = 0;
             mainImg.style.transition = 'none';
@@ -3265,7 +3269,7 @@ $('btn-confirm-resize').addEventListener('click', async () => {
         mainImg.src = mediaUrl(savedPath, Date.now());
         
         mainImg.onload = () => {
-          state.currentRotation = 0;
+          state.currentRotation = 0; state.visualRotation = 0;
           state.panX = 0;
           state.panY = 0;
           mainImg.style.transition = 'none';
@@ -4542,6 +4546,15 @@ $('btn-prev').addEventListener('click', (e) => {
 $('btn-next').addEventListener('click', (e) => {
   e.currentTarget.blur();
   next();
+});
+
+// Hide nav tooltips once the user starts clicking them, so they don't float
+// while rapidly navigating images. Cleared on mouseleave so they reappear on re-entry.
+['btn-prev', 'btn-next'].forEach(id => {
+  const b = $(id);
+  if (!b) return;
+  b.addEventListener('mousedown', () => b.classList.add('tooltip-interacted'));
+  b.addEventListener('mouseleave', () => b.classList.remove('tooltip-interacted'));
 });
 
 function sidebarHandleTooltipText(open) {
