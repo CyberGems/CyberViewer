@@ -179,7 +179,7 @@ function registerMediaProtocol() {
         headers: {
           'Content-Type': mimeForPath(abs),
           'Content-Length': String(st.size),
-          'Cache-Control': isThumb ? 'private, max-age=86400' : 'no-cache'
+          'Cache-Control': isThumb ? 'private, max-age=86400' : 'no-cache, must-revalidate'
         }
       });
     } catch (e) {
@@ -701,24 +701,28 @@ ipcMain.handle('scan-folder', async (event, filePath) => {
     pathAllowlist.allow(absFile);
     const dir = path.dirname(absFile);
 
-    const files = await fs.promises.readdir(dir);
+    // withFileTypes returns Dirent entries whose isFile() needs no extra stat,
+    // so we skip one syscall per directory entry vs the bare-name path.
+    const dirents = await fs.promises.readdir(dir, { withFileTypes: true });
     const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 
-    const imageNames = files
-      .filter((f) => IMAGE_EXTS.has(path.extname(f).toLowerCase()))
-      .sort((a, b) => collator.compare(a, b));
+    const imageDirents = dirents
+      .filter((d) => (d.isFile() || d.isSymbolicLink()) && IMAGE_EXTS.has(path.extname(d.name).toLowerCase()))
+      .sort((a, b) => collator.compare(a.name, b.name));
 
-    const results = [];
-    for (const f of imageNames) {
-      const fullPath = path.resolve(dir, f);
+    // Stat in parallel for sizes — the old serial await-per-file loop serialized N
+    // syscalls on the main event loop; Promise.all fans them out via libuv's pool.
+    const results = await Promise.all(imageDirents.map(async (d) => {
+      const fullPath = path.resolve(dir, d.name);
       try {
-        const stats = await fs.promises.stat(fullPath);
-        if (stats.isFile()) {
-          results.push({ path: fullPath, size: stats.size });
-        }
-      } catch (_) { /* skip unreadable */ }
-    }
-    return results;
+        const stats = await fs.promises.stat(fullPath); // follows symlinks
+        if (!stats.isFile()) return null;
+        return { path: fullPath, size: stats.size };
+      } catch (_) {
+        return null; // skip unreadable
+      }
+    }));
+    return results.filter(Boolean);
   } catch (e) {
     console.error('Error escaneando carpeta:', e);
     return [];

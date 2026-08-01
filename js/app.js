@@ -67,6 +67,8 @@ const state = {
   transitioning: false,
   sidebarOpen: false,
   toolbarOpen: true,
+  /** Monotonic token bumped per open so stale folder scans never merge. */
+  openSeq: 0,
   scanInProgress: false,
   /** Resolves when the current main image has been displayed (or failed) */
   mainImageReady: Promise.resolve(),
@@ -283,26 +285,73 @@ function loadFiles(files, initialIdx = 0) {
   };
 
   if (isElectron && pathsToAllow.length && window.electronAPI.registerPaths) {
-    window.electronAPI.registerPaths(pathsToAllow).then(finishLoad).catch(finishLoad);
+    // The opener (open-file / dialog / folder-resolve) already allowlisted the parent
+    // directory in main, so cvlocal can serve these paths immediately. Show the image
+    // now and widen the allowlist for siblings in the background (non-blocking).
+    finishLoad();
+    window.electronAPI.registerPaths(pathsToAllow).catch(() => { /* ignore */ });
   } else {
     finishLoad();
   }
 }
 
-async function scanFolder(filePath) {
-  if (!isElectron || !filePath) return;
-  const neighbors = await window.electronAPI.scanFolder(filePath);
-  if (neighbors.length > 0) {
-    const files = neighbors.map(p => {
-      const name = p.path.split(/[\\/]/).pop();
-      return { name, path: p.path, size: p.size, type: '' };
-    });
-    const targetIdx = neighbors.findIndex(p => p.path.toLowerCase() === filePath.toLowerCase());
-    loadFiles(files, targetIdx !== -1 ? targetIdx : 0);
-  } else {
-    const name = filePath.split(/[\\/]/).pop();
-    loadFiles([{ name, path: filePath, size: 0, type: '' }]);
-  }
+/**
+ * Merge background-scanned siblings into the already-displayed single image WITHOUT
+ * re-showing the main image. The opened image's entry object is reused by reference so
+ * any in-flight mainImg.onload (from showImage) keeps mutating the live entry and the
+ * already-decoded image is never fetched twice. Guards with openSeq so a stale scan
+ * (e.g. the user opened another file meanwhile) never clobbers the current state.
+ */
+function mergeNeighbors(neighbors, filePath, seq) {
+  if (!Array.isArray(neighbors) || !neighbors.length) return;
+
+  const files = neighbors.map(p => {
+    const name = p.path.split(/[\\/]/).pop();
+    return { name, path: p.path, size: p.size, type: '' };
+  });
+
+  const norm = String(filePath).toLowerCase();
+  const targetIdx = neighbors.findIndex(p => p.path.toLowerCase() === norm);
+  if (targetIdx === -1) return; // opened file no longer in folder — keep provisional view
+
+  // Reuse the live entry for the opened image so the in-flight onload closure still
+  // updates the same object (loaded/w/h land on the entry that ends up in state.images).
+  const cur = state.images[state.currentIdx];
+  const keepLoaded = !!cur && !!cur.file && cur.file.path &&
+    cur.file.path.toLowerCase() === norm;
+
+  state.images = files.map(f => {
+    if (keepLoaded && f.path.toLowerCase() === norm) {
+      cur.file = f;            // now carries the real on-disk size from the scan
+      cur.size = (f.size || f.size === 0) ? f.size : cur.size;
+      return cur;             // same object the provisional showImage closure captured
+    }
+    return {
+      file: f,
+      url: null,
+      thumbUrl: null,
+      w: 0,
+      h: 0,
+      loaded: false,
+      size: (f.size || f.size === 0) ? f.size : 0
+    };
+  });
+
+  syncCurrentIndex(targetIdx);
+  buildSidebar();
+  updateSidebarActive();
+  updateCounter();
+  updateFileStats();
+  schedulePriorityThumb(targetIdx);
+
+  // finishLoad skipped its background thumb scan (currentIdx != initialIdx after merge),
+  // so kick it here for the now-complete neighbor list.
+  const ready = state.mainImageReady || Promise.resolve();
+  ready.then(() => {
+    if (seq === state.openSeq && state.currentIdx === targetIdx && state.sidebarOpen) {
+      startBackgroundScan();
+    }
+  }).catch(() => { /* ignore */ });
 }
 
 function getRecentFiles() {
@@ -404,7 +453,23 @@ async function openImagePath(filePath, opts = {}) {
   const addRecent = opts.addRecent !== false;
   if (addRecent) pushRecentFile(filePath);
   if (opts.openSidebar) ensureSidebarOpen();
-  await scanFolder(filePath);
+
+  // Browser opens File objects via the file input; a string filePath only arrives
+  // from Electron (open-file / dialog / recent / folder). Guard defensively.
+  if (!isElectron) return true;
+
+  // Show the opened image immediately: its parent directory was already allowlisted
+  // by the main process on open-file, so cvlocal serves it without waiting on the
+  // folder scan. Siblings are merged in afterwards WITHOUT re-showing the main image.
+  const seq = ++state.openSeq;
+  const provName = fileNameFromPath(filePath);
+  loadFiles([{ name: provName, path: filePath, size: 0, type: '' }], 0);
+
+  try {
+    const neighbors = await window.electronAPI.scanFolder(filePath);
+    if (seq !== state.openSeq) return true;   // superseded by a newer open
+    mergeNeighbors(neighbors, filePath, seq);
+  } catch (_) { /* provisional image is already displayed */ }
   return true;
 }
 
@@ -1756,20 +1821,24 @@ function showImage(idx, direction, isInitial = false) {
       displayImage(url, im.w, im.h, direction);
       markMainReady();
     } else {
-      const tmp = new Image();
-      tmp.onload = () => {
+      // Decode directly on mainImg instead of a throwaway Image(). displayImage()
+      // reassigning the same URL is a no-op once loaded, so this is one fetch + decode
+      // (the previous temp Image() forced a redundant second fetch + decode).
+      mainImg.onload = () => {
         im.loaded = true;
-        im.w = tmp.naturalWidth;
-        im.h = tmp.naturalHeight;
+        im.w = mainImg.naturalWidth;
+        im.h = mainImg.naturalHeight;
+        mainImg.onload = null;
         displayImage(url, im.w, im.h, direction);
         markMainReady();
       };
-      tmp.onerror = () => {
+      mainImg.onerror = () => {
+        mainImg.onload = mainImg.onerror = null;
         spinner.classList.remove('active');
         state.transitioning = false;
         markMainReady();
       };
-      tmp.src = url;
+      mainImg.src = url;
     }
 
     // Preload adjacent only after main has a chance to start (and prefers short range)
@@ -1785,7 +1854,10 @@ function showImage(idx, direction, isInitial = false) {
     mainImg.classList.add(outClass);
     setTimeout(doLoad, 80);
   } else {
-    mainImg.style.opacity = '1';
+    // Clear stale inline opacity so removing .loaded actually hides the previous
+    // image (CSS opacity:0) while the new one decodes — without this the inline
+    // '1' kept the old frame visible until the new src finished loading.
+    mainImg.style.opacity = '';
     mainImg.style.transition = 'none'; // Sin transición para máxima velocidad inicial
     doLoad();
   }
