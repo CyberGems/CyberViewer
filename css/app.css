@@ -459,6 +459,24 @@
   #footer-zoom.cyber-tooltip::before {
     border-color: var(--cyber-accent3) transparent transparent transparent;
   }
+  /* Zoom lives at the right end of the statusbar — right-align its tooltip so it
+     doesn't clip past the window's right edge (mirrors footer-radar left-alignment). */
+  #footer-zoom.cyber-tooltip::after {
+    left: auto;
+    right: 0;
+    transform: translateY(4px);
+    white-space: nowrap;
+    max-width: none;
+  }
+  #footer-zoom.cyber-tooltip::before {
+    left: auto;
+    right: 15px;
+    transform: translateY(4px);
+  }
+  #footer-zoom.cyber-tooltip:hover::after,
+  #footer-zoom.cyber-tooltip:hover::before {
+    transform: translateY(0);
+  }
 
   .logo {
     display: flex;
@@ -1565,6 +1583,12 @@
   .nav-btn.tooltip-interacted:hover::before {
     display: none !important;
   }
+  /* Tooltip opted-out via JS (mousedown/drag/keyboard) — hide it, mirroring
+     the nav-button behaviour for any .cyber-tooltip marked .tooltip-interacted. */
+  .cyber-tooltip.tooltip-interacted:hover::after,
+  .cyber-tooltip.tooltip-interacted:hover::before {
+    display: none !important;
+  }
 
   /* ── LOGO ── */
 
@@ -2591,6 +2615,14 @@
   #modal-resize .modal-body {
     position: relative;
     z-index: 5; /* above header/footer so upward tooltips aren't covered */
+  }
+  /* Resize body scrolls when tall so the lower controls stay reachable
+     (adjust keeps overflow:visible; its preview fits a fixed-height column). */
+  #modal-resize .modal-body {
+    overflow-y: auto;
+  }
+  #modal-resize .modal-box {
+    overflow: hidden;
   }
 
   .modal-body::-webkit-scrollbar {

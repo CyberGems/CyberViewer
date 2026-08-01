@@ -4575,6 +4575,21 @@ $('btn-next').addEventListener('click', (e) => {
   b.addEventListener('mousedown', () => b.classList.add('tooltip-interacted'));
   b.addEventListener('mouseleave', () => b.classList.remove('tooltip-interacted'));
 });
+// Same idea for the zoom slider in the statusbar: dismiss its tooltip while dragging or
+// keyboard-stepping it, and let it return once the pointer leaves / it loses focus.
+(function () {
+  const z = $('zoom-slider');
+  const host = $('footer-zoom');
+  if (!z || !host) return;
+  const engage = () => host.classList.add('tooltip-interacted');
+  const release = () => host.classList.remove('tooltip-interacted');
+  z.addEventListener('mousedown', engage);
+  z.addEventListener('input', engage);
+  z.addEventListener('focus', engage);
+  z.addEventListener('blur', release);
+  host.addEventListener('mouseleave', release);
+  window.addEventListener('pointerup', release);
+}());
 
 function sidebarHandleTooltipText(open) {
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
