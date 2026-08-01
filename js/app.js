@@ -6038,7 +6038,9 @@ async function toggleFavoritesView() {
       if (viewerFilename) viewerFilename.textContent = '';
       updateCounter();
     }
-    showToast(lang === 'es' ? 'GALERÍA COMPLETA RESTAURADA' : 'FULL GALLERY RESTORED', 'info');
+    if (state.nonFavImages.length > 0) {
+      showToast(lang === 'es' ? 'GALERÍA COMPLETA RESTAURADA' : 'FULL GALLERY RESTORED', 'info');
+    }
   }
 }
 
