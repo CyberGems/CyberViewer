@@ -3033,7 +3033,8 @@ if ($('btn-confirm-adjust')) {
       const result = await window.electronAPI.saveImage({
         filePath: exported.filePath,
         buffer: exported.buffer,
-        createCopy: createCopy
+        createCopy: createCopy,
+        copySuffix: '_adjusted'
       });
 
       if (result.success) {
