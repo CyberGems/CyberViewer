@@ -160,11 +160,13 @@
       <div id="viewer-filename" class="hud-hidden-fade"></div>
       <div id="canvas-layer">
         <img id="main-img" data-i18n-alt="main_img_alt" alt="Imagen principal">
-        <svg id="spinner" viewBox="0 0 36 36">
-          <circle class="spinner-ring" cx="18" cy="18" r="14"/>
-        </svg>
-
       </div>
+
+      <!-- Loading spinner: kept outside #canvas-layer so it ignores the image
+           zoom transform (scale), for a constant 36px size on every image. -->
+      <svg id="spinner" viewBox="0 0 36 36">
+        <circle class="spinner-ring" cx="18" cy="18" r="14"/>
+      </svg>
 
       <!-- CROP OVERLAY (Saliendo de la matriz para escala fija) -->
       <div id="crop-overlay">

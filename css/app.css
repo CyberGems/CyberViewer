@@ -1233,7 +1233,8 @@
   body:not(.ghost-mode):not(.empty-state) #canvas-layer,
   body:not(.ghost-mode):not(.empty-state) #crop-overlay,
   body:not(.ghost-mode):not(.empty-state) #drop-zone,
-  body:not(.ghost-mode):not(.empty-state) #drag-overlay {
+  body:not(.ghost-mode):not(.empty-state) #drag-overlay,
+  body:not(.ghost-mode):not(.empty-state) #spinner {
     bottom: var(--dock-h, 56px);
   }
 
@@ -3107,10 +3108,13 @@
   /* ── LOADING SPINNER ── */
   #spinner {
     position: absolute;
+    inset: 0;
+    margin: auto;
     z-index: 8;
     width: 36px;
     height: 36px;
     display: none;
+    pointer-events: none;
   }
 
   #spinner.active { display: block; }
