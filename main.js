@@ -1116,6 +1116,10 @@ ipcMain.on('save-settings', (event, newSettings) => {
     tray.destroy();
     tray = null;
   } else if (tray) {
+    // Refresh the context menu in place. Do NOT destroy() + createTray() here:
+    // recreating the Tray resets Windows per-icon "always show" pinning, sending the
+    // icon back to the overflow area. updateTrayMenu() updates labels (e.g. on language
+    // change) without changing the icon identity.
     updateTrayMenu();
   }
 });
