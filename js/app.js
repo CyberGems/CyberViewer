@@ -6053,27 +6053,21 @@ function resetHudTimer() {
   }
 })();
 
-window.addEventListener('mousemove', resetHudTimer);
+// Filename banner & nav buttons surface only while the cursor is over the
+// canvas/image area. Derive that from the mousemove target — robust to the
+// canvas-layer transform used by zoom/pan (its hit box moves) and to overlays,
+// since it respects pointer-events — then run the usual HUD auto-hide pass.
+window.addEventListener('mousemove', (e) => {
+  const t = e.target;
+  cursorOnCanvas = !!(t && (t === canvasL || canvasL.contains(t))) || t === viewerWrap;
+  resetHudTimer();
+});
 elementsToHide.forEach(item => {
   if (item.el) {
     item.el.addEventListener('mouseenter', () => clearTimeout(hudTimer));
     item.el.addEventListener('mouseleave', resetHudTimer);
   }
 });
-
-// Track whether the pointer is over the canvas so the filename banner and
-// nav buttons surface only there (file browser / action bar keep them hidden).
-(() => {
-  const canvas = $('canvas-layer');
-  if (!canvas) return;
-  canvas.addEventListener('mouseenter', () => { cursorOnCanvas = true; });
-  canvas.addEventListener('mouseleave', () => {
-    cursorOnCanvas = false;
-    // Trigger an immediate hide pass so they fade right when leaving the canvas,
-    // rather than waiting for the in-flight idle timer.
-    resetHudTimer();
-  });
-})();
 
 // ── FAVORITES SYSTEM ──
 function toggleFavorite() {
