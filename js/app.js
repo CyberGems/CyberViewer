@@ -5902,6 +5902,7 @@ $('btn-config').addEventListener('click', openConfig);
 // ── HUD AUTO-HIDE (Sincronizado) ──
 // Docked toolbar (#kbd-hint) only auto-hides in fullscreen (ghost). In window mode it is chrome.
 let hudTimer = null;
+let cursorOnCanvas = false;
 const elementsToHide = [
   { el: $('topbar'), hideClass: 'hud-hidden-top', ghostOnly: false },
   { el: $('statusbar'), hideClass: 'hud-hidden-bottom', ghostOnly: false },
@@ -5931,11 +5932,27 @@ function resetHudTimer() {
     return;
   }
 
+  const hudEnabled = state.settings?.app?.hudAutoHide !== false;
+  const navEnabled = state.settings?.app?.navAutoHide !== false;
+  // During slideshow always auto-hide floating chrome (incl. presentation bar)
+  const forceSlideshowHide = !!state.slideshowActive;
+
   elementsToHide.forEach(item => {
     if (!item.el) return;
     // Slideshow HUD only while presentation is active
     if (item.el.id === 'slideshow-hud' && !state.slideshowActive) {
       item.el.classList.add('hud-hidden-fade');
+      return;
+    }
+    // Filename banner & nav buttons surface only over the canvas; on other
+    // surfaces (toolbar, sidebar, topbar, statusbar) they fade out using the
+    // usual hud-hidden-fade effect, gated by their auto-hide settings.
+    if (item.el.id === 'viewer-filename' || item.el.id === 'nav-container') {
+      if (cursorOnCanvas || item.el.matches(':hover')) {
+        item.el.classList.remove(item.hideClass);
+      } else if ((item.el.id === 'nav-container' ? navEnabled : hudEnabled) || forceSlideshowHide) {
+        item.el.classList.add(item.hideClass);
+      }
       return;
     }
     item.el.classList.remove(item.hideClass);
@@ -5949,11 +5966,6 @@ function resetHudTimer() {
       item.el.classList.add('hud-hidden-fade');
     }
   });
-
-  const hudEnabled = state.settings?.app?.hudAutoHide !== false;
-  const navEnabled = state.settings?.app?.navAutoHide !== false;
-  // During slideshow always auto-hide floating chrome (incl. presentation bar)
-  const forceSlideshowHide = !!state.slideshowActive;
 
   if (!hudEnabled && !navEnabled && !forceSlideshowHide) {
     return;
@@ -5982,7 +5994,14 @@ function resetHudTimer() {
       if (item.ghostOnly && !state.isGhost) return;
 
       if (item.el.id === 'nav-container') {
-        if (navEnabled || forceSlideshowHide) item.el.classList.add(item.hideClass);
+        // Keep nav buttons anchored to the canvas: still fade after the idle
+        // timeout while hovering the image, but never fade while the pointer
+        // is over a non-canvas surface.
+        if (cursorOnCanvas && (navEnabled || forceSlideshowHide)) item.el.classList.add(item.hideClass);
+        return;
+      }
+      if (item.el.id === 'viewer-filename') {
+        if (cursorOnCanvas && (hudEnabled || forceSlideshowHide)) item.el.classList.add(item.hideClass);
         return;
       }
       if (!hudEnabled && !forceSlideshowHide) return;
@@ -6041,6 +6060,20 @@ elementsToHide.forEach(item => {
     item.el.addEventListener('mouseleave', resetHudTimer);
   }
 });
+
+// Track whether the pointer is over the canvas so the filename banner and
+// nav buttons surface only there (file browser / action bar keep them hidden).
+(() => {
+  const canvas = $('canvas-layer');
+  if (!canvas) return;
+  canvas.addEventListener('mouseenter', () => { cursorOnCanvas = true; });
+  canvas.addEventListener('mouseleave', () => {
+    cursorOnCanvas = false;
+    // Trigger an immediate hide pass so they fade right when leaving the canvas,
+    // rather than waiting for the in-flight idle timer.
+    resetHudTimer();
+  });
+})();
 
 // ── FAVORITES SYSTEM ──
 function toggleFavorite() {
