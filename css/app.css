@@ -2116,18 +2116,18 @@
   }
   /* Higher specificity than body:not(.ghost-mode) .kbd-btn so hover works when docked */
   #kbd-hint .kbd-btn:hover:not(:disabled):not(.is-disabled) {
-    background: var(--cyber-accent);
-    color: var(--cyber-black);
+    background: rgba(var(--cyber-accent-rgb), 0.16);
+    color: var(--cyber-accent);
     border-color: var(--cyber-accent);
-    box-shadow: 0 0 18px rgba(var(--cyber-accent-rgb), 0.45);
+    box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.22);
     transform: translateY(-1px);
   }
   #kbd-hint .kbd-btn:active:not(:disabled):not(.is-disabled) {
     transform: translateY(0);
   }
   #kbd-hint .kbd-btn.active:hover:not(:disabled):not(.is-disabled) {
-    background: var(--cyber-accent3);
-    color: var(--cyber-black);
+    background: rgba(var(--cyber-accent3-rgb), 0.16);
+    color: var(--cyber-accent3);
     border-color: var(--cyber-accent3);
   }
   .kbd-btn:focus,
@@ -2489,9 +2489,9 @@
     color: var(--cyber-accent2);
   }
   .pending-cancel:hover {
-    background: var(--cyber-accent2);
-    color: #fff;
-    box-shadow: 0 0 16px rgba(var(--cyber-accent2-rgb), 0.45);
+    background: rgba(var(--cyber-accent2-rgb), 0.16);
+    color: var(--cyber-accent2);
+    box-shadow: 0 0 12px rgba(var(--cyber-accent2-rgb), 0.22);
     transform: translateY(-1px);
   }
   .pending-save {
@@ -2500,9 +2500,9 @@
     color: var(--cyber-accent);
   }
   .pending-save:hover {
-    background: var(--cyber-accent);
-    color: #061018;
-    box-shadow: 0 0 18px rgba(var(--cyber-accent-rgb), 0.45);
+    background: rgba(var(--cyber-accent-rgb), 0.16);
+    color: var(--cyber-accent);
+    box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.22);
     transform: translateY(-1px);
   }
 
@@ -2523,10 +2523,10 @@
     transition: none !important;
   }
   #kbd-hint #btn-trash:hover:not(:disabled):not(.is-disabled) {
-    background: var(--cyber-accent2);
-    color: #fff;
+    background: rgba(var(--cyber-accent2-rgb), 0.16);
+    color: var(--cyber-accent2);
     border-color: var(--cyber-accent2);
-    box-shadow: 0 0 18px rgba(var(--cyber-accent2-rgb), 0.45);
+    box-shadow: 0 0 12px rgba(var(--cyber-accent2-rgb), 0.22);
   }
 
   .kbd-key {
