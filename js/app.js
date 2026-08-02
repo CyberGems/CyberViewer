@@ -5029,11 +5029,17 @@ $('btn-save-config').addEventListener('click', async () => {
   
   if (isElectron) {
     const lang = newSettings.language || 'en';
-    window.electronAPI.registerContextMenu(contextMenuEnabled, lang).then(res => {
-      if (res && !res.success) {
-        showToast(lang === 'es' ? 'AVISO: ' + res.error : 'WARNING: ' + res.error, 'warning');
-      }
-    }).catch(err => console.error('Error saving context menu:', err));
+    // Only (re)register the OS context menu when that setting actually changed;
+    // toggling unrelated options (e.g. nav auto-hide) should not re-run registry
+    // commands nor surface a dev-mode "executable not found" toast.
+    const prevContextMenu = !!(state.settings.app.contextMenuEnabled);
+    if (prevContextMenu !== contextMenuEnabled) {
+      window.electronAPI.registerContextMenu(contextMenuEnabled, lang).then(res => {
+        if (res && !res.success) {
+          showToast(lang === 'es' ? 'AVISO: ' + res.error : 'WARNING: ' + res.error, 'warning');
+        }
+      }).catch(err => console.error('Error saving context menu:', err));
+    }
   }
   
   state.settings.app = Object.assign({}, state.settings.app, newSettings);
