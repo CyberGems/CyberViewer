@@ -187,7 +187,7 @@ function closeImage() {
   state.panY = 0;
   state.currentRotation = 0; state.visualRotation = 0;
   state.hasChanges = false;
-  state.isCropping = false;
+  exitCropMode(); // clears isCropping, cropState + overlay + body.crop-mode
 
   updateSaveButton();
   updateHUDStates();
@@ -1805,6 +1805,9 @@ function showImage(idx, direction, isInitial = false) {
     // Reset rotation al cambiar
     state.currentRotation = 0; state.visualRotation = 0;
     state.hasChanges = false;
+    // Exit any leftover crop mode (e.g. new image opened from the OS while a
+    // previous crop was unconfirmed - common with close-to-tray + file association).
+    exitCropMode();
     updateSaveButton();
 
     mainImg.style.transform = `rotate(0deg)`; // Limpiar rotación visual
@@ -2122,6 +2125,23 @@ const cropState = {
   startRect: {}
 };
 
+/** Single source of truth for leaving crop mode: clears cropState, the overlay,
+ *  body.crop-mode (via updateHUDStates) and the HUD hide classes. Idempotent. */
+function exitCropMode() {
+  if (!state.isCropping && !cropState.active) return;
+  cropState.active = false;
+  state.isCropping = false;
+  const overlay = $('crop-overlay');
+  if (overlay) overlay.classList.remove('active');
+  const kbd = $('kbd-hint');
+  if (kbd) kbd.classList.remove('hud-hidden');
+  const filename = $('viewer-filename');
+  if (filename) filename.classList.remove('hud-hidden-fade');
+  updateSaveButton();
+  updateHUDStates(); // drops body.crop-mode and refreshes HUD states
+  if (typeof resetHudTimer === 'function') resetHudTimer();
+}
+
 function startCrop() {
   discardPendingRotationSilently();
   if (state.current === -1) return;
@@ -2129,6 +2149,13 @@ function startCrop() {
     showToast(I18N[state.settings.app.language || 'en'].toast_initializing_engine, 'info');
     return;
   }
+  
+  // Enter crop mode BEFORE measuring: crop-mode removes the toolbar + statusbar
+  // (window mode), so the framing must use the *final* viewport - otherwise the
+  // floating crop panel ends up in stale space and looks misplaced (fullscreen
+  // already has no chrome, so it was fine there).
+  state.isCropping = true;
+  updateHUDStates(); // toggles body.crop-mode synchronously
   
   // Smart crop framing: leave room below for crop action panel + handles
   const vw = viewerWrap.clientWidth;
@@ -2222,17 +2249,7 @@ function updateCropUI() {
 }
 
 $('btn-crop').onclick = startCrop;
-$('btn-crop-cancel').onclick = () => {
-  cropState.active = false;
-  state.isCropping = false;
-  $('crop-overlay').classList.remove('active');
-  $('kbd-hint').classList.remove('hud-hidden');
-  const filename = $('viewer-filename');
-  if (filename) filename.classList.remove('hud-hidden-fade');
-  updateSaveButton();
-  updateHUDStates();
-  if (typeof resetHudTimer === 'function') resetHudTimer();
-};
+$('btn-crop-cancel').onclick = () => exitCropMode();
 
 $('crop-rect').onmousedown = (e) => {
   if (!cropState.active) return;
@@ -2368,13 +2385,7 @@ $('btn-crop-confirm').onclick = async () => {
 
   if (result.success) {
     showToast(I18N[state.settings.app.language || 'en'].toast_crop_saved, 'success');
-    cropState.active = false;
-    state.isCropping = false;
-    $('crop-overlay').classList.remove('active');
-    $('kbd-hint').classList.remove('hud-hidden');
-    const filenameEl = $('viewer-filename');
-    if (filenameEl) filenameEl.classList.remove('hud-hidden-fade');
-    if (typeof resetHudTimer === 'function') resetHudTimer();
+    exitCropMode();
 
     const savedPath = result.filePath || exported.filePath;
 
@@ -4050,6 +4061,13 @@ document.addEventListener('keydown', e => {
       e.preventDefault();
       return;
     }
+    // Cancel crop (Esc) before other escape actions
+    if (state.isCropping) {
+      const cancelBtn = $('btn-crop-cancel');
+      if (cancelBtn) cancelBtn.click();
+      e.preventDefault();
+      return;
+    }
     // Discard pending rotation before other escapes
     if (state.hasChanges && !state.isCropping) {
       discardPendingChanges();
@@ -4075,6 +4093,7 @@ document.addEventListener('keydown', e => {
   }
 
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (state.isCropping) return; // modo Crop: el recorte es la unica accion activa
   const isCtrl = e.ctrlKey || e.metaKey;
 
   // Shortcuts globales
@@ -5260,6 +5279,11 @@ function updateHUDStates() {
     if (fsBtn) fsBtn.classList.remove('active');
   }
 
+  // Crop mode: despeja el chrome (barra + statusbar) mientras se recorta.
+  // Se sincroniza aqui porque updateHUDStates() se llama en cada transicion
+  // de isCropping (iniciar/cancelar/confirmar/entrar a pantalla completa).
+  document.body.classList.toggle('crop-mode', !!state.isCropping);
+
   updateSaveButton();
 }
 
@@ -5763,6 +5787,9 @@ $('btn-config').addEventListener('click', openConfig);
   }
 
   function runAction(action, itemEl) {
+    // During crop, every action except toggling crop itself is disabled so the
+    // recorte stays the sole focus (mirrors the hidden toolbar + blocked keys).
+    if (state.isCropping && action !== 'crop') return;
     // Leave modal context so menu actions (and subsequent UI) aren't blocked
     if (action !== 'resize' && action !== 'adjust' && action !== 'preferences' && action !== 'about' && action !== 'check-updates') {
       closeOpenModals();

@@ -1257,6 +1257,31 @@
     bottom: var(--dock-h, 56px);
   }
 
+  /* ── CROP MODE ── recortar es una operacion focalizada: se despeja el
+     chrome (barra de acciones + statusbar con el slider de zoom) y se libera
+     la altura del dock, igual que con la barra colapsada. En pantalla completa
+     (ghost) el chrome ya esta oculto. Atenuar min/max; Cerrar queda libre. */
+  body.crop-mode:not(.ghost-mode) #kbd-hint,
+  body.crop-mode:not(.ghost-mode) #statusbar {
+    display: none !important;
+  }
+
+  body.crop-mode:not(.ghost-mode):not(.empty-state),
+  body.crop-mode:not(.ghost-mode):not(.empty-state) #viewer-wrap {
+    --dock-h: 0px;
+  }
+
+  /* Reclamar la franja de 36px que dejaba la statusbar oculta */
+  body.crop-mode.statusbar-visible:not(.ghost-mode) #viewer-wrap {
+    margin-bottom: 0 !important;
+  }
+
+  body.crop-mode:not(.ghost-mode) #win-min,
+  body.crop-mode:not(.ghost-mode) #win-max {
+    opacity: 0.25;
+    pointer-events: none;
+  }
+
   #viewer-wrap.dragging { cursor: grabbing; }
 
   #viewer-wrap::before {
