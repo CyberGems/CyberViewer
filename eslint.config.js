@@ -5,7 +5,7 @@ module.exports = [
     ignores: ['dist/**', 'node_modules/**', 'scripts/**', 'i18n/ui.js']
   },
   {
-    files: ['main.js', 'preload.js', 'lib/**/*.js', 'test/**/*.js'],
+    files: ['main.js', 'preload.js', 'tray-preload.js', 'lib/**/*.js', 'test/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'commonjs',

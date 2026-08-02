@@ -476,46 +476,238 @@ function isWindowShown() {
   return !!(win && !win.isDestroyed() && win.isVisible() && !win.isMinimized());
 }
 
-function updateTrayMenu() {
-  if (!tray) return;
+// ── Custom HTML tray menu (mirrors the CyberPaste tray popup style) ──
+// Card width & transparent shadow pad, both in logical (DIP) px. Electron 35
+// reports tray bounds, screen work areas, setBounds and renderer CSS sizes all
+// in DIP — we stay in DIP throughout (no scaleFactor scaling).
+const TRAY_MENU_WIDTH = 268;
+const TRAY_MENU_SHADOW_PAD = 26;
+// Estimated card-bearing window height (DIP) for the first paint; corrected by
+// `tray-menu-ready` once the renderer measures the real size. card(~220) + bleed(52).
+const TRAY_MENU_EST_HEIGHT = 272;
+let trayMenuWin = null;
+let trayMenuAnchor = null;
+let trayMenuHideTimer = null;
+let trayMenuLastShown = 0;
+
+function buildTrayMenuState() {
   const settings = loadSettings();
   const lang = settings.app.language || 'en';
   const t = menuI18n[lang] || menuI18n.en;
   const visible = isWindowShown();
+  return {
+    version: app.getVersion(),
+    head: 'CyberViewer v' + app.getVersion(),
+    visible,
+    showLabel: visible ? (t.tray_hide || t.tray_show) : t.tray_show,
+    settingsLabel: t.tray_settings,
+    aboutLabel: t.tray_about || t.about,
+    exitLabel: t.tray_exit,
+    shortcut: ''
+  };
+}
 
-  tray.setContextMenu(Menu.buildFromTemplate([
-    { label: `CyberViewer v${app.getVersion()}`, enabled: false },
-    { type: 'separator' },
-    {
-      label: visible ? (t.tray_hide || t.tray_show) : t.tray_show,
-      click: () => { visible ? hideToTray() : showFromTray(); }
-    },
-    {
-      label: t.tray_settings,
-      click: () => {
-        showFromTray();
-        if (win && !win.isDestroyed()) win.webContents.send('open-settings');
-      }
-    },
-    { type: 'separator' },
-    {
-      label: t.tray_exit,
-      click: () => { isQuitting = true; app.quit(); }
+// Position + size the tray popup (DIP) so the visible card sits just outside the
+// tray icon, opening away from the taskbar. We anchor on the icon rectangle from
+// tray.getBounds() (DIP, same coordinate space as screen.workArea and setBounds
+// in Electron 35) and detect which screen edge the icon hugs (bottom = normal
+// taskbar, left/top/right = moved taskbar) so a vertical-left taskbar opens the
+// card to the *right* of the icon — matching how native tray menus behave.
+function trayMenuGeometry(iconBounds, windowW, windowH) {
+  let b = (iconBounds && typeof iconBounds.x === 'number' && (iconBounds.width || iconBounds.height))
+    ? { x: iconBounds.x, y: iconBounds.y, width: iconBounds.width || 0, height: iconBounds.height || 0 }
+    : null;
+  if (!b) {
+    let p = null;
+    try { p = screen.getCursorScreenPoint(); } catch (_) { p = { x: 0, y: 0 }; }
+    b = { x: p.x, y: p.y, width: 0, height: 0 };
+  }
+  const cx = b.x + b.width / 2;
+  const cy = b.y + b.height / 2;
+  let display;
+  try { display = screen.getDisplayNearestPoint({ x: cx, y: cy }); }
+  catch (_) { display = screen.getPrimaryDisplay(); }
+  const work = (display && display.workArea) || { x: 0, y: 0, width: windowW, height: windowH };
+
+  const gap = 4;
+  const pad = TRAY_MENU_SHADOW_PAD;
+  const cardW = windowW - 2 * pad;
+  const cardH = windowH - 2 * pad;
+
+  // Distance from the icon center to each work-area edge.
+  const dLeft = cx - work.x;
+  const dRight = (work.x + work.width) - cx;
+  const dTop = cy - work.y;
+  const dBottom = (work.y + work.height) - cy;
+
+  let cardX, cardY;
+  if (dBottom <= dLeft && dBottom <= dRight && dBottom <= dTop) {
+    // Bottom taskbar: open above the icon.
+    cardX = cx - cardW / 2;
+    cardY = b.y - gap - cardH;
+  } else if (dTop <= dLeft && dTop <= dRight) {
+    // Top taskbar: open below the icon.
+    cardX = cx - cardW / 2;
+    cardY = b.y + b.height + gap;
+  } else if (dLeft <= dRight) {
+    // Left taskbar: open to the right of the icon.
+    cardX = b.x + b.width + gap;
+    cardY = cy - cardH / 2;
+  } else {
+    // Right taskbar: open to the left of the icon.
+    cardX = b.x - gap - cardW;
+    cardY = cy - cardH / 2;
+  }
+
+  // Keep the card within the work area, then convert to window coords (subtract bleed).
+  cardX = Math.min(Math.max(cardX, work.x + 4), work.x + work.width - cardW - 4);
+  cardY = Math.min(Math.max(cardY, work.y + 4), work.y + work.height - cardH - 4);
+  return { x: Math.round(cardX - pad), y: Math.round(cardY - pad), width: windowW, height: windowH };
+}
+
+function ensureTrayMenuWin() {
+  if (trayMenuWin && !trayMenuWin.isDestroyed()) return trayMenuWin;
+  trayMenuWin = new BrowserWindow({
+    width: TRAY_MENU_WIDTH + 2 * TRAY_MENU_SHADOW_PAD,
+    height: TRAY_MENU_EST_HEIGHT,
+    show: false,
+    frame: false,
+    transparent: true,
+    hasShadow: false,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    focusable: true,
+    backgroundColor: '#00000000',
+    webPreferences: {
+      preload: path.join(__dirname, 'tray-preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
     }
-  ]));
+  });
+  trayMenuWin.setAlwaysOnTop(true, 'pop-up-menu');
+  trayMenuWin.loadFile(path.join(__dirname, 'tray-menu.html'));
+  trayMenuWin.on('blur', () => {
+    if (trayMenuHideTimer) return;
+    // Ignore the transient blur that fires when a tray right-click / re-show
+    // steals focus away and back — only hide on a genuine focus loss.
+    if (Date.now() - trayMenuLastShown < 250) return;
+    trayMenuHideTimer = setTimeout(() => {
+      trayMenuHideTimer = null;
+      hideTrayMenu();
+    }, 120);
+  });
+  trayMenuWin.on('closed', () => { trayMenuWin = null; });
+  trayMenuWin.webContents.once('did-finish-load', () => {
+    if (!trayMenuWin || trayMenuWin.isDestroyed()) return;
+    trayMenuWin.webContents.send('tray-menu-state', buildTrayMenuState());
+    trayMenuWin.webContents.send('tray-menu-show');
+  });
+  return trayMenuWin;
+}
+
+function showTrayMenu(eventBounds) {
+  if (!tray) return;
+  // Prefer the tray-icon rectangle Electron hands us on right-click; fall back
+  // to tray.getBounds() and finally the cursor. All are DIP in Electron 35, so
+  // geometry stays in a single coordinate space — no per-monitor DPI flip.
+  let b = (eventBounds && typeof eventBounds.x === 'number' && (eventBounds.width || eventBounds.height))
+    ? eventBounds : null;
+  if (!b) { try { b = tray.getBounds(); } catch (_) { b = null; } }
+  if (!b || !b.width && !b.height) {
+    let p = null; try { p = screen.getCursorScreenPoint(); } catch (_) { p = null; }
+    b = p ? { x: p.x, y: p.y, width: 0, height: 0 } : { x: 0, y: 0, width: 0, height: 0 };
+  }
+  trayMenuAnchor = b;
+  if (trayMenuHideTimer) { clearTimeout(trayMenuHideTimer); trayMenuHideTimer = null; }
+  const w = ensureTrayMenuWin();
+  if (!w || w.isDestroyed()) return;
+  const geo = trayMenuGeometry(trayMenuAnchor,
+    TRAY_MENU_WIDTH + 2 * TRAY_MENU_SHADOW_PAD, TRAY_MENU_EST_HEIGHT);
+  w.setBounds(geo);
+  if (!w.isVisible()) w.show();
+  w.focus();
+  trayMenuLastShown = Date.now();
+  if (!w.webContents.isLoading()) {
+    w.webContents.send('tray-menu-state', buildTrayMenuState());
+    w.webContents.send('tray-menu-show');
+  }
+}
+
+function hideTrayMenu() {
+  if (trayMenuHideTimer) { clearTimeout(trayMenuHideTimer); trayMenuHideTimer = null; }
+  if (trayMenuWin && !trayMenuWin.isDestroyed() && trayMenuWin.isVisible()) {
+    trayMenuWin.hide();
+  }
+}
+
+function updateTrayMenu() {
+  if (!tray) return;
+  tray.setToolTip('CyberViewer v' + app.getVersion());
+  if (trayMenuWin && !trayMenuWin.isDestroyed() && !trayMenuWin.webContents.isLoading()) {
+    trayMenuWin.webContents.send('tray-menu-state', buildTrayMenuState());
+  }
 }
 
 function createTray() {
   if (tray) return;
   tray = new Tray(path.join(__dirname, 'assets', 'icon.png'));
-  tray.setToolTip('CyberViewer');
-  updateTrayMenu();
+  tray.setToolTip('CyberViewer v' + app.getVersion());
   tray.on('click', () => {
+    hideTrayMenu();
     if (!win || win.isDestroyed()) return;
     if (isWindowShown()) hideToTray();
     else showFromTray();
   });
+  tray.on('right-click', (_event, bounds) => {
+    showTrayMenu(bounds);
+  });
 }
+
+ipcMain.on('tray-menu-action', (_event, action) => {
+  hideTrayMenu();
+  switch (action) {
+    case 'toggle':
+      if (isWindowShown()) hideToTray();
+      else showFromTray();
+      break;
+    case 'settings':
+      showFromTray();
+      if (win && !win.isDestroyed()) win.webContents.send('open-settings');
+      break;
+    case 'about':
+      showFromTray();
+      if (win && !win.isDestroyed()) win.webContents.send('menu-action', { action: 'show-about' });
+      break;
+    case 'quit':
+      isQuitting = true;
+      app.quit();
+      break;
+    default:
+      break;
+  }
+});
+
+ipcMain.on('tray-menu-ready', (_event, rect) => {
+  if (!trayMenuWin || trayMenuWin.isDestroyed() || !trayMenuWin.isVisible()) return;
+  if (!rect || !rect.width || !rect.height) return;
+  // Renderer measures in CSS px, which on a transparent DIP window equals DIP.
+  const geo = trayMenuGeometry(trayMenuAnchor, Math.round(rect.width), Math.round(rect.height));
+  const cur = trayMenuWin.getBounds();
+  if (Math.abs(cur.width - geo.width) > 1 ||
+      Math.abs(cur.height - geo.height) > 1 ||
+      Math.abs(cur.x - geo.x) > 1 ||
+      Math.abs(cur.y - geo.y) > 1) {
+    trayMenuWin.setBounds(geo);
+  }
+  trayMenuWin.focus();
+});
+
+ipcMain.on('tray-menu-hide', () => hideTrayMenu());
 
 // ── IPC ──
 ipcMain.on('win-minimize', () => win.minimize());
@@ -1115,6 +1307,11 @@ ipcMain.on('save-settings', (event, newSettings) => {
   if (newSettings.closeToTray && !tray) {
     createTray();
   } else if (!newSettings.closeToTray && tray) {
+    hideTrayMenu();
+    if (trayMenuWin && !trayMenuWin.isDestroyed()) {
+      trayMenuWin.destroy();
+      trayMenuWin = null;
+    }
     tray.destroy();
     tray = null;
   } else if (tray) {
