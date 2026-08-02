@@ -216,7 +216,6 @@
     "cfg_slideshow_fs": "Fullscreen on start",
     "cfg_slideshow_fs_desc": "Enter immersive mode when starting the slideshow.",
     "menu_sidebar": "Sidebar",
-    "menu_autohide": "Auto-hide HUD",
     "menu_show_hints": "Keyboard Hints",
     "menu_next": "Next Image",
     "menu_prev": "Previous Image",
@@ -247,10 +246,8 @@
     "about_portable_hint": "Portable builds update via GitHub Releases.",
     "about_dev_hint": "Install the NSIS build to enable in-app updates.",
     "about_notify_startup": "Update available: v{version}",
-    "cfg_hud_autohide": "Auto-hide Toolbar",
-    "cfg_hud_autohide_desc": "Hide the floating toolbar after inactivity.",
     "cfg_nav_autohide": "Auto-hide Nav Buttons",
-    "cfg_nav_autohide_desc": "Hide navigation buttons after inactivity.",
+    "cfg_nav_autohide_desc": "Hide nav buttons after inactivity over the canvas.",
     "cfg_show_hints": "Title Bar Hints",
     "cfg_show_hints_desc": "Show keyboard shortcuts in the title bar.",
     "cfg_alpha_bg": "Transparency background",
@@ -259,7 +256,7 @@
     "cfg_alpha_bg_light": "Light grid",
     "cfg_alpha_bg_solid": "No grid",
     "menu_alpha_bg": "Transparency grid",
-    "cfg_hud_delay": "Inactivity Hide Delay",
+    "cfg_hud_delay": "Auto-hide Delay",
     "cfg_seconds": "{seconds}s",
     "prev_title": "Previous image (← / A)",
     "next_title": "Next image (→ / D / Space)",
@@ -346,7 +343,9 @@
     "about_notify_ready": "Update ready: v{version} — open About to install",
     "menu_toolbar": "Action bar",
     "toolbar_handle_show": "Show action bar",
-    "toolbar_handle_hide": "Hide action bar"
+    "toolbar_handle_hide": "Hide action bar",
+    "cfg_banner_autohide": "Auto-hide Filename",
+    "cfg_banner_autohide_desc": "Hide the filename banner after inactivity over the canvas."
   },
   "es": {
     "no_images": "— sin imágenes —",
@@ -565,7 +564,6 @@
     "cfg_slideshow_fs": "Pantalla completa al iniciar",
     "cfg_slideshow_fs_desc": "Entrar en modo inmersivo al comenzar la presentación.",
     "menu_sidebar": "Barra lateral",
-    "menu_autohide": "Auto-ocultar HUD",
     "menu_show_hints": "Atajos de teclado",
     "menu_next": "Imagen siguiente",
     "menu_prev": "Imagen anterior",
@@ -596,10 +594,8 @@
     "about_portable_hint": "La versión portable se actualiza desde GitHub Releases.",
     "about_dev_hint": "Instala el setup NSIS para actualizar desde la app.",
     "about_notify_startup": "Actualización disponible: v{version}",
-    "cfg_hud_autohide": "Ocultar barra automáticamente",
-    "cfg_hud_autohide_desc": "Ocultar la barra de herramientas tras inactividad.",
     "cfg_nav_autohide": "Ocultar botones de navegación",
-    "cfg_nav_autohide_desc": "Ocultar botones de navegación tras inactividad.",
+    "cfg_nav_autohide_desc": "Oculta los botones tras inactividad sobre el lienzo.",
     "cfg_show_hints": "Atajos de Título",
     "cfg_show_hints_desc": "Mostrar accesos rápidos de teclado en la barra superior.",
     "cfg_alpha_bg": "Fondo de transparencia",
@@ -695,6 +691,8 @@
     "about_notify_ready": "Actualización lista: v{version} — abre Acerca de para instalar",
     "menu_toolbar": "Barra de acciones",
     "toolbar_handle_show": "Mostrar barra de acciones",
-    "toolbar_handle_hide": "Ocultar barra de acciones"
+    "toolbar_handle_hide": "Ocultar barra de acciones",
+    "cfg_banner_autohide": "Ocultar nombre de archivo",
+    "cfg_banner_autohide_desc": "Oculta el banner del título tras inactividad sobre el lienzo."
   }
 }

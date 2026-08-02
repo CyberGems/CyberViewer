@@ -93,7 +93,6 @@
           <div class="menu-divider"></div>
           <button class="menu-item" data-action="sidebar"><span class="menu-check">&#10003;</span><span class="menu-label" data-i18n="menu_sidebar">Barra lateral</span></button>
           <button class="menu-item" data-action="toolbar"><span class="menu-check">&#10003;</span><span class="menu-label" data-i18n="menu_toolbar">Barra de acciones</span></button>
-          <button class="menu-item" data-action="autohide"><span class="menu-check">&#10003;</span><span class="menu-label" data-i18n="menu_autohide">Auto-ocultar HUD</span></button>
           <button class="menu-item" data-action="toggle-hints"><span class="menu-check">&#10003;</span><span class="menu-label" data-i18n="menu_show_hints">Atajos de teclado</span></button>
           <button class="menu-item" data-action="toggle-alpha-bg"><span class="menu-check">&#10003;</span><span class="menu-label" data-i18n="menu_alpha_bg">Rejilla de transparencia</span></button>
         </div>
@@ -498,25 +497,33 @@
             <span class="slider"></span>
           </label>
         </div>
-        <div class="config-cluster">
-          <div class="config-row">
-            <div class="config-info">
-              <div class="config-name" data-i18n="cfg_hud_autohide">Ocultar barra automáticamente</div>
-              <div class="config-desc" data-i18n="cfg_hud_autohide_desc">Ocultar barra flotante tras inactividad.</div>
+        <div class="config-row">
+          <div class="config-info">
+              <div class="config-name" data-i18n="cfg_banner_autohide">Ocultar nombre de archivo</div>
+              <div class="config-desc" data-i18n="cfg_banner_autohide_desc">Oculta el banner del título tras inactividad sobre el lienzo.</div>
             </div>
             <label class="switch">
-              <input type="checkbox" id="cfg-hud-autohide">
+              <input type="checkbox" id="cfg-banner-autohide" checked>
               <span class="slider"></span>
             </label>
           </div>
-          <div class="config-row config-row-nested" id="cfg-hud-delay-row">
-            <div class="config-info">
+        <div class="config-row">
+          <div class="config-info">
+              <div class="config-name" data-i18n="cfg_nav_autohide">Ocultar botones de navegación</div>
+              <div class="config-desc" data-i18n="cfg_nav_autohide_desc">Oculta los botones tras inactividad sobre el lienzo.</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="cfg-nav-autohide" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+        <div class="config-row" id="cfg-hud-delay-row">
+          <div class="config-info">
               <div class="config-name" data-i18n="cfg_hud_delay">Retraso de ocultación</div>
               <div class="config-desc" id="cfg-hud-delay-val">2.0s</div>
             </div>
             <input type="range" id="cfg-hud-delay" class="cfg-range" min="500" max="10000" step="500" value="2000">
           </div>
-        </div>
         <div class="config-row">
           <div class="config-info">
             <div class="config-name" data-i18n="cfg_nav_autohide">Ocultar botones de navegación</div>

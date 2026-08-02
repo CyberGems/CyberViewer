@@ -72,7 +72,7 @@ function loadSettings() {
           };
         }
         if (data.app.toolbarOpen === undefined) data.app.toolbarOpen = true;
-        if (data.app.hudAutoHide === undefined) data.app.hudAutoHide = true;
+        if (data.app.bannerAutoHide === undefined) data.app.bannerAutoHide = (data.app.hudAutoHide !== undefined ? data.app.hudAutoHide : true);
         if (data.app.hudAutoHideDelay === undefined) data.app.hudAutoHideDelay = 2000;
         if (data.app.alphaBackground === undefined) data.app.alphaBackground = 'checker-dark';
         if (!Array.isArray(data.app.recentFiles)) data.app.recentFiles = [];
@@ -104,7 +104,7 @@ function loadSettings() {
         lastNotifiedDownloaded: null
       },
       toolbarOpen: true,
-      hudAutoHide: true,
+      bannerAutoHide: true,
       hudAutoHideDelay: 2000,
       showTopHints: true,
       alphaBackground: 'checker-dark',
@@ -1336,12 +1336,6 @@ ipcMain.on('show-context-menu', (event, props) => {
             click: () => event.sender.send('menu-action', { action: 'reset-zoom' })
           },
           { type: 'separator' },
-          {
-            label: t.autohide_hud,
-            type: 'checkbox',
-            checked: !!props.hudAutoHide,
-            click: () => event.sender.send('menu-action', { action: 'toggle-autohide' })
-          },
           {
             label: t.autohide_nav,
             type: 'checkbox',

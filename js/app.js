@@ -1145,17 +1145,6 @@ function buildMenuTemplate(type, data) {
             action: () => setToolbarOpen(!(state.toolbarOpen !== false))
           },
           {
-            label: getTxt('menu_autohide'),
-            type: 'checkbox',
-            checked: !!state.settings.app.hudAutoHide,
-            action: () => {
-              state.settings.app.hudAutoHide = !state.settings.app.hudAutoHide;
-              if (isElectron) window.electronAPI.saveSettings(state.settings.app);
-              applySettings();
-              resetHudTimer();
-            }
-          },
-          {
             label: getTxt('menu_autohide_nav'),
             type: 'checkbox',
             checked: state.settings.app.navAutoHide !== false,
@@ -1481,14 +1470,6 @@ function executeAction(data) {
       break;
     case 'show-config':
       btnConfig.click();
-      break;
-    case 'toggle-autohide':
-      state.settings.app.hudAutoHide = !state.settings.app.hudAutoHide;
-      if (isElectron) {
-        window.electronAPI.saveSettings(state.settings.app);
-      }
-      applySettings();
-      resetHudTimer();
       break;
     case 'toggle-autohide-nav':
       state.settings.app.navAutoHide = !state.settings.app.navAutoHide;
@@ -4945,14 +4926,12 @@ function openConfig() {
   $('cfg-contextmenu').checked = s.contextMenuEnabled || false;
   $('cfg-lang').value = s.language || 'en';
   
-  // HUD Auto-hide settings
-  $('cfg-hud-autohide').checked = s.hudAutoHide;
+  // Auto-hide settings (independent per element)
+  $('cfg-banner-autohide').checked = s.bannerAutoHide !== false;
   $('cfg-nav-autohide').checked = s.navAutoHide !== false;
   $('cfg-show-hints').checked = s.showTopHints !== false;
   $('cfg-hud-delay').value = s.hudAutoHideDelay;
   $('cfg-hud-delay-val').textContent = (s.hudAutoHideDelay / 1000).toFixed(1) + 's';
-  $('cfg-hud-delay').disabled = !s.hudAutoHide;
-  $('cfg-hud-delay-row').style.opacity = s.hudAutoHide ? '1' : '0.5';
   const alphaBg = normalizeAlphaBackground(s.alphaBackground);
   if ($('cfg-alpha-bg')) $('cfg-alpha-bg').value = alphaBg;
 
@@ -4999,10 +4978,6 @@ document.querySelectorAll('#modal-config .color-opt').forEach(opt => {
 $('cfg-hud-delay').addEventListener('input', (e) => {
   $('cfg-hud-delay-val').textContent = (e.target.value / 1000).toFixed(1) + 's';
 });
-$('cfg-hud-autohide').addEventListener('change', (e) => {
-  $('cfg-hud-delay').disabled = !e.target.checked;
-  $('cfg-hud-delay-row').style.opacity = e.target.checked ? '1' : '0.5';
-});
 
 $('btn-save-config').addEventListener('click', async () => {
   const activeOpt = document.querySelector('#modal-config .color-opt.active');
@@ -5017,7 +4992,7 @@ $('btn-save-config').addEventListener('click', async () => {
     language: $('cfg-lang').value,
     accentColor: accentColor,
     contextMenuEnabled: contextMenuEnabled,
-    hudAutoHide: $('cfg-hud-autohide').checked,
+    bannerAutoHide: $('cfg-banner-autohide').checked,
     navAutoHide: $('cfg-nav-autohide').checked,
     showTopHints: $('cfg-show-hints').checked,
     hudAutoHideDelay: parseInt($('cfg-hud-delay').value, 10),
@@ -5741,8 +5716,6 @@ $('btn-config').addEventListener('click', openConfig);
   function refreshMenuState() {
     const hasImg = state.current !== -1 && state.images && state.images.length > 0;
     panel.querySelectorAll('[data-needs-image]').forEach(el => el.classList.toggle('disabled', !hasImg));
-    const ah = panel.querySelector('[data-action="autohide"]');
-    if (ah) ah.classList.toggle('checked', !!(state.settings && state.settings.app && state.settings.app.hudAutoHide));
     const sb = panel.querySelector('[data-action="sidebar"]');
     if (sb) sb.classList.toggle('checked', !!state.sidebarOpen);
     const tb = panel.querySelector('[data-action="toolbar"]');
@@ -5838,12 +5811,6 @@ $('btn-config').addEventListener('click', openConfig);
       case 'toolbar':
         setToolbarOpen(!(state.toolbarOpen !== false));
         break;
-      case 'autohide':
-        state.settings.app.hudAutoHide = !state.settings.app.hudAutoHide;
-        if (isElectron) window.electronAPI.saveSettings(state.settings.app);
-        applySettings();
-        if (typeof resetHudTimer === 'function') resetHudTimer();
-        break;
       case 'toggle-hints':
         state.settings.app.showTopHints = (state.settings.app.showTopHints !== false) ? false : true;
         if (isElectron) window.electronAPI.saveSettings(state.settings.app);
@@ -5893,7 +5860,7 @@ $('btn-config').addEventListener('click', openConfig);
     if (!action) return;
     runAction(action, item);
     if (
-      action === 'autohide' || action === 'sidebar' || action === 'toggle-hints' ||
+      action === 'sidebar' || action === 'toggle-hints' ||
       action === 'toggle-alpha-bg' || action === 'clear-recent' || action === 'clear-recent-folders' ||
       action === 'slideshow-loop' || action === 'slideshow-interval' || action === 'slideshow'
     ) {
@@ -5938,7 +5905,7 @@ function resetHudTimer() {
     return;
   }
 
-  const hudEnabled = state.settings?.app?.hudAutoHide !== false;
+  const bannerEnabled = state.settings?.app?.bannerAutoHide !== false;
   const navEnabled = state.settings?.app?.navAutoHide !== false;
   // During slideshow always auto-hide floating chrome (incl. presentation bar)
   const forceSlideshowHide = !!state.slideshowActive;
@@ -5950,13 +5917,14 @@ function resetHudTimer() {
       item.el.classList.add('hud-hidden-fade');
       return;
     }
-    // Filename banner & nav buttons surface only over the canvas; on other
-    // surfaces (toolbar, sidebar, topbar, statusbar) they fade out using the
-    // usual hud-hidden-fade effect, gated by their auto-hide settings.
+    // Filename banner & nav buttons surface only over the canvas. Off the
+    // canvas (over chrome) they always fade out so the viewer chrome stays
+    // clear; the per-element toggles (nav/banner) only gate the inactivity
+    // idle-hide while the cursor IS over the canvas.
     if (item.el.id === 'viewer-filename' || item.el.id === 'nav-container') {
       if (cursorOnCanvas || item.el.matches(':hover')) {
         item.el.classList.remove(item.hideClass);
-      } else if ((item.el.id === 'nav-container' ? navEnabled : hudEnabled) || forceSlideshowHide) {
+      } else {
         item.el.classList.add(item.hideClass);
       }
       return;
@@ -5973,7 +5941,10 @@ function resetHudTimer() {
     }
   });
 
-  if (!hudEnabled && !navEnabled && !forceSlideshowHide) {
+  // Skip the idle timer when nothing is configured to auto-hide:
+  // banner/nav idle-hide is gated by their toggles, ghost chrome + slideshow
+  // always auto-hide while those modes are active.
+  if (!bannerEnabled && !navEnabled && !state.isGhost && !forceSlideshowHide) {
     return;
   }
 
@@ -6007,10 +5978,12 @@ function resetHudTimer() {
         return;
       }
       if (item.el.id === 'viewer-filename') {
-        if (cursorOnCanvas && (hudEnabled || forceSlideshowHide)) item.el.classList.add(item.hideClass);
+        if (cursorOnCanvas && (bannerEnabled || forceSlideshowHide)) item.el.classList.add(item.hideClass);
         return;
       }
-      if (!hudEnabled && !forceSlideshowHide) return;
+      // Floating chrome (topbar/statusbar/kbd-hint/zoom-hud) always auto-hides
+      // in fullscreen (ghost) and during slideshow; no user toggle for it.
+      if (!state.isGhost && !forceSlideshowHide) return;
 
       // User-collapsed action bar stays collapsed (separate from FS auto-hide)
       if (item.el.id === 'kbd-hint' && state.toolbarOpen === false) return;
