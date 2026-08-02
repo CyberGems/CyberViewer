@@ -4930,6 +4930,7 @@ function openConfig() {
   $('cfg-banner-autohide').checked = s.bannerAutoHide !== false;
   $('cfg-nav-autohide').checked = s.navAutoHide !== false;
   $('cfg-show-hints').checked = s.showTopHints !== false;
+  $('cfg-disable-tooltips').checked = !!s.disableTooltips;
   $('cfg-hud-delay').value = s.hudAutoHideDelay;
   $('cfg-hud-delay-val').textContent = (s.hudAutoHideDelay / 1000).toFixed(1) + 's';
   const alphaBg = normalizeAlphaBackground(s.alphaBackground);
@@ -4995,6 +4996,7 @@ $('btn-save-config').addEventListener('click', async () => {
     bannerAutoHide: $('cfg-banner-autohide').checked,
     navAutoHide: $('cfg-nav-autohide').checked,
     showTopHints: $('cfg-show-hints').checked,
+    disableTooltips: $('cfg-disable-tooltips').checked,
     hudAutoHideDelay: parseInt($('cfg-hud-delay').value, 10),
     alphaBackground: normalizeAlphaBackground($('cfg-alpha-bg') && $('cfg-alpha-bg').value),
     slideshowIntervalMs: parseInt(($('cfg-ss-interval') && $('cfg-ss-interval').value) || '3000', 10),
@@ -5064,6 +5066,9 @@ function applySettings() {
   if (hintsEl) {
     hintsEl.classList.toggle('hidden', !showHints);
   }
+
+  // Disable all tooltips (user setting)
+  document.body.classList.toggle("no-tooltips", !!s.disableTooltips);
 
   // Transparency / alpha checkerboard behind transparent pixels
   applyAlphaBackground(s.alphaBackground);

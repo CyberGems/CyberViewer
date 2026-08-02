@@ -2522,6 +2522,15 @@
     visibility: hidden !important;
     transition: none !important;
   }
+
+  /* User setting: disable all CSS tooltips everywhere (modal, sidebar, viewer chrome). */
+  body.no-tooltips .cyber-tooltip::after,
+  body.no-tooltips .cyber-tooltip::before,
+  body.no-tooltips .cyber-tooltip:hover::after,
+  body.no-tooltips .cyber-tooltip:hover::before {
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
   #kbd-hint #btn-trash:hover:not(:disabled):not(.is-disabled) {
     background: rgba(var(--cyber-accent2-rgb), 0.16);
     color: var(--cyber-accent2);
@@ -3007,25 +3016,6 @@
   .config-name { font-size: 14px; font-weight: 600; color: var(--cyber-text); }
   .config-desc { font-size: 12px; color: var(--cyber-muted); margin-top: 2px; }
 
-  /* Linked setting group (e.g. HUD autohide + delay) */
-  .config-cluster {
-    border-bottom: 1px solid rgba(30, 42, 58, 0.4);
-    margin: 0 -8px;
-    padding: 0 8px;
-  }
-  .config-cluster .config-row {
-    border-bottom: none;
-  }
-  .config-cluster .config-row-nested {
-    padding-top: 2px;
-    padding-left: 14px;
-    opacity: 1;
-  }
-  .config-cluster .config-row-nested .config-name {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--cyber-muted);
-  }
 
   /* ── SWITCH ── */
   .switch {
@@ -3753,12 +3743,6 @@
   }
   .config-row:hover {
     background: rgba(255, 255, 255, 0.02);
-  }
-  .config-cluster:hover {
-    background: transparent;
-  }
-  .config-cluster .config-row {
-    margin: 0;
   }
 
   /* Top Button general hover (solves the missing hover on top-btn) */
