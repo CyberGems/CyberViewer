@@ -103,7 +103,7 @@
     width: 100% !important;
     height: 36px !important;
     z-index: 999999 !important;
-    display: flex !important;
+    display: flex;
     align-items: center;
     justify-content: center !important;
     gap: 30px !important;
