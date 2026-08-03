@@ -811,6 +811,8 @@
     box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.12), 0 8px 24px rgba(0,0,0,0.55);
     padding: 6px;
     display: none;
+  }
+  .menu-sub:not(:has(.menu-cat[data-sub])) {
     max-height: calc(100vh - 20px);
     overflow-y: auto;
   }
