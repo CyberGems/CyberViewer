@@ -620,9 +620,8 @@
     outline: none;
   }
 
-  .win-btn:hover { border-color: var(--cyber-accent); color: var(--cyber-accent); background: rgba(0,212,255,0.08); }
-  #win-close:hover { border-color: var(--cyber-accent2); color: var(--cyber-accent2); background: rgba(255,45,120,0.12); }
-  #win-max:hover { border-color: var(--cyber-accent3); color: var(--cyber-accent3); background: rgba(170,255,0,0.12); }
+  .win-btn:hover { color: var(--cyber-accent); background: rgba(0,212,255,0.08); }
+  #win-close:hover { color: var(--cyber-accent2); background: rgba(255,45,120,0.12); }
   .win-sep { width: 1px; height: 20px; background: var(--cyber-border); margin: 0 4px; flex-shrink: 0; }
   #btn-config { font-size: 17px; }
 
@@ -630,7 +629,7 @@
   .menu-wrap { position: relative; -webkit-app-region: no-drag; }
   .menu-ico { width: 18px; height: 18px; display: block; }
   .win-ico { width: 14px; height: 14px; display: block; }
-  #btn-menu.open { border-color: var(--cyber-accent); color: var(--cyber-accent); background: rgba(0,212,255,0.10); }
+  #btn-menu.open { color: var(--cyber-accent); background: rgba(0,212,255,0.10); }
   /* Hide burger tooltip while the menu is open (hover stays on the button) */
   #btn-menu.open.cyber-tooltip::after,
   #btn-menu.open.cyber-tooltip::before,
@@ -3819,7 +3818,6 @@
 
   /* Dialog close & cancel buttons reddish hover (match window close X) */
   .modal-close-btn:hover {
-    border-color: var(--cyber-accent2) !important;
     color: var(--cyber-accent2) !important;
     background: rgba(255, 45, 120, 0.12) !important;
     box-shadow: 0 0 12px rgba(255, 45, 120, 0.4) !important;

@@ -5228,9 +5228,9 @@ if (isElectron) {
     else releaseTooltipsOnNextPointer();
   });
 
-  // Classic Windows maximize / restore glyphs
-  const WIN_MAX_ICO = '<svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="1"/></svg>';
-  const WIN_RESTORE_ICO = '<svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="1"/><path d="M6 16V6h10"/></svg>';
+  // Modern maximize (arrows out) and restore (arrows in) icons
+  const WIN_MAX_ICO = '<svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+  const WIN_RESTORE_ICO = '<svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="10" y1="14" x2="3" y2="21"/></svg>';
 
   window.electronAPI.onWinState(winState => {
     const btn = $('win-max');
@@ -5600,7 +5600,7 @@ $('btn-center').addEventListener('click', () => {
       <div class="modal-box about-modal" role="dialog" aria-modal="true" aria-labelledby="about-dialog-title">
         <div class="modal-header">
           <div class="modal-title" id="about-dialog-title">${t.about_title}</div>
-          <button class="win-btn" id="about-close-btn" aria-label="${t.close || 'Close'}">&#10005;</button>
+          <button class="win-btn modal-close-btn" id="about-close-btn" aria-label="${t.close || 'Close'}">&#10005;</button>
         </div>
         <div class="modal-body">
           <div class="about-hero">
