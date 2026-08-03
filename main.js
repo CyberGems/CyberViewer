@@ -2,7 +2,7 @@
 
 const {
   app, BrowserWindow, shell, ipcMain, screen, Tray, Menu,
-  protocol, nativeImage, clipboard, dialog
+  protocol, nativeImage, clipboard, dialog, globalShortcut
 } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -99,6 +99,7 @@ function loadSettings() {
       preferredDisplayId: 'auto',
       language: 'en',
       contextMenuEnabled: false,
+      toggleHotkey: '',
       checkUpdatesOnStartup: true,
       updateNotify: {
         lastNotifiedAvailable: null,
@@ -503,7 +504,7 @@ function buildTrayMenuState() {
     settingsLabel: t.tray_settings,
     aboutLabel: t.tray_about || t.about,
     exitLabel: t.tray_exit,
-    shortcut: ''
+    shortcut: (settings.app && settings.app.toggleHotkey) || ''
   };
 }
 
@@ -667,6 +668,34 @@ function createTray() {
     showTrayMenu(bounds);
   });
 }
+
+// ── Global toggle hotkey ─────────────────────────────────────────────
+// When the user sets an accelerator (e.g. "Alt+Shift+V") we register it globally
+// so CyberViewer can be shown/hidden from anywhere. Empty string = disabled.
+// We normalize away stray whitespace and reject anything that fails to register
+// so we never leave a stale accelerator bound.
+function applyToggleHotkey(accelerator) {
+  try { globalShortcut.unregisterAll(); } catch (_) { /* not registered yet */ }
+  const acc = (accelerator || '').trim();
+  if (!acc) return { success: true }; // disabled by design
+  try {
+    globalShortcut.register(acc, () => {
+      if (!win || win.isDestroyed()) return;
+      if (isWindowShown()) hideToTray();
+      else showFromTray();
+    });
+    if (!globalShortcut.isRegistered(acc)) {
+      return { success: false, error: 'accelerator-in-use' };
+    }
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e.message || 'invalid-accelerator' };
+  }
+}
+
+app.on('will-quit', () => {
+  try { globalShortcut.unregisterAll(); } catch (_) { /* nothing registered */ }
+});
 
 ipcMain.on('tray-menu-action', (_event, action) => {
   hideTrayMenu();
@@ -1321,6 +1350,11 @@ ipcMain.on('save-settings', (event, newSettings) => {
     // change) without changing the icon identity.
     updateTrayMenu();
   }
+
+  // (Re)apply the global toggle hotkey whenever the setting may have changed.
+  if (newSettings.toggleHotkey !== undefined) {
+    applyToggleHotkey(newSettings.toggleHotkey);
+  }
 });
 
 ipcMain.on('show-context-menu', (event, props) => {
@@ -1612,6 +1646,9 @@ if (!gotTheLock) {
       beforeQuitInstall: () => { isQuitting = true; }
     });
     if (settings.app.closeToTray) createTray();
+    // Apply the global toggle hotkey if one is configured (empty = disabled).
+    const hk = settings.app && settings.app.toggleHotkey;
+    if (hk) applyToggleHotkey(hk);
 
     const initialFile = getFilePathFromArgs(process.argv);
     if (initialFile) {

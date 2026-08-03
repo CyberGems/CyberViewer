@@ -4925,6 +4925,7 @@ function openConfig() {
   $('cfg-autostart').checked = s.autoStart;
   $('cfg-contextmenu').checked = s.contextMenuEnabled || false;
   $('cfg-lang').value = s.language || 'en';
+  $('cfg-hotkey').value = s.toggleHotkey || '';
   
   // Auto-hide settings (independent per element)
   $('cfg-banner-autohide').checked = s.bannerAutoHide !== false;
@@ -4980,6 +4981,71 @@ $('cfg-hud-delay').addEventListener('input', (e) => {
   $('cfg-hud-delay-val').textContent = (e.target.value / 1000).toFixed(1) + 's';
 });
 
+// ── Global toggle hotkey capture (accelerator format, e.g. "Alt+Shift+V") ──
+(function () {
+  const input = $('cfg-hotkey');
+  const clearBtn = $('cfg-hotkey-clear');
+  if (!input || !clearBtn) return;
+  let capturing = false;
+
+  // Translation keys for the capture placeholder hint.
+  function tCapture(lang) {
+    const pack = (I18N[lang] || I18N.en) || {};
+    return pack.toggle_hotkey_press || 'Press keys…';
+  }
+
+  function setCapturing(on) {
+    capturing = on;
+    input.classList.toggle('capturing', on);
+    if (on && !input.value) {
+      input.placeholder = tCapture((state.settings && state.settings.app && state.settings.app.language) || 'en');
+    }
+  }
+
+  // Click → enter capture mode (don't focus the readonly input itself).
+  input.addEventListener('click', () => setCapturing(true));
+  // Clicking elsewhere exits capture mode.
+  document.addEventListener('pointerdown', (e) => {
+    if (!capturing) return;
+    if (e.target !== input && !input.contains(e.target) && e.target !== clearBtn) setCapturing(false);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (!capturing) return;
+    e.preventDefault();
+    e.stopPropagation();
+    // Esc cancels capture without changing the value.
+    if (e.key === 'Escape') { setCapturing(false); return; }
+    // Backspace clears the current binding.
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      input.value = '';
+      setCapturing(false);
+      return;
+    }
+    // Ignore bare modifier presses — wait for a real key + modifiers.
+    const modKeys = ['Control', 'Alt', 'Shift', 'Meta', 'OS'];
+    if (modKeys.includes(e.key)) return;
+
+    const mods = [];
+    if (e.ctrlKey) mods.push('Ctrl');
+    if (e.altKey) mods.push('Alt');
+    if (e.shiftKey) mods.push('Shift');
+    if (e.metaKey) mods.push('Meta');
+    // Normalize the base key (letters uppercase, digits as-is).
+    let key = e.key;
+    if (key.length === 1) key = key.toUpperCase();
+    const parts = mods.concat(key);
+    const acc = parts.join('+');
+    input.value = acc;
+    setCapturing(false);
+  });
+
+  clearBtn.addEventListener('click', () => {
+    input.value = '';
+    setCapturing(false);
+  });
+})();
+
 $('btn-save-config').addEventListener('click', async () => {
   const activeOpt = document.querySelector('#modal-config .color-opt.active');
   const accentColor = (activeOpt && activeOpt.dataset.color) || '#00d4ff';
@@ -4993,6 +5059,7 @@ $('btn-save-config').addEventListener('click', async () => {
     language: $('cfg-lang').value,
     accentColor: accentColor,
     contextMenuEnabled: contextMenuEnabled,
+    toggleHotkey: $('cfg-hotkey') ? $('cfg-hotkey').value.trim() : '',
     bannerAutoHide: $('cfg-banner-autohide').checked,
     navAutoHide: $('cfg-nav-autohide').checked,
     showTopHints: $('cfg-show-hints').checked,
