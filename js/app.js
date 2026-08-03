@@ -5181,10 +5181,12 @@ if (isElectron) {
     const t = I18N[uiLang] || I18N.en;
     // Avoid native title tooltips (they can stick after minimize/restore)
     if (winState === 'maximized') {
+      document.body.classList.add('window-maximized');
       btn.classList.add('maximized');
       btn.innerHTML = WIN_RESTORE_ICO;
       setCyberTooltip(btn, t.menu_restore || 'Restore');
     } else {
+      document.body.classList.remove('window-maximized');
       btn.classList.remove('maximized');
       btn.innerHTML = WIN_MAX_ICO;
       setCyberTooltip(btn, t.maximize || 'Maximize');
