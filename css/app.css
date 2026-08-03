@@ -788,6 +788,7 @@
   .menu-cat:hover, .menu-item:hover {
     background: rgba(var(--cyber-accent-rgb), 0.12);
     color: var(--cyber-accent);
+    z-index: 10;
   }
   .menu-cat:hover .menu-arrow { color: var(--cyber-accent); }
   .menu-cat:hover > .menu-shortcut,
