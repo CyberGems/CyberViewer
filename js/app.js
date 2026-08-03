@@ -1195,7 +1195,10 @@ function renderMenuTemplate(container, template) {
       cat.addEventListener('mouseenter', () => {
         if (item.enabled === false) return;
         sub.style.top = '';
-        const rect = sub.getBoundingClientRect();
+        sub.style.left = '';
+        sub.style.right = '';
+        
+        let rect = sub.getBoundingClientRect();
         const winH = window.innerHeight;
         if (rect.bottom > winH) {
           const parentRect = cat.getBoundingClientRect();
@@ -1204,6 +1207,16 @@ function renderMenuTemplate(container, template) {
             topVal = 10 - parentRect.top;
           }
           sub.style.top = topVal + 'px';
+        }
+        
+        rect = sub.getBoundingClientRect();
+        const winW = window.innerWidth;
+        if (rect.right > winW) {
+          sub.style.left = 'auto';
+          sub.style.right = 'calc(100% + 4px)';
+        } else if (rect.left < 0) {
+          sub.style.left = 'calc(100% + 4px)';
+          sub.style.right = 'auto';
         }
       });
 
