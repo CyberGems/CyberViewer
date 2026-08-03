@@ -1080,11 +1080,6 @@ function buildMenuTemplate(type, data) {
         enabled: hiddenCount > 0,
         visible: hiddenCount > 0,
         action: () => executeAction({ action: 'restore-hidden' })
-      },
-      { type: 'separator' },
-      {
-        label: getTxt('menu_quit'),
-        action: () => window.electronAPI.close()
       }
     ];
   } else {
@@ -1101,23 +1096,6 @@ function buildMenuTemplate(type, data) {
             label: getTxt('menu_paste'),
             shortcut: 'Ctrl+V',
             action: () => pasteFromClipboard()
-          },
-          {
-            label: getTxt('menu_close_image'),
-            enabled: hasImages,
-            visible: hasImages,
-            action: () => closeImage()
-          },
-          {
-            label: getTxt('menu_copy_path'),
-            enabled: hasImages && !!data.path,
-            visible: hasImages,
-            action: () => {
-              if (data.path) {
-                navigator.clipboard.writeText(data.path);
-                showToast(lang === 'es' ? 'RUTA COPIADA' : 'PATH COPIED', 'success');
-              }
-            }
           }
         ]
       },
@@ -1125,19 +1103,6 @@ function buildMenuTemplate(type, data) {
         label: getTxt('menu_view'),
         isSub: true,
         items: [
-          {
-            label: getTxt('menu_fit'),
-            shortcut: 'F',
-            enabled: hasImages,
-            action: () => $('btn-fit-hud').click()
-          },
-          {
-            label: getTxt('menu_original'),
-            shortcut: '1',
-            enabled: hasImages,
-            action: () => $('btn-orig-hud').click()
-          },
-          { type: 'separator' },
           {
             label: getTxt('menu_toolbar'),
             type: 'checkbox',
@@ -1164,56 +1129,6 @@ function buildMenuTemplate(type, data) {
               if (isElectron) window.electronAPI.saveSettings(state.settings.app);
               applySettings();
             }
-          }
-        ]
-      },
-      {
-        label: getTxt('menu_edit'),
-        isSub: true,
-        enabled: hasImages,
-        items: [
-          {
-            label: getTxt('menu_rotate_r'),
-            shortcut: 'E',
-            action: () => rotateAndSave(90)
-          },
-          {
-            label: getTxt('menu_rotate_l'),
-            shortcut: 'Q',
-            action: () => rotateAndSave(-90)
-          },
-          { type: 'separator' },
-          {
-            label: getTxt('menu_crop'),
-            shortcut: 'C',
-            action: () => $('btn-crop').click()
-          },
-          {
-            label: getTxt('menu_resize'),
-            shortcut: 'R',
-            action: () => $('btn-resize').click()
-          },
-          {
-            label: getTxt('menu_adjust'),
-            shortcut: 'J',
-            action: () => { const b = $('btn-adjust'); if (b) b.click(); }
-          },
-          { type: 'separator' },
-          {
-            label: getTxt('menu_flip_h'),
-            shortcut: 'H',
-            action: () => flipImage('h')
-          },
-          {
-            label: getTxt('menu_flip_v'),
-            shortcut: 'Shift+H',
-            action: () => flipImage('v')
-          },
-          { type: 'separator' },
-          {
-            label: isFav ? getTxt('favorite_remove') : getTxt('favorite_add'),
-            shortcut: 'Ctrl+D',
-            action: () => toggleFavorite()
           }
         ]
       },
@@ -1276,6 +1191,21 @@ function renderMenuTemplate(container, template) {
       sub.className = 'menu-sub menu-recent-sub';
       renderMenuTemplate(sub, item.items || []);
       cat.appendChild(sub);
+
+      cat.addEventListener('mouseenter', () => {
+        if (item.enabled === false) return;
+        sub.style.top = '';
+        const rect = sub.getBoundingClientRect();
+        const winH = window.innerHeight;
+        if (rect.bottom > winH) {
+          const parentRect = cat.getBoundingClientRect();
+          let topVal = winH - 10 - parentRect.top - rect.height;
+          if (parentRect.top + topVal < 10) {
+            topVal = 10 - parentRect.top;
+          }
+          sub.style.top = topVal + 'px';
+        }
+      });
 
       container.appendChild(cat);
     } else {
