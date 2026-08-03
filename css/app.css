@@ -693,8 +693,6 @@
     z-index: 1000000;
     display: none;
     font-family: var(--font-ui);
-    max-height: calc(100vh - 20px);
-    overflow-y: auto;
   }
   .menu-panel::-webkit-scrollbar,
   .menu-sub::-webkit-scrollbar {
