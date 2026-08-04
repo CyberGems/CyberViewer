@@ -3199,17 +3199,6 @@
     --preview-accent: var(--cyber-accent);
     --preview-accent-rgb: var(--cyber-accent-rgb);
   }
-  #modal-config #btn-save-config.top-btn.active {
-    border-color: var(--preview-accent);
-    color: var(--preview-accent);
-    background: rgba(var(--preview-accent-rgb), 0.08);
-  }
-  #modal-config #btn-save-config.top-btn.active:hover {
-    border-color: var(--preview-accent) !important;
-    color: #fff !important;
-    background: rgba(var(--preview-accent-rgb), 0.18) !important;
-    box-shadow: 0 0 12px rgba(var(--preview-accent-rgb), 0.45) !important;
-  }
   #modal-config input:checked + .slider {
     border-color: var(--preview-accent);
   }
@@ -3233,6 +3222,276 @@
   #modal-config .color-opt.active {
     border-color: #fff;
     box-shadow: 0 0 12px rgba(var(--preview-accent-rgb), 0.55);
+  }
+
+  /* ── CONFIG MODAL TABS (CyberNotes-style) ── */
+  #modal-config .config-modal-box {
+    max-width: min(780px, calc(100vw - 48px));
+    width: 100%;
+    height: min(680px, calc(100vh - 48px));
+  }
+
+  #modal-config .config-modal-body {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  #modal-config .config-layout {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+  }
+
+  #modal-config .config-nav {
+    width: 180px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--cyber-border);
+    background: rgba(0, 0, 0, 0.18);
+    padding: 14px 10px 12px;
+  }
+
+  #modal-config .config-nav-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 8px 14px;
+    font-family: var(--font-ui);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--cyber-text);
+    user-select: none;
+  }
+
+  #modal-config .config-nav-icon {
+    color: var(--preview-accent);
+    text-shadow: 0 0 8px rgba(var(--preview-accent-rgb), 0.55);
+  }
+
+  #modal-config .config-nav-items {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  #modal-config .config-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--cyber-muted);
+    font-family: var(--font-ui);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    text-align: left;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  }
+
+  #modal-config .config-nav-btn:hover {
+    color: var(--cyber-text);
+    background: rgba(var(--preview-accent-rgb), 0.06);
+  }
+
+  #modal-config .config-nav-btn.active {
+    color: var(--preview-accent);
+    background: rgba(var(--preview-accent-rgb), 0.1);
+    border-color: rgba(var(--preview-accent-rgb), 0.45);
+    box-shadow: inset 0 0 14px rgba(var(--preview-accent-rgb), 0.08);
+  }
+
+  #modal-config .config-nav-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 12px;
+    margin-top: 8px;
+    border-top: 1px solid var(--cyber-border);
+  }
+
+  #modal-config .config-autosave-pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 31px;
+    padding: 7px 9px;
+    border: 1px solid rgba(var(--preview-accent-rgb), 0.24);
+    border-radius: 4px;
+    background: rgba(var(--preview-accent-rgb), 0.06);
+    color: var(--cyber-muted);
+    font-family: var(--font-ui);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  #modal-config .config-autosave-pill.is-hidden {
+    display: none;
+  }
+
+  #modal-config .config-autosave-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--preview-accent);
+    box-shadow: 0 0 8px rgba(var(--preview-accent-rgb), 0.7);
+  }
+
+  #modal-config #config-autosave-state.saving {
+    color: var(--preview-accent);
+  }
+
+  #modal-config .config-nav-close {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    font-size: 11px;
+    padding: 9px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--cyber-border);
+    background: rgba(255,255,255,0.03);
+    color: var(--cyber-muted);
+    cursor: pointer;
+    font-family: var(--font-ui);
+    transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
+  }
+
+  #modal-config .config-close-icon {
+    width: 14px;
+    height: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+  }
+
+  #modal-config .config-close-icon svg {
+    width: 14px;
+    height: 14px;
+    display: block;
+  }
+
+  #modal-config .config-nav-close:hover {
+    color: var(--cyber-text);
+    background: rgba(var(--preview-accent-rgb), 0.08);
+    border-color: var(--preview-accent);
+  }
+
+  #modal-config .config-content {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    padding: 18px 20px 24px;
+  }
+
+  #modal-config .config-content::-webkit-scrollbar,
+  #modal-config .config-nav-items::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  #modal-config .config-content::-webkit-scrollbar-track,
+  #modal-config .config-nav-items::-webkit-scrollbar-track {
+    background: var(--cyber-black);
+  }
+
+  #modal-config .config-content::-webkit-scrollbar-thumb,
+  #modal-config .config-nav-items::-webkit-scrollbar-thumb {
+    background: var(--cyber-dim);
+    border-radius: 3px;
+  }
+
+  #modal-config .config-content::-webkit-scrollbar-thumb:hover,
+  #modal-config .config-nav-items::-webkit-scrollbar-thumb:hover {
+    background: var(--preview-accent);
+  }
+
+  #modal-config .config-tab-panel {
+    display: none;
+  }
+
+  #modal-config .config-tab-panel.active {
+    display: block;
+  }
+
+  #modal-config .config-section {
+    background: rgba(255,255,255,0.025);
+    border: 1px solid var(--cyber-border);
+    border-radius: 6px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+
+  #modal-config .config-label {
+    margin-bottom: 10px;
+    letter-spacing: 0.12em;
+  }
+
+  #modal-config .config-row {
+    padding: 12px 0;
+    gap: 16px;
+  }
+
+  #modal-config .config-row:first-of-type {
+    padding-top: 2px;
+  }
+
+  #modal-config .config-row:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  @media (max-width: 680px) {
+    #modal-config .config-modal-box {
+      height: min(760px, calc(100vh - 32px));
+      max-width: calc(100vw - 32px);
+    }
+    #modal-config .config-layout {
+      flex-direction: column;
+    }
+    #modal-config .config-nav {
+      width: auto;
+      border-right: 0;
+      border-bottom: 1px solid var(--cyber-border);
+    }
+    #modal-config .config-nav-items {
+      flex-direction: row;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding-bottom: 2px;
+    }
+    #modal-config .config-nav-btn {
+      flex: 0 0 auto;
+      width: auto;
+      white-space: nowrap;
+    }
+    #modal-config .config-nav-footer {
+      flex-direction: row;
+      align-items: center;
+    }
+    #modal-config .config-autosave-pill,
+    #modal-config .config-nav-close {
+      flex: 1;
+    }
   }
 
   /* ── COLOR PICKER ── */

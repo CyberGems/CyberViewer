@@ -442,218 +442,265 @@
 
 <!-- MODAL: CONFIG -->
 <div id="modal-config" class="modal-overlay">
-  <div class="modal-box">
+  <div class="modal-box config-modal-box">
     <div class="modal-header">
       <div class="modal-title" data-i18n="config_title">Configuración</div>
       <button class="win-btn modal-close-btn" data-close-modal="modal-config">&#10005;</button>
     </div>
-    <div class="modal-body">
-
-      <div class="config-section">
-        <label class="config-label" data-i18n="language_label">Idioma</label>
-        <div class="config-row">
-          <div class="config-info">
-            <div class="config-name" data-i18n="language_label">Idioma</div>
-            <div class="config-desc" data-i18n="language_desc">Idioma de la interfaz de usuario.</div>
+    <div class="modal-body config-modal-body">
+      <div class="config-layout">
+        <aside class="config-nav" aria-label="Configuration sections">
+          <div class="config-nav-title">
+            <span class="config-nav-icon" aria-hidden="true">&#9881;&#xFE0E;</span>
+            <span data-i18n="config_title">Configuración</span>
           </div>
-          <select id="cfg-lang" class="cfg-select">
-            <option value="en">English</option>
-            <option value="es">Español</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="config-section">
-        <label class="config-label" data-i18n="personalization">Personalización</label>
-        <div class="config-row">
-          <div class="config-info">
-            <div class="config-name" data-i18n="accent_color">Color de Acento</div>
-            <div class="config-desc" data-i18n="accent_desc">Define el color principal de la interfaz neon.</div>
+          <div class="config-nav-items" role="tablist" aria-label="Configuration tabs">
+            <button type="button" class="config-nav-btn active" data-config-tab="general" role="tab" aria-selected="true" aria-controls="config-tab-general">
+              <span aria-hidden="true">&#9673;</span>
+              <span data-i18n="settings_nav_general">General</span>
+            </button>
+            <button type="button" class="config-nav-btn" data-config-tab="appearance" role="tab" aria-selected="false" aria-controls="config-tab-appearance">
+              <span aria-hidden="true">&#10022;</span>
+              <span data-i18n="settings_nav_appearance">Apariencia</span>
+            </button>
+            <button type="button" class="config-nav-btn" data-config-tab="interface" role="tab" aria-selected="false" aria-controls="config-tab-interface">
+              <span aria-hidden="true">&#9638;</span>
+              <span data-i18n="settings_nav_interface">Interfaz</span>
+            </button>
+            <button type="button" class="config-nav-btn" data-config-tab="slideshow" role="tab" aria-selected="false" aria-controls="config-tab-slideshow">
+              <span aria-hidden="true">&#9654;</span>
+              <span data-i18n="settings_nav_slideshow">Presentación</span>
+            </button>
+            <button type="button" class="config-nav-btn" data-config-tab="system" role="tab" aria-selected="false" aria-controls="config-tab-system">
+              <span aria-hidden="true">&#9889;</span>
+              <span data-i18n="settings_nav_system">Sistema</span>
+            </button>
           </div>
-          <div class="color-grid">
-            <div class="color-opt active" style="background:#00d4ff" data-color="#00d4ff"></div>
-            <div class="color-opt" style="background:#ff2d78" data-color="#ff2d78"></div>
-            <div class="color-opt" style="background:#a8ff3e" data-color="#a8ff3e"></div>
-            <div class="color-opt" style="background:#ffae00" data-color="#ffae00"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="config-section">
-        <label class="config-label" data-i18n="interface">Interfaz</label>
-        <div class="config-row">
-          <div class="config-info">
-            <div class="config-name" data-i18n="sidebar">Panel Lateral</div>
-            <div class="config-desc" data-i18n="sidebar_desc">Mostrar miniaturas al iniciar.</div>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="cfg-sidebar">
-            <span class="slider"></span>
-          </label>
-        </div>
-        <div class="config-row">
-          <div class="config-info">
-            <div class="config-name" data-i18n="statusbar">Barra de Estado</div>
-            <div class="config-desc" data-i18n="statusbar_desc">Mostrar información técnica inferior.</div>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="cfg-statusbar" checked>
-            <span class="slider"></span>
-          </label>
-        </div>
-        <div class="config-row">
-          <div class="config-info">
-              <div class="config-name" data-i18n="cfg_banner_autohide">Ocultar nombre de archivo</div>
-              <div class="config-desc" data-i18n="cfg_banner_autohide_desc">Oculta el banner del título tras inactividad sobre el lienzo.</div>
+          <div class="config-nav-footer">
+            <div class="config-autosave-pill is-hidden" aria-live="polite">
+              <span class="config-autosave-dot" aria-hidden="true"></span>
+              <span id="config-autosave-state" data-i18n="config_autosave">Autoguardado</span>
             </div>
-            <label class="switch">
-              <input type="checkbox" id="cfg-banner-autohide" checked>
-              <span class="slider"></span>
-            </label>
+            <button type="button" class="config-nav-close" data-close-modal="modal-config">
+              <span class="config-close-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5H6.5A2.5 2.5 0 0 0 4 7.5v9A2.5 2.5 0 0 0 6.5 19H10"/><path d="M15 8l4 4-4 4"/><path d="M19 12H9"/></svg></span>
+              <span data-i18n="config_close">Cerrar</span>
+            </button>
           </div>
-        <div class="config-row">
-          <div class="config-info">
-              <div class="config-name" data-i18n="cfg_nav_autohide">Ocultar botones de navegación</div>
-              <div class="config-desc" data-i18n="cfg_nav_autohide_desc">Oculta los botones tras inactividad sobre el lienzo.</div>
+        </aside>
+
+        <div class="config-content">
+          <section class="config-tab-panel active" id="config-tab-general" data-config-panel="general" role="tabpanel">
+            <div class="config-section">
+              <label class="config-label" data-i18n="settings_nav_general">General</label>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="language_label">Idioma</div>
+                  <div class="config-desc" data-i18n="language_desc">Idioma de la interfaz de usuario.</div>
+                </div>
+                <select id="cfg-lang" class="cfg-select">
+                  <option value="en">English</option>
+                  <option value="es">Español</option>
+                </select>
+              </div>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="opening_monitor">Monitor de Apertura</div>
+                  <div class="config-desc" data-i18n="opening_monitor_desc">Último monitor usado, o forzar una pantalla concreta.</div>
+                </div>
+                <select id="cfg-monitor" class="cfg-select">
+                  <option value="auto" data-i18n="monitor_auto">Último usado</option>
+                </select>
+              </div>
             </div>
-            <label class="switch">
-              <input type="checkbox" id="cfg-nav-autohide" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-        <div class="config-row" id="cfg-hud-delay-row">
-          <div class="config-info">
-              <div class="config-name" data-i18n="cfg_hud_delay">Retraso de ocultación</div>
-              <div class="config-desc" id="cfg-hud-delay-val">2.0s</div>
+          </section>
+
+          <section class="config-tab-panel" id="config-tab-appearance" data-config-panel="appearance" role="tabpanel" hidden>
+            <div class="config-section">
+              <label class="config-label" data-i18n="personalization">Personalización</label>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="accent_color">Color de Acento</div>
+                  <div class="config-desc" data-i18n="accent_desc">Define el color principal de la interfaz neon.</div>
+                </div>
+                <div class="color-grid">
+                  <div class="color-opt active" style="background:#00d4ff" data-color="#00d4ff"></div>
+                  <div class="color-opt" style="background:#ff2d78" data-color="#ff2d78"></div>
+                  <div class="color-opt" style="background:#a8ff3e" data-color="#a8ff3e"></div>
+                  <div class="color-opt" style="background:#ffae00" data-color="#ffae00"></div>
+                </div>
+              </div>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="cfg_alpha_bg">Fondo de transparencia</div>
+                  <div class="config-desc" data-i18n="cfg_alpha_bg_desc">Rejilla detrás de píxeles transparentes (PNG, WEBP, GIF…).</div>
+                </div>
+                <select id="cfg-alpha-bg" class="cfg-select">
+                  <option value="checker-dark" data-i18n="cfg_alpha_bg_dark">Rejilla oscura</option>
+                  <option value="checker-light" data-i18n="cfg_alpha_bg_light">Rejilla clara</option>
+                  <option value="solid" data-i18n="cfg_alpha_bg_solid">Sin rejilla</option>
+                </select>
+              </div>
             </div>
-            <input type="range" id="cfg-hud-delay" class="cfg-range" min="500" max="10000" step="500" value="2000">
-          </div>
-        <div class="config-row">
-          <div class="config-info">
-            <div class="config-name" data-i18n="cfg_show_hints">Atajos de Título</div>
-            <div class="config-desc" data-i18n="cfg_show_hints_desc">Mostrar atajos de teclado en la barra superior.</div>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="cfg-show-hints" checked>
-            <span class="slider"></span>
-          </label>
-        </div>
-        <div class="config-row">
-          <div class="config-info">
-              <div class="config-name" data-i18n="cfg_disable_tooltips">Desactivar tooltips</div>
-              <div class="config-desc" data-i18n="cfg_disable_tooltips_desc">Oculta todos los tooltips de la interfaz.</div>
+          </section>
+
+          <section class="config-tab-panel" id="config-tab-interface" data-config-panel="interface" role="tabpanel" hidden>
+            <div class="config-section">
+              <label class="config-label" data-i18n="interface">Interfaz</label>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="sidebar">Panel Lateral</div>
+                  <div class="config-desc" data-i18n="sidebar_desc">Mostrar miniaturas al iniciar.</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="cfg-sidebar">
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="statusbar">Barra de Estado</div>
+                  <div class="config-desc" data-i18n="statusbar_desc">Mostrar información técnica inferior.</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="cfg-statusbar" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="cfg_banner_autohide">Ocultar nombre de archivo</div>
+                  <div class="config-desc" data-i18n="cfg_banner_autohide_desc">Oculta el banner del título tras inactividad sobre el lienzo.</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="cfg-banner-autohide" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="cfg_nav_autohide">Ocultar botones de navegación</div>
+                  <div class="config-desc" data-i18n="cfg_nav_autohide_desc">Oculta los botones tras inactividad sobre el lienzo.</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="cfg-nav-autohide" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="config-row" id="cfg-hud-delay-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="cfg_hud_delay">Retraso de ocultación</div>
+                  <div class="config-desc" id="cfg-hud-delay-val">2.0s</div>
+                </div>
+                <input type="range" id="cfg-hud-delay" class="cfg-range" min="500" max="10000" step="500" value="2000">
+              </div>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="cfg_show_hints">Atajos de Título</div>
+                  <div class="config-desc" data-i18n="cfg_show_hints_desc">Mostrar atajos de teclado en la barra superior.</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="cfg-show-hints" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="cfg_disable_tooltips">Desactivar tooltips</div>
+                  <div class="config-desc" data-i18n="cfg_disable_tooltips_desc">Oculta todos los tooltips de la interfaz.</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="cfg-disable-tooltips">
+                  <span class="slider"></span>
+                </label>
+              </div>
             </div>
-            <label class="switch">
-              <input type="checkbox" id="cfg-disable-tooltips">
-              <span class="slider"></span>
-            </label>
-          </div>
-        <div class="config-row">
-          <div class="config-info">
-            <div class="config-name" data-i18n="cfg_alpha_bg">Fondo de transparencia</div>
-            <div class="config-desc" data-i18n="cfg_alpha_bg_desc">Rejilla detrás de píxeles transparentes (PNG, WEBP, GIF…).</div>
-          </div>
-          <select id="cfg-alpha-bg" class="cfg-select">
-            <option value="checker-dark" data-i18n="cfg_alpha_bg_dark">Rejilla oscura</option>
-            <option value="checker-light" data-i18n="cfg_alpha_bg_light">Rejilla clara</option>
-            <option value="solid" data-i18n="cfg_alpha_bg_solid">Sin rejilla</option>
-          </select>
+          </section>
+
+          <section class="config-tab-panel" id="config-tab-slideshow" data-config-panel="slideshow" role="tabpanel" hidden>
+            <div class="config-section">
+              <label class="config-label" data-i18n="cfg_slideshow_section">Presentación</label>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="cfg_slideshow_interval">Intervalo</div>
+                  <div class="config-desc" data-i18n="cfg_slideshow_interval_desc">Segundos entre cada imagen del pase.</div>
+                </div>
+                <select id="cfg-ss-interval" class="cfg-select">
+                  <option value="2000">2s</option>
+                  <option value="3000">3s</option>
+                  <option value="5000">5s</option>
+                  <option value="10000">10s</option>
+                </select>
+              </div>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="cfg_slideshow_loop">Repetir carpeta (loop)</div>
+                  <div class="config-desc" data-i18n="cfg_slideshow_loop_desc">Al llegar al final, volver a la primera imagen.</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="cfg-ss-loop" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="cfg_slideshow_fs">Pantalla completa al iniciar</div>
+                  <div class="config-desc" data-i18n="cfg_slideshow_fs_desc">Entrar en modo inmersivo al comenzar la presentación.</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="cfg-ss-fs" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <section class="config-tab-panel" id="config-tab-system" data-config-panel="system" role="tabpanel" hidden>
+            <div class="config-section">
+              <label class="config-label" data-i18n="system">Sistema</label>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="close_to_tray">Cerrar a la Bandeja</div>
+                  <div class="config-desc" data-i18n="close_to_tray_desc">La app seguirá corriendo en segundo plano.</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="cfg-tray">
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="auto_start">Inicio Automático</div>
+                  <div class="config-desc" data-i18n="auto_start_desc">Arrancar con Windows (minimizado).</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="cfg-autostart">
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="context_menu">Menú Contextual</div>
+                  <div class="config-desc" data-i18n="context_menu_desc">Añadir CyberViewer al menú contextual del Explorador de Windows.</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="cfg-contextmenu">
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="toggle_hotkey">Atajo de alternar</div>
+                  <div class="config-desc" data-i18n="toggle_hotkey_desc">Atajo global para mostrar/ocultar CyberViewer.</div>
+                </div>
+                <div class="cfg-hotkey">
+                  <input type="text" id="cfg-hotkey" class="cfg-hotkey-input" readonly placeholder="Alt+Shift+V" autocomplete="off" spellcheck="false">
+                  <button type="button" id="cfg-hotkey-clear" class="cfg-hotkey-clear" data-i18n="toggle_hotkey_clear">Limpiar</button>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
-
-      <div class="config-section">
-        <label class="config-label" data-i18n="cfg_slideshow_section">Presentación</label>
-        <div class="config-row">
-          <div class="config-info">
-            <div class="config-name" data-i18n="cfg_slideshow_interval">Intervalo</div>
-            <div class="config-desc" data-i18n="cfg_slideshow_interval_desc">Segundos entre cada imagen del pase.</div>
-          </div>
-          <select id="cfg-ss-interval" class="cfg-select">
-            <option value="2000">2s</option>
-            <option value="3000">3s</option>
-            <option value="5000">5s</option>
-            <option value="10000">10s</option>
-          </select>
-        </div>
-        <div class="config-row">
-          <div class="config-info">
-            <div class="config-name" data-i18n="cfg_slideshow_loop">Repetir carpeta (loop)</div>
-            <div class="config-desc" data-i18n="cfg_slideshow_loop_desc">Al llegar al final, volver a la primera imagen.</div>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="cfg-ss-loop" checked>
-            <span class="slider"></span>
-          </label>
-        </div>
-        <div class="config-row">
-          <div class="config-info">
-            <div class="config-name" data-i18n="cfg_slideshow_fs">Pantalla completa al iniciar</div>
-            <div class="config-desc" data-i18n="cfg_slideshow_fs_desc">Entrar en modo inmersivo al comenzar la presentación.</div>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="cfg-ss-fs" checked>
-            <span class="slider"></span>
-          </label>
-        </div>
-      </div>
-
-      <div class="config-section">
-        <label class="config-label" data-i18n="system">Sistema</label>
-        <div class="config-row">
-          <div class="config-info">
-            <div class="config-name" data-i18n="close_to_tray">Cerrar a la Bandeja</div>
-            <div class="config-desc" data-i18n="close_to_tray_desc">La app seguirá corriendo en segundo plano.</div>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="cfg-tray">
-            <span class="slider"></span>
-          </label>
-        </div>
-        <div class="config-row">
-          <div class="config-info">
-            <div class="config-name" data-i18n="auto_start">Inicio Automático</div>
-            <div class="config-desc" data-i18n="auto_start_desc">Arrancar con Windows (minimizado).</div>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="cfg-autostart">
-            <span class="slider"></span>
-          </label>
-        </div>
-        <div class="config-row">
-          <div class="config-info">
-            <div class="config-name" data-i18n="context_menu">Menú Contextual</div>
-            <div class="config-desc" data-i18n="context_menu_desc">Añadir CyberViewer al menú contextual del Explorador de Windows.</div>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="cfg-contextmenu">
-            <span class="slider"></span>
-          </label>
-        </div>
-        <div class="config-row">
-          <div class="config-info">
-            <div class="config-name" data-i18n="toggle_hotkey">Toggle Hotkey</div>
-            <div class="config-desc" data-i18n="toggle_hotkey_desc">Global shortcut to show/hide CyberViewer.</div>
-          </div>
-          <div class="cfg-hotkey">
-            <input type="text" id="cfg-hotkey" class="cfg-hotkey-input" readonly placeholder="Alt+Shift+V" autocomplete="off" spellcheck="false">
-            <button type="button" id="cfg-hotkey-clear" class="cfg-hotkey-clear" data-i18n="toggle_hotkey_clear">Clear</button>
-          </div>
-        </div>
-        <div class="config-row">
-          <div class="config-info">
-            <div class="config-name" data-i18n="opening_monitor">Monitor de Apertura</div>
-            <div class="config-desc" data-i18n="opening_monitor_desc">Último monitor usado, o forzar una pantalla concreta.</div>
-          </div>
-          <select id="cfg-monitor" class="cfg-select">
-            <option value="auto" data-i18n="monitor_auto">Último usado</option>
-          </select>
-        </div>
-      </div>
-
-    </div>
-    <div class="modal-footer">
-      <button class="top-btn" data-close-modal="modal-config" data-i18n="config_cancel">Cancelar</button>
-      <button class="top-btn active" id="btn-save-config" data-i18n="save_config">Guardar Cambios</button>
     </div>
   </div>
 </div>

@@ -352,7 +352,16 @@
     "toolbar_handle_show": "Show action bar",
     "toolbar_handle_hide": "Hide action bar",
     "cfg_banner_autohide": "Auto-hide Filename",
-    "cfg_banner_autohide_desc": "Hide the filename banner after inactivity over the canvas."
+    "cfg_banner_autohide_desc": "Hide the filename banner after inactivity over the canvas.",
+    "settings_nav_general": "General",
+    "settings_nav_appearance": "Appearance",
+    "settings_nav_interface": "Interface",
+    "settings_nav_slideshow": "Slideshow",
+    "settings_nav_system": "System",
+    "config_close": "Close",
+    "config_autosave": "Autosave",
+    "config_autosave_saved": "Saved",
+    "config_autosave_saving": "Saving…"
   },
   "es": {
     "no_images": "— sin imágenes —",
@@ -707,6 +716,15 @@
     "toolbar_handle_show": "Mostrar barra de acciones",
     "toolbar_handle_hide": "Ocultar barra de acciones",
     "cfg_banner_autohide": "Ocultar nombre de archivo",
-    "cfg_banner_autohide_desc": "Oculta el banner del título tras inactividad sobre el lienzo."
+    "cfg_banner_autohide_desc": "Oculta el banner del título tras inactividad sobre el lienzo.",
+    "settings_nav_general": "General",
+    "settings_nav_appearance": "Apariencia",
+    "settings_nav_interface": "Interfaz",
+    "settings_nav_slideshow": "Presentación",
+    "settings_nav_system": "Sistema",
+    "config_close": "Cerrar",
+    "config_autosave": "Autoguardado",
+    "config_autosave_saved": "Guardado",
+    "config_autosave_saving": "Guardando…"
   }
 }

@@ -5072,8 +5072,111 @@ function openConfig() {
     opt.classList.toggle('active', opt.dataset.color === accent);
   });
   setConfigAccentPreview(accent);
-  
+  setConfigAutosaveState(true, { visible: false });
+  setActiveConfigTab('general');
+
   openModal('modal-config');
+}
+
+function setActiveConfigTab(tabId) {
+  const id = tabId || 'general';
+  document.querySelectorAll('#modal-config [data-config-tab]').forEach(btn => {
+    const active = btn.dataset.configTab === id;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  document.querySelectorAll('#modal-config [data-config-panel]').forEach(panel => {
+    const active = panel.dataset.configPanel === id;
+    panel.classList.toggle('active', active);
+    panel.hidden = !active;
+  });
+}
+
+document.querySelectorAll('#modal-config [data-config-tab]').forEach(btn => {
+  btn.addEventListener('click', () => setActiveConfigTab(btn.dataset.configTab));
+});
+
+function setConfigAutosaveState(saved, { visible = true } = {}) {
+  const badge = $('config-autosave-state');
+  const pill = badge ? badge.closest('.config-autosave-pill') : null;
+  if (!badge) return;
+  if (pill) pill.classList.toggle('is-hidden', !visible);
+  badge.classList.toggle('saving', !saved);
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  const pack = I18N[lang] || I18N.en || {};
+  badge.textContent = saved
+    ? (pack.config_autosave_saved || 'Saved')
+    : (pack.config_autosave_saving || 'Saving…');
+}
+
+function collectConfigSettings() {
+  const activeOpt = document.querySelector('#modal-config .color-opt.active');
+  const accentColor = (activeOpt && activeOpt.dataset.color) || '#00d4ff';
+  return {
+    sidebarOpen: $('cfg-sidebar').checked,
+    statusbarVisible: $('cfg-statusbar').checked,
+    closeToTray: $('cfg-tray').checked,
+    autoStart: $('cfg-autostart').checked,
+    preferredDisplayId: $('cfg-monitor').value,
+    language: $('cfg-lang').value,
+    accentColor: accentColor,
+    contextMenuEnabled: $('cfg-contextmenu').checked,
+    toggleHotkey: $('cfg-hotkey') ? $('cfg-hotkey').value.trim() : '',
+    bannerAutoHide: $('cfg-banner-autohide').checked,
+    navAutoHide: $('cfg-nav-autohide').checked,
+    showTopHints: $('cfg-show-hints').checked,
+    disableTooltips: $('cfg-disable-tooltips').checked,
+    hudAutoHideDelay: parseInt($('cfg-hud-delay').value, 10),
+    alphaBackground: normalizeAlphaBackground($('cfg-alpha-bg') && $('cfg-alpha-bg').value),
+    slideshowIntervalMs: parseInt(($('cfg-ss-interval') && $('cfg-ss-interval').value) || '3000', 10),
+    slideshowLoop: !!( $('cfg-ss-loop') && $('cfg-ss-loop').checked ),
+    slideshowEnterFullscreen: !!( $('cfg-ss-fs') && $('cfg-ss-fs').checked )
+  };
+}
+
+function saveConfigSettings({ toast = false } = {}) {
+  if (!state.settings || !state.settings.app) return;
+  const newSettings = collectConfigSettings();
+  const contextMenuEnabled = !!newSettings.contextMenuEnabled;
+
+  if (isElectron) {
+    const lang = newSettings.language || 'en';
+    const prevContextMenu = !!(state.settings.app.contextMenuEnabled);
+    if (prevContextMenu !== contextMenuEnabled) {
+      window.electronAPI.registerContextMenu(contextMenuEnabled, lang).then(res => {
+        if (res && !res.success) {
+          showToast(lang === 'es' ? 'AVISO: ' + res.error : 'WARNING: ' + res.error, 'warning');
+        }
+      }).catch(err => console.error('Error saving context menu:', err));
+    }
+  }
+
+  state.settings.app = Object.assign({}, state.settings.app, newSettings);
+  applySettings();
+  if (isElectron) window.electronAPI.saveSettings(state.settings.app);
+  setConfigAutosaveState(true);
+
+  if (toast) {
+    const lang = newSettings.language || 'en';
+    showToast(I18N[lang].toast_saved, 'success', 900);
+  }
+}
+
+let configAutosaveTimer = null;
+function scheduleConfigAutosave({ immediate = false, toast = false } = {}) {
+  if (configAutosaveTimer) {
+    clearTimeout(configAutosaveTimer);
+    configAutosaveTimer = null;
+  }
+  setConfigAutosaveState(false);
+  if (immediate) {
+    saveConfigSettings({ toast });
+    return;
+  }
+  configAutosaveTimer = setTimeout(() => {
+    configAutosaveTimer = null;
+    saveConfigSettings({ toast });
+  }, 220);
 }
 
 document.querySelectorAll('#modal-config .color-opt').forEach(opt => {
@@ -5081,11 +5184,18 @@ document.querySelectorAll('#modal-config .color-opt').forEach(opt => {
     document.querySelectorAll('#modal-config .color-opt').forEach(o => o.classList.remove('active'));
     opt.classList.add('active');
     setConfigAccentPreview(opt.dataset.color);
+    scheduleConfigAutosave({ immediate: true });
   });
 });
 
 $('cfg-hud-delay').addEventListener('input', (e) => {
   $('cfg-hud-delay-val').textContent = (e.target.value / 1000).toFixed(1) + 's';
+  scheduleConfigAutosave();
+});
+
+document.querySelectorAll('#modal-config input, #modal-config select').forEach(ctrl => {
+  if (ctrl.id === 'cfg-hud-delay' || ctrl.id === 'cfg-hotkey') return;
+  ctrl.addEventListener('change', () => scheduleConfigAutosave({ immediate: true }));
 });
 
 // ── Global toggle hotkey capture (accelerator format, e.g. "Alt+Shift+V") ──
@@ -5127,6 +5237,7 @@ $('cfg-hud-delay').addEventListener('input', (e) => {
     if (e.key === 'Backspace' || e.key === 'Delete') {
       input.value = '';
       setCapturing(false);
+      scheduleConfigAutosave({ immediate: true });
       return;
     }
     // Ignore bare modifier presses — wait for a real key + modifiers.
@@ -5145,61 +5256,15 @@ $('cfg-hud-delay').addEventListener('input', (e) => {
     const acc = parts.join('+');
     input.value = acc;
     setCapturing(false);
+    scheduleConfigAutosave({ immediate: true });
   });
 
   clearBtn.addEventListener('click', () => {
     input.value = '';
     setCapturing(false);
+    scheduleConfigAutosave({ immediate: true });
   });
 })();
-
-$('btn-save-config').addEventListener('click', async () => {
-  const activeOpt = document.querySelector('#modal-config .color-opt.active');
-  const accentColor = (activeOpt && activeOpt.dataset.color) || '#00d4ff';
-  const contextMenuEnabled = $('cfg-contextmenu').checked;
-  const newSettings = {
-    sidebarOpen: $('cfg-sidebar').checked,
-    statusbarVisible: $('cfg-statusbar').checked,
-    closeToTray: $('cfg-tray').checked,
-    autoStart: $('cfg-autostart').checked,
-    preferredDisplayId: $('cfg-monitor').value,
-    language: $('cfg-lang').value,
-    accentColor: accentColor,
-    contextMenuEnabled: contextMenuEnabled,
-    toggleHotkey: $('cfg-hotkey') ? $('cfg-hotkey').value.trim() : '',
-    bannerAutoHide: $('cfg-banner-autohide').checked,
-    navAutoHide: $('cfg-nav-autohide').checked,
-    showTopHints: $('cfg-show-hints').checked,
-    disableTooltips: $('cfg-disable-tooltips').checked,
-    hudAutoHideDelay: parseInt($('cfg-hud-delay').value, 10),
-    alphaBackground: normalizeAlphaBackground($('cfg-alpha-bg') && $('cfg-alpha-bg').value),
-    slideshowIntervalMs: parseInt(($('cfg-ss-interval') && $('cfg-ss-interval').value) || '3000', 10),
-    slideshowLoop: !!( $('cfg-ss-loop') && $('cfg-ss-loop').checked ),
-    slideshowEnterFullscreen: !!( $('cfg-ss-fs') && $('cfg-ss-fs').checked )
-  };
-  
-  if (isElectron) {
-    const lang = newSettings.language || 'en';
-    // Only (re)register the OS context menu when that setting actually changed;
-    // toggling unrelated options (e.g. nav auto-hide) should not re-run registry
-    // commands nor surface a dev-mode "executable not found" toast.
-    const prevContextMenu = !!(state.settings.app.contextMenuEnabled);
-    if (prevContextMenu !== contextMenuEnabled) {
-      window.electronAPI.registerContextMenu(contextMenuEnabled, lang).then(res => {
-        if (res && !res.success) {
-          showToast(lang === 'es' ? 'AVISO: ' + res.error : 'WARNING: ' + res.error, 'warning');
-        }
-      }).catch(err => console.error('Error saving context menu:', err));
-    }
-  }
-  
-  state.settings.app = Object.assign({}, state.settings.app, newSettings);
-  applySettings();
-  if (isElectron) window.electronAPI.saveSettings(state.settings.app);
-  closeModal('modal-config');
-  const lang = newSettings.language || 'en';
-  showToast(I18N[lang].toast_saved, 'success');
-});
 
 function applySettings() {
   const s = state.settings.app;
