@@ -12,6 +12,16 @@
 !include "nsDialogs.nsh"
 !include "LogicLib.nsh"
 
+; LangStrings for custom page localization
+LangString CV_DefaultViewerTitle ${LANG_ENGLISH} "Default image viewer"
+LangString CV_DefaultViewerTitle ${LANG_SPANISH} "Visor de imágenes predeterminado"
+
+LangString CV_DefaultViewerBody ${LANG_ENGLISH} "CyberViewer can open JPG, JPEG, PNG, GIF, WEBP, BMP and TIFF.$\r$\n$\r$\nCheck the option below to use CyberViewer as your default image viewer for these formats (current user).$\r$\n$\r$\nYou can change defaults later in Windows Settings > Apps > Default apps."
+LangString CV_DefaultViewerBody ${LANG_SPANISH} "CyberViewer puede abrir JPG, JPEG, PNG, GIF, WEBP, BMP y TIFF.$\r$\n$\r$\nMarca la opción de abajo para usar CyberViewer como tu visor de imágenes predeterminado para estos formatos (usuario actual).$\r$\n$\r$\nPuedes cambiar esta configuración más tarde en la Configuración de Windows > Aplicaciones > Aplicaciones predeterminadas."
+
+LangString CV_DefaultViewerCheckbox ${LANG_ENGLISH} "Set CyberViewer as the default image viewer"
+LangString CV_DefaultViewerCheckbox ${LANG_SPANISH} "Establecer CyberViewer como el visor de imágenes predeterminado"
+
 ; $R9 = set-as-default flag (1 = yes, 0 = no). Default ON for silent installs.
 !macro customInit
   StrCpy $R9 1
@@ -32,18 +42,15 @@ Function CV_DefaultViewerPage_Show
     Abort
   ${EndIf}
 
-  ${NSD_CreateLabel} 0 0 100% 18u "Default image viewer"
+  ${NSD_CreateLabel} 0 0 100% 18u "$(CV_DefaultViewerTitle)"
   Pop $1
 
-  ${NSD_CreateLabel} 0 20u 100% 50u "CyberViewer can open JPG, JPEG, PNG, GIF, WEBP, BMP and TIFF.$\r$\n$\r$\nCheck the option below to use CyberViewer as your default image viewer for these formats (current user).$\r$\n$\r$\nYou can change defaults later in Windows Settings > Apps > Default apps."
+  ${NSD_CreateLabel} 0 20u 100% 50u "$(CV_DefaultViewerBody)"
   Pop $2
 
-  ${NSD_CreateCheckbox} 0 78u 100% 14u "Set CyberViewer as the default image viewer"
+  ${NSD_CreateCheckbox} 0 78u 100% 14u "$(CV_DefaultViewerCheckbox)"
   Pop $R8
   ${NSD_Check} $R8
-
-  ${NSD_CreateLabel} 0 98u 100% 24u "ES: Establecer CyberViewer como visor de imagenes predeterminado"
-  Pop $3
 
   nsDialogs::Show
 FunctionEnd
