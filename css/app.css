@@ -842,6 +842,12 @@
 
   .menu-item.disabled { opacity: .32; pointer-events: none; }
 
+  /* Leading icons inside menu items/submenus (burger + context menus) */
+  .menu-cat .menu-ico, .menu-item .menu-ico { width: 15px; height: 15px; flex-shrink: 0; opacity: .9; }
+  .menu-cat .menu-ico { opacity: .72; }
+  .menu-ico.menu-ico-danger { color: var(--cyber-accent2); }
+  .menu-item.danger:hover .menu-ico { color: var(--cyber-accent2); }
+
   /* ── SIDEBAR THUMBNAILS ── */
 
   /* ── SIDEBAR THUMBNAILS ── */

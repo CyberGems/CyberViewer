@@ -126,6 +126,156 @@ const RECENT_CTX_MAX = 5;
 
 // UI strings: i18n/ui.js → window.CV_I18N (source: i18n/ui.json)
 const I18N = (typeof window !== 'undefined' && window.CV_I18N) ? window.CV_I18N : { en: {}, es: {} };
+// ── MENU ICONS ──
+// Maps i18n keys → icon name. Shared by the static burger menu
+// (decorated from each label's data-i18n) and the dynamic context menus
+// (resolved from the rendered label text via LABEL_TO_ICON below).
+const MENU_ICON_BY_I18N = {
+  menu_file: 'file', menu_edit: 'edit', menu_view: 'eye', menu_go: 'compass',
+  menu_help: 'help-circle', menu_prefs: 'settings', menu_about: 'info',
+  menu_updates: 'download',
+  menu_open: 'image', menu_open_folder: 'folder', menu_recent: 'clock',
+  menu_recent_folders: 'folder', menu_paste: 'clipboard', menu_close_image: 'close',
+  menu_show: 'folder-open', menu_save: 'save', menu_copy: 'copy',
+  menu_copy_original: 'copy', menu_copy_path: 'link', menu_save_as: 'save',
+  menu_props: 'info', menu_trash: 'trash', menu_quit: 'quit',
+  menu_rotate_l: 'rotate-ccw', menu_rotate_r: 'rotate-cw', menu_crop: 'crop',
+  menu_resize: 'resize', menu_adjust: 'sliders', menu_flip_h: 'flip-h',
+  menu_flip_v: 'flip-v', menu_fit: 'fit', menu_original: 'square',
+  menu_fullscreen: 'fullscreen', menu_slideshow: 'play', menu_slideshow_loop: 'loop',
+  menu_slideshow_interval: 'clock', menu_sidebar: 'panel-left',
+  menu_toolbar: 'panel-bottom', menu_show_hints: 'keyboard',
+  menu_alpha_bg: 'grid', menu_next: 'next', menu_prev: 'prev',
+  menu_favorite: 'star', menu_favs_view: 'star',
+  menu_go_start: 'skip-start', menu_go_end: 'skip-end',
+  menu_hide_session: 'eye-off', menu_restore_hidden: 'eye',
+  menu_maximize: 'maximize', menu_autohide_nav: 'eye-off',
+  config: 'settings', about: 'info',
+  favorite_add: 'star', favorite_remove: 'star'
+};
+
+// SVG markup (inner) for each icon name. Rendered as stroke icons that
+// inherit currentColor, matching the existing burger-button style.
+const MENU_ICONS = {
+  'file': '<path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5"/>',
+  'image': '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-4.5-4.5L7 19"/>',
+  'folder': '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  'folder-open': '<path d="M4 4h5l2 2h7a2 2 0 0 1 2 2v2H4z"/><path d="M3 9h18l-2 9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/>',
+  'clock': '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  'clipboard': '<rect x="8" y="3" width="8" height="4" rx="1"/><path d="M8 5H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>',
+  'close': '<circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/>',
+  'save': '<path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M7 3v5h8V3"/><path d="M7 15h10v6H7z"/>',
+  'copy': '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 0-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  'link': '<path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/>',
+  'info': '<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/>',
+  'help-circle': '<circle cx="12" cy="12" r="9"/><path d="M9.2 9a3 3 0 0 1 5.6 1c0 2-3 2.5-3 4"/><path d="M12 18h.01"/>',
+  'trash': '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
+  'quit': '<path d="M18.4 6.6a9 9 0 1 1-12.8 0"/><path d="M12 3v9"/>',
+  'rotate-ccw': '<path d="M3 12a9 9 0 1 0 2-4.6"/><path d="M3 4v5h5"/>',
+  'rotate-cw': '<path d="M21 12a9 9 0 1 1-2-4.6"/><path d="M21 4v5h-5"/>',
+  'crop': '<path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/>',
+  'resize': '<path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/>',
+  'sliders': '<path d="M4 9h16"/><path d="M4 15h16"/><path d="M8 5v8"/><path d="M16 11v8"/>',
+  'flip-h': '<path d="M12 4v16"/><path d="M9 9l-4 3 4 3"/><path d="M15 9l4 3-4 3"/>',
+  'flip-v': '<path d="M4 12h16"/><path d="M9 9l3-4 3 4"/><path d="M9 15l3 4 3-4"/>',
+  'fit': '<path d="M4 4h6M4 4v6M20 4h-6M20 4v6M4 20h6M4 20v-6M20 20h-6M20 20v-6"/>',
+  'square': '<rect x="5" y="5" width="14" height="14" rx="1"/>',
+  'fullscreen': '<path d="M4 4h7M4 4v7M20 4h-7M20 4v7M4 20h7M4 20v-7M20 20h-7M20 20v-7"/>',
+  'play': '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M10 9l6 3-6 3z"/>',
+  'loop': '<path d="M17 2l4 4-4 4"/><path d="M3 6h18"/><path d="M7 22l-4-4 4-4"/><path d="M21 18H3"/>',
+  'panel-left': '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/>',
+  'panel-bottom': '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 15h18"/>',
+  'keyboard': '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M12 10h.01M17 10h.01M8 14h8"/>',
+  'grid': '<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+  'next': '<path d="M9 6l6 6-6 6"/>',
+  'prev': '<path d="M15 6l-6 6 6 6"/>',
+  'star': '<path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.9-5.2-2.7-5.2 2.7 1-5.9-4.3-4.1 5.9-.9z"/>',
+  'settings': '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1l2.1-2.1M17 7l2.1-2.1"/>',
+  'download': '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/>',
+  'edit': '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  'eye': '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  'eye-off': '<path d="M3 3l18 18"/><path d="M10.6 10.6a3 3 0 0 0 4.2 4.2"/><path d="M9.9 5.1A9 9 0 0 1 12 5c5 0 9 4 9 7a13 13 0 0 1-1.7 2.8"/><path d="M6.1 6.1A13 13 0 0 0 3 12c0 1.5 3.4 7 9 7a9 9 0 0 0 3-.5"/>',
+  'compass': '<circle cx="12" cy="12" r="9"/><path d="M16 8l-2 6-6 2 2-6z"/>',
+  'skip-start': '<path d="M19 5L9 12l10 7z"/><path d="M5 5v14"/>',
+  'skip-end': '<path d="M5 5l10 7-10 7z"/><path d="M19 5v14"/>',
+  'maximize': '<path d="M8 4H6a2 2 0 0 0-2 2v2"/><path d="M16 4h2a2 2 0 0 1 2 2v2"/><path d="M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M16 20h2a2 2 0 0 0 2-2v-2"/>'
+};
+
+// Label text (any language) → icon name, built once at load. Counts and
+// trailing parentheticals are stripped so "Restaurar ocultos (3)" still
+// resolves to the base entry.
+const LABEL_TO_ICON = (() => {
+  const map = {};
+  ['en', 'es'].forEach(l => {
+    const t = I18N[l];
+    if (!t) return;
+    Object.keys(MENU_ICON_BY_I18N).forEach(k => {
+      const v = t[k];
+      if (v) map[normalizeMenuLabel(v)] = MENU_ICON_BY_I18N[k];
+    });
+  });
+  return map;
+})();
+
+function normalizeMenuLabel(s) {
+  return String(s).replace(/\s*\([^)]*\)\s*$/, '').trim();
+}
+
+function iconNameForLabel(label) {
+  if (!label) return null;
+  return LABEL_TO_ICON[normalizeMenuLabel(label)] || null;
+}
+
+function iconNameForItem(item) {
+  if (item.icon) return item.icon;
+  return iconNameForLabel(item.label);
+}
+
+function iconSvg(name, danger) {
+  const inner = name && MENU_ICONS[name];
+  if (!inner) return null;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'menu-ico' + (danger ? ' menu-ico-danger' : ''));
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '1.8');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.innerHTML = inner;
+  return svg;
+}
+
+function iconHtml(name, danger) {
+  const inner = name && MENU_ICONS[name];
+  if (!inner) return '';
+  return '<svg class="menu-ico' + (danger ? ' menu-ico-danger' : '') +
+    '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
+}
+
+// Resolve the icon element for a dynamic context-menu item.
+function iconForItem(item) {
+  const name = iconNameForItem(item);
+  if (!name) return null;
+  return iconSvg(name, item.danger || name === 'quit');
+}
+
+// Decorate the static burger menu items and categories with leading icons,
+// derived from each label's data-i18n key. Idempotent → safe to call once.
+function decorateMenuIcons(root) {
+  if (!root) return;
+  root.querySelectorAll('.menu-cat > .menu-label, .menu-item > .menu-label').forEach(lbl => {
+    const host = lbl.parentNode;
+    if (!host || host.querySelector(':scope > .menu-ico')) return;
+    const name = MENU_ICON_BY_I18N[lbl.dataset.i18n];
+    if (!name) return;
+    const danger = host.classList.contains('danger') || lbl.dataset.i18n === 'menu_quit';
+    const svg = iconSvg(name, danger);
+    if (svg) host.insertBefore(svg, host.querySelector(':scope > .menu-check') || lbl);
+  });
+}
 
 function updateLanguage(lang = 'en') {
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -947,6 +1097,8 @@ function buildMenuTemplate(type, data) {
       { type: 'separator' },
       {
         label: getTxt('menu_quit'),
+        icon: 'quit',
+        danger: true,
         action: () => window.electronAPI.close()
       }
     ];
@@ -1154,6 +1306,8 @@ function buildMenuTemplate(type, data) {
       { type: 'separator' },
       {
         label: getTxt('menu_quit'),
+        icon: 'quit',
+        danger: true,
         action: () => window.electronAPI.close()
       }
     ];
@@ -1176,6 +1330,9 @@ function renderMenuTemplate(container, template) {
       cat.className = 'menu-cat';
       cat.setAttribute('data-sub', '');
       if (item.enabled === false) cat.classList.add('disabled');
+
+      const subIcon = iconForItem(item);
+      if (subIcon) cat.appendChild(subIcon);
 
       const label = document.createElement('span');
       label.className = 'menu-label';
@@ -1254,6 +1411,9 @@ function renderMenuTemplate(container, template) {
         btn.classList.add('danger');
       }
 
+      const itemIcon = iconForItem(item);
+      if (itemIcon) btn.insertBefore(itemIcon, btn.firstChild);
+
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (item.enabled === false) return;
@@ -1276,12 +1436,14 @@ function buildRecentContextItems(kind, t) {
       label: isFolder
         ? (t.menu_recent_folders_empty || 'No recent folders')
         : (t.menu_recent_empty || 'No recent images'),
+      icon: isFolder ? 'folder' : 'image',
       enabled: false
     }];
   }
   return list.map((entryPath) => ({
     label: fileNameFromPath(entryPath),
     title: entryPath,
+    icon: isFolder ? 'folder' : 'image',
     recent: true,
     action: () => {
       if (isFolder) openRecentFolder(entryPath);
@@ -5663,6 +5825,7 @@ $('btn-config').addEventListener('click', openConfig);
   const btn = $('btn-menu');
   const panel = $('main-menu');
   if (!btn || !panel) return;
+  decorateMenuIcons(panel);
 
   function closeMenu() {
     panel.classList.remove('open');
@@ -5678,7 +5841,7 @@ $('btn-config').addEventListener('click', openConfig);
       const empty = document.createElement('button');
       empty.type = 'button';
       empty.className = 'menu-item menu-recent-empty';
-      empty.innerHTML = `<span class="menu-label">${opts.emptyLabel}</span>`;
+      empty.innerHTML = iconHtml(opts.isFolder ? 'folder' : 'image') + `<span class="menu-label">${opts.emptyLabel}</span>`;
       listEl.appendChild(empty);
       return;
     }
@@ -5691,7 +5854,7 @@ $('btn-config').addEventListener('click', openConfig);
       btn.dataset.path = entryPath;
       const name = fileNameFromPath(entryPath);
       btn.title = entryPath;
-      btn.innerHTML = `<span class="menu-label">${escapeHtmlMenu(name)}</span><span class="menu-shortcut">${idx + 1}</span>`;
+      btn.innerHTML = iconHtml(opts.isFolder ? 'folder' : 'image') + `<span class="menu-label">${escapeHtmlMenu(name)}</span><span class="menu-shortcut">${idx + 1}</span>`;
       listEl.appendChild(btn);
     });
     const div = document.createElement('div');
@@ -5701,7 +5864,7 @@ $('btn-config').addEventListener('click', openConfig);
     clearBtn.type = 'button';
     clearBtn.className = 'menu-item danger';
     clearBtn.dataset.action = opts.clearAction;
-    clearBtn.innerHTML = `<span class="menu-label">${opts.clearLabel}</span>`;
+    clearBtn.innerHTML = iconHtml('trash', true) + `<span class="menu-label">${opts.clearLabel}</span>`;
     listEl.appendChild(clearBtn);
   }
 
@@ -5711,12 +5874,14 @@ $('btn-config').addEventListener('click', openConfig);
     fillRecentList(panel.querySelector('#menu-recent-list'), getRecentFiles(), {
       action: 'open-recent',
       clearAction: 'clear-recent',
+      isFolder: false,
       emptyLabel: t.menu_recent_empty || 'No recent images',
       clearLabel: t.menu_clear_recent || 'Clear recent'
     });
     fillRecentList(panel.querySelector('#menu-recent-folders-list'), getRecentFolders(), {
       action: 'open-recent-folder',
       clearAction: 'clear-recent-folders',
+      isFolder: true,
       emptyLabel: t.menu_recent_folders_empty || 'No recent folders',
       clearLabel: t.menu_clear_recent_folders || 'Clear recent folders'
     });
@@ -5863,6 +6028,9 @@ $('btn-config').addEventListener('click', openConfig);
         setTimeout(() => {
           if (typeof window.checkUpdatesGlobal === 'function') window.checkUpdatesGlobal(true);
         }, 80);
+        break;
+      case 'quit':
+        if (isElectron && window.electronAPI && window.electronAPI.close) window.electronAPI.close();
         break;
     }
   }
