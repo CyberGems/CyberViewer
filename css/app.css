@@ -2002,12 +2002,12 @@
     padding: 0 12px;
     gap: 8px;
     background: linear-gradient(180deg, rgba(11, 14, 20, 0.96) 0%, rgba(8, 10, 14, 0.99) 100%);
-    border-top: 1px solid rgba(var(--cyber-accent-rgb), 0.30);
+    border-top: 1px solid rgba(var(--cyber-accent-rgb), 0.5);
     backdrop-filter: blur(10px);
   }
 
-  /* Subtle accent glow atop the action toolbar — a finer echo of the title
-     bar's bottom divider, so the dock reads cleanly against the image. */
+  /* Accent glow atop the action toolbar — matches the title bar's bottom
+     divider so the dock reads cleanly against the image. */
   body:not(.ghost-mode) #kbd-hint::before {
     content: '';
     position: absolute;
@@ -2015,8 +2015,8 @@
     left: 0;
     width: 100%;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(var(--cyber-accent-rgb), 0.45), transparent);
-    box-shadow: 0 0 6px rgba(var(--cyber-accent-rgb), 0.35);
+    background: linear-gradient(90deg, transparent, rgba(var(--cyber-accent-rgb), 0.75), transparent);
+    box-shadow: 0 0 6px rgba(var(--cyber-accent-rgb), 0.6);
     pointer-events: none;
     z-index: 1;
   }
