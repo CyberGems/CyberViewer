@@ -5238,6 +5238,7 @@ function applySettings() {
   if (hintsEl) {
     hintsEl.classList.toggle('hidden', !showHints);
   }
+  document.body.classList.toggle('hints-visible', showHints);
 
   // Disable all tooltips (user setting)
   document.body.classList.toggle("no-tooltips", !!s.disableTooltips);

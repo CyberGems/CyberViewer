@@ -549,6 +549,13 @@
     display: none !important;
   }
 
+  /* When the title-bar hotkey hints are visible they sit in the top-center band
+     and clash with the filename banner just below it — suppress the banner
+     entirely while hints are on. (Ghost mode already hides both.) */
+  body:not(.ghost-mode).hints-visible #viewer-filename {
+    display: none !important;
+  }
+
   #img-counter {
     font-family: var(--font-ui);
     font-size: 13px;
