@@ -5249,6 +5249,10 @@ function applySettings() {
       applySettings();
     });
   }
+  if (hintsCloseBtn) {
+    const _lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+    hintsCloseBtn.setAttribute('aria-label', (I18N[_lang] && I18N[_lang].hints_close_title) || (I18N.en && I18N.en.hints_close_title) || '');
+  }
 
   // Disable all tooltips (user setting)
   document.body.classList.toggle("no-tooltips", !!s.disableTooltips);
