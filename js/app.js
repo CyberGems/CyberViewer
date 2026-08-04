@@ -5240,6 +5240,15 @@ function applySettings() {
   if (hintsEl) {
     hintsEl.classList.toggle('hidden', !showHints);
   }
+  const hintsCloseBtn = document.getElementById('hints-close');
+  if (hintsCloseBtn && !hintsCloseBtn.dataset.bound) {
+    hintsCloseBtn.dataset.bound = '1';
+    hintsCloseBtn.addEventListener('click', () => {
+      state.settings.app.showTopHints = false;
+      if (isElectron) window.electronAPI.saveSettings(state.settings.app);
+      applySettings();
+    });
+  }
 
   // Disable all tooltips (user setting)
   document.body.classList.toggle("no-tooltips", !!s.disableTooltips);

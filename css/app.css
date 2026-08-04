@@ -3379,6 +3379,36 @@
     pointer-events: none;
   }
 
+  /* Close button at the end of the keyboard hints row */
+  .hints-close {
+    appearance: none;
+    -webkit-appearance: none;
+    background: none;
+    border: 0;
+    color: var(--cyber-accent);
+    opacity: 0.55;
+    font-size: 16px;
+    line-height: 1;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    cursor: pointer;
+    pointer-events: auto;
+    padding: 0;
+    transition: opacity 0.18s ease, background 0.18s ease;
+  }
+  .hints-close:hover {
+    opacity: 1;
+    background: rgba(var(--cyber-accent-rgb), 0.16);
+  }
+  .hints-close:focus-visible {
+    outline: 1px solid var(--cyber-accent);
+    outline-offset: 1px;
+  }
+
   /* ── OVERRIDES & IMPROVEMENTS FOR MODAL RESIZE (CYBERPUNK AESTHETIC) ── */
   
   /* Grid layout for the split two-column resize modal */
