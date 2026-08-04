@@ -4552,6 +4552,7 @@ function checkImageLoaded() {
 
 function dismissToasts() {
   document.querySelectorAll('.cyber-toast').forEach(el => el.remove());
+  document.body.classList.remove('toast-active');
 }
 
 function showToast(txt, type = 'info', durationMs = 2500) {
@@ -4581,7 +4582,8 @@ function showToast(txt, type = 'info', durationMs = 2500) {
   `;
   t.textContent = txt;
   document.body.appendChild(t);
-  setTimeout(() => { if (t.parentNode) t.remove(); }, duration);
+  document.body.classList.add('toast-active');
+  setTimeout(() => { if (t.parentNode) t.remove(); document.body.classList.remove('toast-active'); }, duration);
 }
 
 const style = document.createElement('style');
@@ -5238,7 +5240,6 @@ function applySettings() {
   if (hintsEl) {
     hintsEl.classList.toggle('hidden', !showHints);
   }
-  document.body.classList.toggle('hints-visible', showHints);
 
   // Disable all tooltips (user setting)
   document.body.classList.toggle("no-tooltips", !!s.disableTooltips);

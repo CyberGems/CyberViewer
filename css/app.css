@@ -542,17 +542,19 @@
     opacity: 0 !important;
     transform: translateX(-50%) translateY(-10px) !important;
   }
+
+  /* While a notice/toast is showing it lands directly under this banner's
+     top-center spot — fade the filename banner out for the toast's lifetime
+     so the two never compete for the same area. */
+  body.toast-active #viewer-filename {
+    opacity: 0 !important;
+    transform: translateX(-50%) translateY(-10px) !important;
+    pointer-events: none;
+  }
   body.ghost-mode #viewer-filename {
     display: none !important;
   }
   #viewer-filename:empty {
-    display: none !important;
-  }
-
-  /* When the title-bar hotkey hints are visible they sit in the top-center band
-     and clash with the filename banner just below it — suppress the banner
-     entirely while hints are on. (Ghost mode already hides both.) */
-  body:not(.ghost-mode).hints-visible #viewer-filename {
     display: none !important;
   }
 
