@@ -596,7 +596,31 @@
     background: #0a0e14 !important; /* FONDO SÓLIDO OPACO */
     z-index: 100;
   }
-  
+
+  /* Pending rotation locks unrelated controls until save or cancel. */
+  body.rotation-pending #kbd-hint button.is-disabled,
+  body.rotation-pending #nav-container button.is-disabled,
+  body.rotation-pending #sidebar-controls button.is-disabled,
+  body.rotation-pending #btn-menu.is-disabled {
+    opacity: 0.28 !important;
+    filter: saturate(0.2);
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+  }
+  body.rotation-pending #kbd-hint button.is-disabled:hover,
+  body.rotation-pending #nav-container button.is-disabled:hover,
+  body.rotation-pending #sidebar-controls button.is-disabled:hover {
+    background: none !important;
+    color: var(--cyber-muted) !important;
+    border-color: var(--cyber-border) !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+  body.rotation-pending #main-menu.rotation-pending {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+
   /* Legacy (sidebar / unused stacks) */
   .control-group {
     display: flex;

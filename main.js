@@ -404,6 +404,9 @@ function createWindow() {
   win.on('hide', () => updateTrayMenu());
   win.on('minimize', () => updateTrayMenu());
   win.on('restore', () => updateTrayMenu());
+  win.on('blur', () => {
+    if (win && !win.isDestroyed()) win.webContents.send('window-blur');
+  });
 
   win.on('maximize', () => {
     win.webContents.send('win-state', 'maximized');
@@ -1119,6 +1122,16 @@ ipcMain.on('copy-image', (event, filePath) => {
   }
 });
 
+ipcMain.on('copy-image-buffer', (event, base64) => {
+  try {
+    if (!base64 || typeof base64 !== 'string') return;
+    const img = nativeImage.createFromBuffer(Buffer.from(base64, 'base64'));
+    if (!img.isEmpty()) clipboard.writeImage(img);
+  } catch (e) {
+    console.error('Error copying image buffer to clipboard:', e);
+  }
+});
+
 ipcMain.handle('clipboard:read-image', () => {
   try {
     const img = clipboard.readImage();
@@ -1161,6 +1174,20 @@ ipcMain.on('show-item-in-folder', (event, filePath) => {
     if (fs.existsSync(abs)) shell.showItemInFolder(abs);
   } catch (e) {
     console.error('Error showing item in folder:', e);
+  }
+});
+
+ipcMain.handle('open-containing-folder', async (event, filePath) => {
+  try {
+    if (!filePath) return { success: false, error: 'BAD_PATH' };
+    const abs = resolveAllowedPath(filePath);
+    const dir = path.dirname(abs);
+    if (!fs.existsSync(dir)) return { success: false, error: 'FOLDER_NOT_FOUND' };
+    const error = await shell.openPath(dir);
+    return error ? { success: false, error } : { success: true };
+  } catch (e) {
+    console.error('Error opening containing folder:', e);
+    return { success: false, error: e.message || 'OPEN_FOLDER_FAILED' };
   }
 });
 
@@ -1400,28 +1427,24 @@ ipcMain.on('show-context-menu', (event, props) => {
             click: () => { if (props.path) clipboard.writeText(props.path); }
           },
           {
-            label: t.save_changes,
-            enabled: !!props.hasChanges,
-            click: () => event.sender.send('menu-action', { action: 'save-changes' })
-          },
-          {
             label: t.save_as,
             click: async () => {
-              const ext = path.extname(props.path);
+              const ext = path.extname(props.path || '');
+              const base = path.basename(props.path || 'image', ext) || 'image';
+              const dir = props.path ? path.dirname(props.path) : app.getPath('pictures');
               const result = await dialog.showSaveDialog(browserWin, {
                 title: tMenu('dialog_save_as_title', lang),
-                defaultPath: path.join(path.dirname(props.path), path.basename(props.path, ext) + '_copy' + ext),
+                defaultPath: path.join(dir, `${base}_copy.png`),
                 filters: [
-                  {
-                    name: tMenu('dialog_save_filter_images', lang),
-                    extensions: [ext.substring(1) || 'png']
-                  },
+                  { name: 'PNG', extensions: ['png'] },
+                  { name: 'JPEG', extensions: ['jpg', 'jpeg'] },
                   { name: tMenu('dialog_save_filter_all', lang), extensions: ['*'] }
                 ]
               });
               if (!result.canceled && result.filePath) {
-                pathAllowlist.allow(result.filePath);
-                event.sender.send('menu-action', { action: 'save-as', targetPath: result.filePath });
+                const targetPath = /\.[^\\/]+$/.test(result.filePath) ? result.filePath : result.filePath + '.png';
+                pathAllowlist.allow(targetPath);
+                event.sender.send('menu-action', { action: 'save-as', targetPath });
               }
             }
           },
@@ -1489,7 +1512,7 @@ ipcMain.on('show-context-menu', (event, props) => {
         label: t.file,
         submenu: [
           {
-            label: t.copy_original,
+            label: t.copy_image,
             click: () => {
               try {
                 const abs = resolveAllowedPath(props.path);

@@ -136,8 +136,8 @@ const MENU_ICON_BY_I18N = {
   menu_updates: 'download',
   menu_open: 'image', menu_open_folder: 'folder', menu_recent: 'clock',
   menu_recent_folders: 'folder', menu_paste: 'clipboard', menu_close_image: 'close',
-  menu_show: 'folder-open', menu_save: 'save', menu_copy: 'copy',
-  menu_copy_original: 'copy', menu_copy_path: 'link', menu_save_as: 'save',
+  menu_show: 'folder-open', menu_open_containing_folder: 'folder-open', menu_save: 'save', menu_copy: 'copy',
+  menu_copy_path: 'link', menu_save_as: 'save',
   menu_props: 'info', menu_trash: 'trash', menu_quit: 'quit',
   menu_rotate_l: 'rotate-ccw', menu_rotate_r: 'rotate-cw', menu_crop: 'crop',
   menu_resize: 'resize', menu_adjust: 'sliders', menu_flip_h: 'flip-h',
@@ -925,7 +925,8 @@ window.addEventListener('contextmenu', (e) => {
   if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
   
   e.preventDefault();
-  
+  if (state.currentRotation !== 0 && state.hasChanges) return;
+
   if (e.target.closest('.thumb-item')) return;
   if (e.target.closest('#kbd-hint')) return; // Evitar menú en HUD
   if (e.target.closest('#topbar')) return;    // Evitar menú en barra de título
@@ -956,6 +957,18 @@ window.addEventListener('contextmenu', (e) => {
     });
   }
 });
+
+function hideInterfaceMenus() {
+  const mainMenu = $('main-menu');
+  const btnMenu = $('btn-menu');
+  if (mainMenu) mainMenu.classList.remove('open');
+  if (btnMenu) btnMenu.classList.remove('open');
+  hideCustomContextMenu();
+}
+
+document.addEventListener('visibilitychange', () => { if (document.hidden) hideInterfaceMenus(); });
+window.addEventListener('blur', hideInterfaceMenus);
+window.addEventListener('cv-window-blur', hideInterfaceMenus);
 
 function showCustomContextMenu(e, type, data) {
   e.preventDefault();
@@ -1053,7 +1066,7 @@ function buildMenuTemplate(type, data) {
         isSub: true,
         items: [
           {
-            label: getTxt('menu_copy_original'),
+            label: getTxt('menu_copy'),
             action: () => window.electronAPI.copyImage(data.path)
           },
           {
@@ -1104,41 +1117,40 @@ function buildMenuTemplate(type, data) {
     ];
   } else if (type === 'image') {
     const hiddenCount = state.images.filter(im => im.hidden).length;
-    const tMenu = I18N[lang] || I18N.en;
     return [
+      {
+        label: getTxt('menu_open_containing_folder'),
+        enabled: !!data.path,
+        visible: !!data.path,
+        action: () => window.electronAPI.openContainingFolder(data.path)
+      },
+      {
+        label: getTxt('menu_show'),
+        enabled: !!data.path,
+        visible: !!data.path,
+        action: () => window.electronAPI.showItemInFolder(data.path)
+      },
+      {
+        label: getTxt('menu_props'),
+        shortcut: 'Ctrl+I',
+        action: () => showPropertiesPanel(data.path)
+      },
+      {
+        label: getTxt('menu_copy_path'),
+        enabled: !!data.path,
+        visible: !!data.path,
+        action: () => {
+          if (data.path) {
+            navigator.clipboard.writeText(data.path);
+            showToast(lang === 'es' ? 'RUTA COPIADA' : 'PATH COPIED', 'success');
+          }
+        }
+      },
+      { type: 'separator' },
       {
         label: getTxt('menu_file'),
         isSub: true,
         items: [
-          ...buildOpenFileContextItems(tMenu),
-          { type: 'separator' },
-          {
-            label: getTxt('menu_copy'),
-            shortcut: 'Ctrl+C',
-            action: () => copyToClipboard()
-          },
-          {
-            label: getTxt('menu_paste'),
-            shortcut: 'Ctrl+V',
-            action: () => pasteFromClipboard()
-          },
-          {
-            label: getTxt('menu_copy_path'),
-            enabled: !!data.path,
-            visible: !!data.path,
-            action: () => {
-              if (data.path) {
-                navigator.clipboard.writeText(data.path);
-                showToast(lang === 'es' ? 'RUTA COPIADA' : 'PATH COPIED', 'success');
-              }
-            }
-          },
-          {
-            label: getTxt('menu_save'),
-            shortcut: 'Ctrl+S',
-            enabled: state.hasChanges || !data.path,
-            action: () => saveCurrent()
-          },
           {
             label: getTxt('menu_save_as'),
             action: () => showSaveAsDialog(data.path)
@@ -1156,12 +1168,12 @@ function buildMenuTemplate(type, data) {
           {
             label: getTxt('menu_rotate_r'),
             shortcut: 'E',
-            action: () => rotateAndSave(90)
+            action: () => rotate(90)
           },
           {
             label: getTxt('menu_rotate_l'),
             shortcut: 'Q',
-            action: () => rotateAndSave(-90)
+            action: () => rotate(-90)
           },
           { type: 'separator' },
           {
@@ -1199,23 +1211,41 @@ function buildMenuTemplate(type, data) {
         ]
       },
       {
-        label: getTxt('menu_view'),
+        label: getTxt('menu_go'),
         isSub: true,
-        enabled: !!data.path,
-        visible: !!data.path,
         items: [
           {
-            label: getTxt('menu_show'),
-            action: () => window.electronAPI.showItemInFolder(data.path)
+            label: getTxt('menu_next'),
+            shortcut: 'D',
+            action: () => next()
           },
           {
-            label: getTxt('menu_props'),
-            shortcut: 'Ctrl+I',
-            action: () => showPropertiesPanel(data.path)
+            label: getTxt('menu_prev'),
+            shortcut: 'A',
+            action: () => prev()
+          },
+          { type: 'separator' },
+          {
+            label: getTxt('menu_go_start'),
+            action: () => showImage(0, 'right', true)
+          },
+          {
+            label: getTxt('menu_go_end'),
+            action: () => showImage(state.images.length - 1, 'left', true)
           }
         ]
       },
       { type: 'separator' },
+      {
+        label: getTxt('menu_copy'),
+        shortcut: 'Ctrl+C',
+        action: () => copyToClipboard()
+      },
+      {
+        label: getTxt('menu_paste'),
+        shortcut: 'Ctrl+V',
+        action: () => pasteFromClipboard()
+      },
       {
         label: getTxt('menu_trash'),
         shortcut: 'Del',
@@ -1252,9 +1282,64 @@ function buildMenuTemplate(type, data) {
         ]
       },
       {
+        label: getTxt('menu_edit'),
+        isSub: true,
+        items: [
+          {
+            label: getTxt('menu_rotate_r'),
+            shortcut: 'E',
+            enabled: hasImages,
+            action: () => rotate(90)
+          },
+          {
+            label: getTxt('menu_rotate_l'),
+            shortcut: 'Q',
+            enabled: hasImages,
+            action: () => rotate(-90)
+          }
+        ]
+      },
+      {
         label: getTxt('menu_view'),
         isSub: true,
         items: [
+          {
+            label: getTxt('menu_fit'),
+            shortcut: 'F',
+            enabled: hasImages,
+            action: () => { const b = $('btn-fit-hud'); if (b) b.click(); }
+          },
+          {
+            label: getTxt('menu_original'),
+            shortcut: '1',
+            enabled: hasImages,
+            action: () => { const b = $('btn-orig-hud'); if (b) b.click(); }
+          },
+          {
+            label: getTxt('menu_fullscreen'),
+            shortcut: 'Enter',
+            enabled: hasImages,
+            action: () => { const b = $('btn-fs-hud'); if (b) b.click(); }
+          },
+          {
+            label: getTxt('menu_slideshow'),
+            shortcut: 'S',
+            enabled: hasImages,
+            action: () => toggleSlideshowPlay()
+          },
+          {
+            label: getTxt('menu_slideshow_loop'),
+            type: 'checkbox',
+            checked: state.settings.app.slideshowLoop !== false,
+            enabled: hasImages,
+            action: () => toggleSlideshowLoop()
+          },
+          {
+            label: getTxt('menu_slideshow_interval'),
+            enabled: hasImages,
+            action: () => cycleSlideshowInterval()
+          },
+          { type: 'separator' },
           {
             label: getTxt('menu_toolbar'),
             type: 'checkbox',
@@ -1484,23 +1569,22 @@ async function showSaveAsDialog(filePath) {
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
   const im = state.images[state.current];
   const sourcePath = filePath || imageDiskPath(im);
-  const defaultName = sourcePath
-    ? sourcePath.replace(/\.[^.]+$/, (m) => '_copy' + m)
-    : ((im && im.file && im.file.name) || clipboardDefaultName());
-  const ext = (defaultName.split('.').pop() || 'png').toLowerCase();
+  const sourceName = sourcePath ? sourcePath.split(/[\\/]/).pop() : ((im && im.file && im.file.name) || 'image');
+  const baseName = sourceName.replace(/\.[^.]+$/, '') || 'image';
+  const defaultName = `${baseName}_copy.png`;
+  const t = I18N[lang] || I18N.en || {};
 
-  const options = {
+  const result = await window.electronAPI.showSaveDialog({
     title: lang === 'es' ? 'Guardar como' : 'Save As',
     defaultPath: defaultName,
     filters: [
-      { name: 'Images', extensions: [ext] },
-      { name: 'All Files', extensions: ['*'] }
+      { name: t.dialog_filter_png || (lang === 'es' ? 'PNG' : 'PNG'), extensions: ['png'] },
+      { name: t.dialog_filter_jpeg || (lang === 'es' ? 'JPEG' : 'JPEG'), extensions: ['jpg', 'jpeg'] },
+      { name: t.dialog_save_filter_all || (lang === 'es' ? 'Todos los archivos' : 'All Files'), extensions: ['*'] }
     ]
-  };
-
-  const result = await window.electronAPI.showSaveDialog(options);
+  });
   if (result && !result.canceled && result.filePath) {
-    await saveAsPath(result.filePath);
+    await saveAsPath(/\.[^\\/]+$/.test(result.filePath) ? result.filePath : result.filePath + '.png');
   }
 }
 
@@ -1585,10 +1669,10 @@ function executeAction(data) {
       resetHudTimer();
       break;
     case 'rotate-r-save':
-      rotateAndSave(90);
+      rotate(90);
       break;
     case 'rotate-l-save':
-      rotateAndSave(-90);
+      rotate(-90);
       break;
     case 'crop':
       const btnCrop = $('btn-crop');
@@ -1651,11 +1735,11 @@ function executeAction(data) {
   }
 }
 
-if (isElectron) {
-  window.electronAPI.onMenuAction((data) => {
-    executeAction(data);
-  });
-}
+  if (isElectron) {
+    window.electronAPI.onMenuAction((data) => {
+      executeAction(data);
+    });
+  }
 
 async function saveAsPath(targetPath) {
   if (state.current === -1) return;
@@ -1690,31 +1774,29 @@ async function saveAsPath(targetPath) {
     ctx.rotate(rad);
     ctx.drawImage(mainImg, -iw / 2, -ih / 2);
 
-    const dataUrl = canvas.toDataURL('image/png');
-    const base64Data = dataUrl.substring(dataUrl.indexOf(',') + 1);
-
+    const exported = canvasExport(canvas, targetPath);
     const result = await window.electronAPI.saveImage({
-      filePath: targetPath,
-      buffer: base64Data
+      filePath: exported.filePath,
+      buffer: exported.buffer
     });
 
     if (result.success) {
       const currentPath = imageDiskPath(im);
-      bindImageToDiskPath(im, targetPath);
+      const savedPath = result.filePath || exported.filePath;
       if (window.electronAPI.registerPaths) {
-        await window.electronAPI.registerPaths([targetPath]);
+        await window.electronAPI.registerPaths([savedPath]);
       }
 
       if (currentPath) {
         const currentDir = currentPath.substring(0, Math.max(currentPath.lastIndexOf('\\'), currentPath.lastIndexOf('/')));
-        const targetDir = targetPath.substring(0, Math.max(targetPath.lastIndexOf('\\'), targetPath.lastIndexOf('/')));
+        const targetDir = savedPath.substring(0, Math.max(savedPath.lastIndexOf('\\'), savedPath.lastIndexOf('/')));
 
         if (currentDir && targetDir && currentDir.toLowerCase() === targetDir.toLowerCase() &&
-            currentPath.toLowerCase() !== targetPath.toLowerCase()) {
+            currentPath.toLowerCase() !== savedPath.toLowerCase()) {
           const newImg = {
             file: {
-              name: targetPath.split(/[\\/]/).pop(),
-              path: targetPath,
+              name: savedPath.split(/[\\/]/).pop(),
+              path: savedPath,
               size: 0
             }
           };
@@ -1725,6 +1807,8 @@ async function saveAsPath(targetPath) {
           return;
         }
       }
+
+      bindImageToDiskPath(im, savedPath);
 
       state.currentRotation = 0; state.visualRotation = 0;
       state.hasChanges = false;
@@ -2067,11 +2151,6 @@ function rotate(deg) {
   state.hasChanges = true;
   updateSaveButton();
   updateHUDStates();
-}
-
-async function rotateAndSave(deg) {
-  rotate(deg);
-  await saveCurrent();
 }
 
 // ── IMAGE FLIP (permanent copy) ──
@@ -4180,7 +4259,23 @@ document.addEventListener('keydown', e => {
 
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   if (state.isCropping) return; // modo Crop: el recorte es la unica accion activa
+  const pendingRotation = state.currentRotation !== 0 && state.hasChanges;
   const isCtrl = e.ctrlKey || e.metaKey;
+
+  if (pendingRotation) {
+    const key = e.key.toLowerCase();
+    if (key === 'enter') {
+      e.preventDefault();
+      if (checkImageLoaded()) saveCurrent();
+      return;
+    }
+    if (key === 'q' || key === 'e') {
+      // allow only rotation controls + save/cancel while the preview is pending
+    } else {
+      e.preventDefault();
+      return;
+    }
+  }
 
   // Shortcuts globales
   if (isCtrl) {
@@ -4199,7 +4294,7 @@ document.addEventListener('keydown', e => {
         if (e.shiftKey) openFolderDialog();
         else if (checkImageLoaded()) toggleFullscreen();
         break;
-      case 's': e.preventDefault(); if (checkImageLoaded()) saveCurrent(); break;
+      case 's': e.preventDefault(); if (checkImageLoaded()) showSaveAsDialog(); break;
       case 'c': e.preventDefault(); if (checkImageLoaded()) copyToClipboard(); break;
       case 'v': e.preventDefault(); pasteFromClipboard(); break;
       case 'd': e.preventDefault(); if (checkImageLoaded()) toggleFavorite(); break;
@@ -4250,8 +4345,7 @@ document.addEventListener('keydown', e => {
         }
       }
       break;
-    case 'l': if (checkImageLoaded()) rotate(-90); break;
-    case 'r': 
+    case 'r':
       if (!isCtrl) {
         e.preventDefault();
         if (checkImageLoaded()) {
@@ -4383,32 +4477,53 @@ async function trashCurrentImage() {
   });
 }
 
+function canvasForCurrentImage() {
+  if (state.current === -1 || !mainImg.complete || mainImg.naturalWidth === 0) return null;
+  const iw = mainImg.naturalWidth;
+  const ih = mainImg.naturalHeight;
+  const rotation = state.currentRotation || 0;
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  if (rotation === 90 || rotation === 270) {
+    canvas.width = ih;
+    canvas.height = iw;
+  } else {
+    canvas.width = iw;
+    canvas.height = ih;
+  }
+
+  ctx.save();
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.rotate((rotation * Math.PI) / 180);
+  ctx.drawImage(mainImg, -iw / 2, -ih / 2);
+  ctx.restore();
+  return canvas;
+}
+
 async function copyToClipboard() {
   const idx = state.currentIdx;
   if (idx === -1) return;
-  const im = state.images[idx];
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
   const i18nLang = I18N[lang] || I18N.en || {};
-  
-  if (isElectron && im.file && im.file.path) {
-    try {
-      window.electronAPI.copyImage(im.file.path);
-      showToast(i18nLang.toast_copied || 'IMAGEN COPIADA', 'success');
-    } catch (err) {
-      console.error('Error al copiar por Electron:', err);
-      showToast(i18nLang.toast_copy_error || 'ERROR AL COPIAR', 'error');
+
+  try {
+    const canvas = canvasForCurrentImage();
+    if (canvas && isElectron && window.electronAPI.copyImageBuffer) {
+      const dataUrl = canvas.toDataURL('image/png');
+      await window.electronAPI.copyImageBuffer(dataUrl.substring(dataUrl.indexOf(',') + 1));
+    } else if (canvas && navigator.clipboard && navigator.clipboard.write) {
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) throw new Error('canvas export failed');
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+    } else {
+      throw new Error('clipboard unavailable');
     }
-  } else {
-    try {
-      const response = await fetch(im.url || getUrl(idx));
-      const blob = await response.blob();
-      const item = new ClipboardItem({ [blob.type || 'image/png']: blob });
-      await navigator.clipboard.write([item]);
-      showToast(i18nLang.toast_copied || 'IMAGEN COPIADA', 'success');
-    } catch (err) {
-      console.error('Error al copiar:', err);
-      showToast(i18nLang.toast_copy_error || 'ERROR AL COPIAR', 'error');
-    }
+    showToast(i18nLang.toast_copied || 'IMAGEN COPIADA', 'success');
+  } catch (err) {
+    console.error('Error al copiar:', err);
+    showToast(i18nLang.toast_copy_error || 'ERROR AL COPIAR', 'error');
   }
 }
 
@@ -5445,7 +5560,12 @@ if (isElectron) {
     });
   }
 
+  if (typeof window.electronAPI.onWindowBlur === 'function') {
+    window.electronAPI.onWindowBlur(hideInterfaceMenus);
+  }
+
   window.electronAPI.onOpenFile(async (filePath) => {
+    hideInterfaceMenus();
     if (filePath) await openImagePath(filePath);
   });
 
@@ -5485,6 +5605,27 @@ if (isElectron) {
 }
 
 // ── HUD SYNC ──
+function syncRotationPendingState(pending) {
+  document.body.classList.toggle('rotation-pending', pending);
+  const allowed = new Set(['btn-rot-l', 'btn-rot-r', 'btn-commit', 'btn-discard']);
+  document.querySelectorAll('#kbd-hint button, #nav-container button, #sidebar-controls button, #btn-menu').forEach((el) => {
+    if (allowed.has(el.id)) return;
+    if (pending) {
+      if (!el.dataset.rotationWasDisabled) el.dataset.rotationWasDisabled = el.disabled ? '1' : '0';
+      el.disabled = true;
+      el.classList.add('is-disabled');
+      el.setAttribute('aria-disabled', 'true');
+    } else if (el.dataset.rotationWasDisabled) {
+      el.disabled = el.dataset.rotationWasDisabled === '1';
+      delete el.dataset.rotationWasDisabled;
+      el.classList.remove('is-disabled');
+      if (!el.disabled) el.removeAttribute('aria-disabled');
+    }
+  });
+  const menu = $('main-menu');
+  if (menu) menu.classList.toggle('rotation-pending', pending);
+}
+
 function updateHUDStates() {
   const rotL = $('btn-rot-l');
   const rotR = $('btn-rot-r');
@@ -5493,8 +5634,7 @@ function updateHUDStates() {
   const commit = $('btn-commit');
 
   const pendingRotation = state.currentRotation !== 0 && state.hasChanges;
-
-  // ROTACIÓN / floating commit
+  syncRotationPendingState(pendingRotation);
   if (pendingRotation) {
     if (rotL) rotL.classList.add('active');
     if (rotR) rotR.classList.add('active');
@@ -6054,6 +6194,7 @@ $('btn-config').addEventListener('click', openConfig);
       case 'close-image':    closeImage(); break;
       case 'show-folder':    $('btn-show-folder').click(); break;
       case 'save':           saveCurrent(); break;
+      case 'save-as':        showSaveAsDialog(); break;
       case 'copy':           copyToClipboard(); break;
       case 'properties':
         openPropertiesForCurrent();
