@@ -1060,6 +1060,7 @@ function buildMenuTemplate(type, data) {
 
   if (type === 'thumb') {
     const hiddenCount = state.images.filter(im => im.hidden).length;
+    const isFavThumb = !!(state.settings.app.favorites && data.path && state.settings.app.favorites.includes(data.path));
     return [
       {
         label: getTxt('menu_file'),
@@ -1072,6 +1073,24 @@ function buildMenuTemplate(type, data) {
           {
             label: getTxt('menu_show'),
             action: () => window.electronAPI.showItemInFolder(data.path)
+          },
+          {
+            label: getTxt('menu_copy_path'),
+            enabled: !!data.path,
+            visible: !!data.path,
+            action: () => {
+              if (data.path) {
+                navigator.clipboard.writeText(data.path);
+                const _lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+                showToast(_lang === 'es' ? 'RUTA COPIADA' : 'PATH COPIED', 'success');
+              }
+            }
+          },
+          {
+            label: getTxt('menu_props'),
+            enabled: !!data.path,
+            visible: !!data.path,
+            action: () => showPropertiesPanel(data.path)
           }
         ]
       },
@@ -1086,6 +1105,12 @@ function buildMenuTemplate(type, data) {
           {
             label: getTxt('menu_go_end'),
             action: () => showImage(state.images.length - 1, 'left', true)
+          },
+          { type: 'separator' },
+          {
+            label: isFavThumb ? getTxt('favorite_remove') : getTxt('favorite_add'),
+            icon: 'star',
+            action: () => toggleFavoritePath(data.path)
           }
         ]
       },
@@ -1106,13 +1131,6 @@ function buildMenuTemplate(type, data) {
         shortcut: 'Del',
         danger: true,
         action: () => executeAction({ action: 'request-delete', index: data.index, path: data.path })
-      },
-      { type: 'separator' },
-      {
-        label: getTxt('menu_quit'),
-        icon: 'quit',
-        danger: true,
-        action: () => window.electronAPI.close()
       }
     ];
   } else if (type === 'image') {
@@ -6471,6 +6489,28 @@ function toggleFavorite() {
   }
   
   updateFavButtonState();
+}
+
+// Toggle favorite for a specific image path (used by the thumb context menu,
+// which can favorite an image that isn't the currently displayed one).
+function toggleFavoritePath(filePath) {
+  if (!filePath) return;
+  const favs = state.settings.app.favorites || [];
+  const index = favs.indexOf(filePath);
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  if (index === -1) {
+    favs.push(filePath);
+    showToast(lang === 'es' ? 'AÑADIDO A FAVORITOS' : 'ADDED TO FAVORITES', 'success');
+  } else {
+    favs.splice(index, 1);
+    showToast(lang === 'es' ? 'ELIMINADO DE FAVORITOS' : 'REMOVED FROM FAVORITES', 'info');
+  }
+  state.settings.app.favorites = favs;
+  if (isElectron) {
+    window.electronAPI.saveSettings(state.settings.app);
+  }
+  updateFavButtonState();
+  if (typeof buildSidebar === 'function') buildSidebar();
 }
 
 function updateFavButtonState() {
