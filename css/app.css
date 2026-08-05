@@ -12,6 +12,7 @@
     --cyber-black: #080a0e;
     --cyber-dark: #0d1117;
     --cyber-panel: #111620;
+    --cyber-panel-dark: #0b1018;
     --cyber-border: #1e2a3a;
     --cyber-accent: #00d4ff;
     --cyber-accent-rgb: 0, 212, 255;
@@ -2034,9 +2035,8 @@
     justify-content: center;
     padding: 0 12px;
     gap: 8px;
-    background: linear-gradient(180deg, rgba(11, 14, 20, 0.96) 0%, rgba(8, 10, 14, 0.99) 100%);
+    background: var(--cyber-panel-dark);
     border-top: 1px solid rgba(var(--cyber-accent-rgb), 0.5);
-    backdrop-filter: blur(10px);
   }
 
   /* Accent glow atop the action toolbar — matches the title bar's bottom
