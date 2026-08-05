@@ -531,7 +531,7 @@
     padding: 6px 14px;
     border-radius: 4px;
     letter-spacing: 2px;
-    text-transform: uppercase;
+    text-transform: none;
     pointer-events: none;
     box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.2);
     backdrop-filter: blur(4px);

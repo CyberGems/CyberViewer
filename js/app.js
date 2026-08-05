@@ -1131,11 +1131,6 @@ function buildMenuTemplate(type, data) {
         action: () => window.electronAPI.showItemInFolder(data.path)
       },
       {
-        label: getTxt('menu_props'),
-        shortcut: 'Ctrl+I',
-        action: () => showPropertiesPanel(data.path)
-      },
-      {
         label: getTxt('menu_copy_path'),
         enabled: !!data.path,
         visible: !!data.path,
@@ -1247,6 +1242,11 @@ function buildMenuTemplate(type, data) {
         action: () => executeAction({ action: 'request-delete', index: data.index, path: data.path })
       },
       { type: 'separator' },
+      {
+        label: getTxt('menu_props'),
+        shortcut: 'Ctrl+I',
+        action: () => showPropertiesPanel(data.path)
+      },
       {
         label: getTxt('menu_restore_hidden', hiddenCount),
         enabled: hiddenCount > 0,
