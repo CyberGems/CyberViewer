@@ -3389,6 +3389,8 @@
     width: 14px;
     height: 14px;
     display: block;
+    transform: scaleX(-1);
+    transform-origin: center;
   }
 
   #modal-config .config-nav-close:hover {
