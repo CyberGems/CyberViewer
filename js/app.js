@@ -1146,21 +1146,15 @@ function buildMenuTemplate(type, data) {
           }
         }
       },
-      { type: 'separator' },
       {
-        label: getTxt('menu_file'),
-        isSub: true,
-        items: [
-          {
-            label: getTxt('menu_save_as'),
-            action: () => showSaveAsDialog(data.path)
-          },
-          {
-            label: getTxt('menu_close_image'),
-            action: () => closeImage()
-          }
-        ]
+        label: getTxt('menu_save_as'),
+        action: () => showSaveAsDialog(data.path)
       },
+      {
+        label: getTxt('menu_close_image'),
+        action: () => closeImage()
+      },
+      { type: 'separator' },
       {
         label: getTxt('menu_edit'),
         isSub: true,
@@ -1253,10 +1247,6 @@ function buildMenuTemplate(type, data) {
         action: () => executeAction({ action: 'request-delete', index: data.index, path: data.path })
       },
       { type: 'separator' },
-      {
-        label: getTxt('menu_hide_session'),
-        action: () => executeAction({ action: 'remove-from-list', index: data.index })
-      },
       {
         label: getTxt('menu_restore_hidden', hiddenCount),
         enabled: hiddenCount > 0,
