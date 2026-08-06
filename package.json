@@ -109,6 +109,8 @@
       "shortcutName": "CyberViewer",
       "artifactName": "${productName}-Setup-${version}.${ext}",
       "runAfterFinish": true,
+      "installerLanguages": ["en_US", "es_ES"],
+      "warningsAsErrors": false,
       "include": "build/installer.nsh"
     },
     "portable": {

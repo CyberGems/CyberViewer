@@ -13,14 +13,14 @@
 !include "LogicLib.nsh"
 
 ; LangStrings for custom page localization
-LangString CV_DefaultViewerTitle ${LANG_ENGLISH} "Default image viewer"
-LangString CV_DefaultViewerTitle ${LANG_SPANISH} "Visor de imágenes predeterminado"
+LangString CV_DefaultViewerTitle 1033 "Default image viewer"
+LangString CV_DefaultViewerTitle 1034 "Visor de imágenes predeterminado"
 
-LangString CV_DefaultViewerBody ${LANG_ENGLISH} "CyberViewer can open JPG, JPEG, PNG, GIF, WEBP, BMP and TIFF.$\r$\n$\r$\nCheck the option below to use CyberViewer as your default image viewer for these formats (current user).$\r$\n$\r$\nYou can change defaults later in Windows Settings > Apps > Default apps."
-LangString CV_DefaultViewerBody ${LANG_SPANISH} "CyberViewer puede abrir JPG, JPEG, PNG, GIF, WEBP, BMP y TIFF.$\r$\n$\r$\nMarca la opción de abajo para usar CyberViewer como tu visor de imágenes predeterminado para estos formatos (usuario actual).$\r$\n$\r$\nPuedes cambiar esta configuración más tarde en la Configuración de Windows > Aplicaciones > Aplicaciones predeterminadas."
+LangString CV_DefaultViewerBody 1033 "CyberViewer can open JPG, JPEG, PNG, GIF, WEBP, BMP and TIFF.$\r$\n$\r$\nCheck the option below to use CyberViewer as your default image viewer for these formats (current user).$\r$\n$\r$\nYou can change defaults later in Windows Settings > Apps > Default apps."
+LangString CV_DefaultViewerBody 1034 "CyberViewer puede abrir JPG, JPEG, PNG, GIF, WEBP, BMP y TIFF.$\r$\n$\r$\nMarca la opción de abajo para usar CyberViewer como tu visor de imágenes predeterminado para estos formatos (usuario actual).$\r$\n$\r$\nPuedes cambiar esta configuración más tarde en la Configuración de Windows > Aplicaciones > Aplicaciones predeterminadas."
 
-LangString CV_DefaultViewerCheckbox ${LANG_ENGLISH} "Set CyberViewer as the default image viewer"
-LangString CV_DefaultViewerCheckbox ${LANG_SPANISH} "Establecer CyberViewer como el visor de imágenes predeterminado"
+LangString CV_DefaultViewerCheckbox 1033 "Set CyberViewer as the default image viewer"
+LangString CV_DefaultViewerCheckbox 1034 "Establecer CyberViewer como el visor de imágenes predeterminado"
 
 ; $R9 = set-as-default flag (1 = yes, 0 = no). Default ON for silent installs.
 !macro customInit
