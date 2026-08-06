@@ -109,7 +109,9 @@ const state = {
       // Slideshow
       slideshowIntervalMs: 3000,
       slideshowLoop: true,
-      slideshowEnterFullscreen: true
+      slideshowEnterFullscreen: true,
+      allowMultipleInstances: false,
+      showFileName: true
     } 
   },
   // Runtime slideshow (not persisted)
@@ -5154,6 +5156,8 @@ function openConfig() {
   $('cfg-tray').checked = s.closeToTray;
   $('cfg-autostart').checked = s.autoStart;
   $('cfg-contextmenu').checked = s.contextMenuEnabled || false;
+  $('cfg-multiple').checked = s.allowMultipleInstances === true;
+  $('cfg-show-filename').checked = s.showFileName !== false;
   $('cfg-lang').value = s.language || 'en';
   $('cfg-hotkey').value = s.toggleHotkey || '';
   
@@ -5244,6 +5248,8 @@ function collectConfigSettings() {
     language: $('cfg-lang').value,
     accentColor: accentColor,
     contextMenuEnabled: $('cfg-contextmenu').checked,
+    allowMultipleInstances: $('cfg-multiple').checked,
+    showFileName: $('cfg-show-filename').checked,
     toggleHotkey: $('cfg-hotkey') ? $('cfg-hotkey').value.trim() : '',
     bannerAutoHide: $('cfg-banner-autohide').checked,
     navAutoHide: $('cfg-nav-autohide').checked,
@@ -5454,6 +5460,9 @@ function applySettings() {
   syncEmptyState();
   if (typeof syncGhostCloseTooltip === 'function') syncGhostCloseTooltip();
   if (typeof updateSlideshowUI === 'function' && state.slideshowActive) updateSlideshowUI();
+  // Filename/banner visibility depends on the per-element toggles; re-arm
+  // HUD so changing "Show Filename"/"Auto-hide" applies without a mousemove.
+  if (typeof resetHudTimer === 'function') resetHudTimer();
 }
 
 /** Normalize alpha background mode setting. */
@@ -6334,8 +6343,18 @@ function resetHudTimer() {
     // Filename banner & nav buttons surface only over the canvas. Off the
     // canvas (over chrome) they always fade out so the viewer chrome stays
     // clear; the per-element toggles (nav/banner) only gate the inactivity
-    // idle-hide while the cursor IS over the canvas.
-    if (item.el.id === 'viewer-filename' || item.el.id === 'nav-container') {
+    // idle-hide while the cursor IS over the canvas. The "Show Filename"
+    // master toggle hides the banner entirely (even over the canvas).
+    if (item.el.id === 'viewer-filename') {
+      const showFileName = state.settings?.app?.showFileName !== false;
+      if (!showFileName || !(cursorOnCanvas || item.el.matches(':hover'))) {
+        item.el.classList.add(item.hideClass);
+      } else {
+        item.el.classList.remove(item.hideClass);
+      }
+      return;
+    }
+    if (item.el.id === 'nav-container') {
       if (cursorOnCanvas || item.el.matches(':hover')) {
         item.el.classList.remove(item.hideClass);
       } else {

@@ -81,6 +81,8 @@ function loadSettings() {
         if (data.app.slideshowIntervalMs === undefined) data.app.slideshowIntervalMs = 3000;
         if (data.app.slideshowLoop === undefined) data.app.slideshowLoop = true;
         if (data.app.slideshowEnterFullscreen === undefined) data.app.slideshowEnterFullscreen = true;
+        if (data.app.allowMultipleInstances === undefined) data.app.allowMultipleInstances = false;
+        if (data.app.showFileName === undefined) data.app.showFileName = true;
       }
       return data;
     }
@@ -115,7 +117,9 @@ function loadSettings() {
       recentFolders: [],
       slideshowIntervalMs: 3000,
       slideshowLoop: true,
-      slideshowEnterFullscreen: true
+      slideshowEnterFullscreen: true,
+      allowMultipleInstances: false,
+      showFileName: true
     }
   };
 }
@@ -195,6 +199,18 @@ function registerMediaProtocol() {
 let win;
 let tray = null;
 let isQuitting = false;
+
+// Resolved once at launch from persisted settings + launch args (see lock section).
+let allowMultipleInstances = false;
+const initialFilePath = getFilePathFromArgs(process.argv);
+const instanceHasInitialFile = !!initialFilePath;
+// Tray/close-to-tray are reserved for the "resident" launch (no file arg).
+// Instances opened with an image file are ephemeral windows under multi-instance:
+// they get no tray icon and closing them quits that process (no duplicates).
+function wantsTray() {
+  const s = loadSettings().app;
+  return !!s.closeToTray && !(allowMultipleInstances && instanceHasInitialFile);
+}
 
 function resolveStartupBounds(settings) {
   const raw = settings.window && settings.window.bounds;
@@ -392,7 +408,7 @@ function createWindow() {
   win.loadURL(loadUrl);
 
   win.on('close', (event) => {
-    if (!isQuitting && loadSettings().app.closeToTray) {
+    if (!isQuitting && wantsTray()) {
       event.preventDefault();
       hideToTray();
       return false;
@@ -1360,7 +1376,8 @@ ipcMain.on('save-settings', (event, newSettings) => {
     });
   }
 
-  if (newSettings.closeToTray && !tray) {
+  const trayAllowed = !(allowMultipleInstances && instanceHasInitialFile);
+  if (newSettings.closeToTray && trayAllowed && !tray) {
     createTray();
   } else if (!newSettings.closeToTray && tray) {
     hideTrayMenu();
@@ -1641,7 +1658,8 @@ ipcMain.on('show-context-menu', (event, props) => {
   }
 });
 
-const gotTheLock = app.requestSingleInstanceLock();
+allowMultipleInstances = loadSettings().app.allowMultipleInstances === true;
+const gotTheLock = allowMultipleInstances || app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
   app.quit();
@@ -1668,15 +1686,14 @@ if (!gotTheLock) {
     initUpdater(settings.app, {
       beforeQuitInstall: () => { isQuitting = true; }
     });
-    if (settings.app.closeToTray) createTray();
+    if (wantsTray()) createTray();
     // Apply the global toggle hotkey if one is configured (empty = disabled).
     const hk = settings.app && settings.app.toggleHotkey;
     if (hk) applyToggleHotkey(hk);
 
-    const initialFile = getFilePathFromArgs(process.argv);
-    if (initialFile) {
+    if (initialFilePath) {
       win.webContents.once('did-finish-load', () => {
-        win.webContents.send('open-file', initialFile);
+        win.webContents.send('open-file', initialFilePath);
       });
     }
 
