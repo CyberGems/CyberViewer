@@ -134,7 +134,7 @@ const I18N = (typeof window !== 'undefined' && window.CV_I18N) ? window.CV_I18N 
 // (resolved from the rendered label text via LABEL_TO_ICON below).
 const MENU_ICON_BY_I18N = {
   menu_file: 'file', menu_edit: 'edit', menu_view: 'eye', menu_go: 'compass',
-  menu_help: 'help-circle', menu_prefs: 'settings', menu_about: 'info',
+  menu_help: 'help-circle', menu_prefs: 'gear', menu_about: 'info',
   menu_updates: 'download',
   menu_open: 'image', menu_open_folder: 'folder', menu_recent: 'clock',
   menu_recent_folders: 'folder', menu_paste: 'clipboard', menu_close_image: 'close',
@@ -146,13 +146,14 @@ const MENU_ICON_BY_I18N = {
   menu_flip_v: 'flip-v', menu_fit: 'fit', menu_original: 'square',
   menu_fullscreen: 'fullscreen', menu_slideshow: 'play', menu_slideshow_loop: 'loop',
   menu_slideshow_interval: 'clock', menu_sidebar: 'panel-left',
+  menu_slideshow_start: 'play', menu_slideshow_pause: 'pause', menu_slideshow_resume: 'play', menu_slideshow_stop: 'stop', menu_slideshow_exit: 'quit',
   menu_toolbar: 'panel-bottom', menu_show_hints: 'keyboard',
   menu_alpha_bg: 'grid', menu_next: 'next', menu_prev: 'prev',
   menu_favorite: 'star', menu_favs_view: 'star',
   menu_go_start: 'skip-start', menu_go_end: 'skip-end',
   menu_hide_session: 'eye-off', menu_restore_hidden: 'eye',
   menu_maximize: 'maximize', menu_autohide_nav: 'eye-off',
-  config: 'settings', about: 'info',
+  config: 'gear', about: 'info',
   favorite_add: 'star', favorite_remove: 'star'
 };
 
@@ -200,7 +201,21 @@ const MENU_ICONS = {
   'compass': '<circle cx="12" cy="12" r="9"/><path d="M16 8l-2 6-6 2 2-6z"/>',
   'skip-start': '<path d="M19 5L9 12l10 7z"/><path d="M5 5v14"/>',
   'skip-end': '<path d="M5 5l10 7-10 7z"/><path d="M19 5v14"/>',
-  'maximize': '<path d="M8 4H6a2 2 0 0 0-2 2v2"/><path d="M16 4h2a2 2 0 0 1 2 2v2"/><path d="M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M16 20h2a2 2 0 0 0 2-2v-2"/>'
+  'maximize': '<path d="M8 4H6a2 2 0 0 0-2 2v2"/><path d="M16 4h2a2 2 0 0 1 2 2v2"/><path d="M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M16 20h2a2 2 0 0 0 2-2v-2"/>',
+  'pause': '<rect x="8" y="5" width="3" height="14" rx="1"/><rect x="13" y="5" width="3" height="14" rx="1"/>',
+  'stop': '<path d="M8 3H16L21 8V16L16 21H8L3 16V8Z"/>'
+}
+
+// Glyph (Unicode/emoji) icons rendered as a styled <span>, complementing the
+// SVG catalog above. A few items whose best visual is a symbol (e.g. the gear
+// used for the Settings/Preferences entry) match the configuration modal
+// header. iconSvg()/iconHtml() branch on this map before the SVG path catalog.
+const MENU_GLYPHS = {
+  'gear': '&#9881;&#xFE0E;'
+};
+
+function glyphIconClass(danger) {
+  return 'menu-ico menu-ico-glyph' + (danger ? ' menu-ico-danger' : '');
 };
 
 // Label text (any language) → icon name, built once at load. Counts and
@@ -234,6 +249,14 @@ function iconNameForItem(item) {
 }
 
 function iconSvg(name, danger) {
+  const glyph = name && MENU_GLYPHS[name];
+  if (glyph) {
+    const span = document.createElement('span');
+    span.className = glyphIconClass(danger);
+    span.setAttribute('aria-hidden', 'true');
+    span.innerHTML = glyph;
+    return span;
+  }
   const inner = name && MENU_ICONS[name];
   if (!inner) return null;
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -250,6 +273,10 @@ function iconSvg(name, danger) {
 }
 
 function iconHtml(name, danger) {
+  const glyph = name && MENU_GLYPHS[name];
+  if (glyph) {
+    return '<span class="' + glyphIconClass(danger) + '" aria-hidden="true">' + glyph + '</span>';
+  }
   const inner = name && MENU_ICONS[name];
   if (!inner) return '';
   return '<svg class="menu-ico' + (danger ? ' menu-ico-danger' : '') +
@@ -278,6 +305,18 @@ function decorateMenuIcons(root) {
     if (svg) host.insertBefore(svg, host.querySelector(':scope > .menu-check') || lbl);
   });
 }
+// Decorate modal headers (.modal-title) with leading SVG icons so each modal
+// header matches its counterpart menu entry. Reuses the shared MENU_ICONS
+// catalog (single source of truth): the config gear is the exact same SVG as
+// the menu Configuracion gear, and Properties/Resize/Adjust get their
+// respective icons. Idempotent (innerHTML reset on each call).
+function decorateModalHeaderIcons() {
+  document.querySelectorAll('.modal-header-icon[data-modal-icon]').forEach(slot => {
+    const html = iconHtml(slot.dataset.modalIcon);
+    if (html) slot.innerHTML = html;
+  });
+}
+decorateModalHeaderIcons();
 
 function updateLanguage(lang = 'en') {
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -934,6 +973,12 @@ window.addEventListener('contextmenu', (e) => {
   if (e.target.closest('#topbar')) return;    // Evitar menú en barra de título
   if (e.target.closest('#sidebar')) return;   // Evitar menú en barra lateral
 
+  // During an active slideshow, show a presentation-only context menu.
+  if (state.slideshowActive) {
+    showCustomContextMenu(e, 'slideshow', {});
+    return;
+  }
+
   const isInsideViewer = e.target.closest('#viewer-wrap');
   if (isInsideViewer && state.images.length > 0) {
     const rect = mainImg.getBoundingClientRect();
@@ -1274,6 +1319,51 @@ function buildMenuTemplate(type, data) {
         action: () => executeAction({ action: 'restore-hidden' })
       }
     ];
+  } else if (type === 'slideshow') {
+    // Presentation (slideshow) context menu — only useful controls while presenting
+    const intervalSec = (getSlideshowIntervalMs() / 1000) + 's';
+    return [
+      {
+        label: state.slideshowPlaying ? getTxt('menu_slideshow_pause') : getTxt('menu_slideshow_resume'),
+        shortcut: 'Space',
+        action: () => toggleSlideshowPlay()
+      },
+      { type: 'separator' },
+      {
+        label: getTxt('menu_prev'),
+        shortcut: 'A',
+        action: () => slideshowAdvance(-1)
+      },
+      {
+        label: getTxt('menu_next'),
+        shortcut: 'D',
+        action: () => slideshowAdvance(1)
+      },
+      { type: 'separator' },
+      {
+        label: getTxt('menu_slideshow_loop'),
+        type: 'checkbox',
+        checked: isSlideshowLoop(),
+        action: () => toggleSlideshowLoop()
+      },
+      {
+        label: getTxt('menu_slideshow_interval'),
+        shortcut: intervalSec,
+        action: () => cycleSlideshowInterval()
+      },
+      { type: 'separator' },
+      {
+        label: getTxt('menu_slideshow_stop'),
+        shortcut: 'Esc',
+        action: () => stopSlideshow({ keepFullscreen: true })
+      },
+      {
+        label: getTxt('menu_slideshow_exit'),
+        icon: 'quit',
+        danger: true,
+        action: () => stopSlideshow()
+      }
+    ];
   } else {
     // Canvas / empty-state context menu
     const tMenu = I18N[lang] || I18N.en;
@@ -1331,24 +1421,6 @@ function buildMenuTemplate(type, data) {
             enabled: hasImages,
             action: () => { const b = $('btn-fs-hud'); if (b) b.click(); }
           },
-          {
-            label: getTxt('menu_slideshow'),
-            shortcut: 'S',
-            enabled: hasImages,
-            action: () => toggleSlideshowPlay()
-          },
-          {
-            label: getTxt('menu_slideshow_loop'),
-            type: 'checkbox',
-            checked: state.settings.app.slideshowLoop !== false,
-            enabled: hasImages,
-            action: () => toggleSlideshowLoop()
-          },
-          {
-            label: getTxt('menu_slideshow_interval'),
-            enabled: hasImages,
-            action: () => cycleSlideshowInterval()
-          },
           { type: 'separator' },
           {
             label: getTxt('menu_toolbar'),
@@ -1379,6 +1451,31 @@ function buildMenuTemplate(type, data) {
           }
         ]
       },
+      {
+        label: getTxt('menu_slideshow'),
+        isSub: true,
+        items: [
+          {
+            label: getTxt('menu_slideshow_start'),
+            shortcut: 'S',
+            enabled: hasImages,
+            action: () => startSlideshow()
+          },
+          { type: 'separator' },
+          {
+            label: getTxt('menu_slideshow_loop'),
+            type: 'checkbox',
+            checked: state.settings.app.slideshowLoop !== false,
+            enabled: hasImages,
+            action: () => toggleSlideshowLoop()
+          },
+          {
+            label: getTxt('menu_slideshow_interval'),
+            enabled: hasImages,
+            action: () => cycleSlideshowInterval()
+          }
+        ]
+      },
       { type: 'separator' },
       {
         label: getTxt('config'),
@@ -1389,13 +1486,6 @@ function buildMenuTemplate(type, data) {
         action: () => {
           if (typeof window.openAbout === 'function') window.openAbout();
           else if ($('btn-about')) $('btn-about').click();
-        }
-      },
-      { type: 'separator' },
-      {
-        label: getTxt('menu_maximize'),
-        action: () => {
-          if (isElectron) window.electronAPI.maximize();
         }
       },
       { type: 'separator' },
@@ -5943,7 +6033,7 @@ $('btn-center').addEventListener('click', () => {
     overlay.innerHTML = `
       <div class="modal-box about-modal" role="dialog" aria-modal="true" aria-labelledby="about-dialog-title">
         <div class="modal-header">
-          <div class="modal-title" id="about-dialog-title">${t.about_title}</div>
+          <div class="modal-title" id="about-dialog-title"><span class="modal-header-icon" data-modal-icon="info" aria-hidden="true"></span><span>${t.about_title}</span></div>
           <button class="win-btn modal-close-btn" id="about-close-btn" aria-label="${t.close || 'Close'}">&#10005;</button>
         </div>
         <div class="modal-body">
@@ -5999,7 +6089,7 @@ $('btn-center').addEventListener('click', () => {
         </div>
       </div>
     `;
-
+    decorateModalHeaderIcons();
     overlay.querySelector('#about-close').addEventListener('click', closeAbout);
     overlay.querySelector('#about-close-btn').addEventListener('click', closeAbout);
     
@@ -6238,6 +6328,9 @@ $('btn-config').addEventListener('click', openConfig);
         break;
       case 'toggle-alpha-bg':
         toggleAlphaBackground();
+        break;
+      case 'start-slideshow':
+        startSlideshow();
         break;
       case 'slideshow':
         toggleSlideshowPlay();
@@ -6699,13 +6792,14 @@ $('btn-confirm-ok').addEventListener('click', () => {
 });
 
 function showCyberConfirm({ title, message, detail, danger = true, onConfirm }) {
-  $('confirm-title').textContent = title;
+  $('confirm-title-text').textContent = title;
   $('confirm-message').textContent = message;
   $('confirm-detail').textContent = detail || '';
   confirmCallback = onConfirm;
   
   const box = document.querySelector('.confirm-modal-box');
   const iconBox = $('confirm-icon-box');
+  const headerIcon = $('confirm-header-icon');
   const okBtn = $('btn-confirm-ok');
   
   if (danger) {
@@ -6715,6 +6809,8 @@ function showCyberConfirm({ title, message, detail, danger = true, onConfirm }) 
     iconBox.style.borderColor = 'rgba(255, 45, 120, 0.3)';
     iconBox.style.background = 'rgba(255, 45, 120, 0.1)';
     iconBox.innerHTML = '&#128465;&#xFE0E;'; // Trash bin icon
+    headerIcon.innerHTML = '&#128465;&#xFE0E;';
+    headerIcon.style.color = 'var(--cyber-accent2)';
     
     okBtn.style.borderColor = 'var(--cyber-accent2)';
     okBtn.style.color = 'var(--cyber-accent2)';
@@ -6725,6 +6821,8 @@ function showCyberConfirm({ title, message, detail, danger = true, onConfirm }) 
     iconBox.style.borderColor = 'rgba(var(--cyber-accent-rgb), 0.3)';
     iconBox.style.background = 'rgba(var(--cyber-accent-rgb), 0.1)';
     iconBox.innerHTML = '&#9888;&#xFE0E;'; // Warning sign
+    headerIcon.innerHTML = '&#9888;&#xFE0E;';
+    headerIcon.style.color = 'var(--cyber-accent)';
     
     okBtn.style.borderColor = 'var(--cyber-accent)';
     okBtn.style.color = 'var(--cyber-accent)';

@@ -41,6 +41,8 @@
   <div class="menu-wrap">
     <button class="win-btn tooltip-bottom" id="btn-menu" data-i18n-title="menu" title="Menú" style="margin-left:5px"><svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <div id="main-menu" class="menu-panel">
+      <button class="menu-item menu-flat" data-action="paste-image"><span class="menu-label" data-i18n="menu_paste">Pegar imagen</span><span class="menu-shortcut">Ctrl+V</span></button>
+      <div class="menu-divider"></div>
       <div class="menu-cat" data-sub>
         <span class="menu-label" data-i18n="menu_file">Archivo</span><span class="menu-arrow">&#8250;</span>
         <div class="menu-sub">
@@ -55,7 +57,6 @@
             <div class="menu-sub menu-recent-sub" id="menu-recent-folders-list"></div>
           </div>
           <div class="menu-divider"></div>
-          <button class="menu-item" data-action="paste-image"><span class="menu-label" data-i18n="menu_paste">Pegar imagen</span><span class="menu-shortcut">Ctrl+V</span></button>
           <button class="menu-item" data-action="close-image" data-needs-image><span class="menu-label" data-i18n="menu_close_image">Cerrar imagen</span></button>
           <button class="menu-item" data-action="show-folder" data-needs-image><span class="menu-label" data-i18n="menu_show">Mostrar en explorador</span><span class="menu-shortcut">Ctrl+&#8679;O</span></button>
           <div class="menu-divider"></div>
@@ -88,14 +89,21 @@
           <button class="menu-item" data-action="fit" data-needs-image><span class="menu-label" data-i18n="menu_fit">Ajustar a ventana</span><span class="menu-shortcut">F</span></button>
           <button class="menu-item" data-action="original" data-needs-image><span class="menu-label" data-i18n="menu_original">Tamaño real (1:1)</span><span class="menu-shortcut">1</span></button>
           <button class="menu-item" data-action="fullscreen" data-needs-image><span class="menu-label" data-i18n="menu_fullscreen">Pantalla completa</span><span class="menu-shortcut">Enter</span></button>
-          <button class="menu-item" data-action="slideshow" data-needs-image><span class="menu-label" data-i18n="menu_slideshow">Presentación</span><span class="menu-shortcut">S</span></button>
-          <button class="menu-item" data-action="slideshow-loop" data-needs-image><span class="menu-check">&#10003;</span><span class="menu-label" data-i18n="menu_slideshow_loop">Repetir carpeta (loop)</span></button>
-          <button class="menu-item" data-action="slideshow-interval" data-needs-image><span class="menu-label" data-i18n="menu_slideshow_interval">Intervalo presentación</span><span class="menu-shortcut" id="menu-ss-interval-val">3s</span></button>
           <div class="menu-divider"></div>
           <button class="menu-item" data-action="sidebar"><span class="menu-check">&#10003;</span><span class="menu-label" data-i18n="menu_sidebar">Barra lateral</span></button>
           <button class="menu-item" data-action="toolbar"><span class="menu-check">&#10003;</span><span class="menu-label" data-i18n="menu_toolbar">Barra de acciones</span></button>
           <button class="menu-item" data-action="toggle-hints"><span class="menu-check">&#10003;</span><span class="menu-label" data-i18n="menu_show_hints">Atajos de teclado</span></button>
           <button class="menu-item" data-action="toggle-alpha-bg"><span class="menu-check">&#10003;</span><span class="menu-label" data-i18n="menu_alpha_bg">Rejilla de transparencia</span></button>
+        </div>
+      </div>
+
+      <div class="menu-cat" data-sub>
+        <span class="menu-label" data-i18n="menu_slideshow">Presentación</span><span class="menu-arrow">&#8250;</span>
+        <div class="menu-sub">
+          <button class="menu-item" data-action="start-slideshow" data-needs-image><span class="menu-label" data-i18n="menu_slideshow_start">Iniciar presentación</span><span class="menu-shortcut">S</span></button>
+          <div class="menu-divider"></div>
+          <button class="menu-item" data-action="slideshow-loop" data-needs-image><span class="menu-check">&#10003;</span><span class="menu-label" data-i18n="menu_slideshow_loop">Repetir carpeta (loop)</span></button>
+          <button class="menu-item" data-action="slideshow-interval" data-needs-image><span class="menu-label" data-i18n="menu_slideshow_interval">Intervalo presentación</span><span class="menu-shortcut" id="menu-ss-interval-val">3s</span></button>
         </div>
       </div>
 
@@ -353,7 +361,7 @@
 <div id="modal-cyber-confirm" class="modal-overlay">
   <div class="modal-box confirm-modal-box">
     <div class="modal-header confirm-modal-header">
-      <div class="modal-title" id="confirm-title">MOVER A LA PAPELERA</div>
+      <div class="modal-title" id="confirm-title"><span class="modal-header-icon" id="confirm-header-icon" aria-hidden="true"></span><span id="confirm-title-text">MOVER A LA PAPELERA</span></div>
       <button class="win-btn modal-close-btn" data-close-modal="modal-cyber-confirm">&#10005;</button>
     </div>
     <div class="modal-body confirm-modal-body">
@@ -378,7 +386,10 @@
 <div id="modal-properties" class="modal-overlay">
   <div class="modal-box props-modal-box">
     <div class="modal-header">
-      <div class="modal-title" data-i18n="props_title">PROPIEDADES</div>
+      <div class="modal-title">
+        <span class="modal-header-icon" data-modal-icon="info" aria-hidden="true"></span>
+        <span data-i18n="props_title">PROPIEDADES</span>
+      </div>
       <button class="win-btn modal-close-btn tooltip-bottom tooltip-align-right" data-close-modal="modal-properties" data-i18n-title="close" title="Cerrar">&#10005;</button>
     </div>
     <div class="modal-body">
@@ -444,16 +455,15 @@
 <div id="modal-config" class="modal-overlay">
   <div class="modal-box config-modal-box">
     <div class="modal-header">
-      <div class="modal-title" data-i18n="config_title">Configuración</div>
+      <div class="modal-title">
+        <span class="config-header-icon" aria-hidden="true">&#9881;&#xFE0E;</span>
+        <span data-i18n="config_title">Configuración</span>
+      </div>
       <button class="win-btn modal-close-btn" data-close-modal="modal-config">&#10005;</button>
     </div>
     <div class="modal-body config-modal-body">
       <div class="config-layout">
         <aside class="config-nav" aria-label="Configuration sections">
-          <div class="config-nav-title">
-            <span class="config-nav-icon" aria-hidden="true">&#9881;&#xFE0E;</span>
-            <span data-i18n="config_title">Configuración</span>
-          </div>
           <div class="config-nav-items" role="tablist" aria-label="Configuration tabs">
             <button type="button" class="config-nav-btn active" data-config-tab="general" role="tab" aria-selected="true" aria-controls="config-tab-general">
               <span aria-hidden="true">&#9673;</span>
@@ -729,7 +739,10 @@
 <div id="modal-resize" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
-      <div class="modal-title" data-i18n="resize_title">REDIMENSIONAR</div>
+      <div class="modal-title">
+        <span class="modal-header-icon" data-modal-icon="resize" aria-hidden="true"></span>
+        <span data-i18n="resize_title">REDIMENSIONAR</span>
+      </div>
       <button class="win-btn modal-close-btn tooltip-bottom tooltip-align-right" data-close-modal="modal-resize" data-i18n-title="close" title="Cerrar">&#10005;</button>
     </div>
     <div class="modal-body">
@@ -859,7 +872,10 @@
 <div id="modal-adjust" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
-      <div class="modal-title" data-i18n="adjust_title">AJUSTES</div>
+      <div class="modal-title">
+        <span class="modal-header-icon" data-modal-icon="sliders" aria-hidden="true"></span>
+        <span data-i18n="adjust_title">AJUSTES</span>
+      </div>
       <button class="win-btn modal-close-btn tooltip-bottom tooltip-align-right" data-close-modal="modal-adjust" data-i18n-title="close" title="Cerrar">&#10005;</button>
     </div>
     <div class="modal-body">
