@@ -83,6 +83,7 @@ function loadSettings() {
         if (data.app.slideshowEnterFullscreen === undefined) data.app.slideshowEnterFullscreen = true;
         if (data.app.allowMultipleInstances === undefined) data.app.allowMultipleInstances = false;
         if (data.app.showFileName === undefined) data.app.showFileName = true;
+      if (data.app.dblClickAction === undefined) data.app.dblClickAction = 'fullscreen';
       }
       return data;
     }
@@ -119,7 +120,8 @@ function loadSettings() {
       slideshowLoop: true,
       slideshowEnterFullscreen: true,
       allowMultipleInstances: false,
-      showFileName: true
+      showFileName: true,
+      dblClickAction: 'fullscreen'
     }
   };
 }

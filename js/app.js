@@ -4238,14 +4238,39 @@ window.addEventListener('mouseup', () => {
   viewerWrap.classList.remove('dragging');
 });
 
-// Double click = fit or 1:1
+// Double click action (configurable: fullscreen / toggle zoom (fit<->1:1) / fit / original / none)
 viewerWrap.addEventListener('dblclick', e => {
   if (e.target.closest('#kbd-hint') || e.target.closest('#topbar') || e.target.closest('#sidebar')) return;
+  const action = state.settings && state.settings.app ? normalizeDblClickAction(state.settings.app.dblClickAction) : 'fullscreen';
+  if (action === 'none') return;
+  // Fullscreen: enter immersive mode, or exit if already in it (works without an image too).
+  if (action === 'fullscreen') {
+    if (!state.isGhost && state.images.length === 0) return;
+    toggleFullscreen();
+    return;
+  }
   if (state.images.length === 0) return;
   const im = state.images[state.current];
   if (!im || !im.w) return;
   const vw = viewerWrap.clientWidth, vh = viewerWrap.clientHeight;
   const fitScale = Math.min((vw - 24) / im.w, (vh - 24) / im.h, 1);
+  if (action === 'fit') {
+    state.viewMode = 'fit';
+    state.zoom = fitScale;
+    state.panX = 0;
+    state.panY = 0;
+    applyTransform(true);
+    return;
+  }
+  if (action === 'original') {
+    state.viewMode = 'original';
+    state.zoom = 1;
+    state.panX = 0;
+    state.panY = 0;
+    applyTransform(true);
+    return;
+  }
+  // action === 'toggle-zoom' (legacy fit <-> 1:1)
   if (Math.abs(state.zoom - 1) < 0.05) {
     state.viewMode = 'fit';
     state.zoom = fitScale;
@@ -5253,6 +5278,7 @@ function openConfig() {
   
   // Auto-hide settings (independent per element)
   $('cfg-banner-autohide').checked = s.bannerAutoHide !== false;
+  if ($('cfg-dbl-click')) $('cfg-dbl-click').value = normalizeDblClickAction(s.dblClickAction);
   $('cfg-nav-autohide').checked = s.navAutoHide !== false;
   $('cfg-show-hints').checked = s.showTopHints !== false;
   $('cfg-disable-tooltips').checked = !!s.disableTooltips;
@@ -5347,6 +5373,7 @@ function collectConfigSettings() {
     disableTooltips: $('cfg-disable-tooltips').checked,
     hudAutoHideDelay: parseInt($('cfg-hud-delay').value, 10),
     alphaBackground: normalizeAlphaBackground($('cfg-alpha-bg') && $('cfg-alpha-bg').value),
+    dblClickAction: normalizeDblClickAction(($('cfg-dbl-click') && $('cfg-dbl-click').value) || 'fullscreen'),
     slideshowIntervalMs: parseInt(($('cfg-ss-interval') && $('cfg-ss-interval').value) || '3000', 10),
     slideshowLoop: !!( $('cfg-ss-loop') && $('cfg-ss-loop').checked ),
     slideshowEnterFullscreen: !!( $('cfg-ss-fs') && $('cfg-ss-fs').checked )
@@ -5559,6 +5586,11 @@ function applySettings() {
 function normalizeAlphaBackground(value) {
   if (value === 'checker-light' || value === 'solid' || value === 'checker-dark') return value;
   return 'checker-dark';
+}
+/** Normalize double-click action setting. */
+function normalizeDblClickAction(value) {
+  if (value === 'fullscreen' || value === 'toggle-zoom' || value === 'fit' || value === 'original' || value === 'none') return value;
+  return 'fullscreen';
 }
 
 /** Apply body data attribute for CSS alpha grid. */
