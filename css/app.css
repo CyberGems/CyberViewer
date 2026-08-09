@@ -879,6 +879,13 @@
 
   /* Leading icons inside menu items/submenus (burger + context menus) */
   .menu-cat .menu-ico, .menu-item .menu-ico { width: 15px; height: 15px; flex-shrink: 0; opacity: .9; }
+  .menu-cat .menu-ico-glyph, .menu-item .menu-ico-glyph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    line-height: 1;
+  }
   .menu-cat .menu-ico { opacity: .72; }
   .menu-ico.menu-ico-danger { color: var(--cyber-accent2); }
   .menu-item.danger:hover .menu-ico { color: var(--cyber-accent2); }
@@ -2686,6 +2693,9 @@
   }
 
   .modal-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     font-family: var(--font-ui);
     font-size: 16px;
     color: var(--cyber-accent);
@@ -3277,21 +3287,23 @@
     padding: 14px 10px 12px;
   }
 
-  #modal-config .config-nav-title {
-    display: flex;
+  .modal-header-icon {
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 2px 8px 14px;
-    font-family: var(--font-ui);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--cyber-text);
-    user-select: none;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    color: var(--cyber-accent);
   }
 
-  #modal-config .config-nav-icon {
+  .modal-header-icon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  #modal-config .config-header-icon {
     color: var(--preview-accent);
     text-shadow: 0 0 8px rgba(var(--preview-accent-rgb), 0.55);
   }
