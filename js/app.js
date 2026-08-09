@@ -1184,29 +1184,6 @@ function buildMenuTemplate(type, data) {
     const hiddenCount = state.images.filter(im => im.hidden).length;
     return [
       {
-        label: getTxt('menu_open_containing_folder'),
-        enabled: !!data.path,
-        visible: !!data.path,
-        action: () => window.electronAPI.openContainingFolder(data.path)
-      },
-      {
-        label: getTxt('menu_show'),
-        enabled: !!data.path,
-        visible: !!data.path,
-        action: () => window.electronAPI.showItemInFolder(data.path)
-      },
-      {
-        label: getTxt('menu_copy_path'),
-        enabled: !!data.path,
-        visible: !!data.path,
-        action: () => {
-          if (data.path) {
-            navigator.clipboard.writeText(data.path);
-            showToast(lang === 'es' ? 'RUTA COPIADA' : 'PATH COPIED', 'success');
-          }
-        }
-      },
-      {
         label: getTxt('menu_save_as'),
         action: () => showSaveAsDialog(data.path)
       },
@@ -1296,6 +1273,17 @@ function buildMenuTemplate(type, data) {
         action: () => copyToClipboard()
       },
       {
+        label: getTxt('menu_copy_path'),
+        enabled: !!data.path,
+        visible: !!data.path,
+        action: () => {
+          if (data.path) {
+            navigator.clipboard.writeText(data.path);
+            showToast(lang === 'es' ? 'RUTA COPIADA' : 'PATH COPIED', 'success');
+          }
+        }
+      },
+      {
         label: getTxt('menu_paste'),
         shortcut: 'Ctrl+V',
         action: () => pasteFromClipboard()
@@ -1307,6 +1295,12 @@ function buildMenuTemplate(type, data) {
         action: () => executeAction({ action: 'request-delete', index: data.index, path: data.path })
       },
       { type: 'separator' },
+      {
+        label: getTxt('menu_open_containing_folder'),
+        enabled: !!data.path,
+        visible: !!data.path,
+        action: () => window.electronAPI.openContainingFolder(data.path)
+      },
       {
         label: getTxt('menu_props'),
         shortcut: 'Ctrl+I',
