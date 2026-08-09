@@ -58,7 +58,7 @@
           </div>
           <div class="menu-divider"></div>
           <button class="menu-item" data-action="close-image" data-needs-image><span class="menu-label" data-i18n="menu_close_image">Cerrar imagen</span></button>
-          <button class="menu-item" data-action="show-folder" data-needs-image><span class="menu-label" data-i18n="menu_show">Mostrar en explorador</span><span class="menu-shortcut">Ctrl+&#8679;O</span></button>
+          <button class="menu-item" data-action="show-folder" data-needs-image><span class="menu-label" data-i18n="menu_open_containing_folder">Abrir carpeta contenedora</span><span class="menu-shortcut">Ctrl+&#8679;O</span></button>
           <div class="menu-divider"></div>
           <button class="menu-item" data-action="save-as" data-needs-image><span class="menu-label" data-i18n="menu_save_as">Guardar Como...</span></button>
           <button class="menu-item" data-action="copy" data-needs-image><span class="menu-label" data-i18n="menu_copy">Copiar imagen</span><span class="menu-shortcut">Ctrl+C</span></button>
@@ -321,7 +321,7 @@
   <div id="statusbar">
     <div id="radar-wrapper">
       <div class="footer-center cyber-tooltip" id="footer-radar" data-i18n-tooltip="radar_tooltip" data-tooltip="ESCANEO: Progreso de precarga de la carpeta / Miniaturas en memoria">
-        <svg class="footer-ico" style="color:#aaff00" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+        <svg class="footer-ico" style="color:var(--cyber-accent)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
         <span style="opacity:0.8" data-i18n="radar_lbl">ESCANEO:</span>
         <span id="radar-pct">0%</span>
         <span id="radar-count" style="color:var(--cyber-accent); margin-left: 5px"> [0/0] </span>
@@ -331,7 +331,7 @@
     </div>
 
     <div class="footer-right cyber-tooltip footer-props-hit" id="footer-size" data-i18n-tooltip="size_tooltip" data-tooltip="LIENZO: Resolución física · Clic para propiedades" role="button" tabindex="0">
-      <svg class="footer-ico" style="color:var(--cyber-accent2)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>
+      <svg class="footer-ico" style="color:var(--cyber-accent)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>
       <span id="img-dims">0 x 0px</span>
     </div>
 
@@ -345,7 +345,7 @@
     <div class="footer-sep"></div>
 
     <div class="footer-right cyber-tooltip" id="footer-zoom" data-i18n-tooltip="zoom_tooltip" data-tooltip="ESCALA DE VISTA: Porcentaje de zoom aplicado en el visor">
-      <svg class="footer-ico" style="color:var(--cyber-accent3)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <svg class="footer-ico" style="color:var(--cyber-accent)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="range" id="zoom-slider" min="0" max="1000" value="500" step="1">
       <span id="zoom-pct">100%</span>
     </div>

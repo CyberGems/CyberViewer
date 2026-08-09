@@ -451,17 +451,17 @@
 
   /* Size: Pink glowing tooltip */
   #footer-size.cyber-tooltip::after {
-    border-color: var(--cyber-accent2);
-    box-shadow: 0 0 10px rgba(255, 45, 120, 0.35);
+    border-color: var(--cyber-accent);
+    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.35);
   }
   #footer-size.cyber-tooltip::before {
-    border-color: var(--cyber-accent2) transparent transparent transparent;
+    border-color: var(--cyber-accent) transparent transparent transparent;
   }
 
   /* Weight: Cyan glowing tooltip */
   #footer-weight.cyber-tooltip::after {
     border-color: var(--cyber-accent);
-    box-shadow: 0 0 10px rgba(0, 212, 255, 0.35);
+    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.35);
   }
   #footer-weight.cyber-tooltip::before {
     border-color: var(--cyber-accent) transparent transparent transparent;
@@ -469,11 +469,11 @@
 
   /* Zoom: Lime glowing tooltip */
   #footer-zoom.cyber-tooltip::after {
-    border-color: var(--cyber-accent3);
-    box-shadow: 0 0 10px rgba(170, 255, 0, 0.35);
+    border-color: var(--cyber-accent);
+    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.35);
   }
   #footer-zoom.cyber-tooltip::before {
-    border-color: var(--cyber-accent3) transparent transparent transparent;
+    border-color: var(--cyber-accent) transparent transparent transparent;
   }
   /* Zoom lives at the right end of the statusbar — right-align its tooltip so it
      doesn't clip past the window's right edge (mirrors footer-radar left-alignment). */
