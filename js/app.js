@@ -1368,37 +1368,14 @@ function buildMenuTemplate(type, data) {
     // Canvas / empty-state context menu
     const tMenu = I18N[lang] || I18N.en;
     return [
+      ...buildOpenFileContextItems(tMenu),
+      { type: 'separator' },
       {
-        label: getTxt('menu_file'),
-        isSub: true,
-        items: [
-          ...buildOpenFileContextItems(tMenu),
-          { type: 'separator' },
-          {
-            label: getTxt('menu_paste'),
-            shortcut: 'Ctrl+V',
-            action: () => pasteFromClipboard()
-          }
-        ]
+        label: getTxt('menu_paste'),
+        shortcut: 'Ctrl+V',
+        action: () => pasteFromClipboard()
       },
-      {
-        label: getTxt('menu_edit'),
-        isSub: true,
-        items: [
-          {
-            label: getTxt('menu_rotate_r'),
-            shortcut: 'E',
-            enabled: hasImages,
-            action: () => rotate(90)
-          },
-          {
-            label: getTxt('menu_rotate_l'),
-            shortcut: 'Q',
-            enabled: hasImages,
-            action: () => rotate(-90)
-          }
-        ]
-      },
+      { type: 'separator' },
       {
         label: getTxt('menu_view'),
         isSub: true,
@@ -4241,15 +4218,19 @@ window.addEventListener('mouseup', () => {
 // Double click action (configurable: fullscreen / toggle zoom (fit<->1:1) / fit / original / none)
 viewerWrap.addEventListener('dblclick', e => {
   if (e.target.closest('#kbd-hint') || e.target.closest('#topbar') || e.target.closest('#sidebar')) return;
+  // The drop-zone buttons already handle their own clicks; don't open the dialog twice on double-click.
+  if (e.target.closest('#btn-drop-open') || e.target.closest('#btn-drop-paste')) return;
   const action = state.settings && state.settings.app ? normalizeDblClickAction(state.settings.app.dblClickAction) : 'fullscreen';
   if (action === 'none') return;
-  // Fullscreen: enter immersive mode, or exit if already in it (works without an image too).
+  // Empty canvas: double-click opens an image (Photoshop-style), independent of the action setting.
+  if (state.images.length === 0) {
+    openImageDialog();
+    return;
+  }
   if (action === 'fullscreen') {
-    if (!state.isGhost && state.images.length === 0) return;
     toggleFullscreen();
     return;
   }
-  if (state.images.length === 0) return;
   const im = state.images[state.current];
   if (!im || !im.w) return;
   const vw = viewerWrap.clientWidth, vh = viewerWrap.clientHeight;
