@@ -3772,6 +3772,7 @@ function prev() {
   if (state.images.length === 0 || state.transitioning) return;
   const next = (state.current - 1 + state.images.length) % state.images.length;
   showImage(next, 'right');
+  hideActionBarOnNavigate();
   if (state.slideshowPlaying) scheduleSlideshowTick();
 }
 
@@ -3779,6 +3780,7 @@ function next() {
   if (state.images.length === 0 || state.transitioning) return;
   const nxt = (state.current + 1) % state.images.length;
   showImage(nxt, 'left');
+  hideActionBarOnNavigate();
   if (state.slideshowPlaying) scheduleSlideshowTick();
 }
 
@@ -6416,6 +6418,23 @@ const elementsToHide = [
   { el: $('nav-container'), hideClass: 'hud-hidden-fade', ghostOnly: false }
 ];
 
+// Fullscreen (ghost mode): hide the floating action bar (#kbd-hint) the instant
+// the user navigates with the on-screen nav buttons or hotkeys, and keep it
+// hidden while the cursor stays over the nav-button surface so rapid flipping
+// stays unobstructed. It re-shows once the cursor leaves the nav buttons -
+// handled by the nav mouseleave -> resetHudTimer reveal pass below.
+function navButtonsHovered() {
+  const nav = $('nav-container');
+  return !!(nav && nav.matches(':hover'));
+}
+
+function hideActionBarOnNavigate() {
+  if (!state.isGhost) return;
+  if (state.toolbarOpen === false) return; // user-collapsed bar stays collapsed
+  const kbd = $('kbd-hint');
+  if (kbd) kbd.classList.add('hud-hidden');
+}
+
 function resetHudTimer() {
   clearTimeout(hudTimer);
 
@@ -6466,6 +6485,13 @@ function resetHudTimer() {
       } else {
         item.el.classList.add(item.hideClass);
       }
+      return;
+    }
+    // Fullscreen: keep the floating action bar hidden while the cursor is over
+    // the on-screen nav buttons (active image flipping via buttons/hotkeys).
+    // navButtonsHovered() is live, so once the cursor leaves the nav surface
+    // this guard passes and the bar is (re)revealed by the line below.
+    if (item.el.id === 'kbd-hint' && state.isGhost && state.toolbarOpen !== false && navButtonsHovered()) {
       return;
     }
     item.el.classList.remove(item.hideClass);
