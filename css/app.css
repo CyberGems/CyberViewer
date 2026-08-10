@@ -2135,11 +2135,20 @@
   body.ghost-mode #kbd-hint .kbd-btn.kbd-icon {
     width: 36px;
     min-width: 36px;
+    padding: 0;            /* icon-only buttons center their glyph/SVG, no padding */
+    font-size: 15px;       /* match window mode; otherwise the 10px ghost override shrinks glyphs */
   }
   body.ghost-mode #kbd-hint .kbd-ico {
     width: 13px;
     height: 13px;
     margin-right: 5px;
+  }
+  /* Keep solo icons full-size and centered in fullscreen (same 16px as window mode)
+     so they don't shrink or hug the left edge of the 36px button. */
+  body.ghost-mode #kbd-hint .kbd-ico.kbd-ico-solo {
+    width: 16px;
+    height: 16px;
+    margin-right: 0;
   }
   body.ghost-mode #kbd-hint .kbd-sep {
     height: 18px;
