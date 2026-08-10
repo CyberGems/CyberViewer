@@ -186,8 +186,8 @@
     height: 10px;
     background:
       linear-gradient(
-        rgba(var(--cyber-accent3-rgb), 0.25),
-        rgba(var(--cyber-accent3-rgb), 0.25)
+        rgba(var(--cyber-accent-rgb), 0.25),
+        rgba(var(--cyber-accent-rgb), 0.25)
       ) center / 100% 2px no-repeat;
     border-radius: 1px;
     outline: none;
@@ -204,8 +204,8 @@
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: var(--cyber-accent3);
-    box-shadow: 0 0 6px rgba(var(--cyber-accent3-rgb), 0.6);
+    background: var(--cyber-accent);
+    box-shadow: 0 0 6px rgba(var(--cyber-accent-rgb), 0.6);
     cursor: pointer;
     border: none;
   }
@@ -213,13 +213,13 @@
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: var(--cyber-accent3);
-    box-shadow: 0 0 6px rgba(var(--cyber-accent3-rgb), 0.6);
+    background: var(--cyber-accent);
+    box-shadow: 0 0 6px rgba(var(--cyber-accent-rgb), 0.6);
     cursor: pointer;
     border: none;
   }
   #zoom-slider::-moz-range-track {
-    background: rgba(var(--cyber-accent3-rgb), 0.25);
+    background: rgba(var(--cyber-accent-rgb), 0.25);
     height: 2px;
     border: none;
   }
