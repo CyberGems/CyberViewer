@@ -89,6 +89,7 @@ const state = {
       sidebarOpen: false, 
       statusbarVisible: true, 
       closeToTray: false, 
+      closeImageOnTray: true, 
       autoStart: false, 
       accentColor: '#00d4ff',
       language: 'en',
@@ -4213,7 +4214,7 @@ window.addEventListener('mouseup', () => {
 
 // Double click action (configurable: fullscreen / toggle zoom (fit<->1:1) / fit / original / none)
 viewerWrap.addEventListener('dblclick', e => {
-  if (e.target.closest('#kbd-hint') || e.target.closest('#topbar') || e.target.closest('#sidebar')) return;
+  if (e.target.closest('#kbd-hint') || e.target.closest('#topbar') || e.target.closest('#sidebar') || e.target.closest('#nav-container')) return;
   // The drop-zone buttons already handle their own clicks; don't open the dialog twice on double-click.
   if (e.target.closest('#btn-drop-open') || e.target.closest('#btn-drop-paste')) return;
   const action = state.settings && state.settings.app ? normalizeDblClickAction(state.settings.app.dblClickAction) : 'fullscreen';
@@ -5246,6 +5247,7 @@ function openConfig() {
   $('cfg-sidebar').checked = s.sidebarOpen;
   $('cfg-statusbar').checked = s.statusbarVisible;
   $('cfg-tray').checked = s.closeToTray;
+  if ($('cfg-close-image-tray')) $('cfg-close-image-tray').checked = s.closeImageOnTray !== false;
   $('cfg-autostart').checked = s.autoStart;
   $('cfg-contextmenu').checked = s.contextMenuEnabled || false;
   $('cfg-multiple').checked = s.allowMultipleInstances === true;
@@ -5336,6 +5338,7 @@ function collectConfigSettings() {
     sidebarOpen: $('cfg-sidebar').checked,
     statusbarVisible: $('cfg-statusbar').checked,
     closeToTray: $('cfg-tray').checked,
+    closeImageOnTray: !!($('cfg-close-image-tray') && $('cfg-close-image-tray').checked),
     autoStart: $('cfg-autostart').checked,
     preferredDisplayId: $('cfg-monitor').value,
     language: $('cfg-lang').value,
@@ -6261,6 +6264,11 @@ $('btn-config').addEventListener('click', openConfig);
   function openMenu() {
     if (typeof hideCustomContextMenu === 'function') hideCustomContextMenu();
     refreshMenuState();
+    // Reset any submenu kept open by the close-delay so the menu reopens fresh.
+    panel.querySelectorAll('.menu-cat.sub-open').forEach((el) => {
+      if (el._subCloseTimer) { clearTimeout(el._subCloseTimer); el._subCloseTimer = 0; }
+      el.classList.remove('sub-open');
+    });
     panel.classList.add('open');
     btn.classList.add('open');
   }
@@ -6397,6 +6405,48 @@ $('btn-config').addEventListener('click', openConfig);
   });
 })();
 
+// ── SUBMENU CLOSE DELAY ──
+// Submenus open instantly on hover (CSS), but stay open for a brief moment
+// after the pointer leaves so the cursor can travel diagonally from a
+// category into its submenu without the flyout snapping shut mid-move.
+// Applies to both the burger menu and the right-click context menu since
+// they share the .menu-cat[data-sub] / .menu-sub classes.
+(function initSubmenuCloseDelay() {
+  const SUB_CLOSE_DELAY = 280; // ms — muy leve, solo para salvar el recorrido del cursor
+  const TKEY = '_subCloseTimer';
+
+  function clearTimer(el) { if (el[TKEY]) { clearTimeout(el[TKEY]); el[TKEY] = 0; } }
+  function openSub(cat) {
+    clearTimer(cat);
+    // Switching to a sibling category replaces the current flyout immediately
+    // (no overlap); going deeper (cat -> its own submenu) keeps relying on CSS :hover.
+    const sib = cat.parentElement ? cat.parentElement.querySelectorAll(':scope > .menu-cat.sub-open') : null;
+    if (sib) sib.forEach((el) => { if (el !== cat) { clearTimer(el); el.classList.remove('sub-open'); } });
+    cat.classList.add('sub-open');
+  }
+  function scheduleClose(cat) {
+    clearTimer(cat);
+    cat[TKEY] = setTimeout(() => { cat[TKEY] = 0; cat.classList.remove('sub-open'); }, SUB_CLOSE_DELAY);
+  }
+
+  document.addEventListener('mouseover', (e) => {
+    const cat = e.target && e.target.closest ? e.target.closest('.menu-cat[data-sub]') : null;
+    if (cat) openSub(cat);
+  });
+  document.addEventListener('mouseout', (e) => {
+    const cat = e.target && e.target.closest ? e.target.closest('.menu-cat[data-sub]') : null;
+    if (!cat) return;
+    const rt = e.relatedTarget;
+    // Leaving a category fades its submenu after a brief delay; also fade any open
+    // ancestor submenus if the pointer left their region too (nested flyouts).
+    if (!rt || !cat.contains(rt)) scheduleClose(cat);
+    let parent = cat.parentElement ? cat.parentElement.closest('.menu-cat[data-sub]') : null;
+    while (parent) {
+      if ((!rt || !parent.contains(rt)) && parent.classList.contains('sub-open')) scheduleClose(parent);
+      parent = parent.parentElement ? parent.parentElement.closest('.menu-cat[data-sub]') : null;
+    }
+  });
+})();
 // ── HUD AUTO-HIDE (Sincronizado) ──
 // Docked toolbar (#kbd-hint) only auto-hides in fullscreen (ghost). In window mode it is chrome.
 let hudTimer = null;

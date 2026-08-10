@@ -94,6 +94,7 @@ function loadSettings() {
     window: { width: 1280, height: 800, maximized: true },
     app: {
       closeToTray: false,
+      closeImageOnTray: true,
       startMinimized: false,
       autoStart: false,
       accentColor: '#00d4ff',
@@ -482,6 +483,15 @@ function createWindow() {
 function hideToTray() {
   if (!win || win.isDestroyed()) return;
   persistWindowState();
+  // Optionally unload the open image when hiding to the tray, so reopening
+  // the window (manually or via Explorer) shows a clean state with no trace
+  // of the previous image — it stays only in the Recents history.
+  try {
+    const s = (loadSettings().app) || {};
+    if (s.closeImageOnTray !== false && win.webContents && !win.webContents.isDestroyed()) {
+      win.webContents.send('menu-action', { action: 'close-image' });
+    }
+  } catch (_) { /* ignore */ }
   if (win.isVisible()) win.hide();
   updateTrayMenu();
 }

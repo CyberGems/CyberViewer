@@ -867,7 +867,8 @@
     overflow-y: auto;
   }
   .menu-cat:hover > .menu-sub,
-  .menu-cat:focus-within > .menu-sub { display: block; }
+  .menu-cat:focus-within > .menu-sub,
+  .menu-cat.sub-open > .menu-sub { display: block; }
   /* transparent bridge so hover survives the gap between cat and submenu */
   .menu-cat[data-sub]::after { content: ''; position: absolute; top: 0; right: 100%; width: 8px; height: 100%; }
 
