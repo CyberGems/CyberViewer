@@ -56,6 +56,7 @@ const state = {
   currentIdx: -1,
   current: -1,
   viewMode: 'fit',     // 'fit', 'original', or 'custom'
+  selectedViewMode: 'fit', // user's chosen view mode; restored on navigation when navZoomMode === 'reset'
   zoom: 1,
   panX: 0,
   panY: 0,
@@ -112,7 +113,8 @@ const state = {
       slideshowLoop: true,
       slideshowEnterFullscreen: true,
       allowMultipleInstances: false,
-      showFileName: true
+      showFileName: true,
+      navZoomMode: 'reset'
     } 
   },
   // Runtime slideshow (not persisted)
@@ -374,6 +376,8 @@ function closeImage() {
   state.mainImageReadyIdx = -1;
   state.images = [];
   syncCurrentIndex(-1);
+  state.viewMode = 'fit';
+  state.selectedViewMode = 'fit';
   state.zoom = 1;
   state.panX = 0;
   state.panY = 0;
@@ -1769,6 +1773,7 @@ function executeAction(data) {
       const im = state.images[state.current];
       if (im && im.w) {
         state.viewMode = 'fit';
+        state.selectedViewMode = 'fit';
         fitToWindow(im.w, im.h);
       }
       break;
@@ -1777,6 +1782,7 @@ function executeAction(data) {
       const im = state.images[state.current];
       if (im && im.w) {
         state.viewMode = 'original';
+        state.selectedViewMode = 'original';
         state.zoom = 1;
         state.panX = 0;
         state.panY = 0;
@@ -2132,6 +2138,11 @@ function showImage(idx, direction, isInitial = false) {
 }
 
 function displayImage(url, w, h, direction) {
+  // On navigation, return to the user's selected view mode (Fit / 1:1) when the
+  // "reset to selected" preference is on; otherwise keep the live zoom ('custom').
+  if (state.settings && state.settings.app && state.settings.app.navZoomMode !== 'keep' && state.selectedViewMode) {
+    state.viewMode = state.selectedViewMode;
+  }
   spinner.classList.remove('active');
   mainImg.src = url;
   mainImg.classList.remove('slide-in-left', 'slide-in-right', 'slide-out-left', 'slide-out-right');
@@ -3604,6 +3615,14 @@ function applyTransform(animate, opts = {}) {
   updateZoomHUD(opts);
 }
 
+/** Reflect the active view mode on the Fit / 1:1 action buttons (like the fullscreen button). */
+function syncViewModeButtons() {
+  const fitBtn = $('btn-fit-hud');
+  const origBtn = $('btn-orig-hud');
+  if (fitBtn) fitBtn.classList.toggle('active', state.viewMode === 'fit');
+  if (origBtn) origBtn.classList.toggle('active', state.viewMode === 'original');
+}
+
 function sliderToZoom(val) {
   if (CVMedia.sliderToZoom) return CVMedia.sliderToZoom(val, ZOOM_MIN, ZOOM_MAX);
   const minL = Math.log10(ZOOM_MIN);
@@ -3626,6 +3645,7 @@ function zoomToSlider(zoom) {
  *   restored window already has the statusbar slider + %).
  */
 function updateZoomHUD(opts = {}) {
+  syncViewModeButtons();
   const pct = Math.round(state.zoom * 100);
   zoomVal.textContent = pct + '%';
   $('zoom-pct').textContent = pct + '%';
@@ -4833,12 +4853,13 @@ $('btn-show-folder').addEventListener('click', () => {
 $('btn-fit-hud').addEventListener('click', () => {
   if (!checkImageLoaded()) return;
   const im = state.images[state.current];
-  if (im && im.w) { state.viewMode = 'fit'; state.panX=0; state.panY=0; fitToWindow(im.w, im.h); }
+  if (im && im.w) { state.viewMode = 'fit'; state.selectedViewMode = 'fit'; state.panX=0; state.panY=0; fitToWindow(im.w, im.h); }
 });
 
 $('btn-orig-hud').addEventListener('click', () => {
   if (!checkImageLoaded()) return;
   state.viewMode = 'original';
+  state.selectedViewMode = 'original';
   state.zoom = 1; state.panX = 0; state.panY = 0;
   applyTransform(true);
 });
@@ -5258,6 +5279,7 @@ function openConfig() {
   // Auto-hide settings (independent per element)
   $('cfg-banner-autohide').checked = s.bannerAutoHide !== false;
   if ($('cfg-dbl-click')) $('cfg-dbl-click').value = normalizeDblClickAction(s.dblClickAction);
+  if ($('cfg-nav-zoom-mode')) $('cfg-nav-zoom-mode').value = normalizeNavZoomMode(s.navZoomMode);
   $('cfg-nav-autohide').checked = s.navAutoHide !== false;
   $('cfg-show-hints').checked = s.showTopHints !== false;
   $('cfg-disable-tooltips').checked = !!s.disableTooltips;
@@ -5354,6 +5376,7 @@ function collectConfigSettings() {
     hudAutoHideDelay: parseInt($('cfg-hud-delay').value, 10),
     alphaBackground: normalizeAlphaBackground($('cfg-alpha-bg') && $('cfg-alpha-bg').value),
     dblClickAction: normalizeDblClickAction(($('cfg-dbl-click') && $('cfg-dbl-click').value) || 'fullscreen'),
+    navZoomMode: normalizeNavZoomMode(($('cfg-nav-zoom-mode') && $('cfg-nav-zoom-mode').value) || 'reset'),
     slideshowIntervalMs: parseInt(($('cfg-ss-interval') && $('cfg-ss-interval').value) || '3000', 10),
     slideshowLoop: !!( $('cfg-ss-loop') && $('cfg-ss-loop').checked ),
     slideshowEnterFullscreen: !!( $('cfg-ss-fs') && $('cfg-ss-fs').checked )
@@ -5573,6 +5596,11 @@ function normalizeDblClickAction(value) {
   return 'fullscreen';
 }
 
+/** Keep zoom across navigation ('keep') or reset to the selected view mode ('reset'). */
+function normalizeNavZoomMode(value) {
+  return value === 'keep' ? 'keep' : 'reset';
+}
+
 /** Apply body data attribute for CSS alpha grid. */
 function applyAlphaBackground(value) {
   const mode = normalizeAlphaBackground(value);
@@ -5777,6 +5805,9 @@ function updateHUDStates() {
   } else {
     if (fsBtn) fsBtn.classList.remove('active');
   }
+
+  // VIEW MODE (1:1 / Fit-Window): mirror the selected view like the fullscreen button
+  syncViewModeButtons();
 
   // Crop mode: despeja el chrome (barra + statusbar) mientras se recorta.
   // Se sincroniza aqui porque updateHUDStates() se llama en cada transicion

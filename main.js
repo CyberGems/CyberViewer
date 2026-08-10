@@ -122,7 +122,8 @@ function loadSettings() {
       slideshowEnterFullscreen: true,
       allowMultipleInstances: false,
       showFileName: true,
-      dblClickAction: 'fullscreen'
+      dblClickAction: 'fullscreen',
+      navZoomMode: 'reset'
     }
   };
 }
