@@ -2029,6 +2029,7 @@ function showImage(idx, direction, isInitial = false) {
   if (idx < 0 || idx >= state.images.length) return;
   if (state.transitioning && direction !== null) return;
 
+  clearImageError();
   state.transitioning = true;
 
   let resolveMainReady = null;
@@ -2103,6 +2104,7 @@ function showImage(idx, direction, isInitial = false) {
         im.w = mainImg.naturalWidth;
         im.h = mainImg.naturalHeight;
         mainImg.onload = null;
+        clearImageError();
         displayImage(url, im.w, im.h, direction);
         markMainReady();
       };
@@ -2110,6 +2112,13 @@ function showImage(idx, direction, isInitial = false) {
         mainImg.onload = mainImg.onerror = null;
         spinner.classList.remove('active');
         state.transitioning = false;
+        im.loaded = false;
+        im.w = 0; im.h = 0;
+        clearImageError();
+        setImageError(im);
+        const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+        const t = I18N[lang] || I18N.en || {};
+        showToast(t.toast_image_invalid || (lang === 'es' ? 'IMAGEN NO VÁLIDA' : 'INVALID IMAGE'), 'error');
         markMainReady();
       };
       mainImg.src = url;
@@ -3374,9 +3383,16 @@ if ($('btn-confirm-adjust')) {
         return;
       }
 
+      const isPasted = !imageDiskPath(im);
+      const createCopy = !!( $('cfg-adjust-copy') && $('cfg-adjust-copy').checked );
+
       let fpath = imageDiskPath(im);
       if (!fpath) {
-        fpath = await ensureImageDiskPath(im);
+        // Pasted (clipboard) images have no disk path: present a single
+        // "save modified image" dialog whose default name already carries the
+        // copy suffix (if enabled). The adjusted pixels are then written exactly
+        // to the chosen path — no second suffix dialog, no orphan original.
+        fpath = await pickAdjustSavePath(im, { suffix: createCopy ? '_adjusted' : '' });
         if (!fpath) return;
       }
 
@@ -3405,12 +3421,14 @@ if ($('btn-confirm-adjust')) {
       ctx.restore();
 
       const exported = canvasExport(canvas, fpath);
-      const createCopy = !!( $('cfg-adjust-copy') && $('cfg-adjust-copy').checked );
-
+      // Disk images honor the createCopy toggle (writes name_adjusted.ext next to the
+      // original). Pasted images were bound to a just-picked output path whose default
+      // name already carries the suffix, so write directly there (createCopy=false) —
+      // no second suffix and no extra dialog.
       const result = await window.electronAPI.saveImage({
         filePath: exported.filePath,
         buffer: exported.buffer,
-        createCopy: createCopy,
+        createCopy: createCopy && !isPasted,
         copySuffix: '_adjusted'
       });
 
@@ -3418,23 +3436,8 @@ if ($('btn-confirm-adjust')) {
         showToast(i18nLang.toast_adjust_success || 'ADJUSTMENTS APPLIED', 'success');
         closeModal('modal-adjust');
 
-        if (createCopy) {
-          const newImg = {
-            file: {
-              name: result.filePath.split(/[\\/]/).pop(),
-              path: result.filePath,
-              size: 0
-            }
-          };
-          state.images.splice(idx + 1, 0, newImg);
-          buildSidebar();
-          showImage(idx + 1, null);
-        } else {
-          const savedPath = result.filePath || exported.filePath;
-          if (im.file) im.file.path = savedPath;
-          im.path = savedPath;
+        const reloadAfterSave = (savedPath) => {
           mainImg.src = mediaUrl(savedPath, Date.now());
-
           mainImg.onload = () => {
             state.currentRotation = 0; state.visualRotation = 0;
             state.panX = 0;
@@ -3455,6 +3458,32 @@ if ($('btn-confirm-adjust')) {
             });
             mainImg.onload = null;
           };
+        };
+
+        if (!isPasted && createCopy) {
+          const newImg = {
+            file: {
+              name: result.filePath.split(/[\\/]/).pop(),
+              path: result.filePath,
+              size: 0
+            }
+          };
+          state.images.splice(idx + 1, 0, newImg);
+          buildSidebar();
+          showImage(idx + 1, null);
+        } else if (isPasted) {
+          // Pasted image now lives on disk as the modified output file the user just
+          // picked: bind it as a real disk image, reload, and refresh the sidebar so
+          // the filename + thumbnail reflect the saved file (drops the stale blob).
+          const savedPath = result.filePath || exported.filePath;
+          bindImageToDiskPath(im, savedPath, { revokeBlob: true });
+          reloadAfterSave(savedPath);
+          buildSidebar();
+        } else {
+          const savedPath = result.filePath || exported.filePath;
+          if (im.file) im.file.path = savedPath;
+          im.path = savedPath;
+          reloadAfterSave(savedPath);
         }
       } else {
         showToast((i18nLang.toast_adjust_error || 'ERROR') + ': ' + (result.error || ''), 'error');
@@ -4201,6 +4230,71 @@ function syncEmptyState() {
   updateCenterBtnVisibility();
 }
 
+/**
+ * Invalid-image state: when the current image fails to decode (corrupted,
+ * not a real image, or an unsupported container), show the error banner over
+ * the canvas and disable the toolbar tools that can't operate without pixels.
+ * Unlike empty-state (0 images), here state.images has an entry but the frame
+ * is blank, so chrome is driven by a dedicated body.image-error class.
+ *
+ * Tools kept enabled (allowlist): Abrir, Propiedades, Borrar, Mostrar ruta.
+ * Everything else under #kbd-hint (needs-image + rotate) is disabled.
+ */
+const IMAGE_ERROR_TOOLBAR_KEEP = new Set(['btn-open-hud', 'btn-props', 'btn-trash', 'btn-show-folder']);
+
+function applyImageErrorToolbars(active) {
+  const buttons = document.querySelectorAll('#kbd-hint button');
+  buttons.forEach((b) => {
+    if (!b || !b.id) return;
+    if (IMAGE_ERROR_TOOLBAR_KEEP.has(b.id)) return;
+    if (active) {
+      b.disabled = true;
+      b.classList.add('is-disabled');
+      b.setAttribute('aria-disabled', 'true');
+    } else {
+      // Only re-enable tools that would be live for a real image. Empty-state
+      // owns the 0-image case (it re-disables as needed via syncEmptyState).
+      const empty = !state.images.length || state.current < 0;
+      if (!empty) {
+        b.disabled = false;
+        b.classList.remove('is-disabled');
+        b.removeAttribute('aria-disabled');
+      }
+    }
+  });
+}
+
+function setImageError(im) {
+  document.body.classList.add('image-error');
+  applyImageErrorToolbars(true);
+
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  const t = I18N[lang] || I18N.en || {};
+  const sub = $('error-banner-sub');
+  if (sub) {
+    const name = (im && im.file && im.file.name) ? im.file.name : '';
+    const tpl = t.error_image_sub;
+    if (name && tpl) sub.textContent = tpl.replace('{name}', name);
+    else sub.textContent = (lang === 'es'
+      ? 'No se pudo cargar la imagen. El archivo está dañado, no es una imagen o el formato no es compatible.'
+      : 'Could not load the image. The file is corrupted, not an image, or uses an unsupported format.');
+  }
+  if (mainImg) {
+    mainImg.classList.remove('loaded');
+    mainImg.style.opacity = '0';
+  }
+  if (typeof updateSaveButton === 'function') updateSaveButton();
+  if (typeof updateFileStats === 'function') updateFileStats();
+}
+
+function clearImageError() {
+  document.body.classList.remove('image-error');
+  applyImageErrorToolbars(false);
+  const banner = $('error-banner');
+  if (banner) { banner.hidden = true; banner.setAttribute('aria-hidden', 'true'); }
+  if (mainImg) mainImg.style.opacity = '';
+}
+
 // ── MOUSE / TOUCH ──
 viewerWrap.addEventListener('wheel', e => {
   if (state.images.length === 0 || state.isCropping) return;
@@ -4695,6 +4789,34 @@ async function promptSavePathForImage(im) {
   return result.filePath;
 }
 
+/**
+ * Pick a single output path for saving a modified (adjusted) image that has no
+ * disk path yet (e.g. pasted from clipboard). Unlike ensureImageDiskPath, this
+ * dialog reads as "Guardar imagen modificada" ("Save modified image") and lets
+ * the caller bake a suffix (e.g. '_adjusted') into the default file name. The
+ * image entry is not bound or mutated here; the caller writes the adjusted
+ * pixels to the returned path.
+ */
+async function pickAdjustSavePath(im, { suffix = '' } = {}) {
+  if (!isElectron || !window.electronAPI.showSaveDialog) return null;
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  const cur = (im && im.file && im.file.name) || clipboardDefaultName();
+  const base = String(cur).replace(/\.[^.]+$/, '') || 'image';
+  const sfx = (typeof suffix === 'string' && suffix) ? suffix : '';
+  const defaultName = `${base}${sfx}.png`;
+  const result = await window.electronAPI.showSaveDialog({
+    title: lang === 'es' ? 'Guardar imagen modificada' : 'Save modified image',
+    defaultPath: defaultName,
+    filters: [
+      { name: 'PNG', extensions: ['png'] },
+      { name: 'JPEG', extensions: ['jpg', 'jpeg'] },
+      { name: 'All Files', extensions: ['*'] }
+    ]
+  });
+  if (!result || result.canceled || !result.filePath) return null;
+  return result.filePath;
+}
+
 async function ensureImageDiskPath(im) {
   const existing = imageDiskPath(im);
   if (existing) return existing;
@@ -4834,6 +4956,7 @@ document.head.appendChild(style);
 // ── BUTTONS ──
 $('btn-open-hud').addEventListener('click', () => { openImageDialog(); });
 $('btn-drop-open').addEventListener('click', () => { openImageDialog(); });
+if ($('btn-error-open')) $('btn-error-open').addEventListener('click', () => { openImageDialog(); });
 const btnDropPaste = $('btn-drop-paste');
 if (btnDropPaste) {
   btnDropPaste.addEventListener('click', () => {

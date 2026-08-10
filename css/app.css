@@ -1619,6 +1619,61 @@
     height: 22px;
   }
 
+  /* Invalid-image banner: reuses the #drop-zone frame (corners + logo +
+     title/sub) with a rosa error palette (.err-*). Visible only while
+     body.image-error is set; the welcome banner and chrome are unaffected. */
+  #error-banner {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+  body.image-error #error-banner {
+    display: flex;
+  }
+  /* Keep a failed image hidden while its error banner is up. */
+  body.image-error #main-img.loaded,
+  body.image-error #main-img {
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
+
+  .err-frame {
+    border-color: rgba(var(--cyber-accent2-rgb), 0.5);
+  }
+  .err-frame::before {
+    background: radial-gradient(ellipse at center, rgba(var(--cyber-accent2-rgb), 0.08) 0%, transparent 68%);
+  }
+  .err-corner {
+    border-color: var(--cyber-accent2) !important;
+  }
+  .err-logo {
+    filter: drop-shadow(0 0 14px rgba(var(--cyber-accent2-rgb), 0.45)) saturate(0) brightness(0) drop-shadow(0 0 10px rgba(var(--cyber-accent2-rgb), 0.55));
+    opacity: 0.9;
+  }
+  .err-title {
+    color: rgba(var(--cyber-accent2-rgb), 0.92);
+  }
+  .err-sub {
+    max-width: 38ch;
+    word-break: break-word;
+  }
+  .err-btn {
+    background: var(--cyber-accent2);
+    border-color: var(--cyber-accent2);
+    box-shadow: 0 0 18px rgba(var(--cyber-accent2-rgb), 0.28);
+  }
+  .err-btn:hover {
+    background: #ff5594;
+    border-color: #ff5594;
+    box-shadow: 0 0 26px rgba(var(--cyber-accent2-rgb), 0.45);
+  }
+
+
   #nav-container {
     position: absolute;
     top: 50%;

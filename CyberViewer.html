@@ -76,7 +76,7 @@
           <div class="menu-divider"></div>
           <button class="menu-item" data-action="crop" data-needs-image><span class="menu-label" data-i18n="menu_crop">Recortar</span><span class="menu-shortcut">C</span></button>
           <button class="menu-item" data-action="resize" data-needs-image><span class="menu-label" data-i18n="menu_resize">Redimensionar</span><span class="menu-shortcut">R</span></button>
-          <button class="menu-item" data-action="adjust" data-needs-image><span class="menu-label" data-i18n="menu_adjust">Ajustes</span><span class="menu-shortcut">J</span></button>
+          <button class="menu-item" data-action="adjust" data-needs-image><span class="menu-label" data-i18n="menu_adjust">Modificar</span><span class="menu-shortcut">J</span></button>
           <div class="menu-divider"></div>
           <button class="menu-item" data-action="flip-h" data-needs-image><span class="menu-label" data-i18n="menu_flip_h">Voltear horizontal</span><span class="menu-shortcut">H</span></button>
           <button class="menu-item" data-action="flip-v" data-needs-image><span class="menu-label" data-i18n="menu_flip_v">Voltear vertical</span><span class="menu-shortcut">Shift+H</span></button>
@@ -228,6 +228,20 @@
         </div>
       </div>
 
+      <!-- Invalid-image banner (mirrors #drop-zone frame, rosa palette via .err-*) -->
+      <div id="error-banner" hidden aria-hidden="true">
+        <div class="drop-frame err-frame">
+          <div class="drop-corner tl err-corner"></div>
+          <div class="drop-corner tr err-corner"></div>
+          <div class="drop-corner bl err-corner"></div>
+          <div class="drop-corner br err-corner"></div>
+          <img src="assets/icon.png" class="drop-logo err-logo" alt="" width="72" height="72" draggable="false">
+          <div class="drop-title err-title" data-i18n="error_image_title">IMAGEN NO VÁLIDA</div>
+          <div class="drop-sub err-sub" id="error-banner-sub">No se pudo cargar la imagen.</div>
+          <button class="drop-btn err-btn" id="btn-error-open" data-i18n="error_image_btn">Abrir otra imagen</button>
+        </div>
+      </div>
+
       <div id="drag-overlay"></div>
 
       <!-- NAV -->
@@ -307,7 +321,7 @@
         </div>
         <button class="kbd-btn needs-image kbd-icon" id="btn-crop" data-i18n-title="crop_title" title="Recortar (C)"><svg class="kbd-ico kbd-ico-solo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg></button>
         <button class="kbd-btn needs-image kbd-icon" id="btn-resize" data-i18n-title="resize_title_btn" title="Redimensionar (R)"><svg class="kbd-ico kbd-ico-solo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3H3v6"/><path d="M15 21h6v-6"/><path d="M3 3l7 7"/><path d="M21 21l-7-7"/></svg></button>
-        <button class="kbd-btn needs-image kbd-icon" id="btn-adjust" data-i18n-title="adjust_title_btn" title="Ajustes (J)">&#9681;</button>
+        <button class="kbd-btn needs-image kbd-icon" id="btn-adjust" data-i18n-title="adjust_title_btn" title="Modificar (J)">&#9681;</button>
         <div class="kbd-sep needs-image"></div>
         <button class="kbd-btn needs-image kbd-icon" id="btn-copy" data-i18n-title="copy_title" title="Copiar Imagen (Ctrl+C)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
         <button class="kbd-btn needs-image kbd-icon" id="btn-trash" data-i18n-title="trash_title" title="Mover a la Papelera (Delete)" style="color:var(--cyber-accent2)">&#128465;&#xFE0E;</button>
@@ -1015,7 +1029,7 @@
     </div>
     <div class="modal-footer">
       <button class="top-btn btn-cancel modal-cancel-btn tooltip-align-left" data-close-modal="modal-adjust" data-i18n="config_cancel" data-i18n-title="adjust_cancel_tooltip">Cancelar</button>
-      <button class="top-btn btn-primary tooltip-align-right" id="btn-confirm-adjust" data-i18n="adjust_apply" data-i18n-title="adjust_apply_tooltip">Aplicar y Guardar</button>
+      <button class="top-btn btn-primary tooltip-align-right" id="btn-confirm-adjust" data-i18n="adjust_apply" data-i18n-title="adjust_apply_tooltip">Guardar</button>
     </div>
   </div>
 </div>
