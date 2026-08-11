@@ -3113,6 +3113,15 @@ function selectResampleAlgo(algo) {
 }
 
 $('btn-resize').addEventListener('click', openResizeModal);
+$('preset-1080').addEventListener('click', () => _applyResizePreset(1080, 1080));
+$('preset-720').addEventListener('click', () => _applyResizePreset(1280, 720));
+$('preset-1080p').addEventListener('click', () => _applyResizePreset(1920, 1080));
+$('preset-pct25').addEventListener('click', () => _applyResizeScalePreset(0.25));
+$('preset-pct50').addEventListener('click', () => _applyResizeScalePreset(0.50));
+$('preset-pct200').addEventListener('click', () => _applyResizeScalePreset(2.00));
+$('btn-algo-nearest').addEventListener('click', () => selectResampleAlgo('nearest'));
+$('btn-algo-bilinear').addEventListener('click', () => selectResampleAlgo('bilinear'));
+$('btn-algo-bicubic').addEventListener('click', () => selectResampleAlgo('bicubic'));
 
 // ── ADJUST MODAL LOGIC ──
 const adjustState = {
