@@ -2473,6 +2473,7 @@ function calibrateAndShowCrop() {
   cropState.imgRealRect = { x: realX, y: realY, w: realW, h: realH };
   
   updateCropUI();
+  updateCropSaveEnabled();
   updateSaveButton();
   updateHUDStates();
 }
@@ -2493,6 +2494,21 @@ function updateCropActionsPlacement() {
   }
 }
 
+function updateCropSaveEnabled() {
+  const btn = $('btn-crop-confirm');
+  if (!btn) return;
+  // "Guardar" stays apagado until the crop frame actually differs from the
+  // original image bounds (moved or resized). At calibrate the frame embraces
+  // the whole image, so the button starts disabled.
+  let changed = false;
+  if (cropState.active && cropState.imgRealRect) {
+    const r = cropState.imgRealRect;
+    changed = cropState.x !== r.x || cropState.y !== r.y ||
+              cropState.w !== r.w || cropState.h !== r.h;
+  }
+  btn.disabled = !changed;
+}
+
 function updateCropUI() {
   const rect = $('crop-rect');
   rect.style.left = cropState.x + 'px';
@@ -2500,6 +2516,7 @@ function updateCropUI() {
   rect.style.width = cropState.w + 'px';
   rect.style.height = cropState.h + 'px';
   updateCropActionsPlacement();
+  updateCropSaveEnabled();
 }
 
 $('btn-crop').onclick = startCrop;
@@ -3043,6 +3060,7 @@ function updateResizeDestInfo() {
   }
   
   $('hud-weight-stats').textContent = `${origWeightText} → ~${estWeightText}`;
+  updateResizeSaveEnabled(im);
 }
 
 function updatePresetActiveStates(w, h) {
@@ -3112,6 +3130,17 @@ function selectResampleAlgo(algo) {
   updateResizeDestInfo();
 }
 
+function updateResizeSaveEnabled(im) {
+  const btn = $('btn-confirm-resize');
+  if (!btn) return;
+  if (!im || !im.w || !im.h) { btn.disabled = true; return; }
+  const w = parseInt($('resize-width').value) || 0;
+  const h = parseInt($('resize-height').value) || 0;
+  const dimsChanged = w !== im.w || h !== im.h;
+  const algoChanged = resizeState.currentAlgo !== 'nearest';
+  btn.disabled = !(dimsChanged || algoChanged);
+}
+
 $('btn-resize').addEventListener('click', openResizeModal);
 $('preset-1080').addEventListener('click', () => _applyResizePreset(1080, 1080));
 $('preset-720').addEventListener('click', () => _applyResizePreset(1280, 720));
@@ -3171,6 +3200,12 @@ function writeAdjustControls(vals) {
   syncAdjustValueLabels();
 }
 
+function updateAdjustSaveEnabled() {
+  const btn = $('btn-confirm-adjust');
+  if (!btn) return;
+  btn.disabled = isIdentityAdjust(readAdjustControls());
+}
+
 function syncAdjustValueLabels() {
   const s = readAdjustControls();
   Object.assign(adjustState, s);
@@ -3179,6 +3214,7 @@ function syncAdjustValueLabels() {
   if ($('adj-contrast-val')) $('adj-contrast-val').textContent = fmt(s.contrast);
   if ($('adj-saturation-val')) $('adj-saturation-val').textContent = fmt(s.saturation);
   if ($('adj-blur-val')) $('adj-blur-val').textContent = String(s.blur);
+  updateAdjustSaveEnabled();
 }
 
 function setAdjustPreviewZoom(pct) {

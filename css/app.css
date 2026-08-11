@@ -2544,6 +2544,17 @@
     background: rgba(var(--cyber-accent2-rgb), 0.16) !important;
     box-shadow: 0 0 12px rgba(var(--cyber-accent2-rgb), 0.35) !important;
   }
+  /* "Apagado" / disabled "Guardar" actions (crop, resize, adjust): no changes yet → dimmed + inert. */
+  .top-btn.btn-primary:disabled {
+    opacity: 0.32 !important;
+    filter: saturate(0.2) !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    border-color: var(--cyber-border) !important;
+    color: var(--cyber-muted) !important;
+    background: none !important;
+    box-shadow: none !important;
+  }
   /* Generic kbd-btn hover (sidebar, etc.) — toolbar uses #kbd-hint rules above */
   .kbd-btn:hover:not(:disabled):not(.is-disabled) {
     background: var(--cyber-accent);
