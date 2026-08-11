@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getThumbnail: (path, opts) => ipcRenderer.invoke('get-thumbnail', path, opts || {}),
   toMediaUrl: (path) => ipcRenderer.invoke('to-media-url', path),
   registerPaths: (paths) => ipcRenderer.invoke('register-paths', paths),
+  getDefaultSaveDir: () => ipcRenderer.invoke('get-default-save-dir'),
   onMenuAction: (cb) => ipcRenderer.on('menu-action', (e, data) => cb(data)),
   getMonitors: () => ipcRenderer.invoke('get-monitors'),
   openFile: () => ipcRenderer.invoke('open-file-dialog'),

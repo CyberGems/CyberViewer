@@ -2116,9 +2116,6 @@ function showImage(idx, direction, isInitial = false) {
         im.w = 0; im.h = 0;
         clearImageError();
         setImageError(im);
-        const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
-        const t = I18N[lang] || I18N.en || {};
-        showToast(t.toast_image_invalid || (lang === 'es' ? 'IMAGEN NO VÁLIDA' : 'INVALID IMAGE'), 'error');
         markMainReady();
       };
       mainImg.src = url;
@@ -2625,12 +2622,13 @@ $('btn-crop-confirm').onclick = async () => {
   const im = state.images[state.current];
   const idx = state.current;
   let fpath = imageDiskPath(im);
-
+  const isPasted = !fpath;
   if (!fpath) {
-    fpath = await ensureImageDiskPath(im);
+    // Pasted image: build a disk path under the OS Pictures folder (no dialog)
+    // so save-image mirrors disk behaviour (suffix + dedup when createCopy is on).
+    fpath = await resolvePastedImagePath(im);
     if (!fpath) return;
   }
-
   const createCopy = !!($('cfg-crop-copy') && $('cfg-crop-copy').checked);
   const exported = canvasExport(cropCanvas, fpath);
   const result = await window.electronAPI.saveImage({
@@ -2664,8 +2662,13 @@ $('btn-crop-confirm').onclick = async () => {
       return;
     }
 
-    if (im.file) im.file.path = savedPath;
-    im.path = savedPath;
+    if (isPasted) {
+      bindImageToDiskPath(im, savedPath, { revokeBlob: true });
+      buildSidebar();
+    } else {
+      if (im.file) im.file.path = savedPath;
+      im.path = savedPath;
+    }
     
     // Recargar con cache-buster
     mainImg.src = mediaUrl(savedPath, Date.now());
@@ -3388,14 +3391,13 @@ if ($('btn-confirm-adjust')) {
 
       let fpath = imageDiskPath(im);
       if (!fpath) {
-        // Pasted (clipboard) images have no disk path: present a single
-        // "save modified image" dialog whose default name already carries the
-        // copy suffix (if enabled). The adjusted pixels are then written exactly
-        // to the chosen path — no second suffix dialog, no orphan original.
-        fpath = await pickAdjustSavePath(im, { suffix: createCopy ? '_adjusted' : '' });
+        // Pasted (clipboard) images have no disk path: build one under the OS
+        // Pictures folder (no dialog) so save-image works like disk images — it
+        // adds the copy suffix (_adjusted) and dedups when createCopy is on, or
+        // writes in place otherwise.
+        fpath = await resolvePastedImagePath(im);
         if (!fpath) return;
       }
-
       showToast(i18nLang.toast_adjusting || 'APPLYING ADJUSTMENTS...', 'info');
 
       const iw = mainImg.naturalWidth;
@@ -3421,17 +3423,15 @@ if ($('btn-confirm-adjust')) {
       ctx.restore();
 
       const exported = canvasExport(canvas, fpath);
-      // Disk images honor the createCopy toggle (writes name_adjusted.ext next to the
-      // original). Pasted images were bound to a just-picked output path whose default
-      // name already carries the suffix, so write directly there (createCopy=false) —
-      // no second suffix and no extra dialog.
+      // Disk + pasted images both honor createCopy: save-image writes
+      // name_adjusted.ext next to the original/pasted path (dedup) when on, or
+      // overwrites in place when off. No dialog either way.
       const result = await window.electronAPI.saveImage({
         filePath: exported.filePath,
         buffer: exported.buffer,
-        createCopy: createCopy && !isPasted,
+        createCopy: createCopy,
         copySuffix: '_adjusted'
       });
-
       if (result.success) {
         showToast(i18nLang.toast_adjust_success || 'ADJUSTMENTS APPLIED', 'success');
         closeModal('modal-adjust');
@@ -3501,15 +3501,17 @@ $('btn-confirm-resize').addEventListener('click', async () => {
     if (idx === undefined || idx === -1) return;
     const im = state.images[idx];
     if (!im) return;
-    let fpath = imageDiskPath(im);
     const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
     const i18nLang = I18N[lang] || I18N.en || {};
 
+    let fpath = imageDiskPath(im);
+    const isPasted = !fpath;
     if (!fpath) {
-      fpath = await ensureImageDiskPath(im);
+      // Pasted image: build a disk path under the OS Pictures folder (no dialog)
+      // so save-image mirrors disk behaviour (suffix + dedup when createCopy is on).
+      fpath = await resolvePastedImagePath(im);
       if (!fpath) return;
-    }
-    
+    }    
     const targetW = parseInt($('resize-width').value) || 0;
     const targetH = parseInt($('resize-height').value) || 0;
     
@@ -3570,8 +3572,13 @@ $('btn-confirm-resize').addEventListener('click', async () => {
         showImage(idx + 1, null);
       } else {
         const savedPath = result.filePath || exported.filePath;
-        if (im.file) im.file.path = savedPath;
-        im.path = savedPath;
+        if (isPasted) {
+          bindImageToDiskPath(im, savedPath, { revokeBlob: true });
+          buildSidebar();
+        } else {
+          if (im.file) im.file.path = savedPath;
+          im.path = savedPath;
+        }
         // Recargar imagen con cache-buster
         mainImg.src = mediaUrl(savedPath, Date.now());
         
@@ -4790,31 +4797,22 @@ async function promptSavePathForImage(im) {
 }
 
 /**
- * Pick a single output path for saving a modified (adjusted) image that has no
- * disk path yet (e.g. pasted from clipboard). Unlike ensureImageDiskPath, this
- * dialog reads as "Guardar imagen modificada" ("Save modified image") and lets
- * the caller bake a suffix (e.g. '_adjusted') into the default file name. The
- * image entry is not bound or mutated here; the caller writes the adjusted
- * pixels to the returned path.
+ * Resolve a disk path for saving a modified image that has none yet (e.g. pasted
+ * from clipboard). Unlike ensureImageDiskPath, this NEVER opens a dialog: it
+ * builds a path under the OS Pictures folder (allowlisted by the IPC handler)
+ * and lets save-image add the copy suffix + dedup, exactly like disk images.
+ * Returns the base path (no suffix); the image entry is not mutated here.
  */
-async function pickAdjustSavePath(im, { suffix = '' } = {}) {
-  if (!isElectron || !window.electronAPI.showSaveDialog) return null;
-  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+async function resolvePastedImagePath(im) {
+  if (!isElectron || !window.electronAPI.getDefaultSaveDir) return null;
+  let dir = '';
+  try { dir = await window.electronAPI.getDefaultSaveDir(); } catch (_) { return null; }
+  if (!dir) return null;
   const cur = (im && im.file && im.file.name) || clipboardDefaultName();
   const base = String(cur).replace(/\.[^.]+$/, '') || 'image';
-  const sfx = (typeof suffix === 'string' && suffix) ? suffix : '';
-  const defaultName = `${base}${sfx}.png`;
-  const result = await window.electronAPI.showSaveDialog({
-    title: lang === 'es' ? 'Guardar imagen modificada' : 'Save modified image',
-    defaultPath: defaultName,
-    filters: [
-      { name: 'PNG', extensions: ['png'] },
-      { name: 'JPEG', extensions: ['jpg', 'jpeg'] },
-      { name: 'All Files', extensions: ['*'] }
-    ]
-  });
-  if (!result || result.canceled || !result.filePath) return null;
-  return result.filePath;
+  const dot = cur ? cur.lastIndexOf('.') : -1;
+  const ext = (dot > 0) ? cur.slice(dot).toLowerCase() : '.png';
+  return dir.replace(/[\\/]+$/, '') + '/' + base + ext;
 }
 
 async function ensureImageDiskPath(im) {

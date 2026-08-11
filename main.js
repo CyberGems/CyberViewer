@@ -946,6 +946,21 @@ ipcMain.handle('register-paths', (event, paths) => {
   }
 });
 
+/** Default directory for saving pasted images (no dialog). Allowlist it so save-image
+    can write files there without a per-file prompt. Falls back to app data on error. */
+ipcMain.handle('get-default-save-dir', () => {
+  try {
+    const dir = app.getPath('pictures');
+    try { fs.mkdirSync(dir, { recursive: true }); } catch (_) { /* ignore */ }
+    pathAllowlist.allow(dir);
+    return dir;
+  } catch (e) {
+    const fallback = app.getPath('userData');
+    pathAllowlist.allow(fallback);
+    return fallback;
+  }
+});
+
 ipcMain.handle('scan-folder', async (event, filePath) => {
   try {
     const absFile = cleanFsPath(filePath);
