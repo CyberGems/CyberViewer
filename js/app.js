@@ -326,6 +326,7 @@ function decorateModalHeaderIcons() {
 decorateModalHeaderIcons();
 
 function updateLanguage(lang = 'en') {
+  document.documentElement.lang = lang;
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.dataset.i18n;
     if (I18N[lang] && I18N[lang][key] !== undefined) {
@@ -4367,13 +4368,33 @@ function updateNavVisibility() {
 }
 
 function updateCounter() {
+  const el = $('img-counter');
+  if (!el) return;
+
   if (state.images.length === 0) {
-    $('img-counter').textContent = '';
+    el.textContent = '';
+    el.removeAttribute('data-tooltip');
+    el.classList.remove('cyber-tooltip');
     updateNavVisibility();
     syncEmptyState();
     return;
   }
-  $('img-counter').textContent = (state.current + 1) + ' / ' + state.images.length;
+
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  const t = I18N[lang] || I18N.en;
+
+  const currentNum = state.current + 1;
+  const totalNum = state.images.length;
+
+  const labelText = currentNum + ' / ' + totalNum;
+
+  let tooltipText = t.image_counter_tooltip || 'Current image: {current} | Total in folder: {total}';
+  tooltipText = tooltipText.replace('{current}', currentNum).replace('{total}', totalNum);
+
+  el.textContent = labelText;
+  setCyberTooltip(el, tooltipText);
+  el.classList.add('tooltip-top');
+
   updateNavVisibility();
   syncEmptyState();
   if (state.slideshowActive && typeof updateSlideshowUI === 'function') {
@@ -7754,3 +7775,138 @@ if (isElectron && window.electronAPI && typeof window.electronAPI.uiReady === 'f
   if (document.readyState === 'complete') notifyReady();
   else window.addEventListener('load', notifyReady, { once: true });
 }
+
+// ── SIDEBAR DRAG TO SCROLL ──
+(function() {
+  const scrollArea = $('sidebar-scroll');
+  if (!scrollArea) return;
+
+  let isDraggingPossible = false;
+  let isDragging = false;
+  let startY = 0;
+  let startScrollTop = 0;
+  let hasDragged = false;
+  let activePointerId = null;
+
+  // Inertia settings
+  let lastY = 0;
+  let lastTime = 0;
+  let velocity = 0;
+  let rafId = null;
+
+  scrollArea.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    const target = e.target;
+    if (target.closest('button, input, select, textarea')) return;
+
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+
+    isDraggingPossible = true;
+    isDragging = false;
+    startY = e.pageY;
+    lastY = e.pageY;
+    lastTime = Date.now();
+    startScrollTop = scrollArea.scrollTop;
+    hasDragged = false;
+    velocity = 0;
+    activePointerId = e.pointerId;
+  });
+
+  scrollArea.addEventListener('pointermove', (e) => {
+    if (!isDraggingPossible) return;
+
+    const deltaY = e.pageY - startY;
+
+    // Start dragging only if movement threshold is crossed
+    if (!isDragging && Math.abs(deltaY) > 5) {
+      isDragging = true;
+      hasDragged = true;
+      scrollArea.style.cursor = 'grabbing';
+      scrollArea.style.userSelect = 'none';
+      try {
+        scrollArea.setPointerCapture(activePointerId);
+      } catch (_) {}
+    }
+
+    if (isDragging) {
+      const now = Date.now();
+      const elapsed = now - lastTime;
+
+      scrollArea.scrollTop = startScrollTop - deltaY;
+
+      if (elapsed > 0) {
+        const currentVelocity = (e.pageY - lastY) / elapsed;
+        velocity = velocity * 0.4 + currentVelocity * 0.6;
+      }
+
+      lastY = e.pageY;
+      lastTime = now;
+    }
+  });
+
+  scrollArea.addEventListener('pointerup', () => {
+    const wasDragging = isDragging;
+    isDraggingPossible = false;
+    isDragging = false;
+    scrollArea.style.cursor = '';
+    scrollArea.style.userSelect = '';
+    
+    if (wasDragging && activePointerId !== null) {
+      try { scrollArea.releasePointerCapture(activePointerId); } catch (_) {}
+    }
+
+    if (wasDragging) {
+      const timeSinceLastMove = Date.now() - lastTime;
+      if (timeSinceLastMove < 50 && Math.abs(velocity) > 0.05) {
+        velocity = Math.max(-2.5, Math.min(2.5, velocity));
+        applyInertia();
+      }
+    }
+    activePointerId = null;
+  });
+
+  scrollArea.addEventListener('pointercancel', () => {
+    const wasDragging = isDragging;
+    isDraggingPossible = false;
+    isDragging = false;
+    scrollArea.style.cursor = '';
+    scrollArea.style.userSelect = '';
+    if (wasDragging && activePointerId !== null) {
+      try { scrollArea.releasePointerCapture(activePointerId); } catch (_) {}
+    }
+    activePointerId = null;
+  });
+
+  scrollArea.addEventListener('click', (e) => {
+    if (hasDragged) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, true);
+
+  function applyInertia() {
+    let lastFrameTime = performance.now();
+
+    function step(now) {
+      if (isDragging) return;
+      const dt = now - lastFrameTime;
+      lastFrameTime = now;
+
+      const delta = velocity * Math.min(dt, 32);
+      scrollArea.scrollTop -= delta;
+
+      velocity *= 0.95; // friction
+
+      if (Math.abs(velocity) > 0.01) {
+        rafId = requestAnimationFrame(step);
+      } else {
+        rafId = null;
+      }
+    }
+
+    rafId = requestAnimationFrame(step);
+  }
+})();

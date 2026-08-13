@@ -410,7 +410,9 @@
     "toast_pdf_saved": "PDF SAVED",
     "toast_pdf_error": "PDF EXPORT ERROR",
     "toast_print_error": "PRINT ERROR",
-    "toast_print_failed": "PRINT FAILED"
+    "toast_print_failed": "PRINT FAILED",
+    "image_counter_label": "IMAGE {current} OF {total}",
+    "image_counter_tooltip": "Current image: {current} | Total in folder: {total}"
   },
   "es": {
     "no_images": "— sin imágenes —",
@@ -823,6 +825,8 @@
     "toast_pdf_saved": "PDF GUARDADO",
     "toast_pdf_error": "ERROR AL EXPORTAR PDF",
     "toast_print_error": "ERROR DE IMPRESIÓN",
-    "toast_print_failed": "IMPRESIÓN FALLIDA"
+    "toast_print_failed": "IMPRESIÓN FALLIDA",
+    "image_counter_label": "IMAGEN {current} DE {total}",
+    "image_counter_tooltip": "Imagen actual: {current} | Total en la carpeta: {total}"
   }
 }

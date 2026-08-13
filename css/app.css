@@ -1164,6 +1164,7 @@
     overflow-x: hidden;
     scrollbar-width: thin;
     scrollbar-color: rgba(30, 42, 58, 0.9) transparent;
+    cursor: grab;
   }
 
   #sidebar-scroll::-webkit-scrollbar {
@@ -1184,7 +1185,48 @@
   #sidebar-inner {
     display: flex;
     flex-direction: column;
-    padding: calc(50vh - 100px) 4px 60px 4px; /* 60px extra para que el último thumb no se tape */
+    padding: 8px 4px;
+  }
+
+  #sidebar-inner:has(.thumb-item)::before {
+    content: '◆ START';
+    display: block;
+    font-family: var(--font-ui);
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--cyber-muted);
+    letter-spacing: 1.5px;
+    text-align: center;
+    opacity: 0.35;
+    margin-bottom: 12px;
+    transition: opacity 0.2s ease, color 0.2s ease, text-shadow 0.2s ease;
+  }
+  html[lang="es"] #sidebar-inner:has(.thumb-item)::before {
+    content: '◆ INICIO';
+  }
+
+  #sidebar-inner:has(.thumb-item)::after {
+    content: '◆ END';
+    display: block;
+    font-family: var(--font-ui);
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--cyber-muted);
+    letter-spacing: 1.5px;
+    text-align: center;
+    opacity: 0.35;
+    margin-top: 12px;
+    transition: opacity 0.2s ease, color 0.2s ease, text-shadow 0.2s ease;
+  }
+  html[lang="es"] #sidebar-inner:has(.thumb-item)::after {
+    content: '◆ FIN';
+  }
+
+  #sidebar-inner:has(.thumb-item):hover::before,
+  #sidebar-inner:has(.thumb-item):hover::after {
+    opacity: 0.75;
+    color: var(--cyber-accent);
+    text-shadow: 0 0 5px rgba(var(--cyber-accent-rgb), 0.5);
   }
   
   #sidebar-controls {
