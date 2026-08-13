@@ -74,3 +74,9 @@ if (api) {
     requestAnimationFrame(() => requestAnimationFrame(reportReady));
   });
 }
+
+headEl.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  api.action('about');
+});
