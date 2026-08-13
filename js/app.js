@@ -2035,7 +2035,12 @@ function setSidebarThumbSrc(i, imgEl) {
     imgEl.style.opacity = '1';
     refreshSidebarGifAnimation(i);
   };
-  if (imgEl.src !== nextSrc) imgEl.src = nextSrc;
+  if (imgEl.src !== nextSrc) {
+    imgEl.src = nextSrc;
+  } else if (imgEl.complete && imgEl.naturalWidth > 0) {
+    imgEl.style.opacity = '1';
+    refreshSidebarGifAnimation(i);
+  }
 }
 
 function refreshSidebarGifAnimation(i) {
