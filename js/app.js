@@ -820,10 +820,9 @@ async function startBackgroundScan() {
       updateThumbProgress(processed, total);
     }
 
-    const imgEl = sidebar.querySelector(`.thumb-item[data-index="${idx}"] img`);
+    const imgEl = sidebar.querySelector(`.thumb-item[data-index="${idx}"] .thumb-static`);
     if (imgEl && im.thumbUrl && imgEl.style.opacity === '0') {
-      imgEl.onload = () => { imgEl.style.opacity = '1'; };
-      imgEl.src = im.thumbUrl;
+      setSidebarThumbSrc(idx, imgEl);
     }
   }
 
@@ -912,7 +911,7 @@ function buildSidebar() {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         const idx = parseInt(entry.target.dataset.index, 10);
-        const img = entry.target.querySelector('img');
+        const img = entry.target.querySelector('.thumb-static');
         if (img && img.style.opacity === '0') {
           const isCurrent = idx === state.currentIdx || idx === state.current;
           // Current thumb: priority. Others wait until main image is ready.
@@ -932,16 +931,26 @@ function buildSidebar() {
     item.dataset.index = i;
 
     const img = document.createElement('img');
+    img.className = 'thumb-static';
     img.alt = '';
     img.style.opacity = '0';
     img.style.transition = 'opacity 200ms ease';
     img.draggable = false; // Bloquear drag nativo
+
+    let animatedImg = null;
+    if (isGifImage(im)) {
+      animatedImg = document.createElement('img');
+      animatedImg.className = 'thumb-animated';
+      animatedImg.alt = '';
+      animatedImg.draggable = false;
+    }
 
     const idx = document.createElement('span');
     idx.className = 'thumb-idx';
     idx.textContent = i + 1;
 
     item.appendChild(img);
+    if (animatedImg) item.appendChild(animatedImg);
     item.appendChild(idx);
 
     thumbObserver.observe(item);
@@ -958,6 +967,9 @@ function buildSidebar() {
       const dir = i > state.currentIdx ? 'left' : 'right';
       showImage(i, dir);
     });
+
+    item.addEventListener('mouseenter', () => refreshSidebarGifAnimation(i));
+    item.addEventListener('mouseleave', () => refreshSidebarGifAnimation(i));
 
     fragment.appendChild(item);
   });
@@ -1927,8 +1939,7 @@ async function loadThumb(i, imgEl, opts) {
 
   // Reuse cached thumb URL — avoids duplicate IPC when background scan already warmed the cache
   if (im.thumbUrl) {
-    imgEl.onload = () => { imgEl.style.opacity = '1'; };
-    imgEl.src = im.thumbUrl;
+    setSidebarThumbSrc(i, imgEl);
     return;
   }
 
@@ -1936,8 +1947,7 @@ async function loadThumb(i, imgEl, opts) {
   if (thumbLoadInflight.has(i)) {
     try { await thumbLoadInflight.get(i); } catch (_) { /* ignore */ }
     if (im.thumbUrl) {
-      imgEl.onload = () => { imgEl.style.opacity = '1'; };
-      imgEl.src = im.thumbUrl;
+      setSidebarThumbSrc(i, imgEl);
     }
     return;
   }
@@ -1960,21 +1970,83 @@ async function loadThumb(i, imgEl, opts) {
   }
 
   if (im.thumbUrl) {
-    imgEl.onload = () => { imgEl.style.opacity = '1'; };
-    imgEl.src = im.thumbUrl;
+    setSidebarThumbSrc(i, imgEl);
     return;
   }
 
-  const url = getUrl(i);
-  imgEl.onload = () => { imgEl.style.opacity = '1'; };
-  imgEl.src = url;
+  setSidebarThumbSrc(i, imgEl);
+}
+
+function isGifImage(im) {
+  const pathOrName = (im && imageDiskPath(im)) || (im && im.file && im.file.name) || '';
+  return /\.gif$/i.test(pathOrName);
+}
+
+function getSidebarThumbUrl(i) {
+  const im = state.images[i];
+  if (!im) return '';
+  if (im.thumbUrl) return im.thumbUrl;
+  if (isGifImage(im)) return '';
+  return getUrl(i);
+}
+
+function getSidebarGifAnimatedUrl(i) {
+  const im = state.images[i];
+  if (!im || !isGifImage(im)) return '';
+  return getUrl(i);
+}
+
+function shouldAnimateSidebarThumb(i, item) {
+  const im = state.images[i];
+  return !!(im && isGifImage(im) && item && (item.classList.contains('active') || item.matches(':hover')));
+}
+
+function setSidebarThumbSrc(i, imgEl) {
+  if (!imgEl) return;
+  const nextSrc = getSidebarThumbUrl(i);
+  if (!nextSrc) return;
+  imgEl.onload = () => {
+    imgEl.style.opacity = '1';
+    refreshSidebarGifAnimation(i);
+  };
+  if (imgEl.src !== nextSrc) imgEl.src = nextSrc;
+}
+
+function refreshSidebarGifAnimation(i) {
+  if (!sidebar) return;
+  const item = sidebar.querySelector(`.thumb-item[data-index="${i}"]`);
+  if (!item) return;
+  const im = state.images[i];
+  const staticImg = item.querySelector('.thumb-static');
+  const animatedImg = item.querySelector('.thumb-animated');
+  if (!animatedImg) return;
+
+  const shouldAnimate = shouldAnimateSidebarThumb(i, item);
+  const staticReady = !!(im && im.thumbUrl && staticImg && staticImg.style.opacity !== '0');
+  if (!shouldAnimate || !staticReady) {
+    animatedImg.classList.remove('is-visible');
+    return;
+  }
+
+  const nextSrc = getSidebarGifAnimatedUrl(i);
+  if (!nextSrc) return;
+  if (animatedImg.src === nextSrc && animatedImg.complete && animatedImg.naturalWidth > 0) {
+    animatedImg.classList.add('is-visible');
+    return;
+  }
+  animatedImg.classList.remove('is-visible');
+  animatedImg.onload = () => {
+    if (shouldAnimateSidebarThumb(i, item)) animatedImg.classList.add('is-visible');
+  };
+  animatedImg.onerror = () => { animatedImg.classList.remove('is-visible'); };
+  if (animatedImg.src !== nextSrc) animatedImg.src = nextSrc;
 }
 
 /** Ensure the active sidebar thumb is requested with high priority. */
 function schedulePriorityThumb(idx) {
   if (!state.sidebarOpen) return;
   const item = sidebar && sidebar.querySelector(`.thumb-item[data-index="${idx}"]`);
-  const img = item && item.querySelector('img');
+  const img = item && item.querySelector('.thumb-static');
   if (img) loadThumb(idx, img, { priority: true });
 }
 
@@ -2001,8 +2073,12 @@ function getUrl(i) {
 
 function updateSidebarActive() {
   const items = sidebar.querySelectorAll('.thumb-item');
-  items.forEach((el, i) => {
-    el.classList.toggle('active', i === state.current);
+  items.forEach((el) => {
+    const idx = parseInt(el.dataset.index, 10);
+    el.classList.toggle('active', idx === state.current);
+    const img = el.querySelector('.thumb-static');
+    if (img) setSidebarThumbSrc(idx, img);
+    refreshSidebarGifAnimation(idx);
   });
   // Scroll into view
   const active = sidebar.querySelector('.thumb-item.active');

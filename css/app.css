@@ -1280,6 +1280,19 @@
     background: var(--cyber-dim);
   }
 
+  .thumb-item .thumb-animated {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+    z-index: 1;
+  }
+
+  .thumb-item .thumb-animated.is-visible {
+    opacity: 1;
+  }
+
   .thumb-item .idx {
     position: absolute;
     bottom: 2px;

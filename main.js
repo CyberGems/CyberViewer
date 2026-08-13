@@ -1142,13 +1142,73 @@ function releaseThumbSlot() {
   if (next) next.resolve();
 }
 
+async function renderGifFirstFrameThumb(abs, cacheFile) {
+  const html = `<!doctype html><html><head><meta charset="utf-8"><style>
+    html,body{margin:0;padding:0;background:#000;overflow:hidden;width:160px;height:120px}
+    img{position:absolute;left:0;top:0;max-width:none;opacity:0}
+    canvas{position:absolute;left:0;top:0;width:160px;height:120px}
+  </style></head><body><img id="src"><canvas id="canvas" width="160" height="120"></canvas><script>
+    const done = (payload) => window.__thumbDone = payload;
+    const img = document.getElementById('src');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    img.onload = () => {
+      try {
+        const scale = Math.min(canvas.width / img.naturalWidth, canvas.height / img.naturalHeight);
+        const w = Math.max(1, Math.round(img.naturalWidth * scale));
+        const h = Math.max(1, Math.round(img.naturalHeight * scale));
+        const x = Math.floor((canvas.width - w) / 2);
+        const y = Math.floor((canvas.height - h) / 2);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, x, y, w, h);
+        done({ ok: true, dataUrl: canvas.toDataURL('image/jpeg', 0.8) });
+      } catch (e) {
+        done({ ok: false, error: e.message });
+      }
+    };
+    img.onerror = () => done({ ok: false, error: 'GIF frame failed to load' });
+    img.src = ${JSON.stringify(pathToFileURL(abs).toString())};
+  </script></body></html>`;
+
+  const frameWin = new BrowserWindow({
+    width: 160,
+    height: 120,
+    show: false,
+    webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: false, webSecurity: false }
+  });
+  try {
+    await frameWin.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+    const result = await frameWin.webContents.executeJavaScript(`
+      new Promise((resolve) => {
+        const start = Date.now();
+        const tick = () => {
+          if (window.__thumbDone) return resolve(window.__thumbDone);
+          if (Date.now() - start > 5000) return resolve({ ok: false, error: 'GIF frame timeout' });
+          setTimeout(tick, 30);
+        };
+        tick();
+      })
+    `, true);
+    if (!result || !result.ok || !result.dataUrl) return false;
+    const base64 = String(result.dataUrl).split(',')[1];
+    if (!base64) return false;
+    await fs.promises.writeFile(cacheFile, Buffer.from(base64, 'base64'));
+    return true;
+  } finally {
+    if (!frameWin.isDestroyed()) frameWin.destroy();
+  }
+}
+
 ipcMain.handle('get-thumbnail', async (event, filePath, opts) => {
   try {
     const abs = resolveAllowedPath(filePath);
     const priority = !!(opts && opts.priority);
     const stats = await fs.promises.stat(abs);
     const normalizedPath = abs.toLowerCase();
-    const hash = crypto.createHash('md5').update(normalizedPath + stats.mtimeMs).digest('hex');
+    const isGif = path.extname(abs).toLowerCase() === '.gif';
+    const thumbVersion = isGif ? 'gif-frame-v2' : 'still-v1';
+    const hash = crypto.createHash('md5').update(normalizedPath + stats.mtimeMs + thumbVersion).digest('hex');
     const cacheFile = path.join(thumbCachePath, `${hash}.jpg`);
 
     // Cache hits never wait on the generation queue
@@ -1161,11 +1221,15 @@ ipcMain.handle('get-thumbnail', async (event, filePath, opts) => {
       if (fs.existsSync(cacheFile)) {
         return toMediaUrl(cacheFile);
       }
-      const img = nativeImage.createFromPath(abs);
-      if (img.isEmpty()) return null;
-
-      const thumb = img.resize({ height: 100, quality: 'better' });
-      await fs.promises.writeFile(cacheFile, thumb.toJPEG(80));
+      if (isGif && await renderGifFirstFrameThumb(abs, cacheFile)) {
+        // GIF thumbnails are intentionally static first frames. Do not use the
+        // animated source as the sidebar base image.
+      } else {
+        const img = nativeImage.createFromPath(abs);
+        if (img.isEmpty()) return null;
+        const thumb = img.resize({ height: 100, quality: 'better' });
+        await fs.promises.writeFile(cacheFile, thumb.toJPEG(80));
+      }
       evictThumbCache(thumbCachePath);
       return toMediaUrl(cacheFile);
     } finally {
