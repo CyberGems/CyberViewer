@@ -1078,11 +1078,11 @@
     left: 0;
   }
   body.sidebar-handle-hover #sidebar-edge-rail {
-    background: var(--cyber-accent);
-    /* Tight glow — no large blur that bleeds under the statusbar */
+    background: rgba(var(--cyber-accent-rgb), 0.5);
+    /* Tight glow — reduced by half */
     box-shadow:
-      0 0 4px rgba(var(--cyber-accent-rgb), 0.5),
-      0 0 8px rgba(var(--cyber-accent-rgb), 0.22);
+      0 0 2px rgba(var(--cyber-accent-rgb), 0.25),
+      0 0 4px rgba(var(--cyber-accent-rgb), 0.11);
   }
   body.ghost-mode #sidebar-edge-rail {
     display: none;
@@ -1186,8 +1186,7 @@
     padding: 8px 4px;
   }
 
-  #sidebar-inner:has(.thumb-item)::before {
-    content: '◆ START';
+  .sidebar-boundary-label {
     display: block;
     font-family: var(--font-ui);
     font-size: 8px;
@@ -1196,35 +1195,23 @@
     letter-spacing: 1.5px;
     text-align: center;
     opacity: 0.35;
+    transition: opacity 0.2s ease, color 0.2s ease, text-shadow 0.2s ease;
+    cursor: default;
+    user-select: none;
+  }
+
+  .sidebar-boundary-label.start {
     margin-bottom: 12px;
-    transition: opacity 0.2s ease, color 0.2s ease, text-shadow 0.2s ease;
-  }
-  html[lang="es"] #sidebar-inner:has(.thumb-item)::before {
-    content: '◆ INICIO';
   }
 
-  #sidebar-inner:has(.thumb-item)::after {
-    content: '◆ END';
-    display: block;
-    font-family: var(--font-ui);
-    font-size: 8px;
-    font-weight: 700;
-    color: var(--cyber-muted);
-    letter-spacing: 1.5px;
-    text-align: center;
-    opacity: 0.35;
+  .sidebar-boundary-label.end {
     margin-top: 12px;
-    transition: opacity 0.2s ease, color 0.2s ease, text-shadow 0.2s ease;
-  }
-  html[lang="es"] #sidebar-inner:has(.thumb-item)::after {
-    content: '◆ FIN';
   }
 
-  #sidebar-inner:has(.thumb-item):hover::before,
-  #sidebar-inner:has(.thumb-item):hover::after {
-    opacity: 0.75;
+  .sidebar-boundary-label:hover {
+    opacity: 0.55;
     color: var(--cyber-accent);
-    text-shadow: 0 0 5px rgba(var(--cyber-accent-rgb), 0.5);
+    text-shadow: 0 0 3px rgba(var(--cyber-accent-rgb), 0.3);
   }
   
   #sidebar-controls {

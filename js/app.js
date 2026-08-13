@@ -948,7 +948,16 @@ function buildSidebar() {
     });
   }, { root: $('sidebar-scroll'), rootMargin: '400px' });
 
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  const hasImages = state.images.some(im => !im.hidden);
   const fragment = document.createDocumentFragment();
+
+  if (hasImages) {
+    const startIndicator = document.createElement('div');
+    startIndicator.className = 'sidebar-boundary-label start';
+    startIndicator.textContent = lang === 'es' ? '◆ INICIO' : '◆ START';
+    fragment.appendChild(startIndicator);
+  }
 
   state.images.forEach((im, i) => {
     if (im.hidden) return; // No renderizar si está oculto
@@ -1000,6 +1009,13 @@ function buildSidebar() {
 
     fragment.appendChild(item);
   });
+
+  if (hasImages) {
+    const endIndicator = document.createElement('div');
+    endIndicator.className = 'sidebar-boundary-label end';
+    endIndicator.textContent = lang === 'es' ? '◆ FIN' : '◆ END';
+    fragment.appendChild(endIndicator);
+  }
 
   container.appendChild(fragment);
   updateNavVisibility();
