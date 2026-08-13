@@ -1091,6 +1091,17 @@ function showCustomContextMenu(e, type, data) {
     if (btnMenu) btnMenu.classList.remove('open');
   }
 
+  // Clear context-active highlight from any previously right-clicked thumbnails
+  sidebar.querySelectorAll('.thumb-item.context-active').forEach(el => el.classList.remove('context-active'));
+
+  // Add highlight to current thumbnail if applicable
+  if (type === 'thumb') {
+    const thumbItem = e.target.closest('.thumb-item');
+    if (thumbItem) {
+      thumbItem.classList.add('context-active');
+    }
+  }
+
   const menu = $('custom-ctx-menu');
   if (!menu) return;
 
@@ -1137,13 +1148,13 @@ function showCustomContextMenu(e, type, data) {
   const closeListener = (evt) => {
     if (!menu.contains(evt.target)) {
       hideCustomContextMenu();
-      document.removeEventListener('click', closeListener);
+      document.removeEventListener('pointerdown', closeListener);
       document.removeEventListener('contextmenu', closeListener);
     }
   };
   
   setTimeout(() => {
-    document.addEventListener('click', closeListener);
+    document.addEventListener('pointerdown', closeListener);
     document.addEventListener('contextmenu', closeListener);
   }, 50);
 }
@@ -1154,6 +1165,7 @@ function hideCustomContextMenu() {
     menu.style.display = 'none';
     menu.classList.remove('open');
   }
+  sidebar.querySelectorAll('.thumb-item.context-active').forEach(el => el.classList.remove('context-active'));
 }
 
 function buildMenuTemplate(type, data) {
@@ -6879,7 +6891,7 @@ $('btn-config').addEventListener('click', openConfig);
     e.stopPropagation();
     panel.classList.contains('open') ? closeMenu() : openMenu();
   });
-  document.addEventListener('click', e => {
+  document.addEventListener('pointerdown', e => {
     if (panel.classList.contains('open') && !e.target.closest('.menu-wrap')) closeMenu();
   });
 

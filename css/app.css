@@ -1326,6 +1326,14 @@
     z-index: 5;
   }
 
+  .thumb-item.context-active {
+    border: 2px solid var(--cyber-accent2) !important;
+    box-shadow: 0 0 12px rgba(var(--cyber-accent2-rgb), 0.5) !important;
+    opacity: 1 !important;
+    transform: scale(1.02) !important;
+    z-index: 5 !important;
+  }
+
   .thumb-item img {
     width: 100%;
     height: 100%;
