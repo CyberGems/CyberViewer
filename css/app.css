@@ -182,6 +182,18 @@
     animation: radar-pulse 1.5s infinite ease-in-out;
   }
 
+  #footer-radar.scanning.paused .footer-ico {
+    animation: none;
+  }
+
+  #footer-radar.paused .radar-active-ico {
+    display: none !important;
+  }
+
+  #footer-radar.paused .radar-paused-ico {
+    display: block !important;
+  }
+
   @keyframes radar-pulse {
     0%, 100% {
       opacity: 1;

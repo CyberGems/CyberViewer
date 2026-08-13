@@ -83,6 +83,7 @@ const state = {
   isGhost: false,
   zoomTimer: null,
   lastZoomTime: 0,
+  lastCanvasInteraction: 0,
   showingFavs: false,
   nonFavImages: [],
   nonFavCurrent: -1,
@@ -803,12 +804,22 @@ async function startBackgroundScan() {
       break;
     }
 
-    // Pause/delay background scanning loop when user is actively zooming
-    while (Date.now() - state.lastZoomTime < 1500) {
+    // Pause/delay background scanning loop when user is actively interacting with the canvas
+    let wasPaused = false;
+    while (Date.now() - state.lastCanvasInteraction < 2000) {
       if (seq !== state.openSeq || !state.scanInProgress || !state.sidebarOpen) {
         break;
       }
+      if (!wasPaused) {
+        wasPaused = true;
+        const radarEl = $('footer-radar');
+        if (radarEl) radarEl.classList.add('paused');
+      }
       await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    if (wasPaused) {
+      const radarEl = $('footer-radar');
+      if (radarEl) radarEl.classList.remove('paused');
     }
 
     const im = state.images[idx];
@@ -2065,6 +2076,14 @@ function schedulePriorityThumb(idx) {
   if (img) loadThumb(idx, img, { priority: true });
 }
 
+function registerCanvasInteraction() {
+  state.lastCanvasInteraction = Date.now();
+  const radarEl = $('footer-radar');
+  if (radarEl && radarEl.classList.contains('scanning')) {
+    radarEl.classList.add('paused');
+  }
+}
+
 function updateThumbProgress(p, t, _paused = false) {
   const total = t !== undefined ? t : state.images.length;
   const pct = total > 0 ? Math.round((p / total) * 100) : 0;
@@ -2073,10 +2092,14 @@ function updateThumbProgress(p, t, _paused = false) {
 
   const radarEl = $('footer-radar');
   if (radarEl) {
-    if (state.scanInProgress && p < total && !_paused) {
+    const active = state.scanInProgress && p < total && !_paused;
+    if (active) {
       radarEl.classList.add('scanning');
+      const isPaused = Date.now() - state.lastCanvasInteraction < 2000;
+      radarEl.classList.toggle('paused', isPaused);
     } else {
       radarEl.classList.remove('scanning');
+      radarEl.classList.remove('paused');
     }
   }
 }
@@ -3868,7 +3891,7 @@ function updateZoomHUD(opts = {}) {
 
 $('zoom-slider').addEventListener('input', (e) => {
   if (state.images.length === 0) return;
-  state.lastZoomTime = Date.now();
+  registerCanvasInteraction();
   const val = parseInt(e.target.value, 10);
   const newZoom = sliderToZoom(val);
   state.viewMode = 'custom';
@@ -3950,7 +3973,7 @@ function updateFileStats() {
 const WHEEL_ZOOM_FACTOR = 0.00145;
 
 function zoomAt(delta, cx, cy) {
-  state.lastZoomTime = Date.now();
+  registerCanvasInteraction();
   state.viewMode = 'custom';
   const rect = viewerWrap.getBoundingClientRect();
   const ox = cx - rect.left - rect.width / 2;
@@ -4472,6 +4495,7 @@ viewerWrap.addEventListener('mousedown', e => {
 
 window.addEventListener('mousemove', e => {
   if (!state.dragging) return;
+  registerCanvasInteraction();
   state.panX = state.panStartX + (e.clientX - state.dragStartX);
   state.panY = state.panStartY + (e.clientY - state.dragStartY);
   applyTransform(false);
