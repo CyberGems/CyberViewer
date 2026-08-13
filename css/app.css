@@ -1421,11 +1421,11 @@
 
   /* ── Alpha / transparency backgrounds (show through transparent pixels) ── */
   :root {
-    --alpha-cell: 14px;
-    --alpha-dark-a: #1a2230;
-    --alpha-dark-b: #0f141c;
-    --alpha-light-a: #d8dde6;
-    --alpha-light-b: #f2f4f8;
+    --alpha-cell: 12px;
+    --alpha-dark-a: #1c1c1e;
+    --alpha-dark-b: #252528;
+    --alpha-light-a: #ffffff;
+    --alpha-light-b: #f2f2f7;
   }
 
   body[data-alpha-bg="checker-dark"] #main-img {
