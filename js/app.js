@@ -82,6 +82,7 @@ const state = {
   isCropping: false,
   isGhost: false,
   zoomTimer: null,
+  lastZoomTime: 0,
   showingFavs: false,
   nonFavImages: [],
   nonFavCurrent: -1,
@@ -769,6 +770,8 @@ async function startBackgroundScan() {
   const total = state.images.length;
   if (total === 0 || !isElectron) return;
 
+  const seq = state.openSeq;
+
   // Never compete with the main image decode on open
   if (state.mainImageReady) {
     try { await state.mainImageReady; } catch (_) { /* ignore */ }
@@ -794,11 +797,20 @@ async function startBackgroundScan() {
   }
 
   for (const idx of order) {
-    if (!state.scanInProgress || !state.sidebarOpen) {
+    if (seq !== state.openSeq || !state.scanInProgress || !state.sidebarOpen) {
       updateThumbProgress(processed, total, true);
       completedAll = false;
       break;
     }
+
+    // Pause/delay background scanning loop when user is actively zooming
+    while (Date.now() - state.lastZoomTime < 1500) {
+      if (seq !== state.openSeq || !state.scanInProgress || !state.sidebarOpen) {
+        break;
+      }
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+
     const im = state.images[idx];
     if (!im || im.hidden || !im.file?.path) continue;
 
@@ -824,10 +836,13 @@ async function startBackgroundScan() {
     if (imgEl && im.thumbUrl && imgEl.style.opacity === '0') {
       setSidebarThumbSrc(idx, imgEl);
     }
+
+    // A small polite delay to yield to user UI interaction thread
+    await new Promise(resolve => setTimeout(resolve, 20));
   }
 
   updateThumbProgress(processed, total);
-  if (completedAll) {
+  if (completedAll && seq === state.openSeq) {
     state.scanInProgress = false;
   }
 }
@@ -3853,6 +3868,7 @@ function updateZoomHUD(opts = {}) {
 
 $('zoom-slider').addEventListener('input', (e) => {
   if (state.images.length === 0) return;
+  state.lastZoomTime = Date.now();
   const val = parseInt(e.target.value, 10);
   const newZoom = sliderToZoom(val);
   state.viewMode = 'custom';
@@ -3934,6 +3950,7 @@ function updateFileStats() {
 const WHEEL_ZOOM_FACTOR = 0.00145;
 
 function zoomAt(delta, cx, cy) {
+  state.lastZoomTime = Date.now();
   state.viewMode = 'custom';
   const rect = viewerWrap.getBoundingClientRect();
   const ox = cx - rect.left - rect.width / 2;
