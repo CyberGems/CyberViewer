@@ -2055,6 +2055,15 @@ function updateThumbProgress(p, t, _paused = false) {
   const pct = total > 0 ? Math.round((p / total) * 100) : 0;
   $('radar-pct').textContent = pct + '%';
   $('radar-count').textContent = `[${p}/${total}]`;
+
+  const radarEl = $('footer-radar');
+  if (radarEl) {
+    if (state.scanInProgress && p < total && !_paused) {
+      radarEl.classList.add('scanning');
+    } else {
+      radarEl.classList.remove('scanning');
+    }
+  }
 }
 
 function getUrl(i) {

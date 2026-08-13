@@ -178,6 +178,21 @@
     transform: translateY(0.5px);
   }
 
+  #footer-radar.scanning .footer-ico {
+    animation: radar-pulse 1.5s infinite ease-in-out;
+  }
+
+  @keyframes radar-pulse {
+    0%, 100% {
+      opacity: 1;
+      filter: drop-shadow(0 0 3px var(--cyber-accent));
+    }
+    50% {
+      opacity: 0.35;
+      filter: drop-shadow(0 0 0px transparent);
+    }
+  }
+
   /* Slider Zoom */
   #zoom-slider {
     -webkit-appearance: none;
