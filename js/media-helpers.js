@@ -239,6 +239,95 @@
     return parts.length ? parts[parts.length - 1] : '';
   }
 
+  // Print / PDF export helpers (Chromium engine, no native deps)
+
+  /** Named page surfaces in inches (portrait orientation). */
+  const PRINT_PAGE_INCHES = {
+    Letter: { width: 8.5, height: 11 },
+    Legal: { width: 8.5, height: 14 },
+    A5: { width: 5.83, height: 8.27 },
+    A4: { width: 8.27, height: 11.69 },
+    A3: { width: 11.69, height: 16.54 },
+    Tabloid: { width: 11, height: 17 },
+    Ledger: { width: 17, height: 11 }
+  };
+
+  function round1(n) { return Math.round(Number(n) * 10) / 10; }
+
+  /** Convert centimeters to printer pixels at 96 DPI (Electron margins unit). */
+  function cmToPx(cm) {
+    return Math.round((Number(cm) || 0) / 2.54 * 96);
+  }
+
+  /** Convert centimeters to inches (Electron printToPDF custom margins unit). */
+  function cmToIn(cm) {
+    return Math.round(((Number(cm) || 0) / 2.54) * 100) / 100;
+  }
+
+  function pageInchesForExport(pageSize, width, height) {
+    if (pageSize === 'Fit') {
+      const minIn = 0.5;
+      const maxIn = 200;
+      const wi = Math.max(minIn, Math.min(maxIn, (Number(width) || 0) / 96));
+      const hi = Math.max(minIn, Math.min(maxIn, (Number(height) || 0) / 96));
+      return { width: round1(Math.max(wi, minIn)), height: round1(Math.max(hi, minIn)) };
+    }
+    const named = PRINT_PAGE_INCHES[pageSize] || PRINT_PAGE_INCHES.Letter;
+    return { width: named.width, height: named.height };
+  }
+
+  function resolveExportOptions(opts, width, height, target) {
+    const o = opts || {};
+    const marginTarget = target === 'print' ? 'print' : 'pdf';
+    const pageSize = o.pageSize || 'Letter';
+    // Fit sizes the page to the image already — landscape would re-swap it.
+    const landscape = pageSize !== 'Fit' && o.orientation === 'Landscape';
+    let page = pageInchesForExport(pageSize, width, height);
+    if (landscape) {
+      page = { width: page.height, height: page.width };
+    }
+    const hasMargins = pageSize !== 'Fit' &&
+      !!(Number(o.marginTop) || Number(o.marginBottom) || Number(o.marginLeft) || Number(o.marginRight));
+    let margins;
+    if (pageSize === 'Fit') {
+      margins = { marginType: 'none' };
+    } else if (!hasMargins) {
+      margins = { marginType: 'default' };
+    } else {
+      const convertMargin = marginTarget === 'print' ? cmToPx : cmToIn;
+      margins = {
+        marginType: 'custom',
+        top: convertMargin(o.marginTop),
+        bottom: convertMargin(o.marginBottom),
+        left: convertMargin(o.marginLeft),
+        right: convertMargin(o.marginRight)
+      };
+    }
+    const size = pageSize === 'Fit' ? { width: page.width, height: page.height } : pageSize;
+    return {
+      pageSize: size,
+      landscape: !!landscape,
+      margins: margins,
+      printBackground: true
+    };
+  }
+
+  function bakePrintHtml(dataUrl, width, height, title) {
+    const w = Number(width) || 0;
+    const h = Number(height) || 0;
+    const lt = String.fromCharCode(38) + 'lt;';
+    const gt = String.fromCharCode(38) + 'gt;';
+    const safeTitle = String(title || 'CyberViewer').replace(/</g, lt).replace(/>/g, gt);
+    const src = String(dataUrl || '');
+    const wAttr = w > 0 ? ' width="' + w + '"' : '';
+    const hAttr = h > 0 ? ' height="' + h + '"' : '';
+    return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + safeTitle + '</title>' +
+      '<style>html,body{margin:0;padding:0;background:#fff;height:100%}' +
+      'body{display:flex;align-items:center;justify-content:center;min-height:100%}' +
+      'img{max-width:100%;max-height:100%;object-fit:contain;display:block}</style>' +
+      '</head><body><img src="' + src + '" alt=""' + wAttr + hAttr + '></body></html>';
+  }
+
   return {
     mediaUrl,
     canvasExport,
@@ -252,6 +341,12 @@
     sliderToZoom,
     zoomToSlider,
     folderDirFromPath,
-    folderNameFromPath
+    folderNameFromPath,
+    PRINT_PAGE_INCHES,
+    cmToPx,
+    cmToIn,
+    pageInchesForExport,
+    resolveExportOptions,
+    bakePrintHtml
   };
 });

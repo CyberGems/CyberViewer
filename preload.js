@@ -34,6 +34,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openFolder: () => ipcRenderer.invoke('open-folder-dialog'),
   openFolderPath: (dirPath) => ipcRenderer.invoke('open-folder-path', dirPath),
   saveImage: (data) => ipcRenderer.invoke('save-image', data),
+  exportImageToPdf: (data) => ipcRenderer.invoke('export-image-pdf', data),
+  printImage: (data) => ipcRenderer.invoke('print-image', data),
   copyImage: (path) => ipcRenderer.send('copy-image', path),
   copyImageBuffer: (base64) => ipcRenderer.send('copy-image-buffer', base64),
   readClipboardImage: () => ipcRenderer.invoke('clipboard:read-image'),

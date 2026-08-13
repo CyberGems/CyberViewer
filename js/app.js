@@ -143,6 +143,7 @@ const MENU_ICON_BY_I18N = {
   menu_recent_folders: 'folder', menu_paste: 'clipboard', menu_close_image: 'close',
   menu_show: 'folder-open', menu_open_containing_folder: 'folder-open', menu_save: 'save', menu_copy: 'copy',
   menu_copy_path: 'link', menu_save_as: 'save',
+  menu_print: 'printer', menu_export_pdf: 'download',
   menu_props: 'info', menu_trash: 'trash', menu_quit: 'quit',
   menu_rotate_l: 'rotate-ccw', menu_rotate_r: 'rotate-cw', menu_crop: 'crop',
   menu_resize: 'resize', menu_adjust: 'sliders', menu_flip_h: 'flip-h',
@@ -198,6 +199,7 @@ const MENU_ICONS = {
   'star': '<path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.9-5.2-2.7-5.2 2.7 1-5.9-4.3-4.1 5.9-.9z"/>',
   'settings': '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1l2.1-2.1M17 7l2.1-2.1"/>',
   'download': '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/>',
+  'printer': '<path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/>',
   'edit': '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
   'eye': '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
   'eye-off': '<path d="M3 3l18 18"/><path d="M10.6 10.6a3 3 0 0 0 4.2 4.2"/><path d="M9.9 5.1A9 9 0 0 1 12 5c5 0 9 4 9 7a13 13 0 0 1-1.7 2.8"/><path d="M6.1 6.1A13 13 0 0 0 3 12c0 1.5 3.4 7 9 7a9 9 0 0 0 3-.5"/>',
@@ -4270,7 +4272,7 @@ function syncEmptyState() {
 
   // Nested buttons inside .control-group.needs-image
   ['btn-show-folder', 'btn-fit-hud', 'btn-orig-hud', 'btn-fs-hud', 'btn-slideshow',
-    'btn-rot-l', 'btn-rot-r', 'btn-crop', 'btn-resize', 'btn-adjust', 'btn-props', 'btn-copy', 'btn-trash', 'btn-fav'
+    'btn-rot-l', 'btn-rot-r', 'btn-crop', 'btn-resize', 'btn-adjust', 'btn-props', 'btn-copy', 'btn-trash', 'btn-print', 'btn-fav'
   ].forEach((id) => {
     const el = $(id);
     if (!el) return;
@@ -4519,6 +4521,7 @@ document.addEventListener('keydown', e => {
     closeModal('modal-resize');
     closeModal('modal-adjust');
     closeModal('modal-properties');
+    closeModal('modal-print-export');
     closeModal('modal-cyber-confirm');
     const aboutOverlay = $('about-overlay');
     if (aboutOverlay) aboutOverlay.classList.remove('active');
@@ -4564,6 +4567,7 @@ document.addEventListener('keydown', e => {
         else if (checkImageLoaded()) toggleFullscreen();
         break;
       case 's': e.preventDefault(); if (checkImageLoaded()) showSaveAsDialog(); break;
+      case 'p': e.preventDefault(); if (checkImageLoaded()) openPrintExportModal(); break;
       case 'c': e.preventDefault(); if (checkImageLoaded()) copyToClipboard(); break;
       case 'v': e.preventDefault(); pasteFromClipboard(); break;
       case 'd': e.preventDefault(); if (checkImageLoaded()) toggleFavorite(); break;
@@ -5419,13 +5423,246 @@ document.querySelectorAll('[data-close-modal]').forEach(btn => {
     closeModal(btn.getAttribute('data-close-modal'));
   });
 });
-['modal-resize', 'modal-adjust', 'modal-config', 'modal-properties', 'modal-cyber-confirm'].forEach(id => {
+['modal-resize', 'modal-adjust', 'modal-config', 'modal-properties', 'modal-cyber-confirm', 'modal-print-export'].forEach(id => {
   const overlay = $(id);
   if (!overlay) return;
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) closeModal(id);
   });
 });
+
+// ── PRINT / EXPORT PDF (Chromium engine, no native deps) ──
+function bakePrintCanvas() {
+  // Reuse the same rotation-only bake path as saveCurrent/saveAsPath so
+  // print/PDF is WYSIWYG with what gets saved:
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  const iw = mainImg.naturalWidth;
+  const ih = mainImg.naturalHeight;
+  const rotation = state.currentRotation;
+  if (rotation === 90 || rotation === 270) {
+    canvas.width = ih; canvas.height = iw;
+  } else {
+    canvas.width = iw; canvas.height = ih;
+  }
+  const rad = rotation * Math.PI / 180;
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.rotate(rad);
+  ctx.drawImage(mainImg, -iw / 2, -ih / 2);
+  return { dataUrl: canvas.toDataURL("image/png"), width: canvas.width, height: canvas.height };
+}
+
+const PE_PAGE_IN_RATIO = {
+  Fit: 0, Letter: 8.5 / 11, A4: 8.27 / 11.69, Legal: 8.5 / 14, A3: 11.69 / 16.54
+};
+
+const PE_PAGE_CM = {
+  Letter: { width: 21.59, height: 27.94 },
+  A4: { width: 21.0, height: 29.7 },
+  Legal: { width: 21.59, height: 35.56 },
+  A3: { width: 29.7, height: 42.0 }
+};
+
+const peState = { pageSize: "Letter", orientation: "Portrait", baked: null, similar: null };
+
+function updatePrintPreview() {
+  const paper = $("pe-paper");
+  const marginBox = $("pe-margin-box");
+  const img = $("pe-preview-img");
+  const hint = $("pe-fit-hint");
+  const marginsSection = $("pe-margins-section");
+  const orientationSection = $("pe-orientation-section");
+  const orientationButtons = orientationSection ? Array.from(orientationSection.querySelectorAll(".pe-chip")) : [];
+  const pageCount = $("pe-page-count");
+  if (!paper || !img) return;
+
+  const b = peState.baked;
+  if (b) {
+    paper.setAttribute("data-empty", "false");
+    img.src = b.dataUrl;
+  } else {
+    paper.setAttribute("data-empty", "true");
+    img.removeAttribute("src");
+  }
+
+  // Paper aspect ratio matches the page orientation.
+  let ratio = PE_PAGE_IN_RATIO[peState.pageSize] || PE_PAGE_IN_RATIO.Letter;
+  if (peState.pageSize !== "Fit") {
+    ratio = peState.orientation === "Landscape" ? 1 / ratio : ratio;
+  } else if (b) {
+    ratio = b.width / b.height;
+  }
+  paper.style.aspectRatio = ratio ? ratio.toFixed(4) : "0.7727";
+
+  // Fit hides margins (page == image). Margins previewed dynamically.
+  const isFit = peState.pageSize === "Fit";
+  if (marginsSection) marginsSection.classList.toggle("is-disabled", isFit);
+  if (orientationSection) orientationSection.classList.toggle("is-disabled", isFit);
+  orientationButtons.forEach((btn) => {
+    btn.disabled = isFit;
+    btn.setAttribute("aria-disabled", isFit ? "true" : "false");
+  });
+  if (hint) hint.hidden = !isFit;
+
+  if (marginBox) {
+    if (isFit) {
+      marginBox.style.top = "0";
+      marginBox.style.bottom = "0";
+      marginBox.style.left = "0";
+      marginBox.style.right = "0";
+    } else {
+      const mTop = parseFloat($("pe-mtop").value) || 0;
+      const mBottom = parseFloat($("pe-mbottom").value) || 0;
+      const mLeft = parseFloat($("pe-mleft").value) || 0;
+      const mRight = parseFloat($("pe-mright").value) || 0;
+
+      const size = PE_PAGE_CM[peState.pageSize] || PE_PAGE_CM.Letter;
+      let pageW = size.width;
+      let pageH = size.height;
+      if (peState.orientation === "Landscape") {
+        pageW = size.height;
+        pageH = size.width;
+      }
+
+      const pctTop = Math.min(45, (mTop / pageH) * 100);
+      const pctBottom = Math.min(45, (mBottom / pageH) * 100);
+      const pctLeft = Math.min(45, (mLeft / pageW) * 100);
+      const pctRight = Math.min(45, (mRight / pageW) * 100);
+
+      marginBox.style.top = `${pctTop.toFixed(2)}%`;
+      marginBox.style.bottom = `${pctBottom.toFixed(2)}%`;
+      marginBox.style.left = `${pctLeft.toFixed(2)}%`;
+      marginBox.style.right = `${pctRight.toFixed(2)}%`;
+    }
+  }
+
+  // Single page in v1 (Fit/contain never splits).
+  if (pageCount) pageCount.textContent = "1";
+}
+
+function readPeOptions() {
+  return {
+    pageSize: peState.pageSize,
+    orientation: peState.orientation,
+    marginTop: parseFloat($("pe-mtop").value) || 0,
+    marginBottom: parseFloat($("pe-mbottom").value) || 0,
+    marginLeft: parseFloat($("pe-mleft").value) || 0,
+    marginRight: parseFloat($("pe-mright").value) || 0
+  };
+}
+
+async function doExportPdf() {
+  if (!peState.baked) return;
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || "en";
+  const t = I18N[lang] || I18N.en || {};
+  showToast(lang === "es" ? "EXPORTANDO PDF..." : "EXPORTING PDF...", "info");
+  try {
+    const im = state.images[state.current];
+    const sourcePath = imageDiskPath(im);
+    let name = sourcePath ? sourcePath.split(/[\\/]/).pop() : ((im && im.file && im.file.name) || "image");
+    name = name.replace(/\.[^.]+$/, "") || "image";
+    const result = await window.electronAPI.exportImageToPdf({
+      dataUrl: peState.baked.dataUrl,
+      width: peState.baked.width,
+      height: peState.baked.height,
+      title: name,
+      options: readPeOptions()
+    });
+    if (result && result.success) {
+      showToast(t.toast_pdf_saved || "PDF SAVED", "success");
+      closeModal("modal-print-export");
+    } else if (result && result.canceled) {
+      // user dismissed the save dialog — keep the modal open
+    } else {
+      showToast(t.toast_pdf_error || "PDF EXPORT ERROR", "error");
+    }
+  } catch (e) {
+    console.error("exportPdf error:", e);
+    showToast((I18N[lang] || I18N.en || {}).toast_pdf_error || "PDF EXPORT ERROR", "error");
+  }
+}
+
+async function doPrint() {
+  if (!peState.baked) return;
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || "en";
+  const t = I18N[lang] || I18N.en || {};
+  try {
+    const im = state.images[state.current];
+    const sourcePath = imageDiskPath(im);
+    let name = sourcePath ? sourcePath.split(/[\\/]/).pop() : ((im && im.file && im.file.name) || "image");
+    name = name.replace(/\.[^.]+$/, "") || "image";
+    const result = await window.electronAPI.printImage({
+      dataUrl: peState.baked.dataUrl,
+      width: peState.baked.width,
+      height: peState.baked.height,
+      title: name,
+      options: readPeOptions()
+    });
+    if (result && result.success) {
+      closeModal("modal-print-export");
+    } else if (result && result.error) {
+      showToast(t.toast_print_error || "PRINT ERROR", "error");
+    }
+  } catch (e) {
+    console.error("print error:", e);
+    showToast((I18N[lang] || I18N.en || {}).toast_print_error || "PRINT ERROR", "error");
+  }
+}
+
+function openPrintExportModal() {
+  if (!isElectron) return;
+  if (!checkImageLoaded()) return;
+  // Close any other modal so the print/export one is the sole focus (mirrors
+  // closeOpenModals discipline used by resize/adjust).
+  ["modal-config", "modal-resize", "modal-adjust", "modal-properties", "modal-cyber-confirm"].forEach((id) => {
+    if (typeof closeModal === "function") closeModal(id);
+  });
+  const peAboutOverlay = $("about-overlay");
+  if (peAboutOverlay) peAboutOverlay.classList.remove("active");
+  if (state.isCropping) return;
+
+  let baked;
+  try { baked = bakePrintCanvas(); }
+  catch (e) {
+    const lang = (state.settings && state.settings.app && state.settings.app.language) || "en";
+    showToast((I18N[lang] || I18N.en || {}).toast_image_not_ready || "IMAGE NOT READY", "error");
+    return;
+  }
+  peState.baked = baked;
+  updatePrintPreview();
+  openModal("modal-print-export");
+}
+
+(function initPrintExportModal() {
+  function setChips(rootId, valueKey, afterSel) {
+    const root = $(rootId);
+    if (!root) return;
+    root.querySelectorAll(".pe-chip").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        root.querySelectorAll(".pe-chip").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        peState[valueKey] = btn.dataset[valueKey];
+        if (afterSel) afterSel();
+      });
+    });
+  }
+  setChips("pe-page-sizes", "pageSize", updatePrintPreview);
+  setChips("pe-orientations", "orientation", updatePrintPreview);
+
+  ["pe-mtop", "pe-mbottom", "pe-mleft", "pe-mright"].forEach((id) => {
+    const el = $(id);
+    if (el) el.addEventListener("input", updatePrintPreview);
+  });
+
+  const bPdf = $("btn-print-pdf");
+  if (bPdf) bPdf.addEventListener("click", doExportPdf);
+  const bPrint = $("btn-print-now");
+  if (bPrint) bPrint.addEventListener("click", doPrint);
+
+  // Toolbar shortcut: open the modal via the docked Print button.
+  const tbPrint = $("btn-print");
+  if (tbPrint) tbPrint.addEventListener("click", () => { if (checkImageLoaded()) openPrintExportModal(); });
+})();
 
 // ── CONFIG LOGIC ──
 function openConfig() {
@@ -6516,6 +6753,8 @@ $('btn-config').addEventListener('click', openConfig);
       case 'show-folder':    $('btn-show-folder').click(); break;
       case 'save':           saveCurrent(); break;
       case 'save-as':        showSaveAsDialog(); break;
+      case 'export-pdf':    openPrintExportModal(); break;
+      case 'print':         openPrintExportModal(); break;
       case 'copy':           copyToClipboard(); break;
       case 'properties':
         openPropertiesForCurrent();

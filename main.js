@@ -18,6 +18,7 @@ const {
 const { evictThumbCache } = require('./lib/thumb-cache');
 const { clampWindowBounds } = require('./lib/window-bounds');
 const { initUpdater, setAutoCheckEnabled } = require('./lib/updater');
+const CVMedia = require('./js/media-helpers');
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -905,6 +906,106 @@ ipcMain.handle('show-save-dialog', async (event, options) => {
     pathAllowlist.allow(result.filePath);
   }
   return result;
+});
+
+// ── Print / PDF export (Chromium engine, no native deps) ──
+// The renderer bakes the current image (rotation) to a PNG data URL, then
+// asks the main process to render it in a hidden window and call the native
+// print/PrintToPDF path. v1 is single-page fit; never upscales small images.
+
+async function loadPrintWindow(html) {
+  const printWin = new BrowserWindow({
+    width: 800, height: 600, show: false,
+    webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true }
+  });
+
+  // Do not put the whole image-backed HTML into a data: URL. Large photos become
+  // huge base64 strings and can exceed Chromium URL limits, causing PDF export to
+  // fail before printToPDF runs. A temporary file keeps the navigation URL small.
+  const tmpHtmlPath = path.join(
+    app.getPath('temp'),
+    'cyberviewer-print-' + process.pid + '-' + Date.now() + '-' + crypto.randomBytes(4).toString('hex') + '.html'
+  );
+  try {
+    fs.writeFileSync(tmpHtmlPath, html, 'utf8');
+    await printWin.loadURL(pathToFileURL(tmpHtmlPath).toString());
+    await printWin.webContents.executeJavaScript(`
+      Promise.all(Array.from(document.images).map((img) => {
+        if (img.complete && img.naturalWidth > 0) return true;
+        return new Promise((resolve, reject) => {
+          img.onload = () => resolve(true);
+          img.onerror = () => reject(new Error('Image failed to load for print/PDF'));
+        });
+      }))
+    `, true);
+  } finally {
+    try { fs.unlinkSync(tmpHtmlPath); } catch (_) { /* best-effort temp cleanup */ }
+  }
+  return printWin;
+}
+
+ipcMain.handle('export-image-pdf', async (event, { dataUrl, width, height, title, options, savePath }) => {
+  try {
+    if (!dataUrl) return { success: false, error: 'No image data' };
+
+    let targetPath = savePath;
+    if (!targetPath) {
+      const lang = getUiLang();
+      const t = menuI18n[lang] || menuI18n.en;
+      const baseName = (title || 'image').replace(/[\\/:*?"<>|]/g, '_');
+      const result = await dialog.showSaveDialog(win, {
+        title: t.export_pdf || 'Export PDF',
+        defaultPath: baseName + '.pdf',
+        filters: [{ name: 'PDF', extensions: ['pdf'] }]
+      });
+      if (result.canceled || !result.filePath) return { success: false, canceled: true };
+      targetPath = result.filePath;
+    }
+
+    const printOpts = CVMedia.resolveExportOptions(options, width, height, 'pdf');
+    const html = CVMedia.bakePrintHtml(dataUrl, width, height, title);
+    const printWin = await loadPrintWindow(html);
+    let pdfBuffer;
+    try {
+      pdfBuffer = await printWin.webContents.printToPDF(printOpts);
+    } finally {
+      if (!printWin.isDestroyed()) printWin.destroy();
+    }
+
+    const tmpPath = targetPath + '.cybertmp.' + Date.now();
+    fs.writeFileSync(tmpPath, pdfBuffer);
+    if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
+    fs.renameSync(tmpPath, targetPath);
+    pathAllowlist.allow(targetPath);
+    return { success: true, filePath: targetPath };
+  } catch (e) {
+    console.error('export-image-pdf error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
+ipcMain.handle('print-image', async (event, { dataUrl, width, height, title, options }) => {
+  try {
+    if (!dataUrl) return { success: false, error: 'No image data' };
+    const printOpts = CVMedia.resolveExportOptions(options, width, height, 'print');
+    const html = CVMedia.bakePrintHtml(dataUrl, width, height, title);
+    const printWin = await loadPrintWindow(html);
+    const printResult = await new Promise((resolve) => {
+      printWin.webContents.print(printOpts, (success, failureReason) => {
+        resolve({ success, failureReason });
+      });
+    });
+    if (!printWin.isDestroyed()) printWin.destroy();
+    if (!printResult.success && printResult.failureReason && printResult.failureReason !== 'canceled') {
+      console.error('print-image failed:', printResult.failureReason);
+      return { success: false, error: printResult.failureReason };
+    }
+    if (win && !win.isDestroyed()) win.focus();
+    return { success: true };
+  } catch (e) {
+    console.error('print-image error:', e.message);
+    return { success: false, error: e.message };
+  }
 });
 
 ipcMain.handle('get-monitors', () => {

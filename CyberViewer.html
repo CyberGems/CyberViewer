@@ -61,6 +61,8 @@
           <button class="menu-item" data-action="show-folder" data-needs-image><span class="menu-label" data-i18n="menu_open_containing_folder">Abrir carpeta contenedora</span><span class="menu-shortcut">Ctrl+&#8679;O</span></button>
           <div class="menu-divider"></div>
           <button class="menu-item" data-action="save-as" data-needs-image><span class="menu-label" data-i18n="menu_save_as">Guardar Como...</span></button>
+          <button class="menu-item" data-action="export-pdf" data-needs-image><span class="menu-label" data-i18n="menu_export_pdf">Exportar PDF</span></button>
+          <button class="menu-item" data-action="print" data-needs-image><span class="menu-label" data-i18n="menu_print">Imprimir</span><span class="menu-shortcut">Ctrl+P</span></button>
           <button class="menu-item" data-action="copy" data-needs-image><span class="menu-label" data-i18n="menu_copy">Copiar imagen</span><span class="menu-shortcut">Ctrl+C</span></button>
           <button class="menu-item" data-action="properties" data-needs-image><span class="menu-label" data-i18n="menu_props">Propiedades</span><span class="menu-shortcut">Ctrl+I</span></button>
           <div class="menu-divider"></div>
@@ -325,6 +327,7 @@
         <div class="kbd-sep needs-image"></div>
         <button class="kbd-btn needs-image kbd-icon" id="btn-copy" data-i18n-title="copy_title" title="Copiar Imagen (Ctrl+C)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
         <button class="kbd-btn needs-image kbd-icon" id="btn-trash" data-i18n-title="trash_title" title="Mover a la Papelera (Delete)" style="color:var(--cyber-accent2)">&#128465;&#xFE0E;</button>
+        <button class="kbd-btn needs-image kbd-icon" id="btn-print" data-i18n-title="print_title_btn" title="Imprimir / Exportar PDF (Ctrl+P)"><svg class="kbd-ico kbd-ico-solo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg></button>
         <div class="kbd-sep needs-image"></div>
         <button class="kbd-btn needs-image kbd-icon" id="btn-fav" data-i18n-title="fav_title" title="Favorito (Ctrl+D)">&#9734;</button>
         <button class="kbd-btn needs-image kbd-icon tooltip-align-right" id="btn-props" data-i18n-title="props_title_btn" title="Propiedades (Ctrl+I)">&#9432;</button>
@@ -393,6 +396,69 @@
     <div class="modal-footer confirm-modal-footer">
       <button id="btn-confirm-cancel" class="top-btn">CANCELAR</button>
       <button id="btn-confirm-ok" class="top-btn active">CONFIRMAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PRINT / EXPORT PDF (Chromium engine) -->
+<div id="modal-print-export" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">
+        <span class="modal-header-icon" data-modal-icon="printer" aria-hidden="true"></span>
+        <span data-i18n="print_export_title">EXPORT & PRINT</span>
+      </div>
+      <button class="win-btn modal-close-btn tooltip-bottom tooltip-align-right" data-close-modal="modal-print-export" data-i18n-title="close" title="Close">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="print-grid-layout">
+        <!-- LEFT: options -->
+        <div class="print-left-col">
+          <div class="config-section">
+            <label class="config-label" data-i18n="print_page_size">Page Size</label>
+            <div class="chip-row" id="pe-page-sizes">
+              <button type="button" class="top-btn pe-chip" data-page-size="Fit" data-i18n="print_fit_image">Fit to image</button>
+              <button type="button" class="top-btn pe-chip active" data-page-size="Letter" data-i18n="print_page_letter">Letter</button>
+              <button type="button" class="top-btn pe-chip" data-page-size="A4">A4</button>
+              <button type="button" class="top-btn pe-chip" data-page-size="Legal" data-i18n="print_page_legal">Legal</button>
+              <button type="button" class="top-btn pe-chip" data-page-size="A3">A3</button>
+            </div>
+          </div>
+          <div class="config-section" id="pe-orientation-section">
+            <label class="config-label" data-i18n="print_orientation">Orientation</label>
+            <div class="chip-row" id="pe-orientations">
+              <button type="button" class="top-btn pe-chip active" data-orientation="Portrait" data-i18n="print_portrait">Portrait</button>
+              <button type="button" class="top-btn pe-chip" data-orientation="Landscape" data-i18n="print_landscape">Landscape</button>
+            </div>
+          </div>
+          <div class="config-section" id="pe-margins-section">
+            <label class="config-label" data-i18n="print_margins">Margins (cm)</label>
+            <div class="pe-margin-row">
+              <label class="pe-margin-field"><span data-i18n="print_margin_top">Top</span><input type="number" id="pe-mtop" class="hud-input-digit" min="0" max="10" step="0.1" value="1"></label>
+              <label class="pe-margin-field"><span data-i18n="print_margin_bottom">Bottom</span><input type="number" id="pe-mbottom" class="hud-input-digit" min="0" max="10" step="0.1" value="1"></label>
+              <label class="pe-margin-field"><span data-i18n="print_margin_left">Left</span><input type="number" id="pe-mleft" class="hud-input-digit" min="0" max="10" step="0.1" value="1"></label>
+              <label class="pe-margin-field"><span data-i18n="print_margin_right">Right</span><input type="number" id="pe-mright" class="hud-input-digit" min="0" max="10" step="0.1" value="1"></label>
+            </div>
+            <p class="pe-hint" id="pe-fit-hint" data-i18n="print_hint_fit" hidden>Fit sizes the page to the image (no margins).</p>
+          </div>
+        </div>
+        <!-- RIGHT: paper preview -->
+        <div class="print-right-col">
+          <div class="pe-paper-wrap">
+            <div class="pe-paper" id="pe-paper">
+              <div class="pe-margin-box" id="pe-margin-box">
+                <img id="pe-preview-img" alt="" />
+              </div>
+            </div>
+            <div class="pe-page-count" id="pe-page-count">1</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="top-btn btn-cancel modal-cancel-btn tooltip-align-left" data-close-modal="modal-print-export" data-i18n="config_cancel">Cancel</button>
+      <button class="top-btn btn-primary" id="btn-print-now" data-i18n="print_print_btn">Print</button>
+      <button class="top-btn btn-primary tooltip-align-right" id="btn-print-pdf" data-i18n="print_pdf_btn">Save PDF</button>
     </div>
   </div>
 </div>
