@@ -63,8 +63,8 @@ Outputs land in `dist/`:
 
 Place these under `assets/` before a production build:
 
-- `icon.png` — PNG for window/tray/UI (dev)
-- `icon.ico` — multi-size ICO (packaged exe / Windows)
+- `icon.ico` — multi-size ICO for the executable, window, tray, and UI
+- `icon.png` — legacy raster asset
 
 ## Updates
 

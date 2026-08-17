@@ -12,7 +12,7 @@
 <body class="statusbar-visible" data-alpha-bg="checker-dark">
 <div id="topbar" style="position:fixed;top:0;left:0;width:100%;height:48px;z-index:999999;display:flex;align-items:center;background:var(--cyber-panel);border-bottom:1px solid var(--cyber-accent);">
   <div class="logo" id="logo-trigger">
-    <img src="assets/icon.png" class="logo-img" alt="CyberViewer Logo">
+    <img src="assets/icon.ico" class="logo-img" alt="CyberViewer Logo">
     <div class="logo-text"><span style="color:var(--cyber-accent3)">Cyber</span><span style="color:var(--cyber-accent)">Viewer</span></div>
   </div>
   <div style="flex:1;-webkit-app-region:drag"></div>
@@ -158,7 +158,44 @@
       </div>
       <div id="sidebar-controls">
         <div id="img-counter"></div>
-        <button class="kbd-btn" id="btn-center" data-i18n="center" data-i18n-title="center_title">CENTRAR</button>
+        <div id="sidebar-nav-row">
+          <button
+            class="kbd-btn sidebar-nav-btn"
+            id="btn-center"
+            data-i18n-title="center_title"
+            data-i18n-aria="center_title"
+            aria-label="Centrar"
+          >
+            <svg class="sidebar-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>
+              <circle cx="12" cy="12" r="2"/>
+            </svg>
+          </button>
+          <button
+            class="kbd-btn sidebar-nav-btn"
+            id="btn-go-start"
+            data-i18n-title="menu_go_start"
+            data-i18n-aria="menu_go_start"
+            aria-label="Ir al inicio"
+          >
+            <svg class="sidebar-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 5l-10 7 10 7z"/>
+              <path d="M5 5v14"/>
+            </svg>
+          </button>
+          <button
+            class="kbd-btn sidebar-nav-btn"
+            id="btn-go-end"
+            data-i18n-title="menu_go_end"
+            data-i18n-aria="menu_go_end"
+            aria-label="Ir al final"
+          >
+            <svg class="sidebar-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 5l10 7-10 7z"/>
+              <path d="M19 5v14"/>
+            </svg>
+          </button>
+        </div>
         <button class="kbd-btn" id="btn-toggle-favs" title="Mostrar Favoritos">
           <span class="fav-star">&#9733;</span><span class="fav-lbl" data-i18n="show_favorites_lbl">FAVORITOS</span>
         </button>
@@ -222,7 +259,7 @@
           <div class="drop-corner tr"></div>
           <div class="drop-corner bl"></div>
           <div class="drop-corner br"></div>
-          <img src="assets/icon.png" class="drop-logo" alt="" width="72" height="72" draggable="false">
+          <img src="assets/icon.ico" class="drop-logo" alt="" width="72" height="72" draggable="false">
           <div class="drop-title" data-i18n="drop_title">CYBERVIEWER</div>
           <div class="drop-sub" data-i18n="drop_sub">Arrastra imágenes aquí<br>o haz clic para seleccionar</div>
           <button class="drop-btn" id="btn-drop-open" data-i18n="drop_btn">Seleccionar archivo</button>
@@ -237,7 +274,7 @@
           <div class="drop-corner tr err-corner"></div>
           <div class="drop-corner bl err-corner"></div>
           <div class="drop-corner br err-corner"></div>
-          <img src="assets/icon.png" class="drop-logo err-logo" alt="" width="72" height="72" draggable="false">
+          <img src="assets/icon.ico" class="drop-logo err-logo" alt="" width="72" height="72" draggable="false">
           <div class="drop-title err-title" data-i18n="error_image_title">IMAGEN NO VÁLIDA</div>
           <div class="drop-sub err-sub" id="error-banner-sub">No se pudo cargar la imagen.</div>
           <button class="drop-btn err-btn" id="btn-error-open" data-i18n="error_image_btn">Abrir otra imagen</button>

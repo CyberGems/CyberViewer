@@ -211,7 +211,10 @@ const MENU_ICONS = {
   'skip-end': '<path d="M5 5l10 7-10 7z"/><path d="M19 5v14"/>',
   'maximize': '<path d="M8 4H6a2 2 0 0 0-2 2v2"/><path d="M16 4h2a2 2 0 0 1 2 2v2"/><path d="M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M16 20h2a2 2 0 0 0 2-2v-2"/>',
   'pause': '<rect x="8" y="5" width="3" height="14" rx="1"/><rect x="13" y="5" width="3" height="14" rx="1"/>',
-  'stop': '<path d="M8 3H16L21 8V16L16 21H8L3 16V8Z"/>'
+  'stop': '<path d="M8 3H16L21 8V16L16 21H8L3 16V8Z"/>',
+  'github': '<path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-1.5 6-6a4.6 4.6 0 0 0-1-3.5 4.2 4.2 0 0 0-.1-3.5S17.5 1 14 3.5a13.4 13.4 0 0 0-8 0C2.5 1 1.6 1.5 1.6 1.5A4.2 4.2 0 0 0 1.5 5a4.6 4.6 0 0 0-1 3.5c0 4.5 3 6 6 6a4.8 4.8 0 0 0-1 3.5v4"/><path d="M9 18c-4.5 2-5-2-7-2"/>',
+  'circle-dot': '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>',
+  'tag': '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z"/><circle cx="7" cy="7" r="1"/>'
 }
 
 // Glyph (Unicode/emoji) icons rendered as a styled <span>, complementing the
@@ -343,6 +346,13 @@ function updateLanguage(lang = 'en') {
     const key = el.dataset.i18nTitle;
     if (I18N[lang] && I18N[lang][key] !== undefined) {
       setCyberTooltip(el, I18N[lang][key]);
+    }
+  });
+
+  document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+    const key = el.dataset.i18nAria;
+    if (I18N[lang] && I18N[lang][key] !== undefined) {
+      el.setAttribute('aria-label', I18N[lang][key]);
     }
   });
 
@@ -1222,11 +1232,11 @@ function buildMenuTemplate(type, data) {
         items: [
           {
             label: getTxt('menu_go_start'),
-            action: () => showImage(0, 'right', true)
+            action: () => goToBoundary('start')
           },
           {
             label: getTxt('menu_go_end'),
-            action: () => showImage(state.images.length - 1, 'left', true)
+            action: () => goToBoundary('end')
           },
           { type: 'separator' },
           {
@@ -1333,11 +1343,11 @@ function buildMenuTemplate(type, data) {
           { type: 'separator' },
           {
             label: getTxt('menu_go_start'),
-            action: () => showImage(0, 'right', true)
+            action: () => goToBoundary('start')
           },
           {
             label: getTxt('menu_go_end'),
-            action: () => showImage(state.images.length - 1, 'left', true)
+            action: () => goToBoundary('end')
           }
         ]
       },
@@ -1767,10 +1777,10 @@ function executeAction(data) {
       showToast(I18N[lang].toast_restored, 'success');
       break;
     case 'go-start':
-      showImage(0, 'right', true);
+      goToBoundary('start');
       break;
     case 'go-end':
-      showImage(state.images.length - 1, 'left', true);
+      goToBoundary('end');
       break;
     case 'request-delete':
       if (data.index !== undefined && data.path) {
@@ -2341,11 +2351,18 @@ function showImage(idx, direction, isInitial = false) {
       // Decode directly on mainImg instead of a throwaway Image(). displayImage()
       // reassigning the same URL is a no-op once loaded, so this is one fetch + decode
       // (the previous temp Image() forced a redundant second fetch + decode).
-      mainImg.onload = () => {
+      const isCurrentImage = () => state.images[state.current] === im;
+      const onMainLoad = () => {
+        if (!isCurrentImage()) {
+          if (mainImg.onload === onMainLoad) mainImg.onload = null;
+          if (mainImg.onerror === onMainError) mainImg.onerror = null;
+          markMainReady();
+          return;
+        }
         im.loaded = true;
         im.w = mainImg.naturalWidth;
         im.h = mainImg.naturalHeight;
-        mainImg.onload = null;
+        if (mainImg.onload === onMainLoad) mainImg.onload = null;
         clearImageError();
         freezeGifFrame(im, url).then((staticUrl) => {
           if (state.images[state.current] !== im) {
@@ -2357,8 +2374,14 @@ function showImage(idx, direction, isInitial = false) {
           markMainReady();
         });
       };
-      mainImg.onerror = () => {
-        mainImg.onload = mainImg.onerror = null;
+      const onMainError = () => {
+        const isCurrent = isCurrentImage();
+        if (mainImg.onload === onMainLoad) mainImg.onload = null;
+        if (mainImg.onerror === onMainError) mainImg.onerror = null;
+        if (!isCurrent) {
+          markMainReady();
+          return;
+        }
         spinner.classList.remove('active');
         state.transitioning = false;
         im.loaded = false;
@@ -2367,6 +2390,8 @@ function showImage(idx, direction, isInitial = false) {
         setImageError(im);
         markMainReady();
       };
+      mainImg.onload = onMainLoad;
+      mainImg.onerror = onMainError;
       mainImg.src = url;
     }
 
@@ -4117,6 +4142,18 @@ function zoomAt(delta, cx, cy) {
 }
 
 // ── NAVIGATION ──
+function goToBoundary(which) {
+  if (!state.images.length) return;
+  const idx = which === 'start' ? 0 : state.images.length - 1;
+  if (idx === state.current && state.current >= 0) {
+    updateSidebarActive();
+    return;
+  }
+  // Use a null direction so this explicit command is never rejected while
+  // another image transition is still settling.
+  showImage(idx, null, true);
+}
+
 function prev() {
   if (state.images.length === 0 || state.transitioning) return;
   const next = (state.current - 1 + state.images.length) % state.images.length;
@@ -4528,6 +4565,11 @@ function updateCounter() {
  */
 function syncEmptyState() {
   const empty = !state.images.length || state.current < 0;
+  if (empty && document.body.classList.contains('image-error')) {
+    // Returning from an invalid favorite to an empty gallery must show only
+    // the welcome banner, never the stale invalid-image banner as well.
+    clearImageError();
+  }
   document.body.classList.toggle('empty-state', empty);
 
   const needs = document.querySelectorAll('#kbd-hint .needs-image, #kbd-hint .needs-image .kbd-btn');
@@ -4543,7 +4585,8 @@ function syncEmptyState() {
 
   // Nested buttons inside .control-group.needs-image
   ['btn-show-folder', 'btn-fit-hud', 'btn-orig-hud', 'btn-fs-hud', 'btn-slideshow',
-    'btn-rot-l', 'btn-rot-r', 'btn-crop', 'btn-resize', 'btn-adjust', 'btn-props', 'btn-copy', 'btn-trash', 'btn-print', 'btn-fav'
+    'btn-rot-l', 'btn-rot-r', 'btn-crop', 'btn-resize', 'btn-adjust', 'btn-props', 'btn-copy', 'btn-trash', 'btn-print', 'btn-fav',
+    'btn-center', 'btn-go-start', 'btn-go-end'
   ].forEach((id) => {
     const el = $(id);
     if (!el) return;
@@ -6580,6 +6623,14 @@ $('btn-center').addEventListener('click', () => {
     activeThumb.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 });
+$('btn-go-start').addEventListener('click', (e) => {
+  e.currentTarget.blur();
+  goToBoundary('start');
+});
+$('btn-go-end').addEventListener('click', (e) => {
+  e.currentTarget.blur();
+  goToBoundary('end');
+});
 
 // Modificar confirmCrop y cancelCrop para limpiar
 // (Ya gestionado por listeners directos arriba)
@@ -6782,7 +6833,7 @@ $('btn-center').addEventListener('click', () => {
     syncUpdateBanner(root);
   }
 
-  window.checkUpdatesGlobal = async function(manual = true) {
+  window.checkUpdatesGlobal = async function() {
     const t = tAbout();
     if (!isElectron || !window.electronAPI.checkForUpdates) return;
 
@@ -6794,12 +6845,9 @@ $('btn-center').addEventListener('click', () => {
       if (res && (res.portable || res.error === 'PORTABLE_NO_AUTO_UPDATE' || res.error === 'DEV_NO_AUTO_UPDATE')) {
         updateStatus = {
           state: 'error',
-          message: res.portable ? t.about_portable_hint : t.about_dev_hint
+          message: res.portable ? t.about_portable_hint : t.about_update_err
         };
         syncUpdateActions(overlay);
-        if (manual && window.electronAPI.openReleasesPage) {
-          // Keep status visible; user can click Open releases
-        }
         return res;
       }
       updateStatus = { state: 'error', message: (res && res.error) || 'Update check failed' };
@@ -6837,7 +6885,7 @@ $('btn-center').addEventListener('click', () => {
         </div>
         <div class="modal-body">
           <div class="about-hero">
-            <img src="assets/icon.png" class="about-logo" alt="" width="64" height="64" draggable="false">
+            <img src="assets/icon.ico" class="about-logo" alt="" width="64" height="64" draggable="false">
             <div class="about-brand">
               <span class="about-brand-cyber">Cyber</span><span class="about-brand-viewer">Viewer</span>
             </div>
@@ -6875,21 +6923,50 @@ $('btn-center').addEventListener('click', () => {
               <button type="button" id="about-btn-install" class="top-btn active about-action-btn" style="display:none">
                 ${t.about_install_btn}
               </button>
-              <button type="button" id="about-btn-releases" class="top-btn about-action-btn about-action-muted">
-                ${t.about_open_releases}
-              </button>
             </div>
             <div id="about-update-status" class="about-update-status" aria-live="polite"></div>
-            ${!updateInfo.canUpdate ? `<div class="about-update-hint">${updateInfo.portable ? t.about_portable_hint : t.about_dev_hint}</div>` : ''}
+            ${!updateInfo.canUpdate && updateInfo.portable ? `<div class="about-update-hint">${t.about_portable_hint}</div>` : ''}
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" id="about-close" class="top-btn active">${t.about_understood}</button>
+        <div class="modal-footer about-modal-footer">
+          <a
+            class="about-footer-brand cyber-tooltip"
+            href="https://cybergems.org"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-tooltip="${t.about_website_tooltip}"
+            aria-label="${t.about_website_tooltip}"
+          >© CyberGems • 2026</a>
+          <div class="about-footer-links">
+            <a
+              class="about-footer-icon cyber-tooltip"
+              href="https://github.com/CyberGems/CyberViewer"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-tooltip="${t.about_github_tooltip}"
+              aria-label="${t.about_github_tooltip}"
+            >${iconHtml('github')}</a>
+            <a
+              class="about-footer-icon cyber-tooltip"
+              href="https://github.com/CyberGems/CyberViewer/issues"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-tooltip="${t.about_issues_tooltip}"
+              aria-label="${t.about_issues_tooltip}"
+            >${iconHtml('circle-dot')}</a>
+            <a
+              class="about-footer-icon cyber-tooltip tooltip-align-right"
+              href="https://github.com/CyberGems/CyberViewer/releases"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-tooltip="${t.about_releases_tooltip}"
+              aria-label="${t.about_releases_tooltip}"
+            >${iconHtml('tag')}</a>
+          </div>
         </div>
       </div>
     `;
     decorateModalHeaderIcons();
-    overlay.querySelector('#about-close').addEventListener('click', closeAbout);
     overlay.querySelector('#about-close-btn').addEventListener('click', closeAbout);
     
     const toggle = overlay.querySelector('#about-startup-update-toggle');
@@ -6914,9 +6991,6 @@ $('btn-center').addEventListener('click', () => {
     });
     overlay.querySelector('#about-btn-install').addEventListener('click', () => {
       window.electronAPI.installUpdate();
-    });
-    overlay.querySelector('#about-btn-releases').addEventListener('click', () => {
-      if (window.electronAPI.openReleasesPage) window.electronAPI.openReleasesPage();
     });
 
     if (unsubUpdateStatus) unsubUpdateStatus();
@@ -7635,6 +7709,10 @@ async function toggleFavoritesView() {
       showImage(0, null, true);
     } else {
       syncCurrentIndex(-1);
+      state.transitioning = false;
+      mainImg.onload = null;
+      mainImg.onerror = null;
+      clearImageError();
       mainImg.classList.remove('loaded');
       mainImg.src = '';
       dropZone.style.display = 'flex';

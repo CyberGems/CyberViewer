@@ -1254,6 +1254,23 @@
     border-color: var(--cyber-accent);
     box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.35);
   }
+  #sidebar-nav-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  #sidebar-controls .sidebar-nav-btn {
+    flex: 1 1 0;
+    width: auto;
+    font-size: 14px;
+    letter-spacing: 0;
+  }
+  .sidebar-nav-icon {
+    width: 15px;
+    height: 15px;
+    display: block;
+    flex-shrink: 0;
+  }
   #btn-toggle-favs.active:focus,
   #btn-toggle-favs.active:focus-visible {
     border-color: #ffb700 !important;
@@ -4518,8 +4535,62 @@
 }
 .about-modal .modal-footer {
   flex-shrink: 0;
+  justify-content: space-between;
+  padding: 10px 18px;
+}
+.about-modal-footer {
+  font-size: 10px;
+  color: var(--cyber-muted);
+  border-top: 1px solid var(--cyber-border);
+  background: rgba(0, 0, 0, 0.12);
+}
+.about-footer-brand {
+  display: inline-flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: inherit;
+  cursor: pointer;
+  transition: color var(--transition);
+  text-decoration: none;
+}
+.about-footer-brand:hover {
+  color: var(--cyber-text);
+}
+.about-footer-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.about-footer-icon {
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  padding: 12px 20px 16px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--cyber-muted);
+  cursor: pointer;
+  text-decoration: none;
+  transition: color var(--transition), border-color var(--transition), background var(--transition);
+}
+.about-footer-icon:hover {
+  color: var(--cyber-accent);
+  border-color: rgba(var(--cyber-accent-rgb), 0.28);
+  background: rgba(var(--cyber-accent-rgb), 0.06);
+}
+.about-footer-icon .menu-ico {
+  width: 14px;
+  height: 14px;
+  display: block;
 }
 .about-modal .modal-body {
   text-align: center;
@@ -4547,7 +4618,9 @@
   height: 64px;
   display: block;
   margin: 0 auto 12px;
-  border-radius: 12px;
+  /* Keep the ICO's native transparent/rounded corners intact. */
+  border-radius: 0;
+  object-fit: contain;
   filter: drop-shadow(0 0 12px rgba(var(--cyber-accent-rgb), 0.35));
   user-select: none;
   pointer-events: none;

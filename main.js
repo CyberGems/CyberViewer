@@ -294,7 +294,7 @@ function createWindow() {
     minHeight: 500,
     title: 'CyberViewer',
     backgroundColor: '#080a0e',
-    icon: path.join(__dirname, 'assets', 'icon.png'),
+    icon: path.join(__dirname, 'assets', 'icon.ico'),
     frame: false,
     titleBarStyle: 'hidden',
     // Native rounded corners only on Windows 11 (build >= 22000). No effect on Win10.
@@ -691,7 +691,7 @@ function updateTrayMenu() {
 
 function createTray() {
   if (tray) return;
-  tray = new Tray(path.join(__dirname, 'assets', 'icon.png'));
+  tray = new Tray(path.join(__dirname, 'assets', 'icon.ico'));
   tray.setToolTip('CyberViewer v' + app.getVersion());
   tray.on('click', () => {
     hideTrayMenu();
