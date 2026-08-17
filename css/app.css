@@ -2810,6 +2810,9 @@
   .modal-overlay.active {
     display: flex;
   }
+  #modal-cyber-confirm {
+    z-index: 1000001;
+  }
 
   .modal-box {
     background: var(--cyber-panel);
@@ -4356,6 +4359,16 @@
     color: white !important;
     background: rgba(255, 45, 120, 0.15) !important;
     box-shadow: 0 0 12px rgba(255, 45, 120, 0.4) !important;
+  }
+  #modal-config .config-reset-btn {
+    border-color: rgba(var(--cyber-accent2-rgb), 0.55);
+    color: var(--cyber-accent2);
+  }
+  #modal-config .config-reset-btn:hover {
+    border-color: var(--cyber-accent2) !important;
+    color: var(--cyber-accent2) !important;
+    background: rgba(var(--cyber-accent2-rgb), 0.12) !important;
+    box-shadow: 0 0 10px rgba(var(--cyber-accent2-rgb), 0.25) !important;
   }
 
   /* Dialog close & cancel buttons reddish hover (match window close X) */

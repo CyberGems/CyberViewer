@@ -660,6 +660,16 @@
               </div>
               <div class="config-row">
                 <div class="config-info">
+                  <div class="config-name" data-i18n="cfg_animated_gifs">GIF animados</div>
+                  <div class="config-desc" data-i18n="cfg_animated_gifs_desc">Reproducir GIF animados en el visor y el panel lateral.</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="cfg-animated-gifs" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="config-row">
+                <div class="config-info">
                   <div class="config-name" data-i18n="cfg_show_filename">Mostrar nombre de archivo</div>
                   <div class="config-desc" data-i18n="cfg_show_filename_desc">Mostrar el banner del nombre de archivo sobre el lienzo.</div>
                 </div>
@@ -841,6 +851,13 @@
                   <input type="text" id="cfg-hotkey" class="cfg-hotkey-input" readonly placeholder="Alt+Shift+V" autocomplete="off" spellcheck="false">
                   <button type="button" id="cfg-hotkey-clear" class="cfg-hotkey-clear" data-i18n="toggle_hotkey_clear">Limpiar</button>
                 </div>
+              </div>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="cfg_reset_factory">Restablecer ajustes de fábrica</div>
+                  <div class="config-desc" data-i18n="cfg_reset_factory_desc">Restablece las preferencias a sus valores predeterminados. Se conservan favoritos y archivos recientes.</div>
+                </div>
+                <button type="button" id="cfg-reset-factory" class="top-btn config-reset-btn" data-i18n="cfg_reset_factory_action">Restablecer</button>
               </div>
             </div>
           </section>

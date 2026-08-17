@@ -84,6 +84,7 @@ function loadSettings() {
         if (data.app.slideshowEnterFullscreen === undefined) data.app.slideshowEnterFullscreen = true;
         if (data.app.allowMultipleInstances === undefined) data.app.allowMultipleInstances = false;
         if (data.app.showFileName === undefined) data.app.showFileName = true;
+        if (data.app.animateGifs === undefined) data.app.animateGifs = true;
       if (data.app.dblClickAction === undefined) data.app.dblClickAction = 'fullscreen';
       }
       return data;
@@ -123,6 +124,7 @@ function loadSettings() {
       slideshowEnterFullscreen: true,
       allowMultipleInstances: false,
       showFileName: true,
+      animateGifs: true,
       dblClickAction: 'fullscreen',
       navZoomMode: 'reset'
     }

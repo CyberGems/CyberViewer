@@ -97,6 +97,7 @@ const state = {
       accentColor: '#00d4ff',
       language: 'en',
       favorites: [],
+      animateGifs: true,
       showTopHints: true,
       checkUpdatesOnStartup: true,
       // Toast once per version; badge stays until update is applied
@@ -2037,6 +2038,75 @@ function isGifImage(im) {
   return /\.gif$/i.test(pathOrName);
 }
 
+function areAnimatedGifsEnabled() {
+  return !state.settings || !state.settings.app || state.settings.app.animateGifs !== false;
+}
+
+/**
+ * Capture one GIF frame as a data URL so Chromium cannot continue animating it.
+ * The original media URL remains in the image entry and is restored when the
+ * setting is enabled again.
+ */
+function freezeGifFrame(im, sourceUrl) {
+  if (!im || !isGifImage(im) || areAnimatedGifsEnabled()) return Promise.resolve('');
+  if (im.staticUrl) return Promise.resolve(im.staticUrl);
+
+  return new Promise((resolve) => {
+    const source = mainImg && mainImg.naturalWidth > 0 && mainImg.src === sourceUrl
+      ? mainImg
+      : new Image();
+    const capture = () => {
+      try {
+        const width = source.naturalWidth || source.width;
+        const height = source.naturalHeight || source.height;
+        if (!width || !height) return resolve('');
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(source, 0, 0, width, height);
+        im.staticUrl = canvas.toDataURL('image/png');
+        resolve(im.staticUrl);
+      } catch (_) {
+        // A cached static thumbnail is a lower-resolution but still non-animated
+        // fallback if the browser refuses to export the source frame.
+        resolve(im.thumbUrl || '');
+      }
+    };
+
+    if (source === mainImg) {
+      capture();
+    } else {
+      source.onload = capture;
+      source.onerror = () => resolve(im.thumbUrl || '');
+      source.src = sourceUrl;
+    }
+  });
+}
+
+function syncGifAnimationSetting() {
+  if (sidebar) {
+    state.images.forEach((_, i) => refreshSidebarGifAnimation(i));
+  }
+
+  const im = state.images[state.current];
+  if (!im || !isGifImage(im)) return;
+  const sourceUrl = getUrl(state.current);
+  if (!sourceUrl) return;
+
+  if (areAnimatedGifsEnabled()) {
+    // Re-capture if the user disables playback again later.
+    im.staticUrl = null;
+    if (mainImg.src !== sourceUrl) mainImg.src = sourceUrl;
+    return;
+  }
+
+  freezeGifFrame(im, sourceUrl).then((staticUrl) => {
+    if (staticUrl && state.images[state.current] === im && !areAnimatedGifsEnabled()) {
+      mainImg.src = staticUrl;
+    }
+  });
+}
+
 function getSidebarThumbUrl(i) {
   const im = state.images[i];
   if (!im) return '';
@@ -2053,7 +2123,8 @@ function getSidebarGifAnimatedUrl(i) {
 
 function shouldAnimateSidebarThumb(i, item) {
   const im = state.images[i];
-  return !!(im && isGifImage(im) && item && (item.classList.contains('active') || item.matches(':hover')));
+  return !!(areAnimatedGifsEnabled() && im && isGifImage(im) && item &&
+    (item.classList.contains('active') || item.matches(':hover')));
 }
 
 function setSidebarThumbSrc(i, imgEl) {
@@ -2252,8 +2323,20 @@ function showImage(idx, direction, isInitial = false) {
     }
 
     if (im.loaded) {
-      displayImage(url, im.w, im.h, direction);
-      markMainReady();
+      if (areAnimatedGifsEnabled() || !isGifImage(im)) {
+        displayImage(url, im.w, im.h, direction);
+        markMainReady();
+      } else {
+        freezeGifFrame(im, url).then((staticUrl) => {
+          if (state.images[state.current] !== im) {
+            markMainReady();
+            return;
+          }
+          const displayUrl = areAnimatedGifsEnabled() ? url : (staticUrl || url);
+          displayImage(displayUrl, im.w, im.h, direction);
+          markMainReady();
+        });
+      }
     } else {
       // Decode directly on mainImg instead of a throwaway Image(). displayImage()
       // reassigning the same URL is a no-op once loaded, so this is one fetch + decode
@@ -2264,8 +2347,15 @@ function showImage(idx, direction, isInitial = false) {
         im.h = mainImg.naturalHeight;
         mainImg.onload = null;
         clearImageError();
-        displayImage(url, im.w, im.h, direction);
-        markMainReady();
+        freezeGifFrame(im, url).then((staticUrl) => {
+          if (state.images[state.current] !== im) {
+            markMainReady();
+            return;
+          }
+          const displayUrl = (!areAnimatedGifsEnabled() && staticUrl) ? staticUrl : url;
+          displayImage(displayUrl, im.w, im.h, direction);
+          markMainReady();
+        });
       };
       mainImg.onerror = () => {
         mainImg.onload = mainImg.onerror = null;
@@ -2887,7 +2977,9 @@ async function saveCurrent() {
 
   let fpath = imageDiskPath(im);
   if (!fpath) {
-    fpath = await ensureImageDiskPath(im);
+    // Pasted images do not have a disk path yet. Use the automatic Pictures
+    // path so committing a rotation never opens a Save As dialog.
+    fpath = await resolvePastedImagePath(im);
     if (!fpath) return;
   }
   if (!mainImg.complete || mainImg.naturalWidth === 0) {
@@ -5855,6 +5947,7 @@ function openConfig() {
   $('cfg-autostart').checked = s.autoStart;
   $('cfg-contextmenu').checked = s.contextMenuEnabled || false;
   $('cfg-multiple').checked = s.allowMultipleInstances === true;
+  if ($('cfg-animated-gifs')) $('cfg-animated-gifs').checked = s.animateGifs !== false;
   $('cfg-show-filename').checked = s.showFileName !== false;
   $('cfg-lang').value = s.language || 'en';
   $('cfg-hotkey').value = s.toggleHotkey || '';
@@ -5950,6 +6043,7 @@ function collectConfigSettings() {
     accentColor: accentColor,
     contextMenuEnabled: $('cfg-contextmenu').checked,
     allowMultipleInstances: $('cfg-multiple').checked,
+    animateGifs: !!($('cfg-animated-gifs') && $('cfg-animated-gifs').checked),
     showFileName: $('cfg-show-filename').checked,
     toggleHotkey: $('cfg-hotkey') ? $('cfg-hotkey').value.trim() : '',
     bannerAutoHide: $('cfg-banner-autohide').checked,
@@ -5964,6 +6058,66 @@ function collectConfigSettings() {
     slideshowLoop: !!( $('cfg-ss-loop') && $('cfg-ss-loop').checked ),
     slideshowEnterFullscreen: !!( $('cfg-ss-fs') && $('cfg-ss-fs').checked )
   };
+}
+
+function getFactoryAppSettings() {
+  const current = state.settings && state.settings.app ? state.settings.app : {};
+  return {
+    ...current,
+    sidebarOpen: false,
+    statusbarVisible: true,
+    closeToTray: false,
+    closeImageOnTray: true,
+    autoStart: false,
+    startMinimized: false,
+    accentColor: '#00d4ff',
+    language: 'en',
+    preferredDisplayId: 'auto',
+    contextMenuEnabled: false,
+    toggleHotkey: '',
+    checkUpdatesOnStartup: true,
+    updateNotify: {
+      lastNotifiedAvailable: null,
+      lastNotifiedDownloaded: null
+    },
+    toolbarOpen: true,
+    bannerAutoHide: true,
+    hudAutoHideDelay: 2000,
+    disableTooltips: false,
+    showTopHints: true,
+    alphaBackground: 'checker-dark',
+    slideshowIntervalMs: 3000,
+    slideshowLoop: true,
+    slideshowEnterFullscreen: true,
+    allowMultipleInstances: false,
+    showFileName: true,
+    animateGifs: true,
+    dblClickAction: 'fullscreen',
+    navZoomMode: 'reset'
+  };
+}
+
+function resetFactorySettings() {
+  if (!state.settings || !state.settings.app) return;
+  if (configAutosaveTimer) {
+    clearTimeout(configAutosaveTimer);
+    configAutosaveTimer = null;
+  }
+
+  const previous = state.settings.app;
+  const defaults = getFactoryAppSettings();
+  if (isElectron && previous.contextMenuEnabled && window.electronAPI.registerContextMenu) {
+    window.electronAPI.registerContextMenu(false, 'en').catch((err) => {
+      console.error('Error resetting context menu:', err);
+    });
+  }
+
+  state.settings.app = defaults;
+  applySettings();
+  if (isElectron) window.electronAPI.saveSettings(state.settings.app);
+  setConfigAutosaveState(true);
+  openConfig();
+  showToast(I18N.en.toast_factory_reset || 'FACTORY SETTINGS RESTORED', 'success', 1200);
 }
 
 function saveConfigSettings({ toast = false } = {}) {
@@ -6029,6 +6183,22 @@ document.querySelectorAll('#modal-config input, #modal-config select').forEach(c
   if (ctrl.id === 'cfg-hud-delay' || ctrl.id === 'cfg-hotkey') return;
   ctrl.addEventListener('change', () => scheduleConfigAutosave({ immediate: true }));
 });
+
+const resetFactoryBtn = $('cfg-reset-factory');
+if (resetFactoryBtn) {
+  resetFactoryBtn.addEventListener('click', () => {
+    const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+    const t = I18N[lang] || I18N.en || {};
+    showCyberConfirm({
+      title: t.cfg_reset_factory_confirm_title || 'Restore Factory Settings',
+      message: t.cfg_reset_factory_confirm_message ||
+        'Are you sure you want to restore all app preferences to their factory defaults?',
+      detail: t.cfg_reset_factory_confirm_detail || 'Your favorites and recent files will be kept.',
+      danger: false,
+      onConfirm: resetFactorySettings
+    });
+  });
+}
 
 // ── Global toggle hotkey capture (accelerator format, e.g. "Alt+Shift+V") ──
 (function () {
@@ -6156,6 +6326,9 @@ function applySettings() {
 
   // Transparency / alpha checkerboard behind transparent pixels
   applyAlphaBackground(s.alphaBackground);
+
+  // Animated GIF playback
+  syncGifAnimationSetting();
 
   // Language
   const lang = s.language || 'en';
