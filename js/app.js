@@ -933,10 +933,12 @@ function updateSidebarFolderHeader() {
 }
 
 function updateCenterBtnVisibility() {
+  const navRow = $('sidebar-nav-row');
   const btn = $('btn-center');
-  if (!btn) return;
   const count = (state.images || []).filter(im => im && !im.hidden).length;
-  btn.style.display = count > 1 ? '' : 'none';
+  const hasNavigation = count > 1;
+  if (navRow) navRow.style.display = hasNavigation ? '' : 'none';
+  if (btn) btn.style.display = hasNavigation ? '' : 'none';
 }
 
 function buildSidebar() {
@@ -966,7 +968,7 @@ function buildSidebar() {
   if (hasImages) {
     const startIndicator = document.createElement('div');
     startIndicator.className = 'sidebar-boundary-label start';
-    startIndicator.textContent = lang === 'es' ? '◆ INICIO' : '◆ START';
+    startIndicator.textContent = lang === 'es' ? '— INICIO —' : '— START —';
     fragment.appendChild(startIndicator);
   }
 
@@ -1024,7 +1026,7 @@ function buildSidebar() {
   if (hasImages) {
     const endIndicator = document.createElement('div');
     endIndicator.className = 'sidebar-boundary-label end';
-    endIndicator.textContent = lang === 'es' ? '◆ FIN' : '◆ END';
+    endIndicator.textContent = lang === 'es' ? '— FIN —' : '— END —';
     fragment.appendChild(endIndicator);
   }
 
@@ -7379,7 +7381,7 @@ function resetHudTimer() {
     // master toggle hides the banner entirely (even over the canvas).
     if (item.el.id === 'viewer-filename') {
       const showFileName = state.settings?.app?.showFileName !== false;
-      if (!showFileName || !(cursorOnCanvas || item.el.matches(':hover'))) {
+      if (!showFileName || !(cursorOnCanvas || item.el.matches(':hover') || navButtonsHovered())) {
         item.el.classList.add(item.hideClass);
       } else {
         item.el.classList.remove(item.hideClass);

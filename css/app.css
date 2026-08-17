@@ -581,7 +581,7 @@
     pointer-events: none;
   }
   body.ghost-mode #viewer-filename {
-    display: none !important;
+    display: block !important;
   }
   #viewer-filename:empty {
     display: none !important;
@@ -976,8 +976,7 @@
     flex-direction: column;
     position: relative;
     z-index: 30;
-    overflow-x: hidden;
-    overflow-y: hidden;
+    overflow: visible;
   }
 
   .sidebar-folder {
@@ -1316,6 +1315,57 @@
   }
   #sidebar-controls .cyber-tooltip:hover::before {
     transform: translateX(-50%) translateY(0) !important;
+  }
+  #sidebar-controls .sidebar-nav-btn.cyber-tooltip::after {
+    left: 50%;
+    right: auto;
+    width: max-content;
+    max-width: min(220px, calc(100vw - 16px));
+    transform: translateX(-50%) translateY(6px) !important;
+    white-space: normal;
+  }
+  #sidebar-controls .sidebar-nav-btn.cyber-tooltip::before {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%) translateY(6px) !important;
+  }
+  #sidebar-controls .sidebar-nav-btn.cyber-tooltip:hover::after {
+    transform: translateX(-50%) translateY(0) !important;
+  }
+  #sidebar-controls .sidebar-nav-btn.cyber-tooltip:hover::before {
+    transform: translateX(-50%) translateY(0) !important;
+  }
+  #sidebar-controls #btn-center.cyber-tooltip::after {
+    left: 0;
+    right: auto;
+    transform: translateY(6px) !important;
+  }
+  #sidebar-controls #btn-center.cyber-tooltip::before {
+    left: 20px;
+    right: auto;
+    transform: translateY(6px) !important;
+  }
+  #sidebar-controls #btn-center.cyber-tooltip:hover::after {
+    transform: translateY(0) !important;
+  }
+  #sidebar-controls #btn-center.cyber-tooltip:hover::before {
+    transform: translateY(0) !important;
+  }
+  #sidebar-controls #btn-go-end.cyber-tooltip::after {
+    left: auto;
+    right: 0;
+    transform: translateY(6px) !important;
+  }
+  #sidebar-controls #btn-go-end.cyber-tooltip::before {
+    left: auto;
+    right: 20px;
+    transform: translateY(6px) !important;
+  }
+  #sidebar-controls #btn-go-end.cyber-tooltip:hover::after {
+    transform: translateY(0) !important;
+  }
+  #sidebar-controls #btn-go-end.cyber-tooltip:hover::before {
+    transform: translateY(0) !important;
   }
 
   .thumb-item {
