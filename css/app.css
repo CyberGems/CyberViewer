@@ -542,6 +542,9 @@
     letter-spacing: 0.3px;
     font-family: var(--font-ui);
   }
+  .logo-text-viewer {
+    color: #02CEFD;
+  }
 
   .sep { width: 1px; height: 20px; background: var(--cyber-border); margin: 0 2px; flex-shrink: 0; }
 
@@ -4688,7 +4691,7 @@
   line-height: 1.1;
 }
 .about-brand-cyber { color: var(--cyber-accent3); }
-.about-brand-viewer { color: var(--cyber-accent); }
+.about-brand-viewer { color: #02CEFD; }
 .about-version {
   display: inline-block;
   margin: 0 0 12px;

@@ -13,7 +13,7 @@
 <div id="topbar" style="position:fixed;top:0;left:0;width:100%;height:48px;z-index:999999;display:flex;align-items:center;background:var(--cyber-panel);border-bottom:1px solid var(--cyber-accent);">
   <div class="logo" id="logo-trigger">
     <img src="assets/icon.ico" class="logo-img" alt="CyberViewer Logo">
-    <div class="logo-text"><span style="color:var(--cyber-accent3)">Cyber</span><span style="color:var(--cyber-accent)">Viewer</span></div>
+    <div class="logo-text"><span style="color:var(--cyber-accent3)">Cyber</span><span class="logo-text-viewer">Viewer</span></div>
   </div>
   <div style="flex:1;-webkit-app-region:drag"></div>
   <div class="top-hints" id="top-hints">
@@ -727,29 +727,6 @@
               </div>
               <div class="config-row">
                 <div class="config-info">
-                  <div class="config-name" data-i18n="cfg_dbl_click">Acción del doble clic</div>
-                  <div class="config-desc" data-i18n="cfg_dbl_click_desc">Qué hace el doble clic sobre la imagen o el lienzo.</div>
-                </div>
-                <select id="cfg-dbl-click" class="cfg-select">
-                  <option value="fullscreen" data-i18n="cfg_dbl_click_fullscreen">Pantalla completa</option>
-                  <option value="toggle-zoom" data-i18n="cfg_dbl_click_toggle_zoom">Alternar zoom (ajustar / 100%)</option>
-                  <option value="fit" data-i18n="cfg_dbl_click_fit">Ajustar a ventana</option>
-                  <option value="original" data-i18n="cfg_dbl_click_original">Tamaño real (100%)</option>
-                  <option value="none" data-i18n="cfg_dbl_click_none">Ninguna (deshabilitado)</option>
-                </select>
-              </div>
-              <div class="config-row">
-                <div class="config-info">
-                  <div class="config-name" data-i18n="cfg_nav_zoom_mode">Zoom al navegar</div>
-                  <div class="config-desc" data-i18n="cfg_nav_zoom_mode_desc">Vuelve a la vista elegida (Ajustar/1:1) o mantiene el zoom actual al cambiar de imagen.</div>
-                </div>
-                <select id="cfg-nav-zoom-mode" class="cfg-select">
-                  <option value="reset" data-i18n="cfg_nav_zoom_mode_reset">Volver a la vista seleccionada</option>
-                  <option value="keep" data-i18n="cfg_nav_zoom_mode_keep">Mantener zoom actual</option>
-                </select>
-              </div>
-              <div class="config-row">
-                <div class="config-info">
                   <div class="config-name" data-i18n="cfg_nav_autohide">Ocultar botones de navegación</div>
                   <div class="config-desc" data-i18n="cfg_nav_autohide_desc">Oculta los botones tras inactividad sobre el lienzo.</div>
                 </div>
@@ -784,6 +761,29 @@
                   <input type="checkbox" id="cfg-disable-tooltips">
                   <span class="slider"></span>
                 </label>
+              </div>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="cfg_dbl_click">Acción del doble clic</div>
+                  <div class="config-desc" data-i18n="cfg_dbl_click_desc">Qué hace el doble clic sobre la imagen o el lienzo.</div>
+                </div>
+                <select id="cfg-dbl-click" class="cfg-select">
+                  <option value="fullscreen" data-i18n="cfg_dbl_click_fullscreen">Pantalla completa</option>
+                  <option value="toggle-zoom" data-i18n="cfg_dbl_click_toggle_zoom">Alternar zoom (ajustar / 100%)</option>
+                  <option value="fit" data-i18n="cfg_dbl_click_fit">Ajustar a ventana</option>
+                  <option value="original" data-i18n="cfg_dbl_click_original">Tamaño real (100%)</option>
+                  <option value="none" data-i18n="cfg_dbl_click_none">Ninguna (deshabilitado)</option>
+                </select>
+              </div>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="cfg_nav_zoom_mode">Zoom al navegar</div>
+                  <div class="config-desc" data-i18n="cfg_nav_zoom_mode_desc">Vuelve a la vista elegida (Ajustar/1:1) o mantiene el zoom actual al cambiar de imagen.</div>
+                </div>
+                <select id="cfg-nav-zoom-mode" class="cfg-select">
+                  <option value="reset" data-i18n="cfg_nav_zoom_mode_reset">Volver a la vista seleccionada</option>
+                  <option value="keep" data-i18n="cfg_nav_zoom_mode_keep">Mantener zoom actual</option>
+                </select>
               </div>
             </div>
           </section>
