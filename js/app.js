@@ -7410,7 +7410,7 @@ $('btn-config').addEventListener('click', openConfig);
 })();
 
 // ── SUBMENU CLOSE DELAY ──
-// Submenus open instantly on hover (CSS), but stay open for a brief moment
+// Submenus fade/slide in on hover (CSS), but stay open for a brief moment
 // after the pointer leaves so the cursor can travel diagonally from a
 // category into its submenu without the flyout snapping shut mid-move.
 // Applies to both the burger menu and the right-click context menu since
@@ -7423,9 +7423,10 @@ $('btn-config').addEventListener('click', openConfig);
   function openSub(cat) {
     clearTimer(cat);
     // Switching to a sibling category replaces the current flyout immediately
-    // (no overlap); going deeper (cat -> its own submenu) keeps relying on CSS :hover.
+    // (no overlap). Re-adding .sub-open retriggers the CSS open animation.
     const sib = cat.parentElement ? cat.parentElement.querySelectorAll(':scope > .menu-cat.sub-open') : null;
     if (sib) sib.forEach((el) => { if (el !== cat) { clearTimer(el); el.classList.remove('sub-open'); } });
+    if (cat.classList.contains('sub-open')) return;
     cat.classList.add('sub-open');
   }
   function scheduleClose(cat) {
@@ -7434,6 +7435,10 @@ $('btn-config').addEventListener('click', openConfig);
   }
 
   document.addEventListener('mouseover', (e) => {
+    const cat = e.target && e.target.closest ? e.target.closest('.menu-cat[data-sub]') : null;
+    if (cat) openSub(cat);
+  });
+  document.addEventListener('focusin', (e) => {
     const cat = e.target && e.target.closest ? e.target.closest('.menu-cat[data-sub]') : null;
     if (cat) openSub(cat);
   });
