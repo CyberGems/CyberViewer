@@ -31,6 +31,8 @@ function setCyberTooltip(el, text) {
 const ZOOM_MIN = 0.05;
 const ZOOM_MAX = 20;
 const PRELOAD_RANGE = 2;
+/** Idle window after zoom/pan/nav before folder thumb scanning resumes. */
+const SCAN_PAUSE_GRACE_MS = 3000;
 
 // ── ELEMENTS ──
 const app        = $('app');
@@ -148,6 +150,7 @@ const MENU_ICON_BY_I18N = {
   menu_copy_path: 'link', menu_save_as: 'save',
   menu_print: 'printer', menu_export_pdf: 'download',
   menu_props: 'info', menu_trash: 'trash', menu_quit: 'quit',
+  menu_close_app: 'x',
   menu_rotate_l: 'rotate-ccw', menu_rotate_r: 'rotate-cw', menu_crop: 'crop',
   menu_resize: 'resize', menu_adjust: 'sliders', menu_flip_h: 'flip-h',
   menu_flip_v: 'flip-v', menu_fit: 'fit', menu_original: 'square',
@@ -181,6 +184,7 @@ const MENU_ICONS = {
   'help-circle': '<circle cx="12" cy="12" r="9"/><path d="M9.2 9a3 3 0 0 1 5.6 1c0 2-3 2.5-3 4"/><path d="M12 18h.01"/>',
   'trash': '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
   'quit': '<path d="M18.4 6.6a9 9 0 1 1-12.8 0"/><path d="M12 3v9"/>',
+  'x': '<path d="M18 6L6 18M6 6l12 12"/>',
   'rotate-ccw': '<path d="M3 12a9 9 0 1 0 2-4.6"/><path d="M3 4v5h5"/>',
   'rotate-cw': '<path d="M21 12a9 9 0 1 1-2-4.6"/><path d="M21 4v5h-5"/>',
   'crop': '<path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/>',
@@ -302,6 +306,38 @@ function iconForItem(item) {
   return iconSvg(name, item.danger || name === 'quit');
 }
 
+function isCloseToTrayEnabled() {
+  return !!(state.settings && state.settings.app && state.settings.app.closeToTray);
+}
+
+/** Close-window menu: hide to tray → Close + X; otherwise Exit + power icon. */
+function windowCloseMenuSpec() {
+  if (isCloseToTrayEnabled()) {
+    return { key: 'menu_close_app', icon: 'x', danger: false };
+  }
+  return { key: 'menu_quit', icon: 'quit', danger: true };
+}
+
+function syncWindowCloseMenuItem() {
+  const btn = document.querySelector('#main-menu [data-action="quit"]');
+  if (!btn) return;
+  const spec = windowCloseMenuSpec();
+  btn.classList.toggle('danger', spec.danger);
+  const lbl = btn.querySelector('.menu-label');
+  if (lbl) {
+    lbl.dataset.i18n = spec.key;
+    const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+    const t = (I18N[lang] && I18N[lang][spec.key]) || (I18N.en && I18N.en[spec.key]) || '';
+    if (t) lbl.textContent = t;
+  }
+  const oldIco = btn.querySelector(':scope > .menu-ico');
+  if (oldIco) oldIco.remove();
+  const svg = iconSvg(spec.icon, spec.danger);
+  if (svg) {
+    btn.insertBefore(svg, btn.querySelector(':scope > .menu-check') || lbl);
+  }
+}
+
 // Decorate the static burger menu items and categories with leading icons,
 // derived from each label's data-i18n key. Idempotent → safe to call once.
 function decorateMenuIcons(root) {
@@ -377,6 +413,9 @@ function updateLanguage(lang = 'en') {
   }
   if (typeof syncSidebarHandleTooltip === 'function') {
     syncSidebarHandleTooltip();
+  }
+  if (typeof syncWindowCloseMenuItem === 'function') {
+    syncWindowCloseMenuItem();
   }
 }
 
@@ -818,7 +857,7 @@ async function startBackgroundScan() {
 
     // Pause/delay background scanning loop when user is actively interacting with the canvas
     let wasPaused = false;
-    while (Date.now() - state.lastCanvasInteraction < 2000) {
+    while (Date.now() - state.lastCanvasInteraction < SCAN_PAUSE_GRACE_MS) {
       if (seq !== state.openSeq || !state.scanInProgress || !state.sidebarOpen) {
         break;
       }
@@ -1448,6 +1487,7 @@ function buildMenuTemplate(type, data) {
   } else {
     // Canvas / empty-state context menu
     const tMenu = I18N[lang] || I18N.en;
+    const closeSpec = windowCloseMenuSpec();
     return [
       ...buildOpenFileContextItems(tMenu),
       { type: 'separator' },
@@ -1548,9 +1588,9 @@ function buildMenuTemplate(type, data) {
       },
       { type: 'separator' },
       {
-        label: getTxt('menu_quit'),
-        icon: 'quit',
-        danger: true,
+        label: getTxt(closeSpec.key),
+        icon: closeSpec.icon,
+        danger: closeSpec.danger,
         action: () => window.electronAPI.close()
       }
     ];
@@ -2212,7 +2252,7 @@ function updateThumbProgress(p, t, _paused = false) {
     const active = state.scanInProgress && p < total && !_paused;
     if (active) {
       radarEl.classList.add('scanning');
-      const isPaused = Date.now() - state.lastCanvasInteraction < 2000;
+      const isPaused = Date.now() - state.lastCanvasInteraction < SCAN_PAUSE_GRACE_MS;
       radarEl.classList.toggle('paused', isPaused);
     } else {
       radarEl.classList.remove('scanning');
@@ -4157,6 +4197,7 @@ function goToBoundary(which) {
 }
 
 function prev() {
+  registerCanvasInteraction();
   if (state.images.length === 0 || state.transitioning) return;
   const next = (state.current - 1 + state.images.length) % state.images.length;
   showImage(next, 'right');
@@ -4165,6 +4206,7 @@ function prev() {
 }
 
 function next() {
+  registerCanvasInteraction();
   if (state.images.length === 0 || state.transitioning) return;
   const nxt = (state.current + 1) % state.images.length;
   showImage(nxt, 'left');
@@ -7028,6 +7070,7 @@ $('btn-config').addEventListener('click', openConfig);
   const panel = $('main-menu');
   if (!btn || !panel) return;
   decorateMenuIcons(panel);
+  syncWindowCloseMenuItem();
 
   function closeMenu() {
     panel.classList.remove('open');
