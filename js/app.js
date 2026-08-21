@@ -6037,7 +6037,7 @@ function openConfig() {
   if ($('cfg-animated-gifs')) $('cfg-animated-gifs').checked = s.animateGifs !== false;
   $('cfg-show-filename').checked = s.showFileName !== false;
   $('cfg-lang').value = s.language || 'en';
-  $('cfg-hotkey').value = s.toggleHotkey || '';
+  $('cfg-hotkey').value = (!s.toggleHotkey || s.toggleHotkey === 'disabled') ? '' : s.toggleHotkey;
   
   // Auto-hide settings (independent per element)
   $('cfg-banner-autohide').checked = s.bannerAutoHide !== false;
@@ -6132,7 +6132,7 @@ function collectConfigSettings() {
     allowMultipleInstances: $('cfg-multiple').checked,
     animateGifs: !!($('cfg-animated-gifs') && $('cfg-animated-gifs').checked),
     showFileName: $('cfg-show-filename').checked,
-    toggleHotkey: $('cfg-hotkey') ? $('cfg-hotkey').value.trim() : '',
+    toggleHotkey: $('cfg-hotkey') ? ($('cfg-hotkey').value.trim() || 'disabled') : 'disabled',
     bannerAutoHide: $('cfg-banner-autohide').checked,
     navAutoHide: $('cfg-nav-autohide').checked,
     showTopHints: $('cfg-show-hints').checked,
@@ -6161,7 +6161,7 @@ function getFactoryAppSettings() {
     language: 'en',
     preferredDisplayId: 'auto',
     contextMenuEnabled: false,
-    toggleHotkey: '',
+    toggleHotkey: 'Alt+Shift+V',
     checkUpdatesOnStartup: true,
     updateNotify: {
       lastNotifiedAvailable: null,
@@ -6207,7 +6207,7 @@ function resetFactorySettings() {
   showToast(I18N.en.toast_factory_reset || 'FACTORY SETTINGS RESTORED', 'success', 1200);
 }
 
-function saveConfigSettings({ toast = false } = {}) {
+function saveConfigSettings({ toast = false, silent = false } = {}) {
   if (!state.settings || !state.settings.app) return;
   const newSettings = collectConfigSettings();
   const contextMenuEnabled = !!newSettings.contextMenuEnabled;
@@ -6227,7 +6227,7 @@ function saveConfigSettings({ toast = false } = {}) {
   state.settings.app = Object.assign({}, state.settings.app, newSettings);
   applySettings();
   if (isElectron) window.electronAPI.saveSettings(state.settings.app);
-  setConfigAutosaveState(true);
+  if (!silent) setConfigAutosaveState(true);
 
   if (toast) {
     const lang = newSettings.language || 'en';
@@ -6285,6 +6285,100 @@ if (resetFactoryBtn) {
       onConfirm: resetFactorySettings
     });
   });
+}
+
+function backupUiText() {
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  return { lang, t: I18N[lang] || I18N.en || {} };
+}
+
+async function exportSettingsBackup() {
+  if (!isElectron || !window.electronAPI || !window.electronAPI.exportSettingsBackup) return;
+  const { lang, t } = backupUiText();
+  saveConfigSettings({ toast: false, silent: true });
+  try {
+    const res = await window.electronAPI.exportSettingsBackup(state.settings.app);
+    if (!res || res.canceled) return;
+    if (!res.ok) {
+      showToast(t.toast_backup_export_error || 'COULD NOT EXPORT SETTINGS', 'error');
+      return;
+    }
+    showToast(t.toast_backup_exported || 'SETTINGS EXPORTED', 'success');
+  } catch (err) {
+    console.error('Error exporting settings:', err);
+    showToast((I18N[lang] && I18N[lang].toast_backup_export_error) || 'COULD NOT EXPORT SETTINGS', 'error');
+  }
+}
+
+async function applyImportedBackup(payload) {
+  if (!payload || !payload.ok) return;
+  const previous = state.settings.app || {};
+  const next = Object.assign({}, previous, payload.settings || {});
+  next.favorites = Array.isArray(payload.favorites) ? payload.favorites.slice() : [];
+
+  if (isElectron && previous.contextMenuEnabled !== !!next.contextMenuEnabled && window.electronAPI.registerContextMenu) {
+    const lang = next.language || 'en';
+    window.electronAPI.registerContextMenu(!!next.contextMenuEnabled, lang).catch((err) => {
+      console.error('Error updating context menu:', err);
+    });
+  }
+
+  if (state.showingFavs) {
+    await toggleFavoritesView();
+  }
+
+  state.settings.app = next;
+  applySettings();
+  if (isElectron) window.electronAPI.saveSettings(state.settings.app);
+  setConfigAutosaveState(true);
+  openConfig();
+  setActiveConfigTab('system');
+  updateFavButtonState();
+  const { t } = backupUiText();
+  showToast(t.toast_backup_imported || 'SETTINGS IMPORTED', 'success');
+}
+
+function requestImportSettingsBackup() {
+  if (!isElectron || !window.electronAPI || !window.electronAPI.importSettingsBackup) return;
+  const { t } = backupUiText();
+  showCyberConfirm({
+    title: t.cfg_backup_import_confirm_title || 'Import settings',
+    message: t.cfg_backup_import_confirm_message ||
+      'Replace current preferences and favorites with this backup?',
+    detail: t.cfg_backup_import_confirm_detail ||
+      'Recent files and folders are kept. This cannot be undone except by importing another backup.',
+    danger: false,
+    onConfirm: async () => {
+      saveConfigSettings({ toast: false, silent: true });
+      try {
+        const res = await window.electronAPI.importSettingsBackup();
+        if (!res || res.canceled) return;
+        if (!res.ok) {
+          const { t: t2 } = backupUiText();
+          const msg = res.error === 'INVALID_JSON' || res.error === 'INVALID_SHAPE' ||
+            res.error === 'EMPTY_BACKUP' || res.error === 'UNSUPPORTED_VERSION' || res.error === 'INVALID_FILE'
+            ? (t2.toast_backup_import_invalid || 'INVALID SETTINGS FILE')
+            : (t2.toast_backup_import_error || 'COULD NOT IMPORT SETTINGS');
+          showToast(msg, 'error');
+          return;
+        }
+        await applyImportedBackup(res);
+      } catch (err) {
+        console.error('Error importing settings:', err);
+        const { t: t3 } = backupUiText();
+        showToast(t3.toast_backup_import_error || 'COULD NOT IMPORT SETTINGS', 'error');
+      }
+    }
+  });
+}
+
+const exportSettingsBtn = $('cfg-export-settings');
+if (exportSettingsBtn) {
+  exportSettingsBtn.addEventListener('click', () => { exportSettingsBackup(); });
+}
+const importSettingsBtn = $('cfg-import-settings');
+if (importSettingsBtn) {
+  importSettingsBtn.addEventListener('click', () => { requestImportSettingsBackup(); });
 }
 
 // ── Global toggle hotkey capture (accelerator format, e.g. "Alt+Shift+V") ──
@@ -6929,7 +7023,9 @@ $('btn-go-end').addEventListener('click', (e) => {
         </div>
         <div class="modal-body">
           <div class="about-hero">
-            <img src="assets/icon.ico" class="about-logo" alt="" width="64" height="64" draggable="false">
+            <div class="about-logo-wrap">
+              <img src="assets/icon.ico" class="about-logo" alt="" width="64" height="64" draggable="false">
+            </div>
             <div class="about-brand">
               <span class="about-brand-cyber">Cyber</span><span class="about-brand-viewer">Viewer</span>
             </div>

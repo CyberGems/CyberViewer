@@ -18,6 +18,7 @@ const {
 const { evictThumbCache } = require('./lib/thumb-cache');
 const { clampWindowBounds } = require('./lib/window-bounds');
 const { initUpdater, setAutoCheckEnabled } = require('./lib/updater');
+const { buildBackup, parseBackup } = require('./lib/settings-backup');
 const CVMedia = require('./js/media-helpers');
 
 protocol.registerSchemesAsPrivileged([
@@ -38,6 +39,19 @@ const settingsPath = path.join(app.getPath('userData'), 'settings.json');
 const menuI18n = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'i18n', 'menu.json'), 'utf8')
 );
+
+/** Matches the config placeholder. Empty/missing settings resolve to this. */
+const DEFAULT_TOGGLE_HOTKEY = 'Alt+Shift+V';
+
+function isToggleHotkeyDisabled(value) {
+  return value === 'disabled';
+}
+
+function resolveToggleHotkey(value) {
+  if (isToggleHotkeyDisabled(value)) return '';
+  const s = value == null ? '' : String(value).trim();
+  return s || DEFAULT_TOGGLE_HOTKEY;
+}
 
 const pathAllowlist = createPathAllowlist([__dirname]);
 
@@ -86,6 +100,9 @@ function loadSettings() {
         if (data.app.showFileName === undefined) data.app.showFileName = true;
         if (data.app.animateGifs === undefined) data.app.animateGifs = true;
       if (data.app.dblClickAction === undefined) data.app.dblClickAction = 'fullscreen';
+        if (data.app.toggleHotkey === undefined || data.app.toggleHotkey === '') {
+          data.app.toggleHotkey = DEFAULT_TOGGLE_HOTKEY;
+        }
       }
       return data;
     }
@@ -105,7 +122,7 @@ function loadSettings() {
       preferredDisplayId: 'auto',
       language: 'en',
       contextMenuEnabled: false,
-      toggleHotkey: '',
+      toggleHotkey: DEFAULT_TOGGLE_HOTKEY,
       checkUpdatesOnStartup: true,
       updateNotify: {
         lastNotifiedAvailable: null,
@@ -539,7 +556,7 @@ function buildTrayMenuState() {
     settingsLabel: t.tray_settings,
     aboutLabel: t.tray_about || t.about,
     exitLabel: t.tray_exit,
-    shortcut: (settings.app && settings.app.toggleHotkey) || ''
+    shortcut: resolveToggleHotkey(settings.app && settings.app.toggleHotkey)
   };
 }
 
@@ -706,12 +723,11 @@ function createTray() {
 
 // ── Global toggle hotkey ─────────────────────────────────────────────
 // When the user sets an accelerator (e.g. "Alt+Shift+V") we register it globally
-// so CyberViewer can be shown/hidden from anywhere. Empty string = disabled.
-// We normalize away stray whitespace and reject anything that fails to register
-// so we never leave a stale accelerator bound.
+// so CyberViewer can be shown/hidden from anywhere. "disabled" (or a resolved
+// empty value) unregisters the shortcut. Missing/blank settings use Alt+Shift+V.
 function applyToggleHotkey(accelerator) {
   try { globalShortcut.unregisterAll(); } catch (_) { /* not registered yet */ }
-  const acc = (accelerator || '').trim();
+  const acc = resolveToggleHotkey(accelerator);
   if (!acc) return { success: true }; // disabled by design
   try {
     globalShortcut.register(acc, () => {
@@ -908,6 +924,58 @@ ipcMain.handle('show-save-dialog', async (event, options) => {
     pathAllowlist.allow(result.filePath);
   }
   return result;
+});
+
+const SETTINGS_BACKUP_MAX_BYTES = 2 * 1024 * 1024;
+
+ipcMain.handle('settings:export-backup', async (_event, appSettings) => {
+  const lang = getUiLang();
+  const result = await dialog.showSaveDialog(win, {
+    title: tMenu('dialog_export_settings_title', lang),
+    defaultPath: 'CyberViewer-settings.json',
+    filters: [
+      { name: tMenu('dialog_settings_filter', lang), extensions: ['json'] },
+      { name: tMenu('dialog_save_filter_all', lang), extensions: ['*'] }
+    ]
+  });
+  if (result.canceled || !result.filePath) return { ok: false, canceled: true };
+  try {
+    const current = loadSettings();
+    const appData = (appSettings && typeof appSettings === 'object')
+      ? { ...current.app, ...appSettings }
+      : current.app;
+    const backup = buildBackup(appData, { appVersion: app.getVersion() });
+    fs.writeFileSync(result.filePath, JSON.stringify(backup, null, 2), 'utf8');
+    return { ok: true, path: result.filePath };
+  } catch (e) {
+    return { ok: false, error: e.message || 'WRITE_FAILED' };
+  }
+});
+
+ipcMain.handle('settings:import-backup', async () => {
+  const lang = getUiLang();
+  const result = await dialog.showOpenDialog(win, {
+    title: tMenu('dialog_import_settings_title', lang),
+    filters: [
+      { name: tMenu('dialog_settings_filter', lang), extensions: ['json'] },
+      { name: tMenu('dialog_open_filter_all', lang), extensions: ['*'] }
+    ],
+    properties: ['openFile']
+  });
+  if (result.canceled || !result.filePaths.length) return { ok: false, canceled: true };
+  const filePath = result.filePaths[0];
+  try {
+    const st = await fs.promises.stat(filePath);
+    if (!st.isFile() || st.size > SETTINGS_BACKUP_MAX_BYTES) {
+      return { ok: false, error: 'INVALID_FILE' };
+    }
+    const raw = await fs.promises.readFile(filePath, 'utf8');
+    const parsed = parseBackup(raw);
+    if (!parsed.ok) return parsed;
+    return { ok: true, settings: parsed.settings, favorites: parsed.favorites };
+  } catch (e) {
+    return { ok: false, error: e.message || 'READ_FAILED' };
+  }
 });
 
 // ── Print / PDF export (Chromium engine, no native deps) ──
@@ -1882,9 +1950,7 @@ if (!gotTheLock) {
       beforeQuitInstall: () => { isQuitting = true; }
     });
     if (wantsTray()) createTray();
-    // Apply the global toggle hotkey if one is configured (empty = disabled).
-    const hk = settings.app && settings.app.toggleHotkey;
-    if (hk) applyToggleHotkey(hk);
+    applyToggleHotkey(settings.app && settings.app.toggleHotkey);
 
     if (initialFilePath) {
       win.webContents.once('did-finish-load', () => {

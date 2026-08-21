@@ -47,6 +47,9 @@
     "dialog_save_as_title": "Save As",
     "dialog_save_filter_images": "Images",
     "dialog_save_filter_all": "All Files",
+    "dialog_export_settings_title": "Export settings",
+    "dialog_import_settings_title": "Import settings",
+    "dialog_settings_filter": "JSON files",
     "monitor_primary": "[Primary] ",
     "monitor_label": "Monitor {id}"
   },
@@ -98,6 +101,9 @@
     "dialog_save_as_title": "Guardar como",
     "dialog_save_filter_images": "Imágenes",
     "dialog_save_filter_all": "Todos los archivos",
+    "dialog_export_settings_title": "Exportar ajustes",
+    "dialog_import_settings_title": "Importar ajustes",
+    "dialog_settings_filter": "Archivos JSON",
     "monitor_primary": "[Principal] ",
     "monitor_label": "Monitor {id}"
   }

@@ -18,6 +18,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSettings: () => ipcRenderer.invoke('get-settings'),
   getVersion: () => ipcRenderer.invoke('get-version'),
   saveSettings: (settings) => ipcRenderer.send('save-settings', settings),
+  exportSettingsBackup: (settings) => ipcRenderer.invoke('settings:export-backup', settings),
+  importSettingsBackup: () => ipcRenderer.invoke('settings:import-backup'),
 
   showContextMenu: (props) => ipcRenderer.send('show-context-menu', props),
   openDevTools: () => ipcRenderer.send('win-devtools'),

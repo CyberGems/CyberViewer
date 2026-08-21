@@ -30,10 +30,10 @@ function makeItem(def) {
   btn.appendChild(iconSpan);
   btn.appendChild(label);
 
-  if (def.shortcut) {
+  if (def.shortcut && String(def.shortcut).trim()) {
     const sc = document.createElement('span');
     sc.className = 'shortcut';
-    sc.textContent = def.shortcut;
+    sc.textContent = String(def.shortcut).trim();
     btn.appendChild(sc);
   }
 
