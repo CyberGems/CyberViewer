@@ -79,8 +79,8 @@ jobs:
 
           ensure_release() {
             if gh release view "$TAG" >/dev/null 2>&1; then
-              # Publish draft leftovers from a previous flaky run
-              gh release edit "$TAG" --draft=false >/dev/null 2>&1 || true
+              # Keep an existing draft as a draft so notes can be reviewed
+              # before publish. Assets are still uploaded below.
               return 0
             fi
             gh release create "$TAG" \

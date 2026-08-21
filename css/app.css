@@ -4723,8 +4723,8 @@
 }
 .about-logo-wrap {
   position: relative;
-  width: 64px;
-  height: 64px;
+  width: 76px;
+  height: 76px;
   margin: 10px auto 18px;
   display: flex;
   align-items: center;
@@ -4733,8 +4733,8 @@
 .about-logo-wrap::before {
   content: '';
   position: absolute;
-  width: 118px;
-  height: 118px;
+  width: 140px;
+  height: 140px;
   left: 50%;
   top: 50%;
   border-radius: 50%;
@@ -4750,8 +4750,8 @@
 .about-logo {
   position: relative;
   z-index: 1;
-  width: 64px;
-  height: 64px;
+  width: 76px;
+  height: 76px;
   display: block;
   /* Keep the ICO's native transparent/rounded corners intact. */
   border-radius: 0;

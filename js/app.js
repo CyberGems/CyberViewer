@@ -7024,7 +7024,7 @@ $('btn-go-end').addEventListener('click', (e) => {
         <div class="modal-body">
           <div class="about-hero">
             <div class="about-logo-wrap">
-              <img src="assets/icon.ico" class="about-logo" alt="" width="64" height="64" draggable="false">
+              <img src="assets/icon.ico" class="about-logo" alt="" width="76" height="76" draggable="false">
             </div>
             <div class="about-brand">
               <span class="about-brand-cyber">Cyber</span><span class="about-brand-viewer">Viewer</span>
