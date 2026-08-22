@@ -36,6 +36,11 @@ LangString CV_DefaultViewerCheckbox 3082 "Establecer CyberViewer como el visor d
 
 !ifndef BUILD_UNINSTALLER
 Function CV_DefaultViewerPage_Show
+  ; In-app updates run the Setup with /S. Custom pages can still appear
+  ; unless we abort when silent — keep the wizard for manual installs only.
+  IfSilent 0 +2
+  Abort
+
   nsDialogs::Create 1018
   Pop $0
   ${If} $0 == error

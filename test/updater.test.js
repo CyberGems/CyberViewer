@@ -117,6 +117,23 @@ describe('updater helpers', () => {
     }
   });
 
+  it('installs NSIS updates silently and relaunches', async () => {
+    const { mod, autoUpdater, ipcHandlers, restore } = loadUpdaterWithStubs({
+      PACKAGED: '1'
+    });
+    try {
+      mod.initUpdater({});
+      const calls = [];
+      autoUpdater.quitAndInstall = (...args) => { calls.push(args); };
+      const result = await ipcHandlers['update:install']();
+      assert.equal(result.ok, true);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      assert.deepEqual(calls, [[true, true]]);
+    } finally {
+      restore();
+    }
+  });
+
   it('exports releases URL', () => {
     const { mod, restore } = loadUpdaterWithStubs();
     try {

@@ -2,7 +2,7 @@
 
 Fast Windows image viewer by CyberGems — open, browse a folder, zoom/pan, and light edit (rotate, crop, resize, adjust). Built with Electron and vanilla JS (small app layer; Chromium runtime included).
 
-**Version:** 1.12.0 · **Stack:** Electron 35 · Vanilla JS
+**Version:** 1.12.1 · **Stack:** Electron 35 · Vanilla JS
 
 ## Project structure
 
@@ -56,8 +56,8 @@ Outputs land in `dist/`:
 
 | Artifact | Description |
 |---|---|
-| `CyberViewer-Setup-1.12.0.exe` | NSIS installer |
-| `CyberViewer-Portable-1.12.0.exe` | Portable build |
+| `CyberViewer-Setup-1.12.1.exe` | NSIS installer |
+| `CyberViewer-Portable-1.12.1.exe` | Portable build |
 
 ## Icons
 
@@ -72,7 +72,7 @@ Installed (NSIS) builds use **electron-updater** against GitHub Releases:
 
 1. About → **Check for Updates** (or menu Help)
 2. **Download update** when a newer version is available
-3. **Install & restart** to run the NSIS installer
+3. **Install & restart** to apply the update silently (no Next/Next wizard) and relaunch
 
 Download/install is always user-requested. With “Check for updates on startup” on (default), the app may notify on startup that an update exists (toast + About banner), but will not download until you ask.
 
