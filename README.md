@@ -2,6 +2,8 @@
 
 Fast Windows image viewer by CyberGems — open, browse a folder, zoom/pan, and light edit (rotate, crop, resize, adjust). Built with Electron and vanilla JS (small app layer; Chromium runtime included).
 
+*Free and open source (GPLv3) — no ads, no tracking, and no data collection. Just enjoy it.*
+
 **Version:** 1.12.1 · **Stack:** Electron 35 · Vanilla JS
 
 ## Project structure
