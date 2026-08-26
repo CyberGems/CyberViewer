@@ -1,5 +1,14 @@
 # CyberViewer
 
+<p align="center">
+  <a href="https://github.com/CyberGems/CyberViewer/releases/latest">
+    <img src="https://img.shields.io/badge/⚡_Download_Latest_Release-(Windows_64--bit)-00F2FF?style=for-the-badge&logo=windows&logoColor=000000" alt="Download Latest Release" />
+  </a>
+  <a href="https://github.com/CyberGems/CyberViewer/releases">
+    <img src="https://img.shields.io/badge/All_Releases-Changelog-18181B?style=for-the-badge&logo=github&logoColor=white" alt="All Releases" />
+  </a>
+</p>
+
 Fast Windows image viewer by CyberGems — open, browse a folder, zoom/pan, and light edit (rotate, crop, resize, adjust). Built with Electron and vanilla JS (small app layer; Chromium runtime included).
 
 *Free and open source (GPLv3) — no ads, no tracking, and no data collection. Just enjoy it.*
