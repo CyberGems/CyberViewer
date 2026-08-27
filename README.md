@@ -143,3 +143,13 @@ If you'd like to support this work, a donation would mean a lot. Thank you! 🙏
 ---
 
 **CyberGems © 2026**
+---
+
+<div align="center" style="background:#0D0F17; border:1px solid rgba(0,255,255,0.12); border-radius:12px; padding:28px 20px; margin-top:32px;">
+
+### Thanks for using CyberViewer! 🎉
+
+Made by [**CyberGems**](https://cybergems.org)
+
+</div>
+
