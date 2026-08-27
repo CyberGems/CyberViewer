@@ -42,9 +42,19 @@ html, body {
   cursor: pointer;
   user-select: none;
   transition: color 0.12s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 .head:hover {
   color: rgba(255, 255, 255, 0.8);
+}
+.head-icon {
+  width: 14px;
+  height: 14px;
+  display: block;
+  flex-shrink: 0;
 }
 
 .divider {

@@ -2632,7 +2632,7 @@
     box-shadow: 0 5px 25px rgba(0,0,0,0.8);
     white-space: nowrap;
     z-index: 2100;
-    min-width: 300px;
+    min-width: 0;
     max-width: min(520px, 92vw);
     cursor: default;
   }
@@ -4733,17 +4733,17 @@
 .about-logo-wrap::before {
   content: '';
   position: absolute;
-  width: 140px;
-  height: 140px;
+  width: 110px;
+  height: 110px;
   left: 50%;
   top: 50%;
   border-radius: 50%;
   background: radial-gradient(circle,
-    rgba(var(--cyber-logo-glow-rgb), 0.62) 0%,
-    rgba(var(--cyber-logo-glow-rgb), 0.22) 40%,
+    rgba(var(--cyber-logo-glow-rgb), 0.5) 0%,
+    rgba(var(--cyber-logo-glow-rgb), 0.18) 40%,
     transparent 72%);
-  transform: translate(-50%, -50%) scale(0.78);
-  animation: about-logo-halo 1.6s ease-in-out infinite;
+  transform: translate(-50%, -50%) scale(0.85);
+  animation: about-logo-halo 1.2s ease-in-out infinite;
   pointer-events: none;
   z-index: 0;
 }
@@ -4756,28 +4756,28 @@
   /* Keep the ICO's native transparent/rounded corners intact. */
   border-radius: 0;
   object-fit: contain;
-  filter: drop-shadow(0 0 10px rgba(var(--cyber-logo-glow-rgb), 0.7));
-  animation: about-logo-glow 1.6s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px rgba(var(--cyber-logo-glow-rgb), 0.6));
+  animation: about-logo-glow 1.2s ease-in-out infinite;
   user-select: none;
   pointer-events: none;
 }
 @keyframes about-logo-halo {
   0%, 100% {
     opacity: 0.28;
-    transform: translate(-50%, -50%) scale(0.78);
+    transform: translate(-50%, -50%) scale(0.85);
   }
   50% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.18);
+    opacity: 0.85;
+    transform: translate(-50%, -50%) scale(1.06);
   }
 }
 @keyframes about-logo-glow {
   0%, 100% {
-    filter: drop-shadow(0 0 6px rgba(var(--cyber-logo-glow-rgb), 0.4));
+    filter: drop-shadow(0 0 5px rgba(var(--cyber-logo-glow-rgb), 0.35));
   }
   50% {
-    filter: drop-shadow(0 0 18px rgba(var(--cyber-logo-glow-rgb), 1))
-            drop-shadow(0 0 32px rgba(var(--cyber-logo-glow-rgb), 0.55));
+    filter: drop-shadow(0 0 12px rgba(var(--cyber-logo-glow-rgb), 0.85))
+            drop-shadow(0 0 22px rgba(var(--cyber-logo-glow-rgb), 0.4));
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -4786,11 +4786,11 @@
     animation: none;
   }
   .about-logo-wrap::before {
-    opacity: 0.55;
-    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.5;
+    transform: translate(-50%, -50%) scale(0.95);
   }
   .about-logo {
-    filter: drop-shadow(0 0 12px rgba(var(--cyber-logo-glow-rgb), 0.7));
+    filter: drop-shadow(0 0 10px rgba(var(--cyber-logo-glow-rgb), 0.6));
   }
 }
 .about-brand {

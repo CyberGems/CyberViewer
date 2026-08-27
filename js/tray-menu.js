@@ -46,7 +46,7 @@ function makeItem(def) {
 }
 
 function applyState(state) {
-  headEl.textContent = state.head || ('CyberViewer v' + (state.version || ''));
+  headEl.innerHTML = '<img class="head-icon" src="assets/icon.ico" alt="" /><span>' + (state.head || ('CyberViewer v' + (state.version || ''))) + '</span>';
   groupEl.replaceChildren(
     makeItem({ action: 'toggle', icon: 'window', label: state.showLabel, shortcut: state.shortcut || '' }),
     makeItem({ action: 'settings', icon: 'settings', label: state.settingsLabel }),

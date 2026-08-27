@@ -2863,12 +2863,26 @@ window.addEventListener('mousemove', (e) => {
   const dy = e.clientY - cropState.startY;
   
   if (cropState.isMoving) {
-    cropState.x = cropState.startRect.x + dx;
-    cropState.y = cropState.startRect.y + dy;
+    const img = cropState.imgRealRect;
+    let nx = cropState.startRect.x + dx;
+    let ny = cropState.startRect.y + dy;
+    // Constrain within image bounds
+    nx = Math.max(img.x, Math.min(nx, img.x + img.w - cropState.w));
+    ny = Math.max(img.y, Math.min(ny, img.y + img.h - cropState.h));
+    cropState.x = nx;
+    cropState.y = ny;
   } else if (cropState.isResizing) {
     const h = cropState.handle;
     const r = cropState.startRect;
     const minSize = 50;
+
+    // Image bounds — crop cannot expand beyond the image
+    const img = cropState.imgRealRect;
+    const maxX = img.x + img.w;
+    const maxY = img.y + img.h;
+
+    const isCorner = (h === 'ch-tl' || h === 'ch-tr' || h === 'ch-bl' || h === 'ch-br');
+    const aspect = r.w / r.h;
 
     // Corner classes are ch-tl/tr/bl/br — substring checks like '-l' fail on those.
     const resizeLeft = (h === 'ch-l' || h === 'ch-tl' || h === 'ch-bl');
@@ -2897,6 +2911,31 @@ window.addEventListener('mousemove', (e) => {
       y = r.y + (r.h - newH);
       ht = newH;
     }
+
+    // Corner handles: maintain aspect ratio
+    if (isCorner) {
+      if (resizeRight && resizeBottom) {
+        // Bottom-right: prioritize width, adjust height
+        ht = w / aspect;
+      } else if (resizeLeft && resizeTop) {
+        // Top-left: prioritize width, adjust height
+        ht = w / aspect;
+        y = r.y + (r.h - ht);
+      } else if (resizeRight && resizeTop) {
+        // Top-right: prioritize width, adjust height
+        ht = w / aspect;
+        y = r.y + (r.h - ht);
+      } else if (resizeLeft && resizeBottom) {
+        // Bottom-left: prioritize width, adjust height
+        ht = w / aspect;
+      }
+    }
+
+    // Constrain within image bounds
+    x = Math.max(img.x, x);
+    y = Math.max(img.y, y);
+    w = Math.min(w, maxX - x);
+    ht = Math.min(ht, maxY - y);
 
     cropState.x = x;
     cropState.y = y;
@@ -7027,7 +7066,7 @@ $('btn-go-end').addEventListener('click', (e) => {
               <img src="assets/icon.ico" class="about-logo" alt="" width="76" height="76" draggable="false">
             </div>
             <div class="about-brand">
-              <span class="about-brand-cyber">Cyber</span><span class="about-brand-viewer">Viewer</span>
+              <span class="about-brand-cyber" style="color:#E6E6E6">Cyber</span><span class="about-brand-viewer">Viewer</span>
             </div>
             <span class="about-version">${verLabel}</span>
             <p class="about-desc">
