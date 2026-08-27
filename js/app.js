@@ -4928,6 +4928,47 @@ document.addEventListener('keydown', e => {
   }
 
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  // Enter applies/confirms in modals
+  if (e.key === 'Enter') {
+    if (state.isCropping) {
+      const confirmBtn = $('btn-crop-confirm');
+      if (confirmBtn && !confirmBtn.disabled) confirmBtn.click();
+      e.preventDefault();
+      return;
+    }
+    if ($('modal-resize').classList.contains('active')) {
+      const btn = $('btn-confirm-resize');
+      if (btn && !btn.disabled) btn.click();
+      e.preventDefault();
+      return;
+    }
+    if ($('modal-adjust').classList.contains('active')) {
+      const btn = $('btn-confirm-adjust');
+      if (btn && !btn.disabled) btn.click();
+      e.preventDefault();
+      return;
+    }
+    if ($('modal-cyber-confirm').classList.contains('active')) {
+      const btn = $('btn-confirm-ok');
+      if (btn) btn.click();
+      e.preventDefault();
+      return;
+    }
+    if ($('modal-print-export').classList.contains('active')) {
+      const btn = $('btn-print-now');
+      if (btn) btn.click();
+      e.preventDefault();
+      return;
+    }
+    if ($('modal-properties').classList.contains('active')) {
+      const btn = $('props-close-btn');
+      if (btn) btn.click();
+      e.preventDefault();
+      return;
+    }
+  }
+
   if (state.isCropping) return; // modo Crop: el recorte es la unica accion activa
   const pendingRotation = state.currentRotation !== 0 && state.hasChanges;
   const isCtrl = e.ctrlKey || e.metaKey;
