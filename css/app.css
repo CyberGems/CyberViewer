@@ -2714,28 +2714,34 @@
     flex-shrink: 0;
   }
 
-  /* Enter icon + Esc hint in action buttons */
+  /* Enter icon + key hint in action buttons */
   .btn-enter-icon {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
     flex-shrink: 0;
-    opacity: 0.85;
+    opacity: 0.7;
   }
-  .btn-esc-hint {
-    font-size: 10px;
+  .btn-key-hint {
+    font-size: 9px;
     font-weight: 500;
-    opacity: 0.45;
-    letter-spacing: 0.04em;
+    opacity: 0.35;
+    letter-spacing: 0.02em;
     flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 3px;
+    padding: 1px 4px;
+    line-height: 1;
   }
   .btn-label {
     flex-shrink: 0;
   }
   .top-btn.btn-primary:hover .btn-enter-icon {
-    opacity: 1;
+    opacity: 0.9;
   }
-  .top-btn.btn-cancel:hover .btn-esc-hint {
-    opacity: 0.7;
+  .top-btn.btn-cancel:hover .btn-key-hint,
+  .top-btn.btn-primary:hover .btn-key-hint {
+    opacity: 0.6;
+    border-color: rgba(255,255,255,0.2);
   }
 
   /* Shared primary / cancel actions (crop, resize, etc.) */
