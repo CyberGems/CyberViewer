@@ -2731,9 +2731,11 @@
     border-radius: 3px;
     padding: 1px 4px;
     line-height: 1;
+    text-transform: none;
   }
   .btn-label {
     flex-shrink: 0;
+    text-transform: none;
   }
   .top-btn.btn-primary:hover .btn-enter-icon {
     opacity: 0.9;
@@ -3085,6 +3087,39 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
+    text-transform: none;
+  }
+  .modal-footer .copy-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-right: auto;
+    cursor: help;
+  }
+  .modal-footer .copy-toggle-row .copy-toggle-info {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .modal-footer .copy-toggle-row .config-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cyber-text);
+  }
+  .modal-footer .copy-toggle-row .config-desc {
+    font-size: 10px;
+    color: var(--cyber-muted);
+  }
+  .modal-footer .copy-toggle-row .copy-toggle-sep {
+    color: var(--cyber-muted);
+    opacity: 0.6;
+  }
+  .modal-footer .copy-toggle-row .switch {
+    transform: scale(0.85);
+    flex-shrink: 0;
   }
 
   /* ── CUSTOM CONFIRM BOX ── */
