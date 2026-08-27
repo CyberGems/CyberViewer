@@ -18,7 +18,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" />
   <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4.svg?logo=windows&logoColor=white" alt="Platform" />
-  <img src="https://img.shields.io/badge/version-1.12.1-00F0FF.svg" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.13.0-00F0FF.svg" alt="Version" />
   <img src="https://img.shields.io/badge/Electron-35-512BD4.svg?logo=electron&logoColor=white" alt="Electron" />
 </p>
 
@@ -154,8 +154,8 @@ npm run build:portable   # portable only
 
 | Artifact | Description |
 |---|---|
-| `CyberViewer-Setup-1.12.1.exe` | NSIS installer |
-| `CyberViewer-Portable-1.12.1.exe` | Portable build |
+| `CyberViewer-Setup-1.13.0.exe` | NSIS installer |
+| `CyberViewer-Portable-1.13.0.exe` | Portable build |
 
 ### NSIS Installer Features
 - Optional "Set CyberViewer as default image viewer" (checked by default)
