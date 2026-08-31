@@ -20,6 +20,7 @@
   <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4.svg?logo=windows&logoColor=white" alt="Platform" />
   <img src="https://img.shields.io/badge/version-1.13.0-00F0FF.svg" alt="Version" />
   <img src="https://img.shields.io/badge/Electron-35-512BD4.svg?logo=electron&logoColor=white" alt="Electron" />
+  <a href="https://github.com/CyberGems/CyberViewer/wiki"><img src="https://img.shields.io/badge/📖_Wiki-Documentation-222222.svg?logo=github&logoColor=white" alt="Wiki" /></a>
 </p>
 
 A fast, lightweight Windows image viewer by **CyberGems** — open, browse folders, zoom/pan, and perform light edits (rotate, crop, resize, adjust colors). Built with **Electron 35** and **vanilla JavaScript**, it delivers a modern, dark-themed "cyber" UI with neon accents.
