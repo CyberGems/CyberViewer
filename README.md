@@ -1,6 +1,6 @@
 <p align="center">
-  <a href="https://raw.githubusercontent.com/CyberGems/CyberViewer/main/assets/icon.ico">
-    <img src="https://raw.githubusercontent.com/CyberGems/CyberViewer/main/assets/icon.ico" width="128" height="128" alt="CyberViewer logo" />
+  <a href="https://raw.githubusercontent.com/CyberGems/CyberViewer/main/assets/icon.png">
+    <img src="https://raw.githubusercontent.com/CyberGems/CyberViewer/main/assets/icon.png" width="128" height="128" alt="CyberViewer logo" />
   </a>
 </p>
 
