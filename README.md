@@ -1,6 +1,6 @@
 <p align="center">
-  <a href="https://raw.githubusercontent.com/CyberGems/CyberViewer/main/assets/icon.png">
-    <img src="https://raw.githubusercontent.com/CyberGems/CyberViewer/main/assets/icon.png" width="128" height="128" alt="CyberViewer logo" />
+  <a href="https://raw.githubusercontent.com/CyberGems/CyberViewer/main/assets/icon.ico">
+    <img src="https://raw.githubusercontent.com/CyberGems/CyberViewer/main/assets/icon.ico" width="128" height="128" alt="CyberViewer logo" />
   </a>
 </p>
 
@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" />
+  <img src="https://img.shields.io/badge/license-GPL--3.0-blue.svg" alt="License" />
   <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4.svg?logo=windows&logoColor=white" alt="Platform" />
   <img src="https://img.shields.io/badge/version-1.13.0-00F0FF.svg" alt="Version" />
   <img src="https://img.shields.io/badge/Electron-35-512BD4.svg?logo=electron&logoColor=white" alt="Electron" />
@@ -25,7 +25,7 @@
 
 A fast, lightweight Windows image viewer by **CyberGems** — open, browse folders, zoom/pan, and perform light edits (rotate, crop, resize, adjust colors). Built with **Electron 35** and **vanilla JavaScript**, it delivers a modern, dark-themed "cyber" UI with neon accents.
 
-*Free and open source (MIT) — no ads, no tracking, and no data collection. Just enjoy it.*
+*Free and open source (GPLv3) — no ads, no tracking, and no data collection. Just enjoy it.*
 
 ---
 
@@ -297,7 +297,9 @@ If you'd like to support this work, a donation would mean a lot. Thank you! 🙏
 
 ## 📄 License
 
-CyberViewer is distributed under the terms of the MIT License. See [LICENSE](LICENSE) for the full license text.
+CyberViewer is distributed under the terms of the GNU General Public License v3.0. See [LICENSE](./LICENSE) for the full license text.
+
+Copyright (C) 2026 CyberGems
 
 ---
 

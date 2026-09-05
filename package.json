@@ -4,7 +4,7 @@
   "description": "CyberViewer — Visor de imágenes rápido y centrado, por CyberGems",
   "main": "main.js",
   "author": "CyberGems <info@cybergems.org>",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --win --x64 --publish never",
