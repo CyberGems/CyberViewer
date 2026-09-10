@@ -169,7 +169,7 @@ function saveSettings(data) {
 function getFilePathFromArgs(args) {
   for (let arg of args) {
     arg = arg.replace(/^"(.*)"$/, '$1');
-    if (arg.match(/\.(jpg|jpeg|png|gif|webp|bmp|tiff|tif|ico)$/i)) {
+    if (arg.match(/\.(jpg|jpeg|png|gif|webp|bmp|tiff|tif|ico|avif)$/i)) {
       try {
         if (fs.existsSync(arg)) {
           const resolved = path.resolve(arg);
@@ -963,7 +963,7 @@ ipcMain.handle('open-file-dialog', async () => {
     filters: [
       {
         name: tMenu('dialog_open_filter_images', lang),
-        extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'ico']
+        extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'ico', 'avif']
       },
       { name: tMenu('dialog_open_filter_all', lang), extensions: ['*'] }
     ],
@@ -1338,7 +1338,7 @@ function releaseThumbSlot() {
   if (next) next.resolve();
 }
 
-async function renderGifFirstFrameThumb(abs, cacheFile) {
+async function renderBrowserImageThumb(abs, cacheFile) {
   const html = `<!doctype html><html><head><meta charset="utf-8"><style>
     html,body{margin:0;padding:0;background:#000;overflow:hidden;width:160px;height:120px}
     img{position:absolute;left:0;top:0;max-width:none;opacity:0}
@@ -1363,7 +1363,7 @@ async function renderGifFirstFrameThumb(abs, cacheFile) {
         done({ ok: false, error: e.message });
       }
     };
-    img.onerror = () => done({ ok: false, error: 'GIF frame failed to load' });
+    img.onerror = () => done({ ok: false, error: 'Image frame failed to load' });
     img.src = ${JSON.stringify(pathToFileURL(abs).toString())};
   </script></body></html>`;
 
@@ -1380,7 +1380,7 @@ async function renderGifFirstFrameThumb(abs, cacheFile) {
         const start = Date.now();
         const tick = () => {
           if (window.__thumbDone) return resolve(window.__thumbDone);
-          if (Date.now() - start > 5000) return resolve({ ok: false, error: 'GIF frame timeout' });
+          if (Date.now() - start > 5000) return resolve({ ok: false, error: 'Image frame timeout' });
           setTimeout(tick, 30);
         };
         tick();
@@ -1402,8 +1402,10 @@ ipcMain.handle('get-thumbnail', async (event, filePath, opts) => {
     const priority = !!(opts && opts.priority);
     const stats = await fs.promises.stat(abs);
     const normalizedPath = abs.toLowerCase();
-    const isGif = path.extname(abs).toLowerCase() === '.gif';
-    const thumbVersion = isGif ? 'gif-frame-v2' : 'still-v1';
+    const ext = path.extname(abs).toLowerCase();
+    const isGif = ext === '.gif';
+    const isAvif = ext === '.avif';
+    const thumbVersion = isGif ? 'gif-frame-v2' : isAvif ? 'avif-browser-v1' : 'still-v1';
     const hash = crypto.createHash('md5').update(normalizedPath + stats.mtimeMs + thumbVersion).digest('hex');
     const cacheFile = path.join(thumbCachePath, `${hash}.jpg`);
 
@@ -1417,9 +1419,10 @@ ipcMain.handle('get-thumbnail', async (event, filePath, opts) => {
       if (fs.existsSync(cacheFile)) {
         return toMediaUrl(cacheFile);
       }
-      if (isGif && await renderGifFirstFrameThumb(abs, cacheFile)) {
-        // GIF thumbnails are intentionally static first frames. Do not use the
-        // animated source as the sidebar base image.
+      if ((isGif || isAvif) && await renderBrowserImageThumb(abs, cacheFile)) {
+        // Browser-decoded formats use a static thumbnail so animated sources
+        // do not keep repainting the sidebar. Chromium also provides the AVIF
+        // decoder that nativeImage does not guarantee across platforms.
       } else {
         const img = nativeImage.createFromPath(abs);
         if (img.isEmpty()) return null;
@@ -1707,7 +1710,7 @@ ipcMain.handle('register-context-menu', async (event, enable, lang) => {
       exePath = path.join(app.getAppPath(), 'dist', 'win-unpacked', 'CyberViewer.exe');
     }
 
-    const extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.tif', '.ico'];
+    const extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.tif', '.ico', '.avif'];
     const progIds = ['BMP Image', 'GIF Image', 'JPEG Image', 'PNG Image', 'WebP Image', 'TIFF Image', 'icofile'];
 
     if (enable) {

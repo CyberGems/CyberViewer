@@ -61,12 +61,16 @@ describe('mimeForPath', () => {
   it('serves ICO files with an image MIME type', () => {
     assert.equal(mimeForPath('assets/icon.ico'), 'image/x-icon');
   });
+  it('serves AVIF files with the AVIF image MIME type', () => {
+    assert.equal(mimeForPath('images/sample.avif'), 'image/avif');
+  });
 });
 
 describe('isImagePath', () => {
   it('accepts common extensions', () => {
     assert.equal(isImagePath('x.tiff'), true);
     assert.equal(isImagePath('x.ico'), true);
+    assert.equal(isImagePath('x.avif'), true);
     assert.equal(isImagePath('x.txt'), false);
   });
 });

@@ -46,6 +46,7 @@ Most image viewers are either bloated with features you never use or so barebone
 - **Folder browsing** — thumbnail sidebar with lazy loading, priority queue, and scan progress indicator
 - **Zoom & pan** — 5% to 2000%, fit-to-window, original size (1:1), mouse wheel + drag
 - **Animated GIF support** — toggle playback on/off
+- **AVIF support** — open modern AVIF images with Chromium-backed decoding
 - **Fullscreen immersive mode** — ghost UI auto-hides for distraction-free viewing
 - **Drag & drop** — drop images or folders directly onto the window
 - **Clipboard paste** — paste images from clipboard (`Ctrl+V`)
@@ -77,7 +78,7 @@ Most image viewers are either bloated with features you never use or so barebone
 - **Auto-start with Windows** — launch minimized on boot
 - **Global hotkey** — toggle show/hide (default: `Alt+Shift+V`)
 - **Explorer context menu** — right-click images to open in CyberViewer
-- **File associations** — set as default viewer for JPG, PNG, GIF, WEBP, BMP, TIFF, ICO
+- **File associations** — set as default viewer for JPG, PNG, GIF, WEBP, BMP, TIFF, ICO, AVIF
 - **Multiple instances** — optional, for power users
 - **Auto-update** — built-in GitHub Releases updater with silent install
 - **Settings backup** — export/import configuration as JSON

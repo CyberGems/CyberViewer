@@ -89,6 +89,7 @@ FunctionEnd
     !insertmacro CV_WriteImageAssoc ".tif"  "CyberViewer.tiff" "TIFF Image"
     !insertmacro CV_WriteImageAssoc ".tiff" "CyberViewer.tiff" "TIFF Image"
     !insertmacro CV_WriteImageAssoc ".ico"  "CyberViewer.ico"  "Icon Image"
+    !insertmacro CV_WriteImageAssoc ".avif" "CyberViewer.avif" "AVIF Image"
 
     WriteRegStr HKCU "Software\CyberViewer\Capabilities" "ApplicationName" "CyberViewer"
     WriteRegStr HKCU "Software\CyberViewer\Capabilities" "ApplicationDescription" "CyberViewer image viewer"
@@ -101,6 +102,7 @@ FunctionEnd
     WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".tif" "CyberViewer.tiff"
     WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".tiff" "CyberViewer.tiff"
     WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".ico" "CyberViewer.ico"
+    WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".avif" "CyberViewer.avif"
     WriteRegStr HKCU "Software\RegisteredApplications" "CyberViewer" "Software\CyberViewer\Capabilities"
 
     System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, p 0, p 0)'
@@ -116,6 +118,7 @@ FunctionEnd
   DeleteRegKey HKCU "Software\Classes\CyberViewer.bmp"
   DeleteRegKey HKCU "Software\Classes\CyberViewer.tiff"
   DeleteRegKey HKCU "Software\Classes\CyberViewer.ico"
+  DeleteRegKey HKCU "Software\Classes\CyberViewer.avif"
   DeleteRegKey HKCU "Software\CyberViewer"
   DeleteRegValue HKCU "Software\RegisteredApplications" "CyberViewer"
   System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, p 0, p 0)'

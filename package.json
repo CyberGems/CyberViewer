@@ -109,6 +109,12 @@
           "name": "Icon Image",
           "description": "Icon Image",
           "role": "Viewer"
+        },
+        {
+          "ext": ["avif"],
+          "name": "AVIF Image",
+          "description": "AVIF Image",
+          "role": "Viewer"
         }
       ]
     },

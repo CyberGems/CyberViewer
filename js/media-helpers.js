@@ -83,7 +83,7 @@
 
   /**
    * Export a canvas to base64 buffer + path for save-image IPC.
-   * Rasterizes exotic containers (gif/webp/bmp/tiff/ico) to PNG.
+   * Rasterizes exotic containers (gif/webp/bmp/tiff/ico/avif) to PNG.
    * @param {HTMLCanvasElement} canvas
    * @param {string} filePath
    */
@@ -135,6 +135,7 @@
       tif: 'image/tiff',
       tiff: 'image/tiff',
       ico: 'image/x-icon',
+      avif: 'image/avif',
       svg: 'image/svg+xml'
     };
     return map[ext] || '';
@@ -202,7 +203,7 @@
   /** True for formats that commonly carry an alpha channel. */
   function formatLikelyHasAlpha(fileNameOrPath) {
     const ext = (String(fileNameOrPath || '').split('.').pop() || '').toLowerCase();
-    return ext === 'png' || ext === 'webp' || ext === 'gif' || ext === 'tif' || ext === 'tiff' || ext === 'ico' || ext === 'svg';
+    return ext === 'png' || ext === 'webp' || ext === 'gif' || ext === 'tif' || ext === 'tiff' || ext === 'ico' || ext === 'avif' || ext === 'svg';
   }
 
   /**
