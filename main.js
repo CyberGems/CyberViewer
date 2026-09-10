@@ -537,46 +537,11 @@ function isWindowShown() {
   return !!(win && !win.isDestroyed() && win.isVisible() && !win.isMinimized());
 }
 
-// ── Custom HTML tray menu (mirrors the CyberPaste tray popup style) ──
-// Card width & transparent shadow pad, both in logical (DIP) px. Electron 35
-// reports tray bounds, screen work areas, setBounds and renderer CSS sizes all
-// in DIP — we stay in DIP throughout (no scaleFactor scaling).
-const TRAY_MENU_WIDTH = 268;
-const TRAY_MENU_SHADOW_PAD = 26;
-// Estimated card-bearing window height (DIP) for the first paint; the Help view
-// is the tallest state and is corrected by `tray-menu-ready` after measurement.
-const TRAY_MENU_EST_HEIGHT = 480;
-let trayMenuWin = null;
-let trayMenuAnchor = null;
-let trayMenuHideTimer = null;
-let trayMenuLastShown = 0;
-let trayMenuPendingShow = false;
-let trayMenuShowSeq = 0;
 // Windows may emit a normal click around the same right-click that opens the
 // tray context menu. Defer the click and cancel it when the right-click wins.
 let trayRightClickSeq = 0;
 let lastTrayRightClickAt = 0;
 let trayClickTimer = null;
-
-function buildTrayMenuState(showSeq = trayMenuShowSeq, resetView = false) {
-  const settings = loadSettings();
-  const lang = settings.app.language || 'en';
-  const t = menuI18n[lang] || menuI18n.en;
-  const visible = isWindowShown();
-  return {
-    version: app.getVersion(),
-    head: 'CyberViewer v' + app.getVersion(),
-    visible,
-    showLabel: visible ? (t.tray_hide || t.tray_show) : t.tray_show,
-    settingsLabel: t.tray_settings,
-    aboutLabel: t.tray_about || t.about,
-    help: buildTrayHelpModel(t),
-    exitLabel: t.tray_exit,
-    shortcut: resolveToggleHotkey(settings.app && settings.app.toggleHotkey),
-    showSeq,
-    resetView
-  };
-}
 
 function resolveOpenTaskbarSettingsExe() {
   const candidates = [
@@ -628,175 +593,186 @@ function openTrayHelpUrl(key) {
   if (url) void shell.openExternal(url);
 }
 
-// Position + size the tray popup (DIP) so the visible card sits just outside the
-// tray icon, opening away from the taskbar. We anchor on the icon rectangle from
-// tray.getBounds() (DIP, same coordinate space as screen.workArea and setBounds
-// in Electron 35) and detect which screen edge the icon hugs (bottom = normal
-// taskbar, left/top/right = moved taskbar) so a vertical-left taskbar opens the
-// card to the *right* of the icon — matching how native tray menus behave.
-function trayMenuGeometry(iconBounds, windowW, windowH) {
-  let b = (iconBounds && typeof iconBounds.x === 'number' && (iconBounds.width || iconBounds.height))
-    ? { x: iconBounds.x, y: iconBounds.y, width: iconBounds.width || 0, height: iconBounds.height || 0 }
-    : null;
-  if (!b) {
-    let p = null;
-    try { p = screen.getCursorScreenPoint(); } catch (_) { p = { x: 0, y: 0 }; }
-    b = { x: p.x, y: p.y, width: 0, height: 0 };
-  }
-  const cx = b.x + b.width / 2;
-  const cy = b.y + b.height / 2;
-  let display;
-  try { display = screen.getDisplayNearestPoint({ x: cx, y: cy }); }
-  catch (_) { display = screen.getPrimaryDisplay(); }
-  const work = (display && display.workArea) || { x: 0, y: 0, width: windowW, height: windowH };
+// Windows owns the lifecycle of native tray menus and their submenu flyouts.
+// Keep the menu object stable while it is open; replacing it during a hover can
+// make Windows redraw the menu or crash older Electron/Windows combinations.
+let trayContextMenuOpen = false;
+let trayContextMenuRebuildPending = false;
+let trayContextMenuCloseFallback = null;
+let pendingTrayAction = null;
 
-  const gap = 4;
-  const pad = TRAY_MENU_SHADOW_PAD;
-  const cardW = windowW - 2 * pad;
-  const cardH = windowH - 2 * pad;
+function executePendingTrayAction() {
+  const action = pendingTrayAction;
+  pendingTrayAction = null;
+  if (!action) return;
 
-  // Distance from the icon center to each work-area edge.
-  const dLeft = cx - work.x;
-  const dRight = (work.x + work.width) - cx;
-  const dTop = cy - work.y;
-  const dBottom = (work.y + work.height) - cy;
-
-  let cardX, cardY;
-  if (dBottom <= dLeft && dBottom <= dRight && dBottom <= dTop) {
-    // Bottom taskbar: open above the icon.
-    cardX = cx - cardW / 2;
-    cardY = b.y - gap - cardH;
-  } else if (dTop <= dLeft && dTop <= dRight) {
-    // Top taskbar: open below the icon.
-    cardX = cx - cardW / 2;
-    cardY = b.y + b.height + gap;
-  } else if (dLeft <= dRight) {
-    // Left taskbar: open to the right of the icon.
-    cardX = b.x + b.width + gap;
-    cardY = cy - cardH / 2;
-  } else {
-    // Right taskbar: open to the left of the icon.
-    cardX = b.x - gap - cardW;
-    cardY = cy - cardH / 2;
-  }
-
-  // Keep the card within the work area, then convert to window coords (subtract bleed).
-  cardX = Math.min(Math.max(cardX, work.x + 4), work.x + work.width - cardW - 4);
-  cardY = Math.min(Math.max(cardY, work.y + 4), work.y + work.height - cardH - 4);
-  return { x: Math.round(cardX - pad), y: Math.round(cardY - pad), width: windowW, height: windowH };
-}
-
-function ensureTrayMenuWin() {
-  if (trayMenuWin && !trayMenuWin.isDestroyed()) return trayMenuWin;
-  trayMenuWin = new BrowserWindow({
-    width: TRAY_MENU_WIDTH + 2 * TRAY_MENU_SHADOW_PAD,
-    height: TRAY_MENU_EST_HEIGHT,
-    show: false,
-    frame: false,
-    transparent: true,
-    hasShadow: false,
-    resizable: false,
-    minimizable: false,
-    maximizable: false,
-    fullscreenable: false,
-    skipTaskbar: true,
-    alwaysOnTop: true,
-    focusable: true,
-    backgroundColor: '#00000000',
-    webPreferences: {
-      preload: path.join(__dirname, 'tray-preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true
-    }
-  });
-  trayMenuWin.setAlwaysOnTop(true, 'pop-up-menu');
-  trayMenuWin.loadFile(path.join(__dirname, 'tray-menu.html'));
-  trayMenuWin.on('blur', () => {
-    if (trayMenuHideTimer) return;
-    // Keep the window alive while its first state is being painted. Showing
-    // it before that point produces a blank-frame flash and a false blur.
-    if (trayMenuPendingShow) return;
-    // Ignore the transient blur that fires when a tray right-click / re-show
-    // steals focus away and back — only hide on a genuine focus loss.
-    if (Date.now() - trayMenuLastShown < 250) return;
-    trayMenuHideTimer = setTimeout(() => {
-      trayMenuHideTimer = null;
-      hideTrayMenu();
-    }, 120);
-  });
-  trayMenuWin.on('closed', () => {
-    trayMenuPendingShow = false;
-    trayMenuWin = null;
-  });
-  trayMenuWin.webContents.once('did-finish-load', () => {
-    if (!trayMenuWin || trayMenuWin.isDestroyed()) return;
-    trayMenuWin.webContents.send('tray-menu-state', buildTrayMenuState(trayMenuShowSeq, true));
-  });
-  return trayMenuWin;
-}
-
-function showTrayMenu(eventBounds) {
-  if (!tray) return;
-  trayMenuShowSeq += 1;
-  trayMenuPendingShow = true;
-  // Prefer the tray-icon rectangle Electron hands us on right-click; fall back
-  // to tray.getBounds() and finally the cursor. All are DIP in Electron 35, so
-  // geometry stays in a single coordinate space — no per-monitor DPI flip.
-  let b = (eventBounds && typeof eventBounds.x === 'number' && (eventBounds.width || eventBounds.height))
-    ? eventBounds : null;
-  if (!b) { try { b = tray.getBounds(); } catch (_) { b = null; } }
-  if (!b || !b.width && !b.height) {
-    let p = null; try { p = screen.getCursorScreenPoint(); } catch (_) { p = null; }
-    b = p ? { x: p.x, y: p.y, width: 0, height: 0 } : { x: 0, y: 0, width: 0, height: 0 };
-  }
-  trayMenuAnchor = b;
-  if (trayMenuHideTimer) { clearTimeout(trayMenuHideTimer); trayMenuHideTimer = null; }
-  const w = ensureTrayMenuWin();
-  if (!w || w.isDestroyed()) {
-    trayMenuPendingShow = false;
+  if (action === 'quit') {
+    isQuitting = true;
+    app.quit();
     return;
   }
-  const wasVisible = w.isVisible();
-  if (!wasVisible) {
-    const geo = trayMenuGeometry(trayMenuAnchor,
-      TRAY_MENU_WIDTH + 2 * TRAY_MENU_SHADOW_PAD, TRAY_MENU_EST_HEIGHT);
-    w.setBounds(geo);
-    // Keep the window hidden until the renderer has synchronously painted and
-    // measured the current view. Reusing the previous bounds here would expose
-    // the old view for one frame and then visibly move when its real height
-    // arrived from `tray-menu-ready`.
-  } else {
-    // A second tray invocation can arrive while the popup is still visible
-    // (the blur timer has not fired yet). Updating it in place avoids the
-    // hide/show/focus cycle that produces the characteristic blink on reopen.
-    trayMenuPendingShow = false;
+  if (action === 'hide') {
+    hideToTray();
+    return;
   }
-  if (!w.webContents.isLoading()) {
-    w.webContents.send('tray-menu-state', buildTrayMenuState(trayMenuShowSeq, true));
+  if (action === 'show') {
+    showFromTray();
+    return;
+  }
+  if (action === 'settings') {
+    showFromTray();
+    if (win && !win.isDestroyed()) win.webContents.send('open-settings');
+    return;
+  }
+  if (action === 'about') {
+    showFromTray();
+    if (win && !win.isDestroyed()) win.webContents.send('menu-action', { action: 'show-about' });
+    return;
+  }
+  if (action === 'help-pin') {
+    showFromTray();
+    if (win && !win.isDestroyed()) win.webContents.send('menu-action', { action: 'show-tray-pin-reminder' });
+    return;
+  }
+  if (action === 'help-check-updates') {
+    showFromTray();
+    if (win && !win.isDestroyed()) win.webContents.send('menu-action', { action: 'check-updates' });
   }
 }
 
-function hideTrayMenu() {
-  if (trayMenuHideTimer) { clearTimeout(trayMenuHideTimer); trayMenuHideTimer = null; }
-  trayMenuPendingShow = false;
-  if (trayMenuWin && !trayMenuWin.isDestroyed() && trayMenuWin.isVisible()) {
-    trayMenuWin.hide();
+function onTrayContextMenuClosed() {
+  if (!trayContextMenuOpen) return;
+  trayContextMenuOpen = false;
+  if (trayContextMenuCloseFallback) {
+    clearTimeout(trayContextMenuCloseFallback);
+    trayContextMenuCloseFallback = null;
   }
+
+  // Windows can emit menu-will-close before the item click. Give the click
+  // callback a short window to populate pendingTrayAction, as CyberLauncher
+  // does for the same native menu lifecycle.
+  setTimeout(() => {
+    executePendingTrayAction();
+    if (trayContextMenuRebuildPending) {
+      trayContextMenuRebuildPending = false;
+      rebuildTrayContextMenu();
+    }
+  }, 50);
+}
+
+function buildTrayContextMenuTemplate() {
+  const lang = getUiLang();
+  const t = menuI18n[lang] || menuI18n.en;
+  const settings = loadSettings();
+  const visible = isWindowShown();
+  const shortcut = resolveToggleHotkey(settings.app && settings.app.toggleHotkey);
+  const help = buildTrayHelpModel(t);
+  const iconPath = path.join(__dirname, 'assets', 'icon.ico');
+  let icon = null;
+  try {
+    const image = nativeImage.createFromPath(iconPath);
+    if (!image.isEmpty()) icon = image.resize({ width: 16, height: 16 });
+  } catch (_) { /* native menu works without an icon */ }
+
+  return [
+    {
+      label: 'CyberViewer v' + app.getVersion(),
+      ...(icon ? { icon } : {}),
+      click: () => { pendingTrayAction = 'about'; }
+    },
+    { type: 'separator' },
+    {
+      label: visible ? t.tray_hide : t.tray_show,
+      accelerator: shortcut || undefined,
+      click: () => { pendingTrayAction = visible ? 'hide' : 'show'; }
+    },
+    {
+      label: t.tray_settings,
+      click: () => { pendingTrayAction = 'settings'; }
+    },
+    {
+      label: help.label,
+      submenu: [
+        {
+          label: help.pinLabel,
+          click: () => { pendingTrayAction = 'help-pin'; }
+        },
+        { type: 'separator' },
+        {
+          label: help.docsLabel,
+          click: () => openTrayHelpUrl('docs')
+        },
+        {
+          label: help.faqLabel,
+          click: () => openTrayHelpUrl('faq')
+        },
+        {
+          label: help.changelogLabel,
+          click: () => openTrayHelpUrl('changelog')
+        },
+        {
+          label: help.websiteLabel,
+          click: () => openTrayHelpUrl('website')
+        },
+        {
+          label: help.donateLabel,
+          click: () => openTrayHelpUrl('donate')
+        },
+        { type: 'separator' },
+        {
+          label: help.aboutLabel,
+          click: () => { pendingTrayAction = 'about'; }
+        },
+        {
+          label: help.updatesLabel,
+          click: () => { pendingTrayAction = 'help-check-updates'; }
+        }
+      ]
+    },
+    {
+      label: t.tray_about || t.about,
+      click: () => { pendingTrayAction = 'about'; }
+    },
+    { type: 'separator' },
+    {
+      label: t.tray_exit,
+      click: () => { pendingTrayAction = 'quit'; }
+    }
+  ];
+}
+
+function rebuildTrayContextMenu() {
+  if (!tray) return;
+  if (trayContextMenuOpen) {
+    trayContextMenuRebuildPending = true;
+    return;
+  }
+
+  trayContextMenuRebuildPending = false;
+  const menu = Menu.buildFromTemplate(buildTrayContextMenuTemplate());
+  menu.on('menu-will-show', () => {
+    trayContextMenuOpen = true;
+    pendingTrayAction = null;
+    if (trayContextMenuCloseFallback) clearTimeout(trayContextMenuCloseFallback);
+    trayContextMenuCloseFallback = setTimeout(() => {
+      if (trayContextMenuOpen) onTrayContextMenuClosed();
+    }, 15000);
+  });
+  menu.on('menu-will-close', onTrayContextMenuClosed);
+  tray.setContextMenu(menu);
 }
 
 function updateTrayMenu() {
   if (!tray) return;
   tray.setToolTip('CyberViewer v' + app.getVersion());
-  if (trayMenuWin && !trayMenuWin.isDestroyed() && !trayMenuWin.webContents.isLoading()) {
-    trayMenuWin.webContents.send('tray-menu-state', buildTrayMenuState());
-  }
+  rebuildTrayContextMenu();
 }
 
 function createTray() {
   if (tray) return;
   tray = new Tray(path.join(__dirname, 'assets', 'icon.ico'));
   tray.setToolTip('CyberViewer v' + app.getVersion());
+  rebuildTrayContextMenu();
   tray.on('click', () => {
     if (process.platform === 'win32') {
       const clickSeq = trayRightClickSeq;
@@ -807,25 +783,20 @@ function createTray() {
         // Ignore both event orderings so opening the context menu cannot also
         // toggle the main window underneath it.
         if (trayRightClickSeq !== clickSeq || Date.now() - lastTrayRightClickAt < 400) return;
-        if (trayMenuPendingShow || (trayMenuWin && !trayMenuWin.isDestroyed() && trayMenuWin.isVisible())) {
-          hideTrayMenu();
-          return;
-        }
+        if (trayContextMenuOpen) return;
         if (!win || win.isDestroyed()) return;
         if (isWindowShown()) hideToTray();
         else showFromTray();
       }, 120);
       return;
     }
-    hideTrayMenu();
     if (!win || win.isDestroyed()) return;
     if (isWindowShown()) hideToTray();
     else showFromTray();
   });
-  tray.on('right-click', (_event, bounds) => {
+  tray.on('right-click', (_event, _bounds) => {
     trayRightClickSeq += 1;
     lastTrayRightClickAt = Date.now();
-    showTrayMenu(bounds);
   });
 }
 
@@ -855,82 +826,6 @@ function applyToggleHotkey(accelerator) {
 app.on('will-quit', () => {
   try { globalShortcut.unregisterAll(); } catch (_) { /* nothing registered */ }
 });
-
-ipcMain.on('tray-menu-action', (_event, action) => {
-  hideTrayMenu();
-  switch (action) {
-    case 'toggle':
-      if (isWindowShown()) hideToTray();
-      else showFromTray();
-      break;
-    case 'settings':
-      showFromTray();
-      if (win && !win.isDestroyed()) win.webContents.send('open-settings');
-      break;
-    case 'about':
-      showFromTray();
-      if (win && !win.isDestroyed()) win.webContents.send('menu-action', { action: 'show-about' });
-      break;
-    case 'help-pin':
-      showFromTray();
-      if (win && !win.isDestroyed()) win.webContents.send('menu-action', { action: 'show-tray-pin-reminder' });
-      break;
-    case 'help-docs':
-      openTrayHelpUrl('docs');
-      break;
-    case 'help-faq':
-      openTrayHelpUrl('faq');
-      break;
-    case 'help-changelog':
-      openTrayHelpUrl('changelog');
-      break;
-    case 'help-website':
-      openTrayHelpUrl('website');
-      break;
-    case 'help-donate':
-      openTrayHelpUrl('donate');
-      break;
-    case 'help-about':
-      showFromTray();
-      if (win && !win.isDestroyed()) win.webContents.send('menu-action', { action: 'show-about' });
-      break;
-    case 'help-check-updates':
-      showFromTray();
-      if (win && !win.isDestroyed()) win.webContents.send('menu-action', { action: 'check-updates' });
-      break;
-    case 'quit':
-      isQuitting = true;
-      app.quit();
-      break;
-    default:
-      break;
-  }
-});
-
-ipcMain.on('tray-menu-ready', (_event, rect) => {
-  if (!trayMenuWin || trayMenuWin.isDestroyed()) return;
-  if (!rect || !rect.width || !rect.height) return;
-  // A delayed measurement from the previous opening must never reposition the
-  // current popup. Renderer layout callbacks can arrive after a fast close and
-  // re-open, so tie every measurement to the show cycle that produced it.
-  if (rect.showSeq !== trayMenuShowSeq) return;
-  // Renderer measures in CSS px, which on a transparent DIP window equals DIP.
-  const geo = trayMenuGeometry(trayMenuAnchor, Math.round(rect.width), Math.round(rect.height));
-  const cur = trayMenuWin.getBounds();
-  if (Math.abs(cur.width - geo.width) > 1 ||
-      Math.abs(cur.height - geo.height) > 1 ||
-      Math.abs(cur.x - geo.x) > 1 ||
-      Math.abs(cur.y - geo.y) > 1) {
-    trayMenuWin.setBounds(geo);
-  }
-  if (trayMenuPendingShow) {
-    trayMenuPendingShow = false;
-    trayMenuLastShown = Date.now();
-    if (!trayMenuWin.isVisible()) trayMenuWin.show();
-  }
-});
-
-ipcMain.on('tray-menu-hide', () => hideTrayMenu());
 
 ipcMain.handle('open-taskbar-settings', async () => {
   try {
@@ -1798,11 +1693,17 @@ ipcMain.on('save-settings', (event, newSettings) => {
   if (newSettings.closeToTray && trayAllowed && !tray) {
     createTray();
   } else if (!newSettings.closeToTray && tray) {
-    hideTrayMenu();
-    if (trayMenuWin && !trayMenuWin.isDestroyed()) {
-      trayMenuWin.destroy();
-      trayMenuWin = null;
+    if (trayClickTimer) {
+      clearTimeout(trayClickTimer);
+      trayClickTimer = null;
     }
+    if (trayContextMenuCloseFallback) {
+      clearTimeout(trayContextMenuCloseFallback);
+      trayContextMenuCloseFallback = null;
+    }
+    trayContextMenuOpen = false;
+    trayContextMenuRebuildPending = false;
+    pendingTrayAction = null;
     tray.destroy();
     tray = null;
   } else if (tray) {
