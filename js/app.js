@@ -141,6 +141,8 @@ const RECENT_CTX_MAX = 5;
 
 // UI strings: i18n/ui.js → window.CV_I18N (source: i18n/ui.json)
 const I18N = (typeof window !== 'undefined' && window.CV_I18N) ? window.CV_I18N : { en: {}, es: {} };
+const TRAY_PIN_REMINDER_KEY = 'cyberviewer_tray_pin_reminder_dismissed';
+let pendingTrayPinReminder = false;
 // ── MENU ICONS ──
 // Maps i18n keys → icon name. Shared by the static burger menu
 // (decorated from each label's data-i18n) and the dynamic context menus
@@ -187,6 +189,7 @@ const MENU_ICONS = {
   'link': '<path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/>',
   'info': '<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/>',
   'help-circle': '<circle cx="12" cy="12" r="9"/><path d="M9.2 9a3 3 0 0 1 5.6 1c0 2-3 2.5-3 4"/><path d="M12 18h.01"/>',
+  'pin': '<path d="m9 4 6 6"/><path d="m7 7 10 10"/><path d="m5 19 4-4"/><path d="m15 9 4-4"/><path d="M8 16 4 20"/>',
   'trash': '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
   'quit': '<path d="M18.4 6.6a9 9 0 1 1-12.8 0"/><path d="M12 3v9"/>',
   'x': '<path d="M18 6L6 18M6 6l12 12"/>',
@@ -360,13 +363,11 @@ function decorateMenuIcons(root) {
     if (svg) host.insertBefore(svg, host.querySelector(':scope > .menu-check') || lbl);
   });
 }
-// Decorate modal headers (.modal-title) with leading SVG icons so each modal
-// header matches its counterpart menu entry. Reuses the shared MENU_ICONS
-// catalog (single source of truth): the config gear is the exact same SVG as
-// the menu Configuracion gear, and Properties/Resize/Adjust get their
-// respective icons. Idempotent (innerHTML reset on each call).
+// Decorate modal icon slots with SVG icons so modal surfaces share the same
+// visual language as the menus. Reuses the shared MENU_ICONS catalog (single
+// source of truth). Idempotent (innerHTML reset on each call).
 function decorateModalHeaderIcons() {
-  document.querySelectorAll('.modal-header-icon[data-modal-icon]').forEach(slot => {
+  document.querySelectorAll('[data-modal-icon]').forEach(slot => {
     const html = iconHtml(slot.dataset.modalIcon);
     if (html) slot.innerHTML = html;
   });
@@ -1898,6 +1899,15 @@ function executeAction(data) {
       break;
     case 'show-about':
       btnAbout.click();
+      break;
+    case 'show-tray-pin-reminder':
+      openTrayPinReminder();
+      break;
+    case 'check-updates':
+      btnAbout.click();
+      setTimeout(() => {
+        if (typeof window.checkUpdatesGlobal === 'function') window.checkUpdatesGlobal(true);
+      }, 80);
       break;
     case 'fit-to-window': {
       const im = state.images[state.current];
@@ -4943,6 +4953,7 @@ document.addEventListener('keydown', e => {
     closeModal('modal-properties');
     closeModal('modal-print-export');
     closeModal('modal-cyber-confirm');
+    closeModal('modal-tray-pin');
     const aboutOverlay = $('about-overlay');
     if (aboutOverlay) aboutOverlay.classList.remove('active');
     e.preventDefault();
@@ -4985,6 +4996,12 @@ document.addEventListener('keydown', e => {
     }
     if ($('modal-properties').classList.contains('active')) {
       const btn = $('props-close-btn');
+      if (btn) btn.click();
+      e.preventDefault();
+      return;
+    }
+    if ($('modal-tray-pin').classList.contains('active')) {
+      const btn = $('btn-tray-pin-settings');
       if (btn) btn.click();
       e.preventDefault();
       return;
@@ -5870,6 +5887,69 @@ function watchDisplayScale() {
 watchDisplayScale();
 
 // ── MODAL HELPERS ──
+function isTrayPinReminderDismissed() {
+  try {
+    return window.localStorage.getItem(TRAY_PIN_REMINDER_KEY) === 'true';
+  } catch (_) {
+    return false;
+  }
+}
+
+function rememberTrayPinReminder() {
+  try {
+    window.localStorage.setItem(TRAY_PIN_REMINDER_KEY, 'true');
+  } catch (_) {
+    // localStorage may be unavailable in restricted or private contexts.
+  }
+}
+
+function openTrayPinReminder() {
+  const checkbox = $('cfg-tray-pin-dont-show');
+  if (checkbox) checkbox.checked = true;
+  openModal('modal-tray-pin');
+}
+
+function dismissTrayPinReminder() {
+  const checkbox = $('cfg-tray-pin-dont-show');
+  if (checkbox && checkbox.checked) rememberTrayPinReminder();
+  closeModal('modal-tray-pin');
+}
+
+async function openTrayPinSettings() {
+  const checkbox = $('cfg-tray-pin-dont-show');
+  if (checkbox && checkbox.checked) rememberTrayPinReminder();
+  closeModal('modal-tray-pin');
+
+  if (!isElectron || !window.electronAPI || typeof window.electronAPI.openTaskbarSettings !== 'function') {
+    return;
+  }
+
+  try {
+    const result = await window.electronAPI.openTaskbarSettings();
+    if (result && result.success === false) {
+      const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+      const t = I18N[lang] || I18N.en || {};
+      showToast(t.tray_pin_open_error || 'Could not open Windows tray icon settings.', 'error');
+    }
+  } catch (error) {
+    console.error('Failed to open Windows tray icon settings:', error);
+    const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+    const t = I18N[lang] || I18N.en || {};
+    showToast(t.tray_pin_open_error || 'Could not open Windows tray icon settings.', 'error');
+  }
+}
+
+function maybeShowPendingTrayPinReminder() {
+  if (!pendingTrayPinReminder) return;
+  if (isTrayPinReminderDismissed()) {
+    pendingTrayPinReminder = false;
+    return;
+  }
+  if ($('modal-config') && $('modal-config').classList.contains('active')) return;
+  pendingTrayPinReminder = false;
+  openTrayPinReminder();
+}
+
 function openModal(id) {
   const el = $(id);
   if (!el) return;
@@ -5887,6 +5967,7 @@ function closeModal(id) {
   el.classList.remove('active');
   el.removeAttribute('aria-modal');
   if (id === 'modal-config') clearConfigAccentPreview();
+  if (id === 'modal-config') setTimeout(maybeShowPendingTrayPinReminder, 0);
 }
 window.closeModal = closeModal;
 
@@ -5921,13 +6002,18 @@ document.querySelectorAll('[data-close-modal]').forEach(btn => {
     closeModal(btn.getAttribute('data-close-modal'));
   });
 });
-['modal-resize', 'modal-adjust', 'modal-config', 'modal-properties', 'modal-cyber-confirm', 'modal-print-export'].forEach(id => {
+['modal-resize', 'modal-adjust', 'modal-config', 'modal-properties', 'modal-cyber-confirm', 'modal-print-export', 'modal-tray-pin'].forEach(id => {
   const overlay = $(id);
   if (!overlay) return;
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) closeModal(id);
   });
 });
+
+const trayPinDismissBtn = $('btn-tray-pin-dismiss');
+if (trayPinDismissBtn) trayPinDismissBtn.addEventListener('click', dismissTrayPinReminder);
+const trayPinSettingsBtn = $('btn-tray-pin-settings');
+if (trayPinSettingsBtn) trayPinSettingsBtn.addEventListener('click', () => { void openTrayPinSettings(); });
 
 // ── PRINT / EXPORT PDF (Chromium engine, no native deps) ──
 function bakePrintCanvas() {
@@ -6353,6 +6439,8 @@ function saveConfigSettings({ toast = false, silent = false } = {}) {
   if (!state.settings || !state.settings.app) return;
   const newSettings = collectConfigSettings();
   const contextMenuEnabled = !!newSettings.contextMenuEnabled;
+  const previousCloseToTray = state.settings.app.closeToTray === true;
+  const nextCloseToTray = newSettings.closeToTray === true;
 
   if (isElectron) {
     const lang = newSettings.language || 'en';
@@ -6367,9 +6455,13 @@ function saveConfigSettings({ toast = false, silent = false } = {}) {
   }
 
   state.settings.app = Object.assign({}, state.settings.app, newSettings);
+  if (!previousCloseToTray && nextCloseToTray && !isTrayPinReminderDismissed()) {
+    pendingTrayPinReminder = true;
+  }
   applySettings();
   if (isElectron) window.electronAPI.saveSettings(state.settings.app);
   if (!silent) setConfigAutosaveState(true);
+  if (pendingTrayPinReminder) setTimeout(maybeShowPendingTrayPinReminder, 0);
 
   if (toast) {
     const lang = newSettings.language || 'en';
@@ -7566,6 +7658,7 @@ $('btn-config').addEventListener('click', openConfig);
     closeModal('modal-adjust');
     closeModal('modal-properties');
     closeModal('modal-cyber-confirm');
+    closeModal('modal-tray-pin');
     const aboutOverlay = $('about-overlay');
     if (aboutOverlay) aboutOverlay.classList.remove('active');
   }

@@ -3208,6 +3208,129 @@
     box-shadow: 0 0 12px rgba(255, 45, 120, 0.4) !important;
   }
 
+  /* ── TRAY ICON VISIBILITY REMINDER ── */
+  .tray-pin-modal-box {
+    max-width: 480px;
+    border-color: rgba(var(--cyber-accent-rgb), 0.45);
+    box-shadow: 0 0 34px rgba(0, 0, 0, 0.65), 0 0 18px rgba(var(--cyber-accent-rgb), 0.16);
+  }
+  .tray-pin-modal-box .modal-title {
+    min-width: 0;
+  }
+  .tray-pin-modal-box .modal-title > span:last-child {
+    line-height: 1.25;
+  }
+  .tray-pin-modal-body {
+    padding: 22px 24px 18px;
+  }
+  .tray-pin-hero {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .tray-pin-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 42px;
+    width: 42px;
+    height: 42px;
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.38);
+    border-radius: 8px;
+    color: var(--cyber-accent);
+    background: rgba(var(--cyber-accent-rgb), 0.08);
+    box-shadow: 0 0 14px rgba(var(--cyber-accent-rgb), 0.14);
+  }
+  .tray-pin-icon svg {
+    width: 23px;
+    height: 23px;
+    display: block;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .tray-pin-hero p {
+    margin: 1px 0 0;
+    color: var(--cyber-text);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  .tray-pin-steps {
+    margin: 20px 0 18px;
+    padding: 14px 18px 14px 34px;
+    border: 1px solid var(--cyber-border);
+    background: rgba(0, 0, 0, 0.14);
+    color: var(--cyber-muted);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+  .tray-pin-steps li + li {
+    margin-top: 8px;
+  }
+  .tray-pin-steps li::marker {
+    color: var(--cyber-accent);
+    font-weight: 700;
+  }
+  .tray-pin-check {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    max-width: 100%;
+    color: var(--cyber-muted);
+    font-size: 11px;
+    line-height: 1.35;
+    cursor: pointer;
+    user-select: none;
+  }
+  .tray-pin-check input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .tray-pin-checkmark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 15px;
+    width: 15px;
+    height: 15px;
+    border: 1px solid var(--cyber-border);
+    border-radius: 3px;
+    background: var(--cyber-black);
+    color: var(--cyber-black);
+    transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+  }
+  .tray-pin-checkmark::after {
+    content: '';
+    width: 7px;
+    height: 4px;
+    border-left: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(-45deg) translate(1px, -1px);
+    opacity: 0;
+    transition: opacity 120ms ease;
+  }
+  .tray-pin-check input:checked + .tray-pin-checkmark {
+    border-color: var(--cyber-accent);
+    background: var(--cyber-accent);
+    box-shadow: 0 0 8px rgba(var(--cyber-accent-rgb), 0.35);
+  }
+  .tray-pin-check input:checked + .tray-pin-checkmark::after {
+    opacity: 1;
+  }
+  .tray-pin-check input:focus-visible + .tray-pin-checkmark {
+    outline: 1px solid var(--cyber-accent);
+    outline-offset: 2px;
+  }
+  .tray-pin-modal-footer {
+    flex-wrap: wrap;
+  }
+
   /* ── PROPERTIES PANEL (Resize/Adjust family: data left, preview right) ── */
   .props-modal-box {
     max-width: 780px !important;

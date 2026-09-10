@@ -9,7 +9,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const { pathToFileURL } = require('url');
 const { Readable } = require('stream');
-const { execFile } = require('child_process');
+const { execFile, spawn } = require('child_process');
 
 const {
   cleanFsPath, toMediaUrl, createPathAllowlist, IMAGE_EXTS, mimeForPath,
@@ -19,6 +19,9 @@ const { evictThumbCache } = require('./lib/thumb-cache');
 const { clampWindowBounds, MIN_W, MIN_H } = require('./lib/window-bounds');
 const { initUpdater, setAutoCheckEnabled } = require('./lib/updater');
 const { buildBackup, parseBackup } = require('./lib/settings-backup');
+const {
+  TRAY_HELP_URLS, buildTrayHelpModel, taskbarSettingsLaunch
+} = require('./lib/tray-help');
 const CVMedia = require('./js/media-helpers');
 
 protocol.registerSchemesAsPrivileged([
@@ -540,9 +543,9 @@ function isWindowShown() {
 // in DIP — we stay in DIP throughout (no scaleFactor scaling).
 const TRAY_MENU_WIDTH = 268;
 const TRAY_MENU_SHADOW_PAD = 26;
-// Estimated card-bearing window height (DIP) for the first paint; corrected by
-// `tray-menu-ready` once the renderer measures the real size. card(~220) + bleed(52).
-const TRAY_MENU_EST_HEIGHT = 272;
+// Estimated card-bearing window height (DIP) for the first paint; the Help view
+// is the tallest state and is corrected by `tray-menu-ready` after measurement.
+const TRAY_MENU_EST_HEIGHT = 480;
 let trayMenuWin = null;
 let trayMenuAnchor = null;
 let trayMenuHideTimer = null;
@@ -560,9 +563,60 @@ function buildTrayMenuState() {
     showLabel: visible ? (t.tray_hide || t.tray_show) : t.tray_show,
     settingsLabel: t.tray_settings,
     aboutLabel: t.tray_about || t.about,
+    help: buildTrayHelpModel(t),
     exitLabel: t.tray_exit,
     shortcut: resolveToggleHotkey(settings.app && settings.app.toggleHotkey)
   };
+}
+
+function resolveOpenTaskbarSettingsExe() {
+  const candidates = [
+    // Packaged extraResources (outside asar — required to spawn).
+    path.join(process.resourcesPath || '', 'open-taskbar-settings.exe'),
+    // Development copy kept beside the helper source.
+    path.join(__dirname, 'electron', 'open-taskbar-settings.exe'),
+    path.join(app.getAppPath(), 'electron', 'open-taskbar-settings.exe'),
+    path.join(__dirname, 'open-taskbar-settings.exe')
+  ];
+  return candidates.find((candidate) => {
+    try {
+      return fs.existsSync(candidate);
+    } catch (_) {
+      return false;
+    }
+  }) || null;
+}
+
+async function openTaskbarIconSettings() {
+  const helperPath = resolveOpenTaskbarSettingsExe();
+  const launch = taskbarSettingsLaunch(process.platform, !!helperPath);
+  if (process.platform === 'win32') {
+    if (launch.method === 'native') {
+      try {
+        const child = spawn(helperPath, [], {
+          detached: true,
+          stdio: 'ignore',
+          windowsHide: true
+        });
+        child.once('error', (error) => {
+          console.warn('Taskbar settings helper failed; opening Windows Settings:', error.message);
+          void shell.openExternal(launch.uri);
+        });
+        child.unref();
+        return { success: true, method: 'native' };
+      } catch (error) {
+        console.warn('Taskbar settings helper unavailable; using Windows Settings:', error.message);
+      }
+    }
+  }
+
+  await shell.openExternal(launch.uri);
+  return { success: true, method: 'uri' };
+}
+
+function openTrayHelpUrl(key) {
+  const url = TRAY_HELP_URLS[key];
+  if (url) void shell.openExternal(url);
 }
 
 // Position + size the tray popup (DIP) so the visible card sits just outside the
@@ -768,6 +822,33 @@ ipcMain.on('tray-menu-action', (_event, action) => {
       showFromTray();
       if (win && !win.isDestroyed()) win.webContents.send('menu-action', { action: 'show-about' });
       break;
+    case 'help-pin':
+      showFromTray();
+      if (win && !win.isDestroyed()) win.webContents.send('menu-action', { action: 'show-tray-pin-reminder' });
+      break;
+    case 'help-docs':
+      openTrayHelpUrl('docs');
+      break;
+    case 'help-faq':
+      openTrayHelpUrl('faq');
+      break;
+    case 'help-changelog':
+      openTrayHelpUrl('changelog');
+      break;
+    case 'help-website':
+      openTrayHelpUrl('website');
+      break;
+    case 'help-donate':
+      openTrayHelpUrl('donate');
+      break;
+    case 'help-about':
+      showFromTray();
+      if (win && !win.isDestroyed()) win.webContents.send('menu-action', { action: 'show-about' });
+      break;
+    case 'help-check-updates':
+      showFromTray();
+      if (win && !win.isDestroyed()) win.webContents.send('menu-action', { action: 'check-updates' });
+      break;
     case 'quit':
       isQuitting = true;
       app.quit();
@@ -793,6 +874,15 @@ ipcMain.on('tray-menu-ready', (_event, rect) => {
 });
 
 ipcMain.on('tray-menu-hide', () => hideTrayMenu());
+
+ipcMain.handle('open-taskbar-settings', async () => {
+  try {
+    return await openTaskbarIconSettings();
+  } catch (error) {
+    console.error('Failed to open Windows tray icon settings:', error);
+    return { success: false, error: error && error.message ? error.message : String(error) };
+  }
+});
 
 // ── IPC ──
 ipcMain.on('win-minimize', () => win.minimize());

@@ -40,6 +40,12 @@
       "i18n/**",
       "assets/**"
     ],
+    "extraResources": [
+      {
+        "from": "electron/open-taskbar-settings.exe",
+        "to": "open-taskbar-settings.exe"
+      }
+    ],
     "publish": {
       "provider": "github",
       "owner": "CyberGems",

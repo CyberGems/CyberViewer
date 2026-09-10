@@ -438,6 +438,38 @@
   </div>
 </div>
 
+<!-- MODAL: TRAY ICON VISIBILITY -->
+<div id="modal-tray-pin" class="modal-overlay" aria-labelledby="tray-pin-title">
+  <div class="modal-box tray-pin-modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="tray-pin-title">
+        <span class="modal-header-icon" data-modal-icon="pin" aria-hidden="true"></span>
+        <span data-i18n="tray_pin_title">Keep CyberViewer visible in the system tray</span>
+      </div>
+      <button class="win-btn modal-close-btn" data-close-modal="modal-tray-pin" data-i18n-title="close" title="Close">&#10005;</button>
+    </div>
+    <div class="modal-body tray-pin-modal-body">
+      <div class="tray-pin-hero">
+        <div class="tray-pin-icon" aria-hidden="true"><span data-modal-icon="pin"></span></div>
+        <p data-i18n="tray_pin_desc">Windows may place new tray icons behind the overflow menu. Use Windows Settings to choose whether CyberViewer stays visible next to the clock.</p>
+      </div>
+      <ol class="tray-pin-steps">
+        <li data-i18n="tray_pin_step_one">Open Windows Settings.</li>
+        <li data-i18n="tray_pin_step_two">Find CyberViewer under the notification area icons and enable it.</li>
+      </ol>
+      <label class="tray-pin-check">
+        <input type="checkbox" id="cfg-tray-pin-dont-show" checked>
+        <span class="tray-pin-checkmark" aria-hidden="true"></span>
+        <span data-i18n="tray_pin_dont_show">Don't show this reminder again</span>
+      </label>
+    </div>
+    <div class="modal-footer tray-pin-modal-footer">
+      <button type="button" class="top-btn btn-cancel" id="btn-tray-pin-dismiss"><span class="btn-label" data-i18n="tray_pin_got_it">Got it</span></button>
+      <button type="button" class="top-btn btn-primary" id="btn-tray-pin-settings"><span class="btn-label" data-i18n="tray_pin_open_settings">Open Windows Settings</span><svg class="btn-enter-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 10.5 L7 5.2 L4.8 9 L14.6 9 L14.6 2.5 L17.4 2.5 L17.4 9 A2.8 2.8 0 0 1 14.6 11.8 L4.8 11.8 L7 15.8 Z" fill="currentColor" stroke="none"/></svg></button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: PRINT / EXPORT PDF (Chromium engine) -->
 <div id="modal-print-export" class="modal-overlay">
   <div class="modal-box">
