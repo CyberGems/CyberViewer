@@ -78,4 +78,11 @@ describe('Configuration panel presentation', () => {
     assert.match(css, /#modal-config \.config-name\s*\{[\s\S]*?font-size:\s*15px/);
     assert.match(css, /#modal-config \.config-desc\s*\{[\s\S]*?font-size:\s*13px/);
   });
+
+  it('keeps horizontal overflow out of the panel and desktop navigation', () => {
+    assert.match(css, /#modal-config\s*\{[\s\S]*?overflow:\s*hidden;/);
+    assert.match(css, /#modal-config \.config-nav-items\s*\{[\s\S]*?overflow-x:\s*hidden;/);
+    assert.match(css, /#modal-config \.config-content\s*\{[\s\S]*?overflow-x:\s*hidden;/);
+    assert.match(css, /#modal-config \.config-info\s*\{[\s\S]*?min-width:\s*0;/);
+  });
 });
