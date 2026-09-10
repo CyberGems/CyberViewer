@@ -149,7 +149,9 @@ function renderView() {
   if (currentView === 'help') renderHelpView();
   else renderMainView();
   root.classList.add('ready');
-  requestAnimationFrame(() => requestAnimationFrame(reportReady));
+  // The hidden BrowserWindow still has a measurable layout. Reporting now
+  // lets the main process size and reveal the popup without a stale-frame jump.
+  reportReady();
 }
 
 function applyState(state) {
@@ -177,7 +179,6 @@ if (api) {
   api.onShow(() => {
     currentView = 'main';
     renderView();
-    requestAnimationFrame(() => requestAnimationFrame(reportReady));
   });
 }
 

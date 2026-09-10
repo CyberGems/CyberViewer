@@ -755,11 +755,11 @@ function showTrayMenu(eventBounds) {
   const geo = trayMenuGeometry(trayMenuAnchor,
     TRAY_MENU_WIDTH + 2 * TRAY_MENU_SHADOW_PAD, TRAY_MENU_EST_HEIGHT);
   w.setBounds(geo);
-  // The renderer keeps the card transparent until its first state is painted,
-  // so showing the window here avoids a hidden-page requestAnimationFrame
-  // deadlock without exposing a blank popup.
-  trayMenuLastShown = Date.now();
-  if (!w.isVisible()) w.show();
+  // Keep the window hidden until the renderer has synchronously painted and
+  // measured the current view. Reusing the previous bounds here would expose
+  // the old view for one frame and then visibly move when its real height
+  // arrived from `tray-menu-ready`.
+  if (w.isVisible()) w.hide();
   if (!w.webContents.isLoading()) {
     w.webContents.send('tray-menu-state', buildTrayMenuState());
     w.webContents.send('tray-menu-show');
