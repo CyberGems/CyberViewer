@@ -546,6 +546,12 @@
   }
   .logo-img {
     height: 22px;
+    filter: grayscale(1);
+    transition: filter 160ms ease;
+  }
+  .logo:hover .logo-img,
+  .logo:focus-within .logo-img {
+    filter: grayscale(0);
   }
   .logo-text {
     font-size: 14px;

@@ -660,6 +660,17 @@ function onTrayContextMenuClosed() {
   }, 50);
 }
 
+function loadTrayMenuIcon(name) {
+  const iconPath = path.join(__dirname, 'assets', 'menu-icons', name);
+  try {
+    if (!fs.existsSync(iconPath)) return null;
+    const image = nativeImage.createFromPath(iconPath);
+    return image.isEmpty() ? null : image;
+  } catch (_) {
+    return null;
+  }
+}
+
 function buildTrayContextMenuTemplate() {
   const lang = getUiLang();
   const t = menuI18n[lang] || menuI18n.en;
@@ -667,75 +678,93 @@ function buildTrayContextMenuTemplate() {
   const visible = isWindowShown();
   const shortcut = resolveToggleHotkey(settings.app && settings.app.toggleHotkey);
   const help = buildTrayHelpModel(t);
-  const iconPath = path.join(__dirname, 'assets', 'icon.ico');
-  let icon = null;
-  try {
-    const image = nativeImage.createFromPath(iconPath);
-    if (!image.isEmpty()) icon = image.resize({ width: 16, height: 16 });
-  } catch (_) { /* native menu works without an icon */ }
+  const iconBrand = loadTrayMenuIcon('brand.png');
+  const iconShow = loadTrayMenuIcon('show-hide.png');
+  const iconSettings = loadTrayMenuIcon('settings.png');
+  const iconHelp = loadTrayMenuIcon('help.png');
+  const iconFaq = loadTrayMenuIcon('faq.png');
+  const iconChangelog = loadTrayMenuIcon('changelog.png');
+  const iconHome = loadTrayMenuIcon('homepage.png');
+  const iconDonate = loadTrayMenuIcon('donate.png');
+  const iconAbout = loadTrayMenuIcon('about.png');
+  const iconUpdate = loadTrayMenuIcon('update.png');
+  const iconQuit = loadTrayMenuIcon('quit.png');
 
   return [
     {
       label: 'CyberViewer v' + app.getVersion(),
-      ...(icon ? { icon } : {}),
+      ...(iconBrand ? { icon: iconBrand } : {}),
       click: () => { pendingTrayAction = 'about'; }
     },
     { type: 'separator' },
     {
       label: visible ? t.tray_hide : t.tray_show,
+      ...(iconShow ? { icon: iconShow } : {}),
       accelerator: shortcut || undefined,
       click: () => { pendingTrayAction = visible ? 'hide' : 'show'; }
     },
     {
       label: t.tray_settings,
+      ...(iconSettings ? { icon: iconSettings } : {}),
       click: () => { pendingTrayAction = 'settings'; }
     },
     {
       label: help.label,
+      ...(iconHelp ? { icon: iconHelp } : {}),
       submenu: [
         {
           label: help.pinLabel,
+          ...(iconSettings ? { icon: iconSettings } : {}),
           click: () => { pendingTrayAction = 'help-pin'; }
         },
         { type: 'separator' },
         {
           label: help.docsLabel,
+          ...(iconHelp ? { icon: iconHelp } : {}),
           click: () => openTrayHelpUrl('docs')
         },
         {
           label: help.faqLabel,
+          ...(iconFaq ? { icon: iconFaq } : {}),
           click: () => openTrayHelpUrl('faq')
         },
         {
           label: help.changelogLabel,
+          ...(iconChangelog ? { icon: iconChangelog } : {}),
           click: () => openTrayHelpUrl('changelog')
         },
         {
           label: help.websiteLabel,
+          ...(iconHome ? { icon: iconHome } : {}),
           click: () => openTrayHelpUrl('website')
         },
         {
           label: help.donateLabel,
+          ...(iconDonate ? { icon: iconDonate } : {}),
           click: () => openTrayHelpUrl('donate')
         },
         { type: 'separator' },
         {
           label: help.aboutLabel,
+          ...(iconAbout ? { icon: iconAbout } : {}),
           click: () => { pendingTrayAction = 'about'; }
         },
         {
           label: help.updatesLabel,
+          ...(iconUpdate ? { icon: iconUpdate } : {}),
           click: () => { pendingTrayAction = 'help-check-updates'; }
         }
       ]
     },
     {
       label: t.tray_about || t.about,
+      ...(iconAbout ? { icon: iconAbout } : {}),
       click: () => { pendingTrayAction = 'about'; }
     },
     { type: 'separator' },
     {
       label: t.tray_exit,
+      ...(iconQuit ? { icon: iconQuit } : {}),
       click: () => { pendingTrayAction = 'quit'; }
     }
   ];
