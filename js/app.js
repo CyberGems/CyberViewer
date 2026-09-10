@@ -1167,7 +1167,10 @@ function hideInterfaceMenus() {
   hideCustomContextMenu();
 }
 
-document.addEventListener('visibilitychange', () => { if (document.hidden) hideInterfaceMenus(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) hideInterfaceMenus();
+  else maybeShowPendingTrayPinReminder();
+});
 window.addEventListener('blur', hideInterfaceMenus);
 window.addEventListener('cv-window-blur', hideInterfaceMenus);
 
@@ -5963,21 +5966,30 @@ function rememberTrayPinReminder() {
   }
 }
 
-function openTrayPinReminder() {
+function isAutomaticTrayPinReminder() {
+  const modal = $('modal-tray-pin');
+  return !!(modal && modal.dataset.trayPinMode === 'automatic');
+}
+
+function openTrayPinReminder({ automatic = false } = {}) {
+  const modal = $('modal-tray-pin');
   const checkbox = $('cfg-tray-pin-dont-show');
-  if (checkbox) checkbox.checked = true;
+  const checkboxRow = $('tray-pin-check-row');
+  if (modal) modal.dataset.trayPinMode = automatic ? 'automatic' : 'manual';
+  if (checkboxRow) checkboxRow.hidden = !automatic;
+  if (checkbox) checkbox.checked = automatic;
   openModal('modal-tray-pin');
 }
 
 function dismissTrayPinReminder() {
   const checkbox = $('cfg-tray-pin-dont-show');
-  if (checkbox && checkbox.checked) rememberTrayPinReminder();
+  if (isAutomaticTrayPinReminder() && checkbox && checkbox.checked) rememberTrayPinReminder();
   closeModal('modal-tray-pin');
 }
 
 async function openTrayPinSettings() {
   const checkbox = $('cfg-tray-pin-dont-show');
-  if (checkbox && checkbox.checked) rememberTrayPinReminder();
+  if (isAutomaticTrayPinReminder() && checkbox && checkbox.checked) rememberTrayPinReminder();
   closeModal('modal-tray-pin');
 
   if (!isElectron || !window.electronAPI || typeof window.electronAPI.openTaskbarSettings !== 'function') {
@@ -6001,13 +6013,24 @@ async function openTrayPinSettings() {
 
 function maybeShowPendingTrayPinReminder() {
   if (!pendingTrayPinReminder) return;
+  if (!isCloseToTrayEnabled()) {
+    pendingTrayPinReminder = false;
+    return;
+  }
   if (isTrayPinReminderDismissed()) {
     pendingTrayPinReminder = false;
     return;
   }
+  if (document.visibilityState === 'hidden') return;
   if ($('modal-config') && $('modal-config').classList.contains('active')) return;
   pendingTrayPinReminder = false;
-  openTrayPinReminder();
+  openTrayPinReminder({ automatic: true });
+}
+
+function scheduleInitialTrayPinReminder() {
+  if (!isCloseToTrayEnabled() || isTrayPinReminderDismissed()) return;
+  pendingTrayPinReminder = true;
+  setTimeout(maybeShowPendingTrayPinReminder, 0);
 }
 
 function openModal(id) {
@@ -6977,6 +7000,7 @@ if (isElectron) {
         state.settings.app.recentFolders = [];
       }
       applySettings();
+      scheduleInitialTrayPinReminder();
       // Startup update check is owned by main (electron-updater); badge + 1× toast
       if (window.electronAPI.onUpdateStatus) {
         window.electronAPI.onUpdateStatus((status) => {

@@ -546,12 +546,12 @@
   }
   .logo-img {
     height: 22px;
-    filter: grayscale(1);
-    transition: filter 160ms ease;
+    filter: none;
+    transition: filter 220ms ease;
   }
   .logo:hover .logo-img,
   .logo:focus-within .logo-img {
-    filter: grayscale(0);
+    filter: drop-shadow(0 0 5px rgba(var(--cyber-logo-glow-rgb), 0.42));
   }
   .logo-text {
     font-size: 14px;
@@ -720,8 +720,13 @@
   .win-btn:hover { color: var(--cyber-accent); background: rgba(0,212,255,0.08); }
   #win-close:hover { color: var(--cyber-accent2); background: rgba(255,45,120,0.12); }
   .win-sep { width: 1px; height: 20px; background: var(--cyber-border); margin: 0 4px; flex-shrink: 0; }
-  #btn-config { margin-right: 2px; }
-  #btn-config .win-ico { width: 15px; height: 15px; }
+  #btn-config { margin-right: 2px; font-size: 17px; }
+  .titlebar-config-glyph {
+    display: block;
+    font-family: "Segoe UI Symbol", "Arial Unicode MS", sans-serif;
+    font-size: 18px;
+    line-height: 1;
+  }
 
   /* ── MAIN MENU (☰) ── */
   .menu-wrap { position: relative; -webkit-app-region: no-drag; }
@@ -904,6 +909,9 @@
   .menu-item:hover > .menu-shortcut { color: var(--cyber-accent); opacity: 0.7; }
   .menu-item.danger:hover {
     background: rgba(var(--cyber-accent2-rgb), 0.14);
+    color: var(--cyber-accent2);
+  }
+  .menu-item[data-action="help-donate"] > .menu-ico {
     color: var(--cyber-accent2);
   }
 
@@ -1803,17 +1811,6 @@
     margin: 0;
     filter: drop-shadow(0 0 12px rgba(var(--cyber-logo-glow-rgb), 0.5));
   }
-
-  #drop-zone .drop-brand {
-    margin-top: 3px;
-    font-family: var(--font-ui);
-    font-size: 15px;
-    font-weight: 700;
-    letter-spacing: 0.2px;
-    line-height: 1.2;
-  }
-  #drop-zone .drop-brand-cyber { color: var(--cyber-text); }
-  #drop-zone .drop-brand-viewer { color: var(--cyber-accent); }
 
   .drop-title {
     font-family: var(--font-ui);
@@ -3385,6 +3382,7 @@
     cursor: pointer;
     user-select: none;
   }
+  .tray-pin-check[hidden] { display: none; }
   .tray-pin-check input {
     position: absolute;
     width: 1px;

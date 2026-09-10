@@ -39,7 +39,7 @@
     <button id="hints-close" type="button" class="hints-close tooltip-bottom" data-i18n-title="hints_close_title" aria-label="Ocultar atajos de teclado">&times;</button>
   </div>
   <button type="button" class="win-btn tooltip-bottom" id="btn-config" data-i18n-title="config" data-i18n-aria="config" title="Configuración" aria-label="Configuración">
-    <svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1l2.1-2.1M17 7l2.1-2.1"/></svg>
+    <span class="titlebar-config-glyph" aria-hidden="true">&#9881;&#xFE0E;</span>
   </button>
   <div class="menu-wrap">
     <button type="button" class="win-btn tooltip-bottom" id="btn-menu" data-i18n-title="menu" title="Menú" aria-label="Menú" aria-haspopup="true" aria-expanded="false"><svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
@@ -269,9 +269,6 @@
           <div class="drop-action-tile" aria-hidden="true">
             <img src="assets/icon.ico" class="drop-logo" alt="" width="42" height="42" draggable="false">
           </div>
-          <div class="drop-brand" aria-label="CyberViewer">
-            <span class="drop-brand-cyber">Cyber</span><span class="drop-brand-viewer">Viewer</span>
-          </div>
           <div class="drop-title" data-i18n="drop_title">Suelta una imagen para comenzar</div>
           <div class="drop-sub" data-i18n="drop_sub">Arrastra imágenes aquí<br>o haz clic para seleccionar</div>
           <div class="drop-actions">
@@ -471,7 +468,7 @@
         <li data-i18n="tray_pin_step_one">Open Windows Settings.</li>
         <li data-i18n="tray_pin_step_two">Find CyberViewer under the notification area icons and enable it.</li>
       </ol>
-      <label class="tray-pin-check">
+      <label class="tray-pin-check" id="tray-pin-check-row" data-tray-auto-only>
         <input type="checkbox" id="cfg-tray-pin-dont-show" checked>
         <span class="tray-pin-checkmark" aria-hidden="true"></span>
         <span data-i18n="tray_pin_dont_show">Don't show this reminder again</span>
