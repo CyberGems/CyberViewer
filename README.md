@@ -227,39 +227,6 @@ Portable builds cannot self-update in-app — use **Open releases page**.
 
 ---
 
-## ❓ Frequently Asked Questions
-
-### What image formats does CyberViewer support?
-
-JPG · JPEG · PNG · GIF · WEBP · BMP · TIFF · ICO
-
-### Can I set CyberViewer as my default image viewer?
-
-Yes. The NSIS installer includes an option (checked by default) to register per-user file associations. You can also enable the in-app **Context Menu** option or use Windows Settings → Apps → Default apps.
-
-### Does CyberViewer work on Windows 11?
-
-Yes. CyberViewer supports both Windows 10 and Windows 11 (x64).
-
-### What's the difference between the installer and portable version?
-
-| | Installer | Portable |
-|---|---|---|
-| File associations | ✅ (optional) | ❌ |
-| Auto-update | ✅ (electron-updater)  | ❌ (manual download) |
-| Start Menu shortcuts | ✅ | ❌ |
-| Requires installation | ✅ | ❌ |
-
-### Can I customize the appearance?
-
-Yes. Go to **Settings → Appearance** to change the accent color (Cyan, Pink, Green, Orange) and background style (Checker-dark, Checker-light, Solid). The **Interface** tab offers additional tweaks for sidebar, statusbar, tooltips, and auto-hide behavior.
-
-### How do I contribute?
-
-Pull requests are welcome! Please ensure your changes pass `npm test` and `npm run lint` before submitting.
-
----
-
 ## ❤️ Donate
 
 **CyberViewer** is one of the projects in [CyberGems](https://github.com/CyberGems#-all-apps--repositories), a personal set of daily-use tools for Windows. I've spent countless hours building and refining it for my own use, and it will continue to be maintained by me. I recently decided to share the entire suite with the world, completely free and open-source.
@@ -304,6 +271,10 @@ If you're enjoying CyberViewer, I'd be truly grateful for your support! You can 
 CyberViewer is distributed under the terms of the GNU General Public License v3.0. See [LICENSE](./LICENSE) for the full license text.
 
 Copyright (C) 2026 CyberGems
+
+## ❓ FAQ
+
+For frequently asked questions, troubleshooting guides, and detailed configuration instructions, visit the [FAQ](https://github.com/CyberGems/CyberViewer/wiki/FAQ) or the [online documentation](https://cybergems.org/docs/cyberviewer/FAQ).
 
 ---
 
