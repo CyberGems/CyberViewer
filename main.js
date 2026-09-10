@@ -553,7 +553,7 @@ let trayMenuLastShown = 0;
 let trayMenuPendingShow = false;
 let trayMenuShowSeq = 0;
 
-function buildTrayMenuState(showSeq = trayMenuShowSeq) {
+function buildTrayMenuState(showSeq = trayMenuShowSeq, resetView = false) {
   const settings = loadSettings();
   const lang = settings.app.language || 'en';
   const t = menuI18n[lang] || menuI18n.en;
@@ -568,7 +568,8 @@ function buildTrayMenuState(showSeq = trayMenuShowSeq) {
     help: buildTrayHelpModel(t),
     exitLabel: t.tray_exit,
     shortcut: resolveToggleHotkey(settings.app && settings.app.toggleHotkey),
-    showSeq
+    showSeq,
+    resetView
   };
 }
 
@@ -725,8 +726,7 @@ function ensureTrayMenuWin() {
   });
   trayMenuWin.webContents.once('did-finish-load', () => {
     if (!trayMenuWin || trayMenuWin.isDestroyed()) return;
-    trayMenuWin.webContents.send('tray-menu-state', buildTrayMenuState());
-    trayMenuWin.webContents.send('tray-menu-show');
+    trayMenuWin.webContents.send('tray-menu-state', buildTrayMenuState(trayMenuShowSeq, true));
   });
   return trayMenuWin;
 }
@@ -752,17 +752,23 @@ function showTrayMenu(eventBounds) {
     trayMenuPendingShow = false;
     return;
   }
-  const geo = trayMenuGeometry(trayMenuAnchor,
-    TRAY_MENU_WIDTH + 2 * TRAY_MENU_SHADOW_PAD, TRAY_MENU_EST_HEIGHT);
-  w.setBounds(geo);
-  // Keep the window hidden until the renderer has synchronously painted and
-  // measured the current view. Reusing the previous bounds here would expose
-  // the old view for one frame and then visibly move when its real height
-  // arrived from `tray-menu-ready`.
-  if (w.isVisible()) w.hide();
+  const wasVisible = w.isVisible();
+  if (!wasVisible) {
+    const geo = trayMenuGeometry(trayMenuAnchor,
+      TRAY_MENU_WIDTH + 2 * TRAY_MENU_SHADOW_PAD, TRAY_MENU_EST_HEIGHT);
+    w.setBounds(geo);
+    // Keep the window hidden until the renderer has synchronously painted and
+    // measured the current view. Reusing the previous bounds here would expose
+    // the old view for one frame and then visibly move when its real height
+    // arrived from `tray-menu-ready`.
+  } else {
+    // A second tray invocation can arrive while the popup is still visible
+    // (the blur timer has not fired yet). Updating it in place avoids the
+    // hide/show/focus cycle that produces the characteristic blink on reopen.
+    trayMenuPendingShow = false;
+  }
   if (!w.webContents.isLoading()) {
-    w.webContents.send('tray-menu-state', buildTrayMenuState());
-    w.webContents.send('tray-menu-show');
+    w.webContents.send('tray-menu-state', buildTrayMenuState(trayMenuShowSeq, true));
   }
 }
 
@@ -895,7 +901,6 @@ ipcMain.on('tray-menu-ready', (_event, rect) => {
     trayMenuPendingShow = false;
     trayMenuLastShown = Date.now();
     if (!trayMenuWin.isVisible()) trayMenuWin.show();
-    trayMenuWin.focus();
   }
 });
 

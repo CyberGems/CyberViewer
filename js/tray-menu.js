@@ -156,6 +156,7 @@ function renderView() {
 
 function applyState(state) {
   currentState = state;
+  if (state && state.resetView) currentView = 'main';
   renderView();
 }
 
@@ -176,10 +177,6 @@ document.addEventListener('contextmenu', (e) => e.preventDefault());
 
 if (api) {
   api.onState(applyState);
-  api.onShow(() => {
-    currentView = 'main';
-    renderView();
-  });
 }
 
 headEl.addEventListener('pointerdown', (e) => {
