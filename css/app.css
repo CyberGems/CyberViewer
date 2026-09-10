@@ -3141,37 +3141,30 @@
   }
 
   /* Wide tool modals: avoid ghost scrollbars; keep overflow visible so tooltips aren't clipped */
-  #modal-adjust .modal-body,
   #modal-resize .modal-body {
     overflow: visible;
     padding: 18px 20px;
   }
-  #modal-adjust .modal-box,
   #modal-resize .modal-box {
     max-height: min(92vh, 900px);
     /* visible: tooltips near header/edges must paint outside body without clipping */
     overflow: visible;
   }
-  #modal-adjust .modal-header,
   #modal-resize .modal-header,
-  #modal-adjust .modal-footer,
   #modal-resize .modal-footer {
     position: relative;
     z-index: 2;
     background: var(--cyber-panel);
     border-radius: inherit;
   }
-  #modal-adjust .modal-header,
   #modal-resize .modal-header {
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
   }
-  #modal-adjust .modal-footer,
   #modal-resize .modal-footer {
     border-top-left-radius: 0;
     border-top-right-radius: 0;
   }
-  #modal-adjust .modal-body,
   #modal-resize .modal-body {
     position: relative;
     z-index: 5; /* above header/footer so upward tooltips aren't covered */
@@ -4510,207 +4503,205 @@
     align-items: stretch;
   }
 
-  /* ── ADJUST MODAL (same family as resize; preview-heavy right column) ── */
-  #modal-adjust .modal-box {
-    max-width: 820px !important;
-  }
-  .adjust-grid-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
-    gap: 18px;
+  /* ── ADJUST DRAWER ──
+     The image in the viewer is the only preview. The controls slide over its
+     right edge so zoom and pan remain the same tools used outside the modal. */
+  #modal-adjust {
     align-items: stretch;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
+    justify-content: flex-end;
+    padding: 0;
+    overflow: hidden;
+    background: rgba(8, 10, 14, 0.72);
   }
-  .adjust-left-col {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    min-width: 0;
-    max-width: 100%;
+  #modal-adjust .adjust-drawer {
+    width: min(440px, 92vw);
+    max-width: 440px !important;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    border-radius: 12px 0 0 12px;
+    border-right: 0;
+    overflow: hidden;
+    box-shadow: -18px 0 42px rgba(0, 0, 0, 0.48), 0 0 26px rgba(var(--cyber-accent-rgb), 0.08);
+    animation: adjust-drawer-in 260ms cubic-bezier(.4, 0, .2, 1);
   }
-  .adjust-right-col {
-    display: flex;
-    flex-direction: column;
+  @keyframes adjust-drawer-in {
+    from { opacity: 0.4; transform: translateX(42px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  #modal-adjust .modal-header {
+    flex-shrink: 0;
+    padding: 18px 22px;
+    border-radius: 12px 0 0 0;
+  }
+  #modal-adjust .modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 20px 22px 24px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    position: relative;
+    z-index: 1;
+  }
+  #modal-adjust .modal-footer {
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    padding: 14px 22px 18px;
+    border-radius: 0 0 0 12px;
+  }
+  #modal-adjust .modal-footer .adjust-footer-copy {
+    flex: 1 1 100%;
     min-width: 0;
-    max-width: 100%;
+    order: 0;
+    padding-bottom: 2px;
+  }
+  #modal-adjust .modal-footer .modal-cancel-btn {
+    margin-left: auto;
+  }
+  #modal-adjust .adjust-preview-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 14px 16px;
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.24);
+    border-radius: 8px;
+    background: rgba(var(--cyber-accent-rgb), 0.045);
+    box-shadow: inset 0 0 18px rgba(var(--cyber-accent-rgb), 0.035);
+  }
+  #modal-adjust .adjust-preview-copy {
+    min-width: 0;
+  }
+  #modal-adjust .adjust-preview-copy .config-label {
+    margin-bottom: 3px;
+    color: var(--cyber-accent);
+  }
+  #modal-adjust .adjust-preview-copy .config-desc {
+    line-height: 1.35;
+  }
+  #modal-adjust .adjust-preview-toggle {
+    margin: 0;
+  }
+  #modal-adjust .adjust-compare-btn {
+    min-width: 46px;
+    padding: 5px 9px !important;
+    font-size: 11px !important;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  #modal-adjust .adjust-compare-btn:disabled {
+    opacity: 0.32;
+    cursor: not-allowed;
+    pointer-events: none;
   }
   #modal-adjust .adjust-section {
-    margin-bottom: 8px;
+    margin-bottom: 20px;
+    padding: 16px;
+    border: 1px solid rgba(30, 42, 58, 0.78);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.018);
   }
   #modal-adjust .adjust-section-last {
     margin-bottom: 0;
   }
   #modal-adjust .adjust-section .config-label {
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
-  .adjust-toggle-row {
-    border-bottom: none !important;
-    margin: 0 !important;
-    padding: 6px 0 !important;
-  }
-  .adjust-section-head {
+  #modal-adjust .adjust-section-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    margin-bottom: 2px;
+    margin-bottom: 4px;
   }
-  .adjust-section-head .config-label {
-    margin-bottom: 0 !important;
+  #modal-adjust .adjust-section-head .config-label {
+    margin-bottom: 0;
   }
-  .adjust-reset-btn {
+  #modal-adjust .adjust-reset-btn {
+    flex-shrink: 0;
     padding: 4px 10px !important;
     font-size: 11px !important;
     letter-spacing: 1px;
     text-transform: uppercase;
-    flex-shrink: 0;
   }
-  .adjust-slider-row {
-    margin-bottom: 10px;
+  #modal-adjust .adjust-toggle-row {
+    margin: 0 !important;
+    padding: 11px 0 !important;
+    border-bottom: 1px solid rgba(30, 42, 58, 0.4) !important;
   }
-  .adjust-slider-row:last-child {
+  #modal-adjust .adjust-toggle-row:last-child {
+    border-bottom: 0 !important;
+    padding-bottom: 4px !important;
+  }
+  #modal-adjust .adjust-slider-row {
+    margin-bottom: 17px;
+  }
+  #modal-adjust .adjust-slider-row:last-child {
     margin-bottom: 0;
   }
-  .adjust-slider-meta {
+  #modal-adjust .adjust-slider-meta {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 4px;
   }
-  .adjust-slider-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--cyber-text);
+  #modal-adjust .adjust-slider-name {
+    font-size: 14px;
+    font-weight: 650;
   }
-  .adjust-slider-val {
+  #modal-adjust .adjust-slider-val {
+    min-width: 36px;
+    color: var(--cyber-accent);
     font-family: var(--font-digits);
     font-size: 13px;
     font-weight: 700;
-    color: var(--cyber-accent);
-    min-width: 36px;
-    text-align: right;
     letter-spacing: 0.5px;
+    text-align: right;
   }
-  .adjust-range {
+  #modal-adjust .adjust-range {
     width: 100%;
+    height: 18px;
     accent-color: var(--cyber-accent);
     cursor: pointer;
   }
-  .adjust-preview-panel {
-    background: rgba(8, 10, 14, 0.95);
-    border: 1px solid rgba(var(--cyber-accent-rgb), 0.25);
-    border-radius: 6px;
-    padding: 12px;
-    box-shadow: inset 0 0 15px rgba(var(--cyber-accent-rgb), 0.05);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    height: 100%;
-    min-height: 0;
-  }
-  .adjust-preview-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-  }
-  .adjust-compare-btn {
-    padding: 3px 10px !important;
-    font-size: 11px !important;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    min-width: 44px;
-  }
-  .adjust-compare-btn.active,
-  .adjust-compare-btn[aria-pressed="true"] {
+  #modal-adjust .adjust-compare-btn.active,
+  #modal-adjust .adjust-compare-btn[aria-pressed="true"] {
     border-color: var(--cyber-accent) !important;
     color: var(--cyber-accent) !important;
     box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.35);
   }
-  .adjust-preview-stage {
-    flex: 1 1 auto;
-    min-height: 220px;
-    max-height: 300px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    border: 1px dashed rgba(var(--cyber-accent-rgb), 0.18);
-    background-color: #0a0c10;
-    background-image:
-      linear-gradient(45deg, #12161c 25%, transparent 25%),
-      linear-gradient(-45deg, #12161c 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, #12161c 75%),
-      linear-gradient(-45deg, transparent 75%, #12161c 75%);
-    background-size: 16px 16px;
-    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  #modal-adjust .modal-footer .copy-toggle-row .copy-toggle-info {
+    min-width: 0;
+  }
+  #modal-adjust .modal-footer .copy-toggle-row .config-desc {
     overflow: hidden;
-    position: relative;
-    min-width: 0;
-    max-width: 100%;
+    text-overflow: ellipsis;
   }
-  .adjust-preview-stage.is-zoomed {
-    overflow: auto;
-  }
-  .adjust-preview-stage canvas {
-    display: block;
-    margin: auto;
-    image-rendering: auto;
-    flex-shrink: 0;
-    max-width: none;
-  }
-  .adjust-preview-tools {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    min-width: 0;
-    max-width: 100%;
-    width: 100%;
-    box-sizing: border-box;
-  }
-  .adjust-zoom-btn {
-    padding: 2px 6px !important;
-    font-size: 12px !important;
-    min-width: 26px;
-    height: 26px !important;
-    line-height: 1;
-    flex-shrink: 0;
-  }
-  .adjust-zoom-fit {
-    letter-spacing: 1px;
-    font-size: 10px !important;
-    min-width: 34px;
-  }
-  .adjust-zoom-range {
-    flex: 1 1 48px;
-    min-width: 0;
-    width: 0; /* force flex shrink so tools never overflow grid */
-    accent-color: var(--cyber-accent);
-    cursor: pointer;
-  }
-  .adjust-zoom-val {
-    font-family: var(--font-digits);
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--cyber-accent);
-    min-width: 36px;
-    text-align: right;
-    letter-spacing: 0.5px;
-    flex-shrink: 0;
-  }
-  @media (max-width: 720px) {
-    #modal-adjust .modal-body {
-      overflow-y: auto;
+  @media (max-width: 600px) {
+    #modal-adjust .adjust-drawer {
+      width: 100vw;
+      max-width: none !important;
+      border-radius: 0;
     }
-    .adjust-grid-layout {
-      grid-template-columns: 1fr;
+    #modal-adjust .modal-header {
+      border-radius: 0;
     }
-    .adjust-preview-stage {
-      min-height: 180px;
-      max-height: 240px;
+    #modal-adjust .modal-footer {
+      border-radius: 0;
+    }
+    #modal-adjust .adjust-preview-toolbar {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+    #modal-adjust .adjust-preview-toolbar .adjust-compare-btn {
+      grid-column: 1 / -1;
+      justify-self: start;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #modal-adjust .adjust-drawer {
+      animation: none;
     }
   }
   .resize-left-col {

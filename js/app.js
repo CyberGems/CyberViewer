@@ -6,6 +6,11 @@ const canvasExport = CVMedia.canvasExport || function (c, p) { return { buffer: 
 const formatBytes = CVMedia.formatBytes || function () { return '-'; };
 const buildCssFilter = CVMedia.buildCssFilter || function () { return 'none'; };
 const isIdentityAdjust = CVMedia.isIdentityAdjust || function () { return true; };
+const buildAdjustPreviewFilter = CVMedia.buildAdjustPreviewFilter || function (opts) {
+  const o = opts || {};
+  if (!o.enabled || o.compareOriginal || isIdentityAdjust(o.controls)) return o.originalFilter || '';
+  return buildCssFilter(o.controls, { blurScale: 1 });
+};
 const mimeFromPath = CVMedia.mimeFromPath || function () { return ''; };
 const formatAspectRatio = CVMedia.formatAspectRatio || function () { return '-'; };
 const formatMegapixels = CVMedia.formatMegapixels || function () { return '-'; };
@@ -3593,11 +3598,11 @@ const adjustState = {
   blur: 0,
   grayscale: false,
   invert: false,
-  previewZoom: 100, // % relative to fit-in-stage
+  previewEnabled: true,
   compareOriginal: false,
   compareSticky: false,
   previewRaf: 0,
-  fitScale: 1
+  originalFilter: ''
 };
 
 function defaultAdjustControls() {
@@ -3650,15 +3655,45 @@ function syncAdjustValueLabels() {
   updateAdjustSaveEnabled();
 }
 
-function setAdjustPreviewZoom(pct) {
-  const z = Math.max(50, Math.min(300, Math.round(Number(pct) || 100)));
-  adjustState.previewZoom = z;
-  if ($('adj-preview-zoom')) $('adj-preview-zoom').value = z;
-  if ($('adj-zoom-val')) $('adj-zoom-val').textContent = z + '%';
+function restoreAdjustPreview() {
+  if (adjustState.previewRaf) {
+    cancelAnimationFrame(adjustState.previewRaf);
+    adjustState.previewRaf = 0;
+  }
+  if (mainImg) mainImg.style.filter = adjustState.originalFilter || '';
+}
+
+function applyAdjustPreview() {
+  if (!mainImg || !mainImg.naturalWidth) return;
+  mainImg.style.filter = buildAdjustPreviewFilter({
+    controls: readAdjustControls(),
+    enabled: adjustState.previewEnabled,
+    compareOriginal: adjustState.compareOriginal,
+    originalFilter: adjustState.originalFilter
+  });
+}
+
+function setAdjustPreviewEnabled(enabled) {
+  adjustState.previewEnabled = !!enabled;
+  const input = $('adj-preview-enabled');
+  if (input) input.checked = adjustState.previewEnabled;
+  const compare = $('btn-adjust-compare');
+  if (compare) {
+    const disabled = !adjustState.previewEnabled;
+    compare.disabled = disabled;
+    compare.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+    if (disabled) {
+      adjustState.compareSticky = false;
+      adjustState.compareOriginal = false;
+      compare.classList.remove('active');
+      compare.setAttribute('aria-pressed', 'false');
+    }
+  }
+  applyAdjustPreview();
 }
 
 function setAdjustCompare(on, opts) {
-  adjustState.compareOriginal = !!on;
+  adjustState.compareOriginal = !!on && adjustState.previewEnabled;
   if (opts && opts.sticky != null) adjustState.compareSticky = !!opts.sticky;
   const btn = $('btn-adjust-compare');
   if (btn) {
@@ -3667,57 +3702,15 @@ function setAdjustCompare(on, opts) {
     btn.classList.toggle('active', latched);
     btn.setAttribute('aria-pressed', latched ? 'true' : 'false');
   }
+  applyAdjustPreview();
 }
 
 function scheduleAdjustPreview() {
   if (adjustState.previewRaf) cancelAnimationFrame(adjustState.previewRaf);
   adjustState.previewRaf = requestAnimationFrame(() => {
     adjustState.previewRaf = 0;
-    updateAdjustPreview();
+    applyAdjustPreview();
   });
-}
-
-function updateAdjustPreview() {
-  const canvas = $('adjust-preview-canvas');
-  if (!canvas || !mainImg || !mainImg.naturalWidth) return;
-
-  const stage = $('adjust-preview-stage');
-  // Leave a couple px so fit never overflows stage and creates ghost scrollbars
-  const maxW = stage ? Math.max(160, stage.clientWidth - 6) : 420;
-  const maxH = stage ? Math.max(140, Math.min(300, (stage.clientHeight || 260) - 6)) : 260;
-  const iw = mainImg.naturalWidth;
-  const ih = mainImg.naturalHeight;
-  const fitScale = Math.min(1, maxW / iw, maxH / ih);
-  adjustState.fitScale = fitScale;
-  const zoomMul = (adjustState.previewZoom || 100) / 100;
-  const scale = fitScale * zoomMul;
-  const w = Math.max(1, Math.floor(iw * scale));
-  const h = Math.max(1, Math.floor(ih * scale));
-
-  if (canvas.width !== w || canvas.height !== h) {
-    canvas.width = w;
-    canvas.height = h;
-  }
-  // Display size matches backing store (avoid CSS max-height fighting zoom)
-  canvas.style.width = w + 'px';
-  canvas.style.height = h + 'px';
-
-  if (stage) {
-    stage.classList.toggle('is-zoomed', (adjustState.previewZoom || 100) > 100);
-  }
-
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, w, h);
-
-  let filters = readAdjustControls();
-  Object.assign(adjustState, filters);
-  if (adjustState.compareOriginal) {
-    filters = defaultAdjustControls();
-  }
-  // Blur in canvas px scales with draw size so preview ≈ full-res look
-  ctx.filter = buildCssFilter(filters, { blurScale: scale });
-  ctx.drawImage(mainImg, 0, 0, w, h);
-  ctx.filter = 'none';
 }
 
 function openAdjustModal() {
@@ -3738,18 +3731,18 @@ function openAdjustModal() {
       return;
     }
 
+    if ($('modal-adjust') && $('modal-adjust').classList.contains('active')) {
+      restoreAdjustPreview();
+    }
+    adjustState.originalFilter = mainImg.style.filter || '';
     writeAdjustControls(defaultAdjustControls());
-    setAdjustPreviewZoom(100);
+    setAdjustPreviewEnabled(true);
     adjustState.compareSticky = false;
     setAdjustCompare(false);
 
     if (typeof pauseSlideshow === 'function') pauseSlideshow();
     openModal('modal-adjust');
-    // Layout needs a frame before measuring the preview stage
-    requestAnimationFrame(() => {
-      updateAdjustPreview();
-      requestAnimationFrame(updateAdjustPreview);
-    });
+    applyAdjustPreview();
   } catch (e) {
     console.error('Error opening adjust modal:', e);
     showToast('ERROR: ' + e.message, 'error');
@@ -3770,28 +3763,9 @@ function onAdjustControlInput() {
   if (el) el.addEventListener('change', onAdjustControlInput);
 });
 
-if ($('adj-preview-zoom')) {
-  $('adj-preview-zoom').addEventListener('input', (e) => {
-    setAdjustPreviewZoom(e.target.value);
-    scheduleAdjustPreview();
-  });
-}
-if ($('btn-adjust-zoom-out')) {
-  $('btn-adjust-zoom-out').addEventListener('click', () => {
-    setAdjustPreviewZoom((adjustState.previewZoom || 100) - 25);
-    scheduleAdjustPreview();
-  });
-}
-if ($('btn-adjust-zoom-in')) {
-  $('btn-adjust-zoom-in').addEventListener('click', () => {
-    setAdjustPreviewZoom((adjustState.previewZoom || 100) + 25);
-    scheduleAdjustPreview();
-  });
-}
-if ($('btn-adjust-zoom-fit')) {
-  $('btn-adjust-zoom-fit').addEventListener('click', () => {
-    setAdjustPreviewZoom(100);
-    scheduleAdjustPreview();
+if ($('adj-preview-enabled')) {
+  $('adj-preview-enabled').addEventListener('change', (e) => {
+    setAdjustPreviewEnabled(e.target.checked);
   });
 }
 
@@ -3804,6 +3778,7 @@ if ($('btn-adjust-zoom-fit')) {
 
   cmp.addEventListener('pointerdown', (e) => {
     if (e.button != null && e.button !== 0) return;
+    if (cmp.disabled) return;
     holdActive = true;
     pointerDownAt = Date.now();
     try { cmp.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
@@ -3819,19 +3794,16 @@ if ($('btn-adjust-zoom-fit')) {
       adjustState.compareSticky = !adjustState.compareSticky;
     }
     setAdjustCompare(adjustState.compareSticky);
-    scheduleAdjustPreview();
   };
   cmp.addEventListener('pointerup', releaseHold);
   cmp.addEventListener('pointercancel', () => {
     holdActive = false;
     setAdjustCompare(adjustState.compareSticky);
-    scheduleAdjustPreview();
   });
   cmp.addEventListener('lostpointercapture', () => {
     if (!holdActive) return;
     holdActive = false;
     setAdjustCompare(adjustState.compareSticky);
-    scheduleAdjustPreview();
   });
 })();
 
@@ -6047,6 +6019,12 @@ function openModal(id) {
 function closeModal(id) {
   const el = $(id);
   if (!el) return;
+  if (id === 'modal-adjust' && el.classList.contains('active')) {
+    restoreAdjustPreview();
+    adjustState.originalFilter = '';
+    adjustState.compareOriginal = false;
+    adjustState.compareSticky = false;
+  }
   el.classList.remove('active');
   el.removeAttribute('aria-modal');
   if (id === 'modal-config') clearConfigAccentPreview();

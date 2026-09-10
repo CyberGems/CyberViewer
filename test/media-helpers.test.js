@@ -7,6 +7,7 @@ const {
   canvasExport,
   buildCssFilter,
   isIdentityAdjust,
+  buildAdjustPreviewFilter,
   formatBytes,
   mimeFromPath,
   formatAspectRatio,
@@ -154,6 +155,37 @@ describe('buildCssFilter / isIdentityAdjust', () => {
     const f = buildCssFilter({ brightness: 999, contrast: -999 });
     assert.match(f, /brightness\(2\)/);
     assert.match(f, /contrast\(0\)/);
+  });
+});
+
+describe('buildAdjustPreviewFilter', () => {
+  it('restores the original filter when preview is disabled or comparing', () => {
+    const original = 'sepia(0.2)';
+    assert.equal(buildAdjustPreviewFilter({
+      controls: { brightness: 50 },
+      enabled: false,
+      originalFilter: original
+    }), original);
+    assert.equal(buildAdjustPreviewFilter({
+      controls: { brightness: 50 },
+      enabled: true,
+      compareOriginal: true,
+      originalFilter: original
+    }), original);
+  });
+
+  it('uses the original filter for neutral controls and the live filter otherwise', () => {
+    const original = 'contrast(0.9)';
+    assert.equal(buildAdjustPreviewFilter({
+      controls: {},
+      enabled: true,
+      originalFilter: original
+    }), original);
+    assert.match(buildAdjustPreviewFilter({
+      controls: { brightness: 50 },
+      enabled: true,
+      originalFilter: original
+    }), /brightness\(1\.5\)/);
   });
 });
 

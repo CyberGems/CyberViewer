@@ -82,6 +82,21 @@
   }
 
   /**
+   * Resolve the temporary CSS filter used by the live adjustment preview.
+   * Keeping this decision pure makes the renderer and tests agree on what
+   * preview-off and A/B-original should show.
+   * @param {{ controls?: object, enabled?: boolean, compareOriginal?: boolean, originalFilter?: string }} opts
+   * @returns {string}
+   */
+  function buildAdjustPreviewFilter(opts) {
+    const o = opts || {};
+    const original = typeof o.originalFilter === 'string' ? o.originalFilter : '';
+    if (!o.enabled || o.compareOriginal) return original;
+    if (isIdentityAdjust(o.controls)) return original;
+    return buildCssFilter(o.controls, { blurScale: 1 });
+  }
+
+  /**
    * Export a canvas to base64 buffer + path for save-image IPC.
    * Rasterizes exotic containers (gif/webp/bmp/tiff/ico/avif) to PNG.
    * @param {HTMLCanvasElement} canvas
@@ -345,6 +360,7 @@
     canvasExport,
     buildCssFilter,
     isIdentityAdjust,
+    buildAdjustPreviewFilter,
     formatBytes,
     mimeFromPath,
     formatAspectRatio,
