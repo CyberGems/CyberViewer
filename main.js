@@ -550,6 +550,7 @@ let trayMenuWin = null;
 let trayMenuAnchor = null;
 let trayMenuHideTimer = null;
 let trayMenuLastShown = 0;
+let trayMenuPendingShow = false;
 
 function buildTrayMenuState() {
   const settings = loadSettings();
@@ -705,6 +706,9 @@ function ensureTrayMenuWin() {
   trayMenuWin.loadFile(path.join(__dirname, 'tray-menu.html'));
   trayMenuWin.on('blur', () => {
     if (trayMenuHideTimer) return;
+    // Keep the window alive while its first state is being painted. Showing
+    // it before that point produces a blank-frame flash and a false blur.
+    if (trayMenuPendingShow) return;
     // Ignore the transient blur that fires when a tray right-click / re-show
     // steals focus away and back — only hide on a genuine focus loss.
     if (Date.now() - trayMenuLastShown < 250) return;
@@ -713,7 +717,10 @@ function ensureTrayMenuWin() {
       hideTrayMenu();
     }, 120);
   });
-  trayMenuWin.on('closed', () => { trayMenuWin = null; });
+  trayMenuWin.on('closed', () => {
+    trayMenuPendingShow = false;
+    trayMenuWin = null;
+  });
   trayMenuWin.webContents.once('did-finish-load', () => {
     if (!trayMenuWin || trayMenuWin.isDestroyed()) return;
     trayMenuWin.webContents.send('tray-menu-state', buildTrayMenuState());
@@ -724,6 +731,7 @@ function ensureTrayMenuWin() {
 
 function showTrayMenu(eventBounds) {
   if (!tray) return;
+  trayMenuPendingShow = true;
   // Prefer the tray-icon rectangle Electron hands us on right-click; fall back
   // to tray.getBounds() and finally the cursor. All are DIP in Electron 35, so
   // geometry stays in a single coordinate space — no per-monitor DPI flip.
@@ -737,13 +745,18 @@ function showTrayMenu(eventBounds) {
   trayMenuAnchor = b;
   if (trayMenuHideTimer) { clearTimeout(trayMenuHideTimer); trayMenuHideTimer = null; }
   const w = ensureTrayMenuWin();
-  if (!w || w.isDestroyed()) return;
+  if (!w || w.isDestroyed()) {
+    trayMenuPendingShow = false;
+    return;
+  }
   const geo = trayMenuGeometry(trayMenuAnchor,
     TRAY_MENU_WIDTH + 2 * TRAY_MENU_SHADOW_PAD, TRAY_MENU_EST_HEIGHT);
   w.setBounds(geo);
-  if (!w.isVisible()) w.show();
-  w.focus();
+  // The renderer keeps the card transparent until its first state is painted,
+  // so showing the window here avoids a hidden-page requestAnimationFrame
+  // deadlock without exposing a blank popup.
   trayMenuLastShown = Date.now();
+  if (!w.isVisible()) w.show();
   if (!w.webContents.isLoading()) {
     w.webContents.send('tray-menu-state', buildTrayMenuState());
     w.webContents.send('tray-menu-show');
@@ -752,6 +765,7 @@ function showTrayMenu(eventBounds) {
 
 function hideTrayMenu() {
   if (trayMenuHideTimer) { clearTimeout(trayMenuHideTimer); trayMenuHideTimer = null; }
+  trayMenuPendingShow = false;
   if (trayMenuWin && !trayMenuWin.isDestroyed() && trayMenuWin.isVisible()) {
     trayMenuWin.hide();
   }
@@ -859,7 +873,7 @@ ipcMain.on('tray-menu-action', (_event, action) => {
 });
 
 ipcMain.on('tray-menu-ready', (_event, rect) => {
-  if (!trayMenuWin || trayMenuWin.isDestroyed() || !trayMenuWin.isVisible()) return;
+  if (!trayMenuWin || trayMenuWin.isDestroyed()) return;
   if (!rect || !rect.width || !rect.height) return;
   // Renderer measures in CSS px, which on a transparent DIP window equals DIP.
   const geo = trayMenuGeometry(trayMenuAnchor, Math.round(rect.width), Math.round(rect.height));
@@ -870,7 +884,12 @@ ipcMain.on('tray-menu-ready', (_event, rect) => {
       Math.abs(cur.y - geo.y) > 1) {
     trayMenuWin.setBounds(geo);
   }
-  trayMenuWin.focus();
+  if (trayMenuPendingShow) {
+    trayMenuPendingShow = false;
+    trayMenuLastShown = Date.now();
+    if (!trayMenuWin.isVisible()) trayMenuWin.show();
+    trayMenuWin.focus();
+  }
 });
 
 ipcMain.on('tray-menu-hide', () => hideTrayMenu());
