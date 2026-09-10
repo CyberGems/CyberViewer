@@ -671,6 +671,17 @@ function loadTrayMenuIcon(name) {
   }
 }
 
+function loadTrayBrandIcon() {
+  const iconPath = path.join(__dirname, 'assets', 'icon.ico');
+  try {
+    if (!fs.existsSync(iconPath)) return null;
+    const image = nativeImage.createFromPath(iconPath);
+    return image.isEmpty() ? null : image.resize({ width: 16, height: 16 });
+  } catch (_) {
+    return null;
+  }
+}
+
 function buildTrayContextMenuTemplate() {
   const lang = getUiLang();
   const t = menuI18n[lang] || menuI18n.en;
@@ -678,7 +689,7 @@ function buildTrayContextMenuTemplate() {
   const visible = isWindowShown();
   const shortcut = resolveToggleHotkey(settings.app && settings.app.toggleHotkey);
   const help = buildTrayHelpModel(t);
-  const iconBrand = loadTrayMenuIcon('brand.png');
+  const iconBrand = loadTrayBrandIcon();
   const iconShow = loadTrayMenuIcon('show-hide.png');
   const iconSettings = loadTrayMenuIcon('settings.png');
   const iconHelp = loadTrayMenuIcon('help.png');
