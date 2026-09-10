@@ -3942,6 +3942,21 @@
     box-shadow: inset 0 0 14px rgba(var(--preview-accent-rgb), 0.08);
   }
 
+  #modal-config .config-nav-svg {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    flex: 0 0 15px;
+  }
+
+  #modal-config .config-nav-svg svg {
+    display: block;
+    width: 15px;
+    height: 15px;
+  }
+
   #modal-config .config-nav-footer {
     display: flex;
     flex-direction: column;
@@ -4071,6 +4086,48 @@
     border-radius: 6px;
     padding: 14px;
     margin-bottom: 14px;
+  }
+
+  #modal-config .config-tab-intro {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+
+  #modal-config .config-tab-intro-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    border: 1px solid rgba(var(--preview-accent-rgb), 0.35);
+    border-radius: 5px;
+    color: var(--preview-accent);
+    background: rgba(var(--preview-accent-rgb), 0.08);
+    box-shadow: 0 0 12px rgba(var(--preview-accent-rgb), 0.12);
+  }
+
+  #modal-config .config-tab-intro-icon svg {
+    display: block;
+    width: 19px;
+    height: 19px;
+  }
+
+  #modal-config .config-tab-intro-title {
+    color: var(--cyber-text);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  #modal-config .config-tab-intro-desc {
+    margin-top: 3px;
+    color: var(--cyber-muted);
+    font-size: 11px;
+    line-height: 1.45;
   }
 
   #modal-config .config-label {
@@ -4821,6 +4878,30 @@
     color: var(--cyber-accent2) !important;
     background: rgba(var(--cyber-accent2-rgb), 0.12) !important;
     box-shadow: 0 0 10px rgba(var(--cyber-accent2-rgb), 0.25) !important;
+  }
+  #modal-config .config-data-btn,
+  #modal-config .config-cache-btn {
+    min-width: 108px;
+  }
+  #modal-config .config-data-btn {
+    border-color: rgba(var(--preview-accent-rgb), 0.5);
+    color: var(--preview-accent);
+  }
+  #modal-config .config-data-btn:hover {
+    border-color: var(--preview-accent) !important;
+    color: var(--preview-accent) !important;
+    background: rgba(var(--preview-accent-rgb), 0.1) !important;
+    box-shadow: 0 0 10px rgba(var(--preview-accent-rgb), 0.25) !important;
+  }
+  #modal-config .config-cache-btn {
+    border-color: rgba(var(--cyber-accent2-rgb), 0.45);
+    color: var(--cyber-accent2);
+  }
+  #modal-config .config-cache-btn:hover {
+    border-color: var(--cyber-accent2) !important;
+    color: var(--cyber-accent2) !important;
+    background: rgba(var(--cyber-accent2-rgb), 0.1) !important;
+    box-shadow: 0 0 10px rgba(var(--cyber-accent2-rgb), 0.22) !important;
   }
 
   /* Dialog close & cancel buttons reddish hover (match window close X) */

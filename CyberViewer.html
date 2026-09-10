@@ -647,6 +647,10 @@
               <span aria-hidden="true">&#9889;</span>
               <span data-i18n="settings_nav_system">Sistema</span>
             </button>
+            <button type="button" class="config-nav-btn" data-config-tab="backup" role="tab" aria-selected="false" aria-controls="config-tab-backup">
+              <span class="config-nav-svg" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5v16"/><path d="M8 7h8"/><path d="M8 11h8"/></svg></span>
+              <span data-i18n="settings_nav_backup">Backup &amp; Data</span>
+            </button>
           </div>
           <div class="config-nav-footer">
             <div class="config-autosave-pill is-hidden" aria-live="polite">
@@ -942,22 +946,65 @@
                   <button type="button" id="cfg-hotkey-clear" class="cfg-hotkey-clear" data-i18n="toggle_hotkey_clear">Limpiar</button>
                 </div>
               </div>
+            </div>
+          </section>
+
+          <section class="config-tab-panel" id="config-tab-backup" data-config-panel="backup" role="tabpanel" hidden>
+            <div class="config-section config-tab-intro">
+              <div class="config-tab-intro-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5v16"/><path d="M8 7h8"/><path d="M8 11h8"/></svg></div>
+              <div>
+                <div class="config-tab-intro-title" data-i18n="cfg_backup_tab_title">Backup &amp; Data</div>
+                <div class="config-tab-intro-desc" data-i18n="cfg_backup_tab_desc">Manage configuration backups, local data, and thumbnail cache.</div>
+              </div>
+            </div>
+
+            <div class="config-section">
+              <label class="config-label" data-i18n="cfg_backup_section">Backups</label>
               <div class="config-row">
                 <div class="config-info">
-                  <div class="config-name" data-i18n="cfg_backup">Exportar / Importar</div>
-                  <div class="config-desc" data-i18n="cfg_backup_desc">Guarda ajustes y favoritos en un archivo JSON, o restáuralos desde una copia.</div>
+                  <div class="config-name" data-i18n="cfg_backup">Export / Import</div>
+                  <div class="config-desc" data-i18n="cfg_backup_desc">Save settings and favorites to a JSON file, or restore them from a backup.</div>
                 </div>
                 <div class="cfg-backup-actions">
-                  <button type="button" id="cfg-export-settings" class="top-btn config-backup-btn" data-i18n="cfg_backup_export">Exportar</button>
-                  <button type="button" id="cfg-import-settings" class="top-btn config-backup-btn" data-i18n="cfg_backup_import">Importar</button>
+                  <button type="button" id="cfg-export-settings" class="top-btn config-backup-btn" data-i18n="cfg_backup_export">Export</button>
+                  <button type="button" id="cfg-import-settings" class="top-btn config-backup-btn" data-i18n="cfg_backup_import">Import</button>
                 </div>
+              </div>
+            </div>
+
+            <div class="config-section">
+              <label class="config-label" data-i18n="cfg_data_section">Data &amp; Diagnostics</label>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="cfg_data_folder">Data Folder</div>
+                  <div class="config-desc" data-i18n="cfg_data_folder_desc">Open the folder where CyberViewer stores settings and thumbnail cache.</div>
+                </div>
+                <button type="button" id="cfg-open-data-folder" class="top-btn config-data-btn" data-i18n="cfg_data_folder_action">Open Folder</button>
               </div>
               <div class="config-row">
                 <div class="config-info">
-                  <div class="config-name" data-i18n="cfg_reset_factory">Restablecer ajustes de fábrica</div>
-                  <div class="config-desc" data-i18n="cfg_reset_factory_desc">Restablece las preferencias a sus valores predeterminados. Se conservan favoritos y archivos recientes.</div>
+                  <div class="config-name" data-i18n="cfg_cache">Thumbnail Cache</div>
+                  <div class="config-desc" data-i18n="cfg_cache_desc">Remove generated thumbnails. They will be recreated as needed.</div>
                 </div>
-                <button type="button" id="cfg-reset-factory" class="top-btn config-reset-btn" data-i18n="cfg_reset_factory_action">Restablecer</button>
+                <button type="button" id="cfg-clear-thumbnail-cache" class="top-btn config-cache-btn" data-i18n="cfg_cache_clear">Clear Cache</button>
+              </div>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="cfg_recent_data">Recent History</div>
+                  <div class="config-desc" data-i18n="cfg_recent_data_desc">Clear recent files and folders without affecting favorites.</div>
+                </div>
+                <button type="button" id="cfg-clear-recent-history" class="top-btn config-data-btn" data-i18n="cfg_recent_data_clear">Clear History</button>
+              </div>
+            </div>
+
+            <div class="config-section">
+              <label class="config-label" data-i18n="cfg_recovery_section">Recovery</label>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="cfg_reset_factory">Restore Factory Settings</div>
+                  <div class="config-desc" data-i18n="cfg_reset_factory_desc">Reset app preferences to their default values. Favorites and recent files are kept.</div>
+                </div>
+                <button type="button" id="cfg-reset-factory" class="top-btn config-reset-btn" data-i18n="cfg_reset_factory_action">Restore</button>
               </div>
             </div>
           </section>

@@ -6689,6 +6689,65 @@ function requestImportSettingsBackup() {
   });
 }
 
+async function openDataFolder() {
+  if (!isElectron || !window.electronAPI || !window.electronAPI.openDataFolder) return;
+  const { t } = backupUiText();
+  try {
+    const result = await window.electronAPI.openDataFolder();
+    if (!result || !result.ok) {
+      showToast(t.toast_data_folder_error || 'COULD NOT OPEN DATA FOLDER', 'error');
+    }
+  } catch (err) {
+    console.error('Error opening data folder:', err);
+    showToast(t.toast_data_folder_error || 'COULD NOT OPEN DATA FOLDER', 'error');
+  }
+}
+
+function clearRecentHistory() {
+  const { t } = backupUiText();
+  showCyberConfirm({
+    title: t.cfg_recent_data_confirm_title || 'Clear Recent History',
+    message: t.cfg_recent_data_confirm_message ||
+      'Clear the list of recently opened files and folders?',
+    detail: t.cfg_recent_data_confirm_detail ||
+      'Favorites and the actual files on disk will not be affected.',
+    danger: false,
+    onConfirm: () => {
+      const app = ensureAppSettings();
+      app.recentFiles = [];
+      app.recentFolders = [];
+      persistAppSettings();
+      showToast(t.toast_recent_history_cleared || 'RECENT HISTORY CLEARED', 'info');
+    }
+  });
+}
+
+function requestClearThumbnailCache() {
+  if (!isElectron || !window.electronAPI || !window.electronAPI.clearThumbnailCache) return;
+  const { t } = backupUiText();
+  showCyberConfirm({
+    title: t.cfg_cache_confirm_title || 'Clear Thumbnail Cache',
+    message: t.cfg_cache_confirm_message ||
+      'Delete all generated thumbnails from CyberViewer’s local cache?',
+    detail: t.cfg_cache_confirm_detail ||
+      'Your images, settings, favorites, and recent lists will not be affected.',
+    danger: false,
+    onConfirm: async () => {
+      try {
+        const result = await window.electronAPI.clearThumbnailCache();
+        if (!result || !result.ok) {
+          showToast(t.toast_cache_clear_error || 'COULD NOT CLEAR THUMBNAIL CACHE', 'error');
+          return;
+        }
+        showToast(t.toast_cache_cleared || 'THUMBNAIL CACHE CLEARED', 'success');
+      } catch (err) {
+        console.error('Error clearing thumbnail cache:', err);
+        showToast(t.toast_cache_clear_error || 'COULD NOT CLEAR THUMBNAIL CACHE', 'error');
+      }
+    }
+  });
+}
+
 const exportSettingsBtn = $('cfg-export-settings');
 if (exportSettingsBtn) {
   exportSettingsBtn.addEventListener('click', () => { exportSettingsBackup(); });
@@ -6696,6 +6755,18 @@ if (exportSettingsBtn) {
 const importSettingsBtn = $('cfg-import-settings');
 if (importSettingsBtn) {
   importSettingsBtn.addEventListener('click', () => { requestImportSettingsBackup(); });
+}
+const openDataFolderBtn = $('cfg-open-data-folder');
+if (openDataFolderBtn) {
+  openDataFolderBtn.addEventListener('click', () => { openDataFolder(); });
+}
+const clearThumbnailCacheBtn = $('cfg-clear-thumbnail-cache');
+if (clearThumbnailCacheBtn) {
+  clearThumbnailCacheBtn.addEventListener('click', () => { requestClearThumbnailCache(); });
+}
+const clearRecentHistoryBtn = $('cfg-clear-recent-history');
+if (clearRecentHistoryBtn) {
+  clearRecentHistoryBtn.addEventListener('click', () => { clearRecentHistory(); });
 }
 
 // ── Global toggle hotkey capture (accelerator format, e.g. "Alt+Shift+V") ──

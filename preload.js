@@ -17,6 +17,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   getSettings: () => ipcRenderer.invoke('get-settings'),
   getVersion: () => ipcRenderer.invoke('get-version'),
+  openDataFolder: () => ipcRenderer.invoke('open-data-folder'),
+  clearThumbnailCache: () => ipcRenderer.invoke('clear-thumbnail-cache'),
   openTaskbarSettings: () => ipcRenderer.invoke('open-taskbar-settings'),
   saveSettings: (settings) => ipcRenderer.send('save-settings', settings),
   exportSettingsBackup: (settings) => ipcRenderer.invoke('settings:export-backup', settings),

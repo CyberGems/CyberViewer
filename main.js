@@ -15,7 +15,7 @@ const {
   cleanFsPath, toMediaUrl, createPathAllowlist, IMAGE_EXTS, mimeForPath,
   isExistingImageFile
 } = require('./lib/paths');
-const { evictThumbCache } = require('./lib/thumb-cache');
+const { clearThumbCache, evictThumbCache } = require('./lib/thumb-cache');
 const { clampWindowBounds, MIN_W, MIN_H } = require('./lib/window-bounds');
 const { initUpdater, setAutoCheckEnabled } = require('./lib/updater');
 const { buildBackup, parseBackup } = require('./lib/settings-backup');
@@ -1005,6 +1005,16 @@ ipcMain.handle('open-folder-path', async (event, dirPath) => {
 
 ipcMain.handle('get-settings', () => loadSettings());
 ipcMain.handle('get-version', () => app.getVersion());
+ipcMain.handle('open-data-folder', async () => {
+  try {
+    const dataPath = app.getPath('userData');
+    const error = await shell.openPath(dataPath);
+    return error ? { ok: false, error } : { ok: true, path: dataPath };
+  } catch (e) {
+    console.error('Error abriendo la carpeta de datos:', e);
+    return { ok: false, error: e.message || 'OPEN_DATA_FOLDER_FAILED' };
+  }
+});
 ipcMain.handle('show-save-dialog', async (event, options) => {
   const result = await dialog.showSaveDialog(win, options);
   if (!result.canceled && result.filePath) {
@@ -1260,6 +1270,15 @@ ipcMain.handle('scan-folder', async (event, filePath) => {
 const thumbCachePath = path.join(app.getPath('userData'), 'thumb_cache');
 if (!fs.existsSync(thumbCachePath)) fs.mkdirSync(thumbCachePath, { recursive: true });
 pathAllowlist.allow(thumbCachePath);
+
+ipcMain.handle('clear-thumbnail-cache', () => {
+  try {
+    return { ok: true, ...clearThumbCache(thumbCachePath) };
+  } catch (e) {
+    console.error('Error limpiando la caché de miniaturas:', e);
+    return { ok: false, error: e.message || 'CLEAR_THUMB_CACHE_FAILED' };
+  }
+});
 
 /**
  * Limit concurrent nativeImage thumb work to avoid CPU spikes on large folders.

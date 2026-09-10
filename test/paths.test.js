@@ -13,7 +13,7 @@ const {
   createPathAllowlist,
   isImagePath
 } = require('../lib/paths');
-const { evictThumbCache } = require('../lib/thumb-cache');
+const { clearThumbCache, evictThumbCache } = require('../lib/thumb-cache');
 
 describe('cleanFsPath', () => {
   it('strips file:// and resolves', () => {
@@ -103,6 +103,21 @@ describe('evictThumbCache', () => {
     const result = evictThumbCache(tmp, { maxFiles: 2, maxBytes: 1024 * 1024 });
     assert.equal(result.removed, 3);
     assert.equal(fs.readdirSync(tmp).filter((n) => n.endsWith('.jpg')).length, 2);
+    fs.rmSync(tmp, { recursive: true, force: true });
+  });
+});
+
+describe('clearThumbCache', () => {
+  it('removes only generated jpg thumbnails and reports freed bytes', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cv-clear-thumbs-'));
+    fs.writeFileSync(path.join(tmp, 'one.jpg'), Buffer.alloc(12));
+    fs.writeFileSync(path.join(tmp, 'two.jpg'), Buffer.alloc(8));
+    fs.writeFileSync(path.join(tmp, 'keep.txt'), 'keep');
+
+    const result = clearThumbCache(tmp);
+    assert.deepEqual(result, { removed: 2, freedBytes: 20 });
+    assert.deepEqual(fs.readdirSync(tmp), ['keep.txt']);
+
     fs.rmSync(tmp, { recursive: true, force: true });
   });
 });
