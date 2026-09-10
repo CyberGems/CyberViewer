@@ -552,6 +552,11 @@ let trayMenuHideTimer = null;
 let trayMenuLastShown = 0;
 let trayMenuPendingShow = false;
 let trayMenuShowSeq = 0;
+// Windows may emit a normal click around the same right-click that opens the
+// tray context menu. Defer the click and cancel it when the right-click wins.
+let trayRightClickSeq = 0;
+let lastTrayRightClickAt = 0;
+let trayClickTimer = null;
 
 function buildTrayMenuState(showSeq = trayMenuShowSeq, resetView = false) {
   const settings = loadSettings();
@@ -793,12 +798,33 @@ function createTray() {
   tray = new Tray(path.join(__dirname, 'assets', 'icon.ico'));
   tray.setToolTip('CyberViewer v' + app.getVersion());
   tray.on('click', () => {
+    if (process.platform === 'win32') {
+      const clickSeq = trayRightClickSeq;
+      if (trayClickTimer) clearTimeout(trayClickTimer);
+      trayClickTimer = setTimeout(() => {
+        trayClickTimer = null;
+        // A right-click can arrive before or after this deferred click.
+        // Ignore both event orderings so opening the context menu cannot also
+        // toggle the main window underneath it.
+        if (trayRightClickSeq !== clickSeq || Date.now() - lastTrayRightClickAt < 400) return;
+        if (trayMenuPendingShow || (trayMenuWin && !trayMenuWin.isDestroyed() && trayMenuWin.isVisible())) {
+          hideTrayMenu();
+          return;
+        }
+        if (!win || win.isDestroyed()) return;
+        if (isWindowShown()) hideToTray();
+        else showFromTray();
+      }, 120);
+      return;
+    }
     hideTrayMenu();
     if (!win || win.isDestroyed()) return;
     if (isWindowShown()) hideToTray();
     else showFromTray();
   });
   tray.on('right-click', (_event, bounds) => {
+    trayRightClickSeq += 1;
+    lastTrayRightClickAt = Date.now();
     showTrayMenu(bounds);
   });
 }
