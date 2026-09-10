@@ -243,7 +243,10 @@ function resolveStartupBounds(settings) {
   const clamped = clampWindowBounds(raw, {
     displays: screen.getAllDisplays(),
     primary: screen.getPrimaryDisplay(),
-    preferredDisplayId: settings.app && settings.app.preferredDisplayId
+    preferredDisplayId: settings.app && settings.app.preferredDisplayId,
+    // A normal close should reopen centered on the last/selected monitor.
+    // Maximized windows keep their native maximized restore behavior.
+    center: settings.window && settings.window.maximized === false
   });
   const inflated = !!(
     raw &&

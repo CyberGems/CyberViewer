@@ -7362,7 +7362,7 @@ $('btn-go-end').addEventListener('click', (e) => {
               aria-label="${t.about_releases_tooltip}"
             >${iconHtml('tag')}</a>
             <a
-              class="about-footer-icon about-footer-heart cyber-tooltip"
+              class="about-footer-icon about-footer-heart cyber-tooltip tooltip-align-right"
               href="https://github.com/CyberGems/CyberViewer#%EF%B8%8F-donate"
               target="_blank"
               rel="noopener noreferrer"

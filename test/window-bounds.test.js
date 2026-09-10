@@ -57,6 +57,16 @@ describe('clampWindowBounds', () => {
     assert.equal(r.y, 100);
   });
 
+  it('centers a normal restored window on the selected display when requested', () => {
+    const r = clampWindowBounds(
+      { x: 2680, y: 100, width: 1100, height: 700, displayId: 2 },
+      { displays, primary, preferredDisplayId: 'auto', center: true }
+    );
+    assert.equal(r.displayId, 2);
+    assert.equal(r.x, 2330);
+    assert.equal(r.y, 190);
+  });
+
   it('honors preferredDisplayId', () => {
     const r = clampWindowBounds(
       { x: 100, y: 100, width: 1000, height: 700 },
