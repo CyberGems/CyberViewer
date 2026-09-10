@@ -143,13 +143,34 @@ const RECENT_CTX_MAX = 5;
 const I18N = (typeof window !== 'undefined' && window.CV_I18N) ? window.CV_I18N : { en: {}, es: {} };
 const TRAY_PIN_REMINDER_KEY = 'cyberviewer_tray_pin_reminder_dismissed';
 let pendingTrayPinReminder = false;
+const TITLEBAR_HELP_URLS = Object.freeze({
+  docs: 'https://github.com/CyberGems/CyberViewer/wiki',
+  faq: 'https://github.com/CyberGems/CyberViewer/wiki/FAQ',
+  changelog: 'https://github.com/CyberGems/CyberViewer/releases',
+  website: 'https://cybergems.org',
+  donate: 'https://github.com/CyberGems/CyberViewer#%EF%B8%8F-donate'
+});
+
+function openTitlebarHelpLink(destination) {
+  const url = TITLEBAR_HELP_URLS[destination];
+  if (!url) return;
+  if (isElectron && window.electronAPI && typeof window.electronAPI.openExternal === 'function') {
+    Promise.resolve(window.electronAPI.openExternal(url)).catch((error) => {
+      console.error('Failed to open CyberViewer Help link:', error);
+    });
+    return;
+  }
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
 // ── MENU ICONS ──
 // Maps i18n keys → icon name. Shared by the static burger menu
 // (decorated from each label's data-i18n) and the dynamic context menus
 // (resolved from the rendered label text via LABEL_TO_ICON below).
 const MENU_ICON_BY_I18N = {
   menu_file: 'file', menu_edit: 'edit', menu_view: 'eye', menu_go: 'compass',
-  menu_help: 'help-circle', menu_prefs: 'gear', menu_about: 'info',
+  menu_help: 'help-circle', menu_help_pin: 'pin', menu_help_docs: 'book-open',
+  menu_help_faq: 'help-circle', menu_help_changelog: 'tag', menu_help_website: 'globe',
+  menu_help_donate: 'heart', menu_prefs: 'gear', menu_about: 'info',
   menu_updates: 'download',
   menu_open: 'image', menu_open_folder: 'folder', menu_recent: 'clock',
   menu_recent_folders: 'folder', menu_paste: 'clipboard', menu_close_image: 'close',
@@ -1131,8 +1152,18 @@ window.addEventListener('contextmenu', (e) => {
 function hideInterfaceMenus() {
   const mainMenu = $('main-menu');
   const btnMenu = $('btn-menu');
-  if (mainMenu) mainMenu.classList.remove('open');
-  if (btnMenu) btnMenu.classList.remove('open');
+  if (mainMenu) {
+    mainMenu.classList.remove('open');
+    mainMenu.querySelectorAll('.menu-cat.sub-open').forEach((cat) => {
+      if (cat._subCloseTimer) { clearTimeout(cat._subCloseTimer); cat._subCloseTimer = 0; }
+      cat.classList.remove('sub-open');
+      cat.setAttribute('aria-expanded', 'false');
+    });
+  }
+  if (btnMenu) {
+    btnMenu.classList.remove('open');
+    btnMenu.setAttribute('aria-expanded', 'false');
+  }
   hideCustomContextMenu();
 }
 
@@ -1169,7 +1200,15 @@ function showCustomContextMenu(e, type, data) {
   const btnMenu = $('btn-menu');
   if (mainMenu && mainMenu.classList.contains('open')) {
     mainMenu.classList.remove('open');
-    if (btnMenu) btnMenu.classList.remove('open');
+    mainMenu.querySelectorAll('.menu-cat.sub-open').forEach((cat) => {
+      if (cat._subCloseTimer) { clearTimeout(cat._subCloseTimer); cat._subCloseTimer = 0; }
+      cat.classList.remove('sub-open');
+      cat.setAttribute('aria-expanded', 'false');
+    });
+    if (btnMenu) {
+      btnMenu.classList.remove('open');
+      btnMenu.setAttribute('aria-expanded', 'false');
+    }
   }
 
   // Clear context-active highlight from any previously right-clicked thumbnails
@@ -6964,7 +7003,7 @@ if (isElectron) {
 function syncRotationPendingState(pending) {
   document.body.classList.toggle('rotation-pending', pending);
   const allowed = new Set(['btn-rot-l', 'btn-rot-r', 'btn-commit', 'btn-discard']);
-  document.querySelectorAll('#kbd-hint button, #nav-container button, #sidebar-controls button, #btn-menu').forEach((el) => {
+  document.querySelectorAll('#kbd-hint button, #nav-container button, #sidebar-controls button, #btn-menu, #btn-config').forEach((el) => {
     if (allowed.has(el.id)) return;
     if (pending) {
       if (!el.dataset.rotationWasDisabled) el.dataset.rotationWasDisabled = el.disabled ? '1' : '0';
@@ -7555,12 +7594,25 @@ $('btn-config').addEventListener('click', openConfig);
   const btn = $('btn-menu');
   const panel = $('main-menu');
   if (!btn || !panel) return;
+  btn.setAttribute('aria-haspopup', 'true');
+  btn.setAttribute('aria-expanded', 'false');
+  panel.querySelectorAll('.menu-cat[data-sub]').forEach((cat) => {
+    cat.setAttribute('role', 'menuitem');
+    cat.setAttribute('aria-haspopup', 'true');
+    cat.setAttribute('aria-expanded', 'false');
+  });
   decorateMenuIcons(panel);
   syncWindowCloseMenuItem();
 
   function closeMenu() {
     panel.classList.remove('open');
     btn.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
+    panel.querySelectorAll('.menu-cat.sub-open').forEach((cat) => {
+      if (cat._subCloseTimer) { clearTimeout(cat._subCloseTimer); cat._subCloseTimer = 0; }
+      cat.classList.remove('sub-open');
+      cat.setAttribute('aria-expanded', 'false');
+    });
     const a = document.activeElement;
     if (a && panel.contains(a)) a.blur();
   }
@@ -7651,6 +7703,10 @@ $('btn-config').addEventListener('click', openConfig);
     }
     const ssPlay = panel.querySelector('[data-action="slideshow"]');
     if (ssPlay) ssPlay.classList.toggle('checked', !!(state.slideshowActive && state.slideshowPlaying));
+    const trayOnlyVisible = isCloseToTrayEnabled();
+    panel.querySelectorAll('[data-tray-only]').forEach((el) => {
+      el.style.display = trayOnlyVisible ? '' : 'none';
+    });
     rebuildRecentMenu();
   }
   function openMenu() {
@@ -7660,9 +7716,11 @@ $('btn-config').addEventListener('click', openConfig);
     panel.querySelectorAll('.menu-cat.sub-open').forEach((el) => {
       if (el._subCloseTimer) { clearTimeout(el._subCloseTimer); el._subCloseTimer = 0; }
       el.classList.remove('sub-open');
+      el.setAttribute('aria-expanded', 'false');
     });
     panel.classList.add('open');
     btn.classList.add('open');
+    btn.setAttribute('aria-expanded', 'true');
   }
 
   btn.addEventListener('click', e => {
@@ -7765,6 +7823,14 @@ $('btn-config').addEventListener('click', openConfig);
         })();
         break;
       case 'preferences':    $('btn-config').click(); break;
+      case 'show-tray-pin-reminder':
+        if (isCloseToTrayEnabled()) openTrayPinReminder();
+        break;
+      case 'help-docs':       openTitlebarHelpLink('docs'); break;
+      case 'help-faq':        openTitlebarHelpLink('faq'); break;
+      case 'help-changelog':  openTitlebarHelpLink('changelog'); break;
+      case 'help-website':    openTitlebarHelpLink('website'); break;
+      case 'help-donate':     openTitlebarHelpLink('donate'); break;
       case 'about':          $('btn-about').click(); break;
       case 'check-updates':
         $('btn-about').click();
@@ -7816,13 +7882,24 @@ $('btn-config').addEventListener('click', openConfig);
     // Switching to a sibling category replaces the current flyout immediately
     // (no overlap). Re-adding .sub-open retriggers the CSS open animation.
     const sib = cat.parentElement ? cat.parentElement.querySelectorAll(':scope > .menu-cat.sub-open') : null;
-    if (sib) sib.forEach((el) => { if (el !== cat) { clearTimer(el); el.classList.remove('sub-open'); } });
+    if (sib) sib.forEach((el) => {
+      if (el !== cat) {
+        clearTimer(el);
+        el.classList.remove('sub-open');
+        el.setAttribute('aria-expanded', 'false');
+      }
+    });
     if (cat.classList.contains('sub-open')) return;
     cat.classList.add('sub-open');
+    cat.setAttribute('aria-expanded', 'true');
   }
   function scheduleClose(cat) {
     clearTimer(cat);
-    cat[TKEY] = setTimeout(() => { cat[TKEY] = 0; cat.classList.remove('sub-open'); }, SUB_CLOSE_DELAY);
+    cat[TKEY] = setTimeout(() => {
+      cat[TKEY] = 0;
+      cat.classList.remove('sub-open');
+      cat.setAttribute('aria-expanded', 'false');
+    }, SUB_CLOSE_DELAY);
   }
 
   document.addEventListener('mouseover', (e) => {

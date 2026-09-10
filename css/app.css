@@ -711,15 +711,17 @@
     outline: none; /* evita el anillo de foco del navegador (recuadro claro) */
   }
 
-  .win-btn:focus,
+  .win-btn:focus { outline: none; }
   .win-btn:focus-visible {
-    outline: none;
+    outline: 1px solid var(--cyber-accent);
+    outline-offset: 2px;
   }
 
   .win-btn:hover { color: var(--cyber-accent); background: rgba(0,212,255,0.08); }
   #win-close:hover { color: var(--cyber-accent2); background: rgba(255,45,120,0.12); }
   .win-sep { width: 1px; height: 20px; background: var(--cyber-border); margin: 0 4px; flex-shrink: 0; }
-  #btn-config { font-size: 17px; }
+  #btn-config { margin-right: 2px; }
+  #btn-config .win-ico { width: 15px; height: 15px; }
 
   /* ── MAIN MENU (☰) ── */
   .menu-wrap { position: relative; -webkit-app-region: no-drag; }
@@ -892,6 +894,10 @@
     background: rgba(var(--cyber-accent-rgb), 0.12);
     color: var(--cyber-accent);
     z-index: 10;
+  }
+  .menu-item:focus-visible {
+    outline: 1px solid var(--cyber-accent);
+    outline-offset: -1px;
   }
   .menu-cat:hover .menu-arrow { color: var(--cyber-accent); }
   .menu-cat:hover > .menu-shortcut,

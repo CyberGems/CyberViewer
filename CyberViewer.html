@@ -38,9 +38,12 @@
     </div>
     <button id="hints-close" type="button" class="hints-close tooltip-bottom" data-i18n-title="hints_close_title" aria-label="Ocultar atajos de teclado">&times;</button>
   </div>
+  <button type="button" class="win-btn tooltip-bottom" id="btn-config" data-i18n-title="config" data-i18n-aria="config" title="Configuración" aria-label="Configuración">
+    <svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1l2.1-2.1M17 7l2.1-2.1"/></svg>
+  </button>
   <div class="menu-wrap">
-    <button class="win-btn tooltip-bottom" id="btn-menu" data-i18n-title="menu" title="Menú" style="margin-left:5px"><svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-    <div id="main-menu" class="menu-panel">
+    <button type="button" class="win-btn tooltip-bottom" id="btn-menu" data-i18n-title="menu" title="Menú" aria-label="Menú" aria-haspopup="true" aria-expanded="false"><svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <div id="main-menu" class="menu-panel" role="menu">
       <button class="menu-item menu-flat" data-action="paste-image"><span class="menu-label" data-i18n="menu_paste">Pegar imagen</span><span class="menu-shortcut">Ctrl+V</span></button>
       <div class="menu-divider"></div>
       <div class="menu-cat" data-sub>
@@ -120,12 +123,17 @@
         </div>
       </div>
 
-      <div class="menu-divider"></div>
-      <button class="menu-item menu-flat" data-action="preferences"><span class="menu-label" data-i18n="menu_prefs">Configuración</span><span class="menu-shortcut">Ctrl+,</span></button>
-
       <div class="menu-cat" data-sub>
         <span class="menu-label" data-i18n="menu_help">Ayuda</span><span class="menu-arrow">&#8250;</span>
         <div class="menu-sub">
+          <button class="menu-item" data-action="show-tray-pin-reminder" data-tray-only><span class="menu-label" data-i18n="menu_help_pin">Mantener visible en la bandeja del sistema</span></button>
+          <div class="menu-divider" data-tray-only></div>
+          <button class="menu-item" data-action="help-docs"><span class="menu-label" data-i18n="menu_help_docs">Documentación / Wiki</span></button>
+          <button class="menu-item" data-action="help-faq"><span class="menu-label" data-i18n="menu_help_faq">Preguntas frecuentes</span></button>
+          <button class="menu-item" data-action="help-changelog"><span class="menu-label" data-i18n="menu_help_changelog">Historial de cambios</span></button>
+          <button class="menu-item" data-action="help-website"><span class="menu-label" data-i18n="menu_help_website">Sitio web</span></button>
+          <button class="menu-item" data-action="help-donate"><span class="menu-label" data-i18n="menu_help_donate">Donar</span></button>
+          <div class="menu-divider"></div>
           <button class="menu-item" data-action="about"><span class="menu-label" data-i18n="menu_about">Acerca de</span></button>
           <button class="menu-item" data-action="check-updates"><span class="menu-label" data-i18n="menu_updates">Buscar actualizaciones</span></button>
         </div>
@@ -135,7 +143,6 @@
       <button class="menu-item danger" data-action="quit"><span class="menu-label" data-i18n="menu_quit">Salir</span></button>
     </div>
   </div>
-  <button class="win-btn tooltip-bottom" id="btn-config" data-i18n-title="config" title="Configuración" style="display:none">&#9881;&#xFE0E;</button>
   <button class="win-btn tooltip-bottom" id="btn-about" data-i18n-title="about" title="Acerca de CyberViewer" style="display:none">&#9432;&#xFE0E;</button>
   <button class="win-btn tooltip-bottom cyber-tooltip" id="win-min" data-i18n-title="minimize" data-tooltip="Minimizar">&#8722;</button>
   <button class="win-btn tooltip-bottom cyber-tooltip" id="win-max" data-i18n-title="maximize" data-tooltip="Maximizar"><svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
