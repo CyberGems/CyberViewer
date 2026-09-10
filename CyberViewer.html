@@ -259,11 +259,18 @@
           <div class="drop-corner tr"></div>
           <div class="drop-corner bl"></div>
           <div class="drop-corner br"></div>
-          <img src="assets/icon.ico" class="drop-logo" alt="" width="72" height="72" draggable="false">
-          <div class="drop-title" data-i18n="drop_title">CYBERVIEWER</div>
+          <div class="drop-action-tile" aria-hidden="true">
+            <img src="assets/icon.ico" class="drop-logo" alt="" width="42" height="42" draggable="false">
+          </div>
+          <div class="drop-brand" aria-label="CyberViewer">
+            <span class="drop-brand-cyber">Cyber</span><span class="drop-brand-viewer">Viewer</span>
+          </div>
+          <div class="drop-title" data-i18n="drop_title">Suelta una imagen para comenzar</div>
           <div class="drop-sub" data-i18n="drop_sub">Arrastra imágenes aquí<br>o haz clic para seleccionar</div>
-          <button class="drop-btn" id="btn-drop-open" data-i18n="drop_btn">Seleccionar archivo</button>
-          <button type="button" class="drop-paste" id="btn-drop-paste" data-i18n="drop_paste">Pegar · Ctrl+V</button>
+          <div class="drop-actions">
+            <button class="drop-btn" id="btn-drop-open" data-i18n="drop_btn">Abrir imagen</button>
+            <button type="button" class="drop-paste" id="btn-drop-paste" data-i18n="drop_paste">Pegar · Ctrl+V</button>
+          </div>
         </div>
       </div>
 

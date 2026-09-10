@@ -160,7 +160,11 @@ function applyState(state) {
 function reportReady() {
   const r = root.getBoundingClientRect();
   if (r.width < 8 || r.height < 8) return;
-  api.ready({ width: r.width, height: r.height });
+  api.ready({
+    width: r.width,
+    height: r.height,
+    showSeq: currentState && currentState.showSeq
+  });
 }
 
 document.addEventListener('keydown', (e) => {

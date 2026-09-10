@@ -551,8 +551,9 @@ let trayMenuAnchor = null;
 let trayMenuHideTimer = null;
 let trayMenuLastShown = 0;
 let trayMenuPendingShow = false;
+let trayMenuShowSeq = 0;
 
-function buildTrayMenuState() {
+function buildTrayMenuState(showSeq = trayMenuShowSeq) {
   const settings = loadSettings();
   const lang = settings.app.language || 'en';
   const t = menuI18n[lang] || menuI18n.en;
@@ -566,7 +567,8 @@ function buildTrayMenuState() {
     aboutLabel: t.tray_about || t.about,
     help: buildTrayHelpModel(t),
     exitLabel: t.tray_exit,
-    shortcut: resolveToggleHotkey(settings.app && settings.app.toggleHotkey)
+    shortcut: resolveToggleHotkey(settings.app && settings.app.toggleHotkey),
+    showSeq
   };
 }
 
@@ -731,6 +733,7 @@ function ensureTrayMenuWin() {
 
 function showTrayMenu(eventBounds) {
   if (!tray) return;
+  trayMenuShowSeq += 1;
   trayMenuPendingShow = true;
   // Prefer the tray-icon rectangle Electron hands us on right-click; fall back
   // to tray.getBounds() and finally the cursor. All are DIP in Electron 35, so
@@ -875,6 +878,10 @@ ipcMain.on('tray-menu-action', (_event, action) => {
 ipcMain.on('tray-menu-ready', (_event, rect) => {
   if (!trayMenuWin || trayMenuWin.isDestroyed()) return;
   if (!rect || !rect.width || !rect.height) return;
+  // A delayed measurement from the previous opening must never reposition the
+  // current popup. Renderer layout callbacks can arrive after a fast close and
+  // re-open, so tie every measurement to the show cycle that produced it.
+  if (rect.showSeq !== trayMenuShowSeq) return;
   // Renderer measures in CSS px, which on a transparent DIP window equals DIP.
   const geo = trayMenuGeometry(trayMenuAnchor, Math.round(rect.width), Math.round(rect.height));
   const cur = trayMenuWin.getBounds();

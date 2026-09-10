@@ -1140,9 +1140,29 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) hideI
 window.addEventListener('blur', hideInterfaceMenus);
 window.addEventListener('cv-window-blur', hideInterfaceMenus);
 
+let contextMenuCloseListener = null;
+let contextMenuListenerTimer = null;
+
+function clearContextMenuListeners() {
+  if (contextMenuListenerTimer) {
+    clearTimeout(contextMenuListenerTimer);
+    contextMenuListenerTimer = null;
+  }
+  if (contextMenuCloseListener) {
+    document.removeEventListener('pointerdown', contextMenuCloseListener);
+    document.removeEventListener('contextmenu', contextMenuCloseListener);
+    contextMenuCloseListener = null;
+  }
+}
+
 function showCustomContextMenu(e, type, data) {
   e.preventDefault();
   e.stopPropagation();
+
+  // A previous outside-click listener can still be waiting while a new
+  // context-menu event is being handled. Remove it before measuring and
+  // positioning the reused panel so it cannot hide or re-trigger the menu.
+  clearContextMenuListeners();
 
   // Close main/burger menu if open
   const mainMenu = $('main-menu');
@@ -1206,21 +1226,22 @@ function showCustomContextMenu(e, type, data) {
   menu.style.visibility = 'visible';
   menu.classList.add('open');
 
-  const closeListener = (evt) => {
+  contextMenuCloseListener = (evt) => {
     if (!menu.contains(evt.target)) {
       hideCustomContextMenu();
-      document.removeEventListener('pointerdown', closeListener);
-      document.removeEventListener('contextmenu', closeListener);
     }
   };
   
-  setTimeout(() => {
-    document.addEventListener('pointerdown', closeListener);
-    document.addEventListener('contextmenu', closeListener);
+  contextMenuListenerTimer = setTimeout(() => {
+    contextMenuListenerTimer = null;
+    if (!contextMenuCloseListener || !menu.classList.contains('open')) return;
+    document.addEventListener('pointerdown', contextMenuCloseListener);
+    document.addEventListener('contextmenu', contextMenuCloseListener);
   }, 50);
 }
 
 function hideCustomContextMenu() {
+  clearContextMenuListeners();
   const menu = $('custom-ctx-menu');
   if (menu) {
     menu.style.display = 'none';
