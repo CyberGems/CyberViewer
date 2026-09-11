@@ -8297,29 +8297,13 @@ function toggleFavoritePath(filePath) {
 function updateFavButtonState() {
   const btn = $('btn-fav');
   if (!btn) return;
-  
-  const idx = state.current;
-  if (idx === -1) {
-    btn.classList.remove('favorited');
-    btn.innerHTML = '&#9734;';
-    return;
-  }
-  const im = state.images[idx];
-  if (!im || !im.file || !im.file.path) {
-    btn.classList.remove('favorited');
-    btn.innerHTML = '&#9734;';
-    return;
-  }
-  
+
+  const im = state.images[state.current];
   const favs = state.settings.app.favorites || [];
-  const isFav = favs.includes(im.file.path);
-  if (isFav) {
-    btn.classList.add('favorited');
-    btn.innerHTML = '&#9733;';
-  } else {
-    btn.classList.remove('favorited');
-    btn.innerHTML = '&#9734;';
-  }
+  const isFav = !!(im && im.file && im.file.path && favs.includes(im.file.path));
+  // Keep the SVG in place; CSS fills the same star when selected.
+  btn.classList.toggle('favorited', isFav);
+  btn.setAttribute('aria-pressed', String(isFav));
 }
 
 function syncFavoritesToggleButtonState(lang) {

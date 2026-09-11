@@ -2521,17 +2521,16 @@
     padding: 0;            /* icon-only buttons center their glyph/SVG, no padding */
     font-size: 15px;       /* match window mode; otherwise the 10px ghost override shrinks glyphs */
   }
-  body.ghost-mode #kbd-hint .kbd-ico {
-    width: 13px;
-    height: 13px;
-    margin-right: 5px;
-  }
-  /* Keep solo icons full-size and centered in fullscreen (same 16px as window mode)
-     so they don't shrink or hug the left edge of the 36px button. */
-  body.ghost-mode #kbd-hint .kbd-ico.kbd-ico-solo {
+  /* One SVG size and stroke in both docked and floating toolbars. */
+  #kbd-hint .kbd-btn > .kbd-ico {
+    display: block;
     width: 16px;
     height: 16px;
-    margin-right: 0;
+    margin: 0;
+    stroke-width: 1.8;
+  }
+  #kbd-hint #btn-fav.favorited .kbd-ico {
+    fill: currentColor;
   }
   body.ghost-mode #kbd-hint .kbd-sep {
     height: 14px;
