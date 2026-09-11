@@ -4511,7 +4511,7 @@
     justify-content: flex-end;
     padding: 0;
     overflow: hidden;
-    background: rgba(8, 10, 14, 0.18);
+    background: transparent;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
@@ -4526,10 +4526,10 @@
     border-right: 0;
     overflow: hidden;
     background:
-      linear-gradient(135deg, rgba(27, 37, 52, 0.82), rgba(10, 16, 26, 0.78)),
-      rgba(15, 22, 33, 0.78);
-    -webkit-backdrop-filter: blur(16px) saturate(130%);
-    backdrop-filter: blur(16px) saturate(130%);
+      linear-gradient(135deg, rgba(38, 53, 72, 0.38), rgba(10, 16, 26, 0.28)),
+      rgba(15, 22, 33, 0.42);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    backdrop-filter: blur(20px) saturate(150%);
     box-shadow:
       -24px 0 58px rgba(0, 0, 0, 0.62),
       -4px 0 18px rgba(var(--cyber-accent-rgb), 0.08),
@@ -4555,20 +4555,34 @@
     z-index: 1;
   }
   #modal-adjust .modal-footer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
     flex-shrink: 0;
-    flex-wrap: nowrap;
-    justify-content: flex-end;
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 8px;
     padding: 10px 22px 12px;
     border-radius: 0 0 0 12px;
   }
   #modal-adjust .modal-footer .adjust-footer-copy {
-    flex: 1 1 180px;
+    display: flex;
+    grid-column: 1 / -1;
+    grid-row: 1;
+    flex: none;
     min-width: 0;
     order: 0;
     padding-bottom: 0;
   }
   #modal-adjust .modal-footer .modal-cancel-btn {
-    margin-left: auto;
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: end;
+    margin-left: 0;
+  }
+  #modal-adjust .modal-footer #btn-confirm-adjust {
+    grid-column: 2;
+    grid-row: 2;
   }
   #modal-adjust .modal-footer .top-btn {
     min-height: 40px;
@@ -4579,9 +4593,17 @@
     flex: 1 1 auto;
     min-width: 0;
   }
+  #modal-adjust .modal-footer .adjust-footer-copy > .switch {
+    margin-left: auto;
+    transform: none;
+  }
+  #modal-adjust .modal-footer .copy-toggle-info .config-name,
+  #modal-adjust .modal-footer .copy-toggle-info .config-desc {
+    white-space: nowrap;
+  }
   #modal-adjust .modal-footer .copy-toggle-info .config-desc {
     display: block;
-    max-width: 84px;
+    max-width: none;
   }
   #modal-adjust .adjust-preview-toolbar {
     display: grid;
@@ -4725,11 +4747,16 @@
   }
   @media (max-width: 480px) {
     #modal-adjust .modal-footer {
+      display: flex;
       flex-wrap: wrap;
+      gap: 8px 12px;
     }
     #modal-adjust .modal-footer .adjust-footer-copy {
       flex-basis: 100%;
       order: 0;
+    }
+    #modal-adjust .modal-footer .modal-cancel-btn {
+      margin-left: auto;
     }
   }
   @media (prefers-reduced-motion: reduce) {

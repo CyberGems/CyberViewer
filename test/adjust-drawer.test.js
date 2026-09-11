@@ -30,8 +30,14 @@ describe('Adjust drawer', () => {
   it('defines a right-side drawer with a fixed action footer', () => {
     assert.match(css, /#modal-adjust\s*\{[\s\S]*?justify-content:\s*flex-end;/);
     assert.match(css, /#modal-adjust \.adjust-drawer\s*\{[\s\S]*?animation:\s*adjust-drawer-in/);
-    assert.match(css, /#modal-adjust \.modal-footer\s*\{[\s\S]*?flex-shrink:\s*0;/);
+    assert.match(css, /#modal-adjust \.modal-footer\s*\{[\s\S]*?grid-template-rows:\s*auto auto;[\s\S]*?flex-shrink:\s*0;/);
     assert.match(css, /@keyframes adjust-drawer-in/);
+  });
+
+  it('keeps the image clear outside the localized glass drawer', () => {
+    assert.match(css, /#modal-adjust\s*\{[\s\S]*?background:\s*transparent;[\s\S]*?backdrop-filter:\s*none;/);
+    assert.match(css, /#modal-adjust \.adjust-drawer\s*\{[\s\S]*?rgba\(15, 22, 33, 0\.42\)[\s\S]*?backdrop-filter:\s*blur\(20px\) saturate\(150%\);/);
+    assert.match(html, /<img src="assets\/icon\.png" class="logo-img"/);
   });
 
   it('cleans the temporary preview when the modal closes', () => {
