@@ -281,7 +281,7 @@
     text-transform: uppercase;
   }
 
-  #btn-fav.favorited, #btn-toggle-favs.active {
+  #btn-toggle-favs.active {
     color: #ffb700 !important;
     border-color: rgba(255, 183, 0, 0.5) !important;
     box-shadow: 0 0 10px rgba(255, 183, 0, 0.4) !important;
@@ -638,7 +638,7 @@
     line-height: 1;
   }
 
-  .kbd-btn.active {
+  .kbd-btn.active:not(#kbd-hint .kbd-btn) {
     color: var(--cyber-accent3) !important;
     border-color: var(--cyber-accent3) !important;
     box-shadow: 0 0 15px rgba(170,255,0,0.4) !important;
@@ -2443,22 +2443,7 @@
     padding: 0 12px;
     gap: 8px;
     background: var(--cyber-panel-dark);
-    border-top: 1px solid rgba(var(--cyber-accent-rgb), 0.5);
-  }
-
-  /* Accent glow atop the action toolbar — matches the title bar's bottom
-     divider so the dock reads cleanly against the image. */
-  body:not(.ghost-mode) #kbd-hint::before {
-    content: '';
-    position: absolute;
-    top: -1px;
-    left: 0;
-    width: 100%;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(var(--cyber-accent-rgb), 0.75), transparent);
-    box-shadow: 0 0 6px rgba(var(--cyber-accent-rgb), 0.6);
-    pointer-events: none;
-    z-index: 1;
+    border-top: 1px solid var(--cyber-border);
   }
 
   /* User-collapsed action bar (persisted) — distinct from temporary hud-hidden in FS */
@@ -2519,10 +2504,10 @@
     gap: 10px;
     padding: 10px 14px;
     background: rgba(8, 10, 14, 0.88);
-    border: 1px solid rgba(var(--cyber-accent-rgb), 0.22);
+    border: 1px solid var(--cyber-border);
     border-radius: 10px;
     backdrop-filter: blur(12px);
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45), 0 0 20px rgba(var(--cyber-accent-rgb), 0.08);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
     overflow: visible;
   }
   body.ghost-mode #kbd-hint .kbd-btn {
@@ -2549,7 +2534,7 @@
     margin-right: 0;
   }
   body.ghost-mode #kbd-hint .kbd-sep {
-    height: 18px;
+    height: 14px;
   }
   body.ghost-mode #kbd-hint.hud-hidden,
   body.ghost-mode #kbd-hint.hud-hidden-fade {
@@ -2616,21 +2601,42 @@
     background: rgba(13, 17, 23, 0.95);
     box-shadow: none;
   }
-  /* Higher specificity than body:not(.ghost-mode) .kbd-btn so hover works when docked */
+  /* Quiet resting controls; interaction colors follow the configured accent. */
+  #kbd-hint .kbd-btn {
+    background: transparent;
+    border-color: transparent;
+    color: color-mix(in srgb, var(--cyber-text) 72%, var(--cyber-muted));
+    box-shadow: none;
+    font-weight: 500;
+  }
   #kbd-hint .kbd-btn:hover:not(:disabled):not(.is-disabled) {
-    background: rgba(var(--cyber-accent-rgb), 0.16);
+    background: rgba(255, 255, 255, 0.06);
     color: var(--cyber-accent);
-    border-color: var(--cyber-accent);
-    box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.22);
-    transform: translateY(-1px);
+    border-color: transparent;
+    box-shadow: none;
+    transform: none;
   }
+  #kbd-hint .kbd-btn.active:not(:disabled):not(.is-disabled),
+  #kbd-hint .kbd-btn.favorited:not(:disabled):not(.is-disabled),
   #kbd-hint .kbd-btn:active:not(:disabled):not(.is-disabled) {
-    transform: translateY(0);
+    background: rgba(var(--cyber-accent-rgb), 0.12);
+    color: var(--cyber-accent);
+    border-color: transparent;
+    box-shadow: none;
+    text-shadow: none;
   }
-  #kbd-hint .kbd-btn.active:hover:not(:disabled):not(.is-disabled) {
-    background: rgba(var(--cyber-accent3-rgb), 0.16);
-    color: var(--cyber-accent3);
-    border-color: var(--cyber-accent3);
+  #kbd-hint .kbd-btn.active:hover:not(:disabled):not(.is-disabled),
+  #kbd-hint .kbd-btn.favorited:hover:not(:disabled):not(.is-disabled) {
+    background: rgba(var(--cyber-accent-rgb), 0.16);
+  }
+  #kbd-hint .kbd-btn:focus-visible:not(:disabled):not(.is-disabled) {
+    outline: 1px solid var(--cyber-accent);
+    outline-offset: 2px;
+    color: var(--cyber-accent);
+  }
+  #kbd-hint #btn-orig-hud {
+    font-size: 13px;
+    letter-spacing: 0;
   }
   .kbd-btn:focus,
   .kbd-btn:focus-visible {
@@ -2689,6 +2695,9 @@
     align-self: center;
     margin: 0 4px;
   }
+  #kbd-hint .kbd-sep {
+    background: var(--cyber-border);
+  }
   body:not(.ghost-mode) #kbd-hint .kbd-btn.kbd-icon {
     width: 36px;
     min-width: 36px;
@@ -2699,7 +2708,7 @@
   }
   body:not(.ghost-mode) #kbd-hint .kbd-sep {
     margin: 0 2px;
-    height: 20px;
+    height: 14px;
   }
 
   /* ── EMPTY STATE chrome ── */
@@ -3060,11 +3069,15 @@
     opacity: 0 !important;
     visibility: hidden !important;
   }
-  #kbd-hint #btn-trash:hover:not(:disabled):not(.is-disabled) {
+  #kbd-hint #btn-trash:hover:not(:disabled):not(.is-disabled),
+  #kbd-hint #btn-trash:focus-visible:not(:disabled):not(.is-disabled) {
+    background: rgba(var(--cyber-accent2-rgb), 0.1);
+    color: var(--cyber-accent2);
+    outline-color: var(--cyber-accent2);
+  }
+  #kbd-hint #btn-trash:active:not(:disabled):not(.is-disabled) {
     background: rgba(var(--cyber-accent2-rgb), 0.16);
     color: var(--cyber-accent2);
-    border-color: var(--cyber-accent2);
-    box-shadow: 0 0 12px rgba(var(--cyber-accent2-rgb), 0.22);
   }
 
   .kbd-key {
