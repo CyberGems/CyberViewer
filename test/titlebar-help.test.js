@@ -8,6 +8,7 @@ const assert = require('node:assert/strict');
 const root = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'CyberViewer.html'), 'utf8');
 const appJs = fs.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
+const css = fs.readFileSync(path.join(root, 'css', 'app.css'), 'utf8');
 const ui = JSON.parse(fs.readFileSync(path.join(root, 'i18n', 'ui.json'), 'utf8'));
 
 function mainMenuMarkup() {
@@ -75,5 +76,10 @@ describe('title bar Help menu', () => {
     ];
     for (const url of urls) assert.ok(appJs.includes(url), `missing URL: ${url}`);
     assert.match(appJs, /window\.electronAPI\.openExternal\(url\)/);
+  });
+
+  it('uses localized glass for menus without affecting the viewer surface', () => {
+    assert.match(css, /\.menu-panel,\s*\.menu-sub\s*\{[\s\S]*?background:\s*var\(--cyber-panel\);[\s\S]*?box-shadow:/);
+    assert.match(css, /@supports\s*\(backdrop-filter:\s*blur\(1px\)\)\s*\{[\s\S]*?\.menu-panel,[\s\S]*?\.menu-sub[\s\S]*?backdrop-filter:\s*blur\(14px\) saturate\(145%\);/);
   });
 });

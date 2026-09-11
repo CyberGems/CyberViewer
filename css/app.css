@@ -936,6 +936,27 @@
     transform-origin: right top;
     z-index: 20;
   }
+  /* Localized glass surfaces: keep the viewer untouched while menus borrow
+     just enough of the image behind them to feel integrated. */
+  .menu-panel,
+  .menu-sub {
+    background: var(--cyber-panel);
+    border-color: rgba(var(--cyber-accent-rgb), 0.3);
+    box-shadow:
+      0 0 18px rgba(var(--cyber-accent-rgb), 0.1),
+      0 14px 34px rgba(0, 0, 0, 0.58),
+      inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  }
+  @supports (backdrop-filter: blur(1px)) {
+    .menu-panel,
+    .menu-sub {
+      background:
+        linear-gradient(135deg, rgba(38, 53, 72, 0.48), rgba(10, 16, 26, 0.34)),
+        rgba(15, 22, 33, 0.48);
+      -webkit-backdrop-filter: blur(14px) saturate(145%);
+      backdrop-filter: blur(14px) saturate(145%);
+    }
+  }
   .menu-sub:not(:has(.menu-cat[data-sub])) {
     max-height: calc(100vh - 20px);
     overflow-y: auto;
