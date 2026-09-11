@@ -116,4 +116,17 @@ describe('title bar Help menu', () => {
     assert.match(appJs, /!panel\.contains\(e\.target\)\s*&&\s*!btn\.contains\(e\.target\)/);
     assert.match(css, /\.menu-panel\.main-menu-portal\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?right:\s*auto;/);
   });
+
+  it('unifies right-side titlebar controls and refines separator line thickness', () => {
+    assert.match(html, /id="btn-shortcuts"[^>]*>[\s\S]*?<svg class="win-ico"/);
+    assert.match(html, /id="win-min"[^>]*>[\s\S]*?<svg class="win-ico"/);
+    assert.match(html, /id="win-max"[^>]*>[\s\S]*?<svg class="win-ico"/);
+    assert.match(html, /id="win-close"[^>]*>[\s\S]*?<svg class="win-ico"/);
+    assert.match(css, /\.win-ico\s*\{\s*width:\s*15px;\s*height:\s*15px;/);
+    assert.match(css, /\.menu-ico\s*\{\s*width:\s*15px;\s*height:\s*15px;/);
+    assert.match(css, /\.titlebar-config-glyph\s*\{[\s\S]*?width:\s*15px;\s*height:\s*15px;/);
+
+    assert.match(css, /#topbar::after\s*\{[\s\S]*?box-shadow:\s*0 0 2px rgba\(var\(--cyber-accent-rgb\),\s*0\.35\);/);
+    assert.match(css, /body:not\(\.window-maximized\)::after\s*\{[\s\S]*?box-shadow:\s*0 -1px 2px rgba\(var\(--cyber-accent-rgb\),\s*0\.15\);/);
+  });
 });

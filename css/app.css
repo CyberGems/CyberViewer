@@ -69,7 +69,7 @@
     display: flex !important;
     align-items: center;
     background: var(--cyber-panel) !important;
-    border-bottom: 1px solid rgba(var(--cyber-accent-rgb), 0.5) !important;
+    border-bottom: 1px solid rgba(var(--cyber-accent-rgb), 0.22) !important;
     user-select: none;
     backdrop-filter: blur(10px);
     padding: 0 10px;
@@ -83,8 +83,8 @@
     left: 0;
     width: 100%;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(var(--cyber-accent-rgb), 0.75), transparent);
-    box-shadow: 0 0 6px rgba(var(--cyber-accent-rgb), 0.6);
+    background: linear-gradient(90deg, transparent, rgba(var(--cyber-accent-rgb), 0.5), transparent);
+    box-shadow: 0 0 2px rgba(var(--cyber-accent-rgb), 0.35);
   }
 
   /* Fine line at the bottom of the window (only when restored / not maximized) */
@@ -95,8 +95,8 @@
     right: 0;
     bottom: 0;
     height: 1px;
-    background: rgba(var(--cyber-accent-rgb), 0.35);
-    box-shadow: 0 -1px 3px rgba(var(--cyber-accent-rgb), 0.2);
+    background: rgba(var(--cyber-accent-rgb), 0.22);
+    box-shadow: 0 -1px 2px rgba(var(--cyber-accent-rgb), 0.15);
     pointer-events: none;
     z-index: 99999999;
   }
@@ -710,6 +710,7 @@
     -webkit-app-region: no-drag;
     flex-shrink: 0;
     padding: 0;
+    margin: 0 1px;
     outline: none; /* evita el anillo de foco del navegador (recuadro claro) */
   }
 
@@ -722,18 +723,22 @@
   .win-btn:hover { color: var(--cyber-accent); background: rgba(0,212,255,0.08); }
   #win-close:hover { color: var(--cyber-accent2); background: rgba(255,45,120,0.12); }
   .win-sep { width: 1px; height: 20px; background: var(--cyber-border); margin: 0 4px; flex-shrink: 0; }
-  #btn-config { margin-right: 2px; font-size: 17px; }
+  #btn-config { font-size: 15px; }
   .titlebar-config-glyph {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-family: "Segoe UI Symbol", "Arial Unicode MS", sans-serif;
-    font-size: 18px;
+    font-size: 15px;
     line-height: 1;
+    width: 15px;
+    height: 15px;
   }
 
   /* ── MAIN MENU (☰) ── */
-  .menu-wrap { position: relative; -webkit-app-region: no-drag; }
-  .menu-ico { width: 18px; height: 18px; display: block; }
-  .win-ico { width: 14px; height: 14px; display: block; }
+  .menu-wrap { position: relative; -webkit-app-region: no-drag; display: flex; align-items: center; }
+  .menu-ico { width: 15px; height: 15px; display: block; flex-shrink: 0; }
+  .win-ico { width: 15px; height: 15px; display: block; flex-shrink: 0; }
   #btn-menu.open { color: var(--cyber-accent); background: rgba(0,212,255,0.10); }
   /* Hide burger tooltip while the menu is open (hover stays on the button) */
   #btn-menu.open.cyber-tooltip::after,
