@@ -151,8 +151,8 @@ npm run build:portable   # portable only
 
 | Artifact | Description |
 |---|---|
-| `CyberViewer-Setup-1.14.0.exe` | NSIS installer |
-| `CyberViewer-Portable-1.14.0.exe` | Portable build |
+| `CyberViewer-Setup-1.15.0.exe` | NSIS installer |
+| `CyberViewer-Portable-1.15.0.exe` | Portable build |
 
 ### NSIS Installer Features
 - Optional "Set CyberViewer as default image viewer" (checked by default)
