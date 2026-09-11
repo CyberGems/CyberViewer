@@ -23,8 +23,27 @@ describe('Adjust drawer', () => {
     const markup = adjustMarkup();
     assert.match(markup, /class="modal-box adjust-drawer"/);
     assert.match(markup, /id="adj-preview-enabled"[^>]*checked/);
-    assert.match(markup, /id="btn-adjust-compare"/);
+    assert.match(markup, /id="btn-adjust-compare"[^>]*data-i18n-aria="adjust_compare"/);
     assert.doesNotMatch(markup, /adjust-preview-canvas|adj-preview-zoom|btn-adjust-zoom/);
+  });
+
+  it('uses the toolbar icon and keeps Reset scoped to the whole modal', () => {
+    const markup = adjustMarkup();
+    assert.match(markup, /class="modal-header-icon adjust-modal-icon"[^>]*>&#9681;<\/span>/);
+    assert.match(markup, /id="btn-adjust-reset"[^>]*data-i18n-title="adjust_reset_tooltip"/);
+    const effectsStart = markup.indexOf('data-i18n="adjust_toggles_lbl"');
+    const effectsEnd = markup.indexOf('id="adj-grayscale"', effectsStart);
+    assert.ok(effectsStart >= 0 && effectsEnd > effectsStart);
+    assert.doesNotMatch(markup.slice(effectsStart, effectsEnd), /btn-adjust-reset/);
+  });
+
+  it('keeps A/B momentary and places the copy label beside its toggle', () => {
+    const markup = adjustMarkup();
+    assert.match(markup, /data-i18n="adjust_create_copy">Aplicar a una copia<\/span>/);
+    assert.doesNotMatch(markup, /adjust_create_copy_desc|copy-toggle-sep/);
+    assert.match(appJs, /A\/B is intentionally momentary/);
+    assert.doesNotMatch(appJs, /compareSticky|short click toggles/);
+    assert.match(css, /\.copy-toggle-row\s*\{[\s\S]*?justify-content:\s*flex-start;[\s\S]*?gap:\s*8px;/);
   });
 
   it('defines a right-side drawer with a fixed action footer', () => {
@@ -53,11 +72,22 @@ describe('Adjust drawer', () => {
         'adjust_preview_lbl',
         'adjust_preview_hint',
         'adjust_preview_toggle',
-        'adjust_preview_toggle_tooltip'
+        'adjust_preview_toggle_tooltip',
+        'adjust_create_copy',
+        'crop_create_copy',
+        'resize_create_copy'
       ]) {
         assert.equal(typeof ui[lang][key], 'string', `${lang}.${key} should exist`);
         assert.ok(ui[lang][key].trim(), `${lang}.${key} should not be empty`);
       }
+    }
+    assert.equal(ui.en.adjust_preview_lbl, 'Preview');
+    assert.equal(ui.es.adjust_preview_lbl, 'Vista previa');
+    assert.equal(ui.en.adjust_preview_hint, 'Preview changes live');
+    assert.equal(ui.es.adjust_preview_hint, 'Previsualizar cambios en vivo');
+    for (const lang of ['en', 'es']) {
+      assert.equal(ui[lang].crop_create_copy, ui[lang].resize_create_copy);
+      assert.equal(ui[lang].resize_create_copy, ui[lang].adjust_create_copy);
     }
   });
 });

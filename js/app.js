@@ -3600,7 +3600,6 @@ const adjustState = {
   invert: false,
   previewEnabled: true,
   compareOriginal: false,
-  compareSticky: false,
   previewRaf: 0,
   originalFilter: ''
 };
@@ -3683,7 +3682,6 @@ function setAdjustPreviewEnabled(enabled) {
     compare.disabled = disabled;
     compare.setAttribute('aria-disabled', disabled ? 'true' : 'false');
     if (disabled) {
-      adjustState.compareSticky = false;
       adjustState.compareOriginal = false;
       compare.classList.remove('active');
       compare.setAttribute('aria-pressed', 'false');
@@ -3692,15 +3690,12 @@ function setAdjustPreviewEnabled(enabled) {
   applyAdjustPreview();
 }
 
-function setAdjustCompare(on, opts) {
+function setAdjustCompare(on) {
   adjustState.compareOriginal = !!on && adjustState.previewEnabled;
-  if (opts && opts.sticky != null) adjustState.compareSticky = !!opts.sticky;
   const btn = $('btn-adjust-compare');
   if (btn) {
-    // Active style reflects sticky latch (not momentary hold)
-    const latched = !!adjustState.compareSticky;
-    btn.classList.toggle('active', latched);
-    btn.setAttribute('aria-pressed', latched ? 'true' : 'false');
+    btn.classList.toggle('active', adjustState.compareOriginal);
+    btn.setAttribute('aria-pressed', adjustState.compareOriginal ? 'true' : 'false');
   }
   applyAdjustPreview();
 }
@@ -3737,7 +3732,6 @@ function openAdjustModal() {
     adjustState.originalFilter = mainImg.style.filter || '';
     writeAdjustControls(defaultAdjustControls());
     setAdjustPreviewEnabled(true);
-    adjustState.compareSticky = false;
     setAdjustCompare(false);
 
     if (typeof pauseSlideshow === 'function') pauseSlideshow();
@@ -3769,41 +3763,53 @@ if ($('adj-preview-enabled')) {
   });
 }
 
-// Compare UX: short click toggles sticky A/B; hold peeks original until release
+// Compare UX: A/B is intentionally momentary. Holding it reveals the original
+// and releasing it immediately restores the current live preview.
 (function wireAdjustCompare() {
   const cmp = $('btn-adjust-compare');
   if (!cmp) return;
-  let holdActive = false;
-  let pointerDownAt = 0;
+  let pointerActive = false;
+  let keyboardActive = false;
 
   cmp.addEventListener('pointerdown', (e) => {
     if (e.button != null && e.button !== 0) return;
     if (cmp.disabled) return;
-    holdActive = true;
-    pointerDownAt = Date.now();
+    pointerActive = true;
     try { cmp.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
     setAdjustCompare(true);
-    scheduleAdjustPreview();
   });
-  const releaseHold = (e) => {
-    if (!holdActive) return;
-    holdActive = false;
+  const releasePointer = (e) => {
+    if (!pointerActive) return;
+    pointerActive = false;
     try { cmp.releasePointerCapture(e.pointerId); } catch (_) { /* ignore */ }
-    const brief = Date.now() - pointerDownAt < 220;
-    if (brief) {
-      adjustState.compareSticky = !adjustState.compareSticky;
-    }
-    setAdjustCompare(adjustState.compareSticky);
+    setAdjustCompare(false);
   };
-  cmp.addEventListener('pointerup', releaseHold);
+  cmp.addEventListener('pointerup', releasePointer);
   cmp.addEventListener('pointercancel', () => {
-    holdActive = false;
-    setAdjustCompare(adjustState.compareSticky);
+    pointerActive = false;
+    setAdjustCompare(false);
   });
   cmp.addEventListener('lostpointercapture', () => {
-    if (!holdActive) return;
-    holdActive = false;
-    setAdjustCompare(adjustState.compareSticky);
+    if (!pointerActive) return;
+    pointerActive = false;
+    setAdjustCompare(false);
+  });
+  cmp.addEventListener('keydown', (e) => {
+    if (cmp.disabled || keyboardActive || (e.key !== ' ' && e.key !== 'Enter')) return;
+    e.preventDefault();
+    keyboardActive = true;
+    setAdjustCompare(true);
+  });
+  cmp.addEventListener('keyup', (e) => {
+    if (!keyboardActive || (e.key !== ' ' && e.key !== 'Enter')) return;
+    e.preventDefault();
+    keyboardActive = false;
+    setAdjustCompare(false);
+  });
+  cmp.addEventListener('blur', () => {
+    if (!keyboardActive) return;
+    keyboardActive = false;
+    setAdjustCompare(false);
   });
 })();
 
@@ -6023,7 +6029,6 @@ function closeModal(id) {
     restoreAdjustPreview();
     adjustState.originalFilter = '';
     adjustState.compareOriginal = false;
-    adjustState.compareSticky = false;
   }
   el.classList.remove('active');
   el.removeAttribute('aria-modal');

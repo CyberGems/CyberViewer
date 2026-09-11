@@ -2768,15 +2768,15 @@
     gap: 10px;
   }
 
-  /* Shared single-line "Create a copy · …" toggle (crop / resize / adjust) */
+  /* Shared single-line "Apply to a copy" toggle (crop / resize / adjust) */
   .copy-toggle-row {
     border-bottom: none !important;
     margin: 0 !important;
     padding: 8px 0 !important;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    justify-content: flex-start;
+    gap: 8px;
     cursor: help;
   }
   .copy-toggle-info {
@@ -2784,7 +2784,7 @@
     align-items: baseline;
     gap: 6px;
     min-width: 0;
-    flex: 1 1 auto;
+    flex: 0 1 auto;
     white-space: nowrap;
     overflow: hidden;
   }
@@ -2795,28 +2795,8 @@
     flex-shrink: 0;
     color: var(--cyber-text);
   }
-  .copy-toggle-sep {
-    color: var(--cyber-muted);
-    font-size: 11px;
-    flex-shrink: 0;
-    opacity: 0.75;
-  }
-  .copy-toggle-info .config-desc {
-    font-size: 11px;
-    margin-top: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
-    line-height: 1.2;
-    color: var(--cyber-muted);
-  }
   #crop-actions .copy-toggle-info .config-name {
     font-size: 11px;
-  }
-  #crop-actions .copy-toggle-info .config-desc,
-  #crop-actions .copy-toggle-sep {
-    font-size: 10px;
   }
   .crop-actions-btns {
     display: flex;
@@ -3226,14 +3206,6 @@
     font-size: 12px;
     font-weight: 600;
     color: var(--cyber-text);
-  }
-  .modal-footer .copy-toggle-row .config-desc {
-    font-size: 10px;
-    color: var(--cyber-muted);
-  }
-  .modal-footer .copy-toggle-row .copy-toggle-sep {
-    color: var(--cyber-muted);
-    opacity: 0.6;
   }
   .modal-footer .copy-toggle-row .switch {
     transform: scale(0.85);
@@ -4545,6 +4517,17 @@
     padding: 14px 22px;
     border-radius: 12px 0 0 0;
   }
+  #modal-adjust .adjust-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  #modal-adjust .adjust-modal-icon {
+    font-family: var(--font-digits);
+    font-size: 21px;
+    line-height: 1;
+    letter-spacing: 0;
+  }
   #modal-adjust .modal-body {
     flex: 1 1 auto;
     min-height: 0;
@@ -4573,6 +4556,7 @@
     min-width: 0;
     order: 0;
     padding-bottom: 0;
+    gap: 8px;
   }
   #modal-adjust .modal-footer .modal-cancel-btn {
     grid-column: 1;
@@ -4590,20 +4574,12 @@
     padding-bottom: 8px;
   }
   #modal-adjust .modal-footer .copy-toggle-info {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
     min-width: 0;
   }
   #modal-adjust .modal-footer .adjust-footer-copy > .switch {
-    margin-left: auto;
+    margin-left: 0;
     transform: none;
-  }
-  #modal-adjust .modal-footer .copy-toggle-info .config-name,
-  #modal-adjust .modal-footer .copy-toggle-info .config-desc {
-    white-space: nowrap;
-  }
-  #modal-adjust .modal-footer .copy-toggle-info .config-desc {
-    display: block;
-    max-width: none;
   }
   #modal-adjust .adjust-preview-toolbar {
     display: grid;
@@ -4654,16 +4630,6 @@
   }
   #modal-adjust .adjust-section .config-label {
     margin-bottom: 10px;
-  }
-  #modal-adjust .adjust-section-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 4px;
-  }
-  #modal-adjust .adjust-section-head .config-label {
-    margin-bottom: 0;
   }
   #modal-adjust .adjust-reset-btn {
     flex-shrink: 0;
@@ -4720,10 +4686,6 @@
   }
   #modal-adjust .modal-footer .copy-toggle-row .copy-toggle-info {
     min-width: 0;
-  }
-  #modal-adjust .modal-footer .copy-toggle-row .config-desc {
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
   @media (max-width: 600px) {
     #modal-adjust .adjust-drawer {
