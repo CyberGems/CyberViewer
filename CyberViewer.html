@@ -616,7 +616,7 @@
   <div class="modal-box config-modal-box">
     <div class="modal-header">
       <div class="modal-title">
-        <span class="config-header-icon" aria-hidden="true">&#9881;&#xFE0E;</span>
+        <span class="config-header-icon titlebar-config-glyph" aria-hidden="true">&#9881;&#xFE0E;</span>
         <span data-i18n="config_title">Configuración</span>
       </div>
       <button class="win-btn modal-close-btn" data-close-modal="modal-config">&#10005;</button>
@@ -626,23 +626,23 @@
         <aside class="config-nav" aria-label="Configuration sections">
           <div class="config-nav-items" role="tablist" aria-label="Configuration tabs">
             <button type="button" class="config-nav-btn active" data-config-tab="general" role="tab" aria-selected="true" aria-controls="config-tab-general">
-              <span class="config-nav-icon" aria-hidden="true">&#9673;</span>
+              <span class="config-nav-svg" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg></span>
               <span data-i18n="settings_nav_general">General</span>
             </button>
             <button type="button" class="config-nav-btn" data-config-tab="appearance" role="tab" aria-selected="false" aria-controls="config-tab-appearance">
-              <span class="config-nav-icon" aria-hidden="true">&#10022;</span>
+              <span class="config-nav-svg" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1l2.1-2.1M17 7l2.1-2.1"/></svg></span>
               <span data-i18n="settings_nav_appearance">Apariencia</span>
             </button>
             <button type="button" class="config-nav-btn" data-config-tab="interface" role="tab" aria-selected="false" aria-controls="config-tab-interface">
-              <span class="config-nav-icon" aria-hidden="true">&#9638;</span>
+              <span class="config-nav-svg" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg></span>
               <span data-i18n="settings_nav_interface">Interfaz</span>
             </button>
             <button type="button" class="config-nav-btn" data-config-tab="slideshow" role="tab" aria-selected="false" aria-controls="config-tab-slideshow">
-              <span class="config-nav-icon" aria-hidden="true">&#9654;</span>
+              <span class="config-nav-svg" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M10 9l6 3-6 3z"/></svg></span>
               <span data-i18n="settings_nav_slideshow">Presentación</span>
             </button>
             <button type="button" class="config-nav-btn" data-config-tab="system" role="tab" aria-selected="false" aria-controls="config-tab-system">
-              <span class="config-nav-icon" aria-hidden="true">&#9889;&#xFE0E;</span>
+              <span class="config-nav-svg" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h8l-1 8 10-12h-8z"/></svg></span>
               <span data-i18n="settings_nav_system">Sistema</span>
             </button>
             <button type="button" class="config-nav-btn" data-config-tab="backup" role="tab" aria-selected="false" aria-controls="config-tab-backup">
@@ -656,8 +656,8 @@
               <span id="config-autosave-state" data-i18n="config_autosave">Autoguardado</span>
             </div>
             <button type="button" class="config-nav-close" data-close-modal="modal-config">
-              <span class="config-close-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5H6.5A2.5 2.5 0 0 0 4 7.5v9A2.5 2.5 0 0 0 6.5 19H10"/><path d="M15 8l4 4-4 4"/><path d="M19 12H9"/></svg></span>
               <span data-i18n="config_close">Cerrar</span>
+              <svg class="btn-enter-icon config-close-enter" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 10.5 L7 5.2 L4.8 9 L14.6 9 L14.6 2.5 L17.4 2.5 L17.4 9 A2.8 2.8 0 0 1 14.6 11.8 L4.8 11.8 L7 15.8 Z" fill="currentColor" stroke="none"/></svg>
             </button>
           </div>
         </aside>
@@ -1009,6 +1009,13 @@
         </div>
       </div>
     </div>
+    <button type="button" class="config-brand-footer" id="config-brand-about" data-i18n-title="about" data-i18n-aria="about" title="Acerca de" aria-label="Acerca de">
+      <div class="config-brand-line">
+        <img class="config-brand-icon" src="assets/icon.png" alt="" aria-hidden="true" draggable="false">
+        <span>CyberViewer <span id="config-brand-version">v1.14.0</span></span>
+      </div>
+      <span class="config-brand-copyright">© 2026 CyberGems</span>
+    </button>
   </div>
 </div>
 

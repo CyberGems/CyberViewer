@@ -3910,6 +3910,65 @@
     overflow: hidden;
   }
 
+  #modal-config .config-brand-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 58px;
+    flex: 0 0 58px;
+    padding: 7px 28px;
+    box-sizing: border-box;
+    border-top: 1px solid var(--cyber-border);
+    background: rgba(0, 0, 0, 0.16);
+    color: #7185a2;
+    font-family: var(--font-ui);
+    font-size: 11px;
+    line-height: 1.15;
+    width: 100%;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    cursor: pointer;
+    transition: background 0.18s ease, color 0.18s ease;
+  }
+
+  #modal-config .config-brand-footer:hover {
+    color: #a7b9ce;
+  }
+
+  #modal-config .config-brand-footer:focus-visible {
+    outline: 1px solid var(--preview-accent);
+    outline-offset: -3px;
+    background: rgba(var(--preview-accent-rgb), 0.07);
+  }
+
+  #modal-config .config-brand-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #91a4bd;
+  }
+
+  #modal-config .config-brand-icon {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    opacity: 0.82;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+
+  #modal-config .config-brand-footer:hover .config-brand-icon,
+  #modal-config .config-brand-footer:focus-visible .config-brand-icon {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+
+  #modal-config .config-brand-copyright {
+    color: #62758f;
+  }
+
   #modal-config .config-layout {
     height: 100%;
     width: 100%;
@@ -3946,7 +4005,14 @@
   }
 
   #modal-config .config-header-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
     color: var(--preview-accent);
+    font-size: 26px;
+    filter: drop-shadow(0 0 7px rgba(var(--preview-accent-rgb), 0.5));
     text-shadow: 0 0 8px rgba(var(--preview-accent-rgb), 0.55);
   }
 
@@ -4096,21 +4162,11 @@
     transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
   }
 
-  #modal-config .config-close-icon {
-    width: 14px;
-    height: 14px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: inherit;
-  }
-
-  #modal-config .config-close-icon svg {
-    width: 14px;
-    height: 14px;
-    display: block;
-    transform: scaleX(-1);
-    transform-origin: center;
+  #modal-config .config-close-enter {
+    width: 13px;
+    height: 13px;
+    flex: 0 0 13px;
+    opacity: 0.72;
   }
 
   #modal-config .config-nav-close:hover {
@@ -4119,12 +4175,17 @@
     border-color: var(--preview-accent);
   }
 
+  #modal-config .config-nav-close:hover .config-close-enter {
+    color: var(--preview-accent);
+    opacity: 1;
+  }
+
   #modal-config .config-content {
     flex: 1;
     min-width: 0;
     overflow-x: hidden;
     overflow-y: auto;
-    padding: 28px 34px 40px;
+    padding: 30px 34px 44px;
     background: rgba(7, 10, 16, 0.18);
   }
 
@@ -4157,13 +4218,18 @@
     display: block;
   }
 
+  #modal-config .config-tab-panel {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
   #modal-config .config-section {
-    background: rgba(255,255,255,0.028);
-    border: 1px solid var(--cyber-border);
-    border-radius: 9px;
-    padding: 20px;
+    background: linear-gradient(145deg, rgba(255,255,255,0.042), rgba(255,255,255,0.018));
+    border: 1px solid rgba(112, 139, 176, 0.2);
+    border-radius: 10px;
+    padding: 21px 20px;
     margin-bottom: 18px;
-    box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+    box-shadow: 0 14px 28px rgba(0,0,0,0.11), inset 0 1px 0 rgba(255,255,255,0.018);
   }
 
   #modal-config .config-tab-intro {
@@ -4229,10 +4295,55 @@
   }
 
   #modal-config .config-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
     min-height: 62px;
     min-width: 0;
-    padding: 14px 0;
-    gap: 24px;
+    margin: 0;
+    padding: 13px 8px;
+    gap: 20px;
+    border-radius: 7px;
+    transition: background 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  #modal-config .config-row:hover {
+    background: rgba(var(--preview-accent-rgb), 0.055);
+    box-shadow: inset 2px 0 0 rgba(var(--preview-accent-rgb), 0.55);
+  }
+
+  #modal-config .config-row-copy {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  #modal-config .config-control-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    margin-top: 2px;
+    border: 1px solid rgba(112, 139, 176, 0.26);
+    border-radius: 6px;
+    background: rgba(8, 14, 23, 0.52);
+    color: #8296b2;
+    transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  #modal-config .config-control-icon .menu-ico {
+    width: 16px;
+    height: 16px;
+  }
+
+  #modal-config .config-row:hover .config-control-icon {
+    color: var(--preview-accent);
+    border-color: rgba(var(--preview-accent-rgb), 0.38);
+    background: rgba(var(--preview-accent-rgb), 0.09);
+    box-shadow: 0 0 12px rgba(var(--preview-accent-rgb), 0.13);
   }
 
   #modal-config .config-info {
@@ -4255,7 +4366,7 @@
   }
 
   #modal-config .config-row:first-of-type {
-    padding-top: 2px;
+    padding-top: 6px;
   }
 
   #modal-config .config-row:last-child {
@@ -4302,12 +4413,21 @@
     #modal-config .config-content {
       padding: 18px 16px 28px;
     }
+    #modal-config .config-brand-footer {
+      min-height: 54px;
+      flex-basis: 54px;
+    }
     #modal-config .config-section {
       padding: 15px;
     }
     #modal-config .config-row {
       align-items: flex-start;
       gap: 14px;
+    }
+    #modal-config .config-control-icon {
+      width: 28px;
+      height: 28px;
+      flex-basis: 28px;
     }
     #modal-config .config-name {
       font-size: 14px;

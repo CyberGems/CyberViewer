@@ -5001,6 +5001,13 @@ document.addEventListener('keydown', e => {
     return;
   }
 
+  // The config panel's footer presents Enter as its close action.
+  if (e.key === 'Enter' && $('modal-config').classList.contains('active')) {
+    closeModal('modal-config');
+    e.preventDefault();
+    return;
+  }
+
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
   // Enter applies/confirms in modals
@@ -6315,6 +6322,86 @@ function openPrintExportModal() {
 })();
 
 // ── CONFIG LOGIC ──
+const CONFIG_CONTROL_ICON_BY_ID = {
+  'cfg-lang': 'globe',
+  'cfg-monitor': 'fullscreen',
+  'cfg-alpha-bg': 'grid',
+  'cfg-image-outline': 'eye',
+  'cfg-sidebar': 'panel-left',
+  'cfg-statusbar': 'panel-bottom',
+  'cfg-animated-gifs': 'image',
+  'cfg-show-filename': 'tag',
+  'cfg-banner-autohide': 'eye-off',
+  'cfg-nav-autohide': 'eye-off',
+  'cfg-hud-delay': 'clock',
+  'cfg-show-hints': 'keyboard',
+  'cfg-disable-tooltips': 'info',
+  'cfg-dbl-click': 'settings',
+  'cfg-nav-zoom-mode': 'fit',
+  'cfg-ss-interval': 'clock',
+  'cfg-ss-loop': 'loop',
+  'cfg-ss-fs': 'fullscreen',
+  'cfg-tray': 'panel-bottom',
+  'cfg-close-image-tray': 'eye-off',
+  'cfg-autostart': 'play',
+  'cfg-contextmenu': 'settings',
+  'cfg-multiple': 'copy',
+  'cfg-hotkey': 'keyboard',
+  'cfg-export-settings': 'save',
+  'cfg-open-data-folder': 'folder-open',
+  'cfg-clear-thumbnail-cache': 'trash',
+  'cfg-clear-recent-history': 'clock',
+  'cfg-reset-factory': 'rotate-ccw'
+};
+
+/** Add a small, consistent visual cue to every setting without changing its control or label. */
+function initializeConfigControlIcons() {
+  document.querySelectorAll('#modal-config .config-row').forEach(row => {
+    if (row.dataset.configIconReady === 'true') return;
+
+    const info = row.querySelector(':scope > .config-info');
+    if (!info) return;
+
+    const control = row.querySelector('[id], .color-grid');
+    const iconName = (control && control.id && CONFIG_CONTROL_ICON_BY_ID[control.id]) ||
+      (control && control.classList.contains('color-grid') && 'sliders') || 'settings';
+    const icon = iconSvg(iconName);
+    if (!icon) return;
+
+    const copy = document.createElement('div');
+    copy.className = 'config-row-copy';
+    const iconWrap = document.createElement('span');
+    iconWrap.className = 'config-control-icon';
+    iconWrap.setAttribute('aria-hidden', 'true');
+    iconWrap.appendChild(icon);
+
+    row.insertBefore(copy, info);
+    copy.append(iconWrap, info);
+    row.dataset.configIconReady = 'true';
+  });
+}
+
+initializeConfigControlIcons();
+
+async function syncConfigBrandVersion() {
+  const label = $('config-brand-version');
+  if (!label || !isElectron || !window.electronAPI.getVersion) return;
+  try {
+    const version = await window.electronAPI.getVersion();
+    if (version) label.textContent = `v${version}`;
+  } catch (_) {
+    // Keep the bundled fallback version when the native bridge is unavailable.
+  }
+}
+
+const configBrandAbout = $('config-brand-about');
+if (configBrandAbout) {
+  configBrandAbout.addEventListener('click', () => {
+    if (typeof window.openAbout === 'function') window.openAbout();
+    else if ($('btn-about')) $('btn-about').click();
+  });
+}
+
 function openConfig() {
   if (!state.settings) return;
   const s = state.settings.app;
@@ -6373,6 +6460,7 @@ function openConfig() {
   setConfigAccentPreview(accent);
   setConfigAutosaveState(true, { visible: false });
   setActiveConfigTab('general');
+  syncConfigBrandVersion();
 
   openModal('modal-config');
 }

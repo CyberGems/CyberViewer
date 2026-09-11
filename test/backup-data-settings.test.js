@@ -65,6 +65,17 @@ describe('Backup & Data settings tab', () => {
 });
 
 describe('Configuration panel presentation', () => {
+  it('closes with Enter and exposes About through the compact CyberViewer footer', () => {
+    const config = configMarkup();
+    assert.match(config, /id="config-brand-about"[^>]*data-i18n-aria="about"/);
+    assert.match(config, /id="config-brand-version"/);
+    assert.match(css, /#modal-config \.config-brand-footer\s*\{[\s\S]*?border-top:/);
+    assert.match(css, /\.config-brand-footer:hover/);
+    assert.match(appJs, /e\.key === 'Enter' && \$\('modal-config'\)\.classList\.contains\('active'\)/);
+    assert.match(appJs, /closeModal\('modal-config'\);/);
+    assert.match(appJs, /configBrandAbout\.addEventListener\('click'[\s\S]*?window\.openAbout/);
+  });
+
   it('opens as a right-side panel with a slide-in animation', () => {
     assert.match(css, /#modal-config\s*\{[\s\S]*?justify-content:\s*flex-end;/);
     assert.match(css, /#modal-config \.config-modal-box\s*\{[\s\S]*?height:\s*100%;/);
