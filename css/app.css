@@ -812,6 +812,13 @@
     border-radius: 2px;
   }
   .menu-panel.open { display: block; animation: menuIn 150ms cubic-bezier(.4,0,.2,1); }
+  /* The burger menu is portaled out of the composited titlebar so Chromium
+     can blur the viewer image behind it, just like the context menu. */
+  .menu-panel.main-menu-portal {
+    position: fixed;
+    top: auto;
+    right: auto;
+  }
 
   .context-menu-panel {
     position: fixed !important;

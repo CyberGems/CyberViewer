@@ -83,4 +83,11 @@ describe('title bar Help menu', () => {
     assert.match(css, /\.menu-panel,[\s\S]*?\.menu-sub[\s\S]*?-webkit-backdrop-filter:\s*blur\(26px\) saturate\(145%\);[\s\S]*?backdrop-filter:\s*blur\(26px\) saturate\(145%\);/);
     assert.match(css, /@supports\s+not\s+\(\(backdrop-filter:\s*blur\(1px\)\)\s+or\s+\(-webkit-backdrop-filter:\s*blur\(1px\)\)\)/);
   });
+
+  it('portals the burger menu out of the composited titlebar for reliable blur', () => {
+    assert.match(appJs, /document\.body\.appendChild\(panel\);/);
+    assert.match(appJs, /panel\.classList\.add\('main-menu-portal'\);/);
+    assert.match(appJs, /!panel\.contains\(e\.target\)\s*&&\s*!btn\.contains\(e\.target\)/);
+    assert.match(css, /\.menu-panel\.main-menu-portal\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?right:\s*auto;/);
+  });
 });

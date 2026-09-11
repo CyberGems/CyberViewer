@@ -7672,6 +7672,13 @@ $('btn-config').addEventListener('click', openConfig);
   const btn = $('btn-menu');
   const panel = $('main-menu');
   if (!btn || !panel) return;
+
+  // The titlebar is a composited backdrop-filter surface. Keeping the burger
+  // menu inside it prevents Chromium from sampling the image behind the menu,
+  // so portal the panel to body while preserving its existing flyout DOM.
+  document.body.appendChild(panel);
+  panel.classList.add('main-menu-portal');
+
   btn.setAttribute('aria-haspopup', 'true');
   btn.setAttribute('aria-expanded', 'false');
   panel.querySelectorAll('.menu-cat[data-sub]').forEach((cat) => {
@@ -7797,8 +7804,31 @@ $('btn-config').addEventListener('click', openConfig);
       el.setAttribute('aria-expanded', 'false');
     });
     panel.classList.add('open');
+    positionMenu();
     btn.classList.add('open');
     btn.setAttribute('aria-expanded', 'true');
+  }
+
+  function positionMenu() {
+    if (!panel.classList.contains('open')) return;
+    const buttonRect = btn.getBoundingClientRect();
+    const gap = 6;
+    const margin = 8;
+    const menuWidth = panel.offsetWidth;
+    const menuHeight = panel.offsetHeight;
+    let left = buttonRect.right - menuWidth;
+    let top = buttonRect.bottom + gap;
+
+    if (left < margin) left = margin;
+    if (left + menuWidth > window.innerWidth - margin) {
+      left = Math.max(margin, window.innerWidth - menuWidth - margin);
+    }
+    if (top + menuHeight > window.innerHeight - margin && buttonRect.top - menuHeight - gap >= margin) {
+      top = buttonRect.top - menuHeight - gap;
+    }
+
+    panel.style.left = Math.round(left) + 'px';
+    panel.style.top = Math.round(top) + 'px';
   }
 
   btn.addEventListener('click', e => {
@@ -7806,8 +7836,9 @@ $('btn-config').addEventListener('click', openConfig);
     panel.classList.contains('open') ? closeMenu() : openMenu();
   });
   document.addEventListener('pointerdown', e => {
-    if (panel.classList.contains('open') && !e.target.closest('.menu-wrap')) closeMenu();
+    if (panel.classList.contains('open') && !panel.contains(e.target) && !btn.contains(e.target)) closeMenu();
   });
+  window.addEventListener('resize', positionMenu);
 
   function closeOpenModals() {
     closeModal('modal-config');
