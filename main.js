@@ -93,6 +93,7 @@ function loadSettings() {
         if (data.app.bannerAutoHide === undefined) data.app.bannerAutoHide = (data.app.hudAutoHide !== undefined ? data.app.hudAutoHide : true);
         if (data.app.hudAutoHideDelay === undefined) data.app.hudAutoHideDelay = 2000;
         if (data.app.disableTooltips === undefined) data.app.disableTooltips = false;
+        if (data.app.showShortcutGuide === undefined) data.app.showShortcutGuide = true;
         if (data.app.alphaBackground === undefined) data.app.alphaBackground = 'checker-dark';
         if (data.app.imageOutline === undefined) data.app.imageOutline = false;
         if (!Array.isArray(data.app.recentFiles)) data.app.recentFiles = [];
@@ -136,7 +137,7 @@ function loadSettings() {
       bannerAutoHide: true,
       hudAutoHideDelay: 2000,
       disableTooltips: false,
-      showTopHints: true,
+      showShortcutGuide: true,
       alphaBackground: 'checker-dark',
       imageOutline: false,
       recentFiles: [],

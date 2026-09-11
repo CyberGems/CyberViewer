@@ -66,6 +66,32 @@ describe('title bar Help menu', () => {
     assert.match(html, /id="btn-menu"[^>]*aria-haspopup="true"[^>]*aria-expanded="false"/);
   });
 
+  it('keeps the active filename in the window title bar and reserves its banner for fullscreen', () => {
+    assert.match(html, /id="titlebar-filename"[^>]*data-i18n-aria="titlebar_filename_aria"/);
+    assert.doesNotMatch(html, /id="top-hints"/);
+    assert.match(css, /body:not\(\.ghost-mode\) #viewer-filename\s*\{\s*display:\s*none !important;/);
+    assert.match(css, /body\.ghost-mode \.titlebar-filename\s*\{\s*display:\s*none;/);
+    assert.match(appJs, /function syncFilenameDisplays\(image = state\.images\[state\.current\]\)/);
+    assert.match(appJs, /showPropertiesPanel\(image\.file\.path\)/);
+    for (const lang of ['en', 'es']) {
+      for (const key of ['titlebar_filename_aria', 'titlebar_filename_hint']) {
+        assert.equal(typeof ui[lang][key], 'string');
+        assert.ok(ui[lang][key].trim().length > 0);
+      }
+    }
+  });
+
+  it('provides the shortcut guide from a compact title-bar button', () => {
+    assert.match(html, /id="btn-shortcuts"[^>]*aria-controls="shortcuts-popover"/);
+    assert.match(html, /id="shortcuts-popover"[^>]*role="dialog"/);
+    assert.match(appJs, /function setShortcutsPopoverOpen\(open\)/);
+    assert.match(appJs, /if \(closeShortcutsPopover\(\)\)/);
+    for (const lang of ['en', 'es']) {
+      assert.equal(typeof ui[lang].shortcuts_title, 'string');
+      assert.ok(ui[lang].shortcuts_title.trim().length > 0);
+    }
+  });
+
   it('uses CyberViewer destinations and the existing external-link bridge', () => {
     const urls = [
       'https://github.com/CyberGems/CyberViewer/wiki',

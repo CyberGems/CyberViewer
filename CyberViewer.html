@@ -16,28 +16,19 @@
     <div class="logo-text"><span style="color:#E6E6E6">Cyber</span><span class="logo-text-viewer">Viewer</span></div>
   </div>
   <div style="flex:1;-webkit-app-region:drag"></div>
-  <div class="top-hints" id="top-hints">
-    <div class="hint-group">
-      <kbd class="cyber-key cyber-key-arrow">←</kbd><kbd class="cyber-key cyber-key-arrow">→</kbd>
-      <span class="hint-txt" data-i18n="navigate_hint">NAVEGAR</span>
-    </div>
-    <div class="hint-sep">|</div>
-    <div class="hint-group">
-      <kbd class="cyber-key" data-i18n="key_scroll">Scroll</kbd>
-      <span class="hint-txt" data-i18n="zoom_hint">ZOOM</span>
-    </div>
-    <div class="hint-sep">|</div>
-    <div class="hint-group">
-      <kbd class="cyber-key" data-i18n="key_drag">Drag</kbd>
-      <span class="hint-txt" data-i18n="pan_hint">MOVER</span>
-    </div>
-    <div class="hint-sep">|</div>
-    <div class="hint-group">
-      <kbd class="cyber-key" data-i18n="key_enter">Enter</kbd>
-      <span class="hint-txt" data-i18n="fullscreen">PANTALLA</span>
-    </div>
-    <button id="hints-close" type="button" class="hints-close tooltip-bottom" data-i18n-title="hints_close_title" aria-label="Ocultar atajos de teclado">&times;</button>
-  </div>
+  <button id="titlebar-filename" type="button" class="titlebar-filename cyber-tooltip tooltip-bottom" data-i18n-aria="titlebar_filename_aria" aria-label="Abrir propiedades"></button>
+  <button type="button" class="win-btn tooltip-bottom" id="btn-shortcuts" data-i18n-title="shortcuts_title" data-i18n-aria="shortcuts_title" aria-haspopup="dialog" aria-controls="shortcuts-popover" aria-expanded="false">
+    <span aria-hidden="true">⌨</span>
+  </button>
+  <section id="shortcuts-popover" class="shortcuts-popover" role="dialog" aria-labelledby="shortcuts-popover-title" hidden>
+    <div id="shortcuts-popover-title" class="shortcuts-popover-title" data-i18n="shortcuts_title">Atajos de teclado</div>
+    <dl class="shortcuts-list">
+      <div><dt><kbd>←</kbd><kbd>→</kbd></dt><dd data-i18n="navigate_hint">NAVEGAR</dd></div>
+      <div><dt><kbd data-i18n="key_scroll">Rueda</kbd></dt><dd data-i18n="zoom_hint">ZOOM</dd></div>
+      <div><dt><kbd data-i18n="key_drag">Arrastrar</kbd></dt><dd data-i18n="pan_hint">MOVER</dd></div>
+      <div><dt><kbd data-i18n="key_enter">Intro</kbd></dt><dd data-i18n="fullscreen">PANTALLA</dd></div>
+    </dl>
+  </section>
   <button type="button" class="win-btn tooltip-bottom" id="btn-config" data-i18n-title="config" data-i18n-aria="config" title="Configuración" aria-label="Configuración">
     <span class="titlebar-config-glyph" aria-hidden="true">&#9881;&#xFE0E;</span>
   </button>
@@ -762,8 +753,8 @@
               </div>
               <div class="config-row">
                 <div class="config-info">
-                  <div class="config-name" data-i18n="cfg_show_filename">Mostrar nombre de archivo</div>
-                  <div class="config-desc" data-i18n="cfg_show_filename_desc">Mostrar el banner del nombre de archivo sobre el lienzo.</div>
+                  <div class="config-name" data-i18n="cfg_show_filename">Mostrar nombre en pantalla completa</div>
+                  <div class="config-desc" data-i18n="cfg_show_filename_desc">Muestra el nombre sobre la imagen en pantalla completa.</div>
                 </div>
                 <label class="switch">
                   <input type="checkbox" id="cfg-show-filename" checked>
@@ -772,8 +763,8 @@
               </div>
               <div class="config-row">
                 <div class="config-info">
-                  <div class="config-name" data-i18n="cfg_banner_autohide">Ocultar nombre de archivo automáticamente</div>
-                  <div class="config-desc" data-i18n="cfg_banner_autohide_desc">Oculta el banner del título tras inactividad sobre el lienzo.</div>
+                  <div class="config-name" data-i18n="cfg_banner_autohide">Ocultar nombre en pantalla completa automáticamente</div>
+                  <div class="config-desc" data-i18n="cfg_banner_autohide_desc">Oculta el nombre tras inactividad sobre la imagen en pantalla completa.</div>
                 </div>
                 <label class="switch">
                   <input type="checkbox" id="cfg-banner-autohide" checked>
@@ -799,8 +790,8 @@
               </div>
               <div class="config-row">
                 <div class="config-info">
-                  <div class="config-name" data-i18n="cfg_show_hints">Atajos de Título</div>
-                  <div class="config-desc" data-i18n="cfg_show_hints_desc">Mostrar atajos de teclado en la barra superior.</div>
+                  <div class="config-name" data-i18n="cfg_show_hints">Botón de atajos</div>
+                  <div class="config-desc" data-i18n="cfg_show_hints_desc">Muestra la guía rápida de atajos en la barra de título.</div>
                 </div>
                 <label class="switch">
                   <input type="checkbox" id="cfg-show-hints" checked>

@@ -101,7 +101,7 @@
     z-index: 99999999;
   }
 
-  #topbar button, #topbar input, .top-hints { -webkit-app-region: no-drag; }
+  #topbar button, #topbar input, .titlebar-filename { -webkit-app-region: no-drag; }
 
   #main {
     position: absolute !important;
@@ -140,9 +140,8 @@
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease !important;
   }
 
-  /* Keep the complete titlebar draggable, even when the optional hints are
-     hidden. Interactive children remain above this surface and are marked
-     no-drag below, so their click targets are unaffected. */
+  /* Keep the complete titlebar draggable. Interactive children remain above
+     this surface and are marked no-drag below, so their click targets work. */
   #topbar::before {
     content: '';
     position: absolute;
@@ -591,6 +590,9 @@
     opacity: 0 !important;
     transform: translateX(-50%) translateY(-10px) !important;
   }
+  /* In a window the permanent titlebar label owns the filename. The floating
+     banner is reserved for immersive fullscreen, where the titlebar is gone. */
+  body:not(.ghost-mode) #viewer-filename { display: none !important; }
 
   /* While a notice/toast is showing it lands directly under this banner's
      top-center spot — fade the filename banner out for the toast's lifetime
@@ -2740,11 +2742,6 @@
   }
 
   /* ── EMPTY STATE chrome ── */
-  body.empty-state #top-hints {
-    opacity: 0 !important;
-    pointer-events: none !important;
-    transform: translate(-50%, -12px) !important;
-  }
   body.empty-state #statusbar {
     display: none !important;
   }
@@ -4600,56 +4597,88 @@
     font-size: 11px;
     margin: 0 1px;
   }
-  .top-hints {
+  .titlebar-filename {
     position: absolute;
     left: 50%;
-    transform: translate(-50%, 0);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    max-width: min(52vw, 560px);
-    pointer-events: none;
+    transform: translateX(-50%);
     z-index: 10;
-    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .top-hints.hidden {
-    opacity: 0;
-    transform: translate(-50%, -15px);
-    pointer-events: none;
-    -webkit-app-region: drag;
-  }
-  body.empty-state #top-hints {
-    -webkit-app-region: drag;
-  }
-
-  /* Close button at the end of the keyboard hints row */
-  .hints-close {
-    appearance: none;
-    -webkit-appearance: none;
-    background: none;
+    display: block;
+    max-width: clamp(160px, 36vw, 640px);
+    overflow: hidden;
     border: 0;
+    background: transparent;
+    color: var(--cyber-text);
+    font: 600 12px/1 var(--font-ui);
+    letter-spacing: 0.02em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+    padding: 5px 8px;
+    border-radius: 4px;
+    -webkit-app-region: no-drag !important;
+    user-select: none;
+  }
+  .titlebar-filename:empty { display: none; }
+  .titlebar-filename:hover,
+  .titlebar-filename:focus-visible {
     color: var(--cyber-accent);
-    opacity: 0.55;
-    font-size: 16px;
-    line-height: 1;
-    width: 20px;
-    height: 20px;
+    background: rgba(var(--cyber-accent-rgb), 0.09);
+    outline: none;
+  }
+  body.ghost-mode .titlebar-filename { display: none; }
+
+  #btn-shortcuts.hidden { display: none; }
+  #btn-shortcuts.open { color: var(--cyber-accent); background: rgba(var(--cyber-accent-rgb), 0.10); }
+  .shortcuts-popover {
+    position: fixed;
+    top: 54px;
+    right: 138px;
+    z-index: 1000001;
+    width: min(286px, calc(100vw - 24px));
+    box-sizing: border-box;
+    padding: 12px;
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.42);
+    border-radius: 6px;
+    background: linear-gradient(135deg, rgba(38, 53, 72, 0.96), rgba(10, 16, 26, 0.94));
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.42), 0 0 18px rgba(var(--cyber-accent-rgb), 0.12);
+    -webkit-backdrop-filter: blur(18px) saturate(130%);
+    backdrop-filter: blur(18px) saturate(130%);
+    -webkit-app-region: no-drag;
+  }
+  .shortcuts-popover[hidden] { display: none; }
+  .shortcuts-popover-title {
+    margin-bottom: 9px;
+    color: var(--cyber-accent);
+    font: 700 11px/1.2 var(--font-ui);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .shortcuts-list { margin: 0; }
+  .shortcuts-list > div {
     display: flex;
     align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    cursor: pointer;
-    pointer-events: auto;
-    padding: 0;
-    transition: opacity 0.18s ease, background 0.18s ease;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 27px;
+    border-top: 1px solid rgba(var(--cyber-accent-rgb), 0.12);
   }
-  .hints-close:hover {
-    opacity: 1;
-    background: rgba(var(--cyber-accent-rgb), 0.16);
+  .shortcuts-list dt,
+  .shortcuts-list dd { margin: 0; }
+  .shortcuts-list dt { display: flex; gap: 4px; }
+  .shortcuts-list dd {
+    color: var(--cyber-muted);
+    font: 600 10px/1 var(--font-ui);
+    letter-spacing: 0.08em;
   }
-  .hints-close:focus-visible {
-    outline: 1px solid var(--cyber-accent);
-    outline-offset: 1px;
+  .shortcuts-list kbd {
+    min-width: 18px;
+    padding: 2px 5px;
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.34);
+    border-radius: 3px;
+    color: var(--cyber-text);
+    background: rgba(0, 0, 0, 0.18);
+    font: 600 10px/1 var(--font-ui);
+    text-align: center;
   }
 
   /* ── OVERRIDES & IMPROVEMENTS FOR MODAL RESIZE (CYBERPUNK AESTHETIC) ── */

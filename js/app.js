@@ -109,7 +109,7 @@ const state = {
       language: 'en',
       favorites: [],
       animateGifs: true,
-      showTopHints: true,
+      showShortcutGuide: true,
       checkUpdatesOnStartup: true,
       // Toast once per version; badge stays until update is applied
       updateNotify: {
@@ -452,6 +452,55 @@ function updateLanguage(lang = 'en') {
   if (typeof syncWindowCloseMenuItem === 'function') {
     syncWindowCloseMenuItem();
   }
+  if (typeof syncFilenameDisplays === 'function') {
+    syncFilenameDisplays();
+  }
+}
+
+/** Keep the window title and fullscreen banner in sync with the active image. */
+function syncFilenameDisplays(image = state.images[state.current]) {
+  const viewerFilename = $('viewer-filename');
+  const titlebarFilename = $('titlebar-filename');
+  const name = image && image.file ? image.file.name : '';
+  const filePath = image && image.file ? image.file.path : '';
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  const t = I18N[lang] || I18N.en || {};
+
+  [viewerFilename, titlebarFilename].forEach(el => {
+    if (!el) return;
+    el.textContent = name || '';
+    el.removeAttribute('data-tooltip');
+    el.classList.remove('cyber-tooltip');
+  });
+  if (!filePath) return;
+
+  if (viewerFilename) {
+    setCyberTooltip(viewerFilename, filePath);
+    viewerFilename.classList.add('tooltip-bottom');
+  }
+  if (titlebarFilename) {
+    const actionHint = t.titlebar_filename_hint || 'Click to open properties';
+    setCyberTooltip(titlebarFilename, `${filePath}\n${actionHint}`);
+    titlebarFilename.classList.add('tooltip-bottom');
+  }
+}
+
+function setShortcutsPopoverOpen(open) {
+  const button = $('btn-shortcuts');
+  const popover = $('shortcuts-popover');
+  if (!button || !popover) return false;
+  const next = !!open && !button.classList.contains('hidden');
+  popover.hidden = !next;
+  button.classList.toggle('open', next);
+  button.setAttribute('aria-expanded', String(next));
+  return next;
+}
+
+function closeShortcutsPopover() {
+  const popover = $('shortcuts-popover');
+  if (!popover || popover.hidden) return false;
+  setShortcutsPopoverOpen(false);
+  return true;
 }
 
 function closeImage() {
@@ -487,12 +536,7 @@ function closeImage() {
   canvasL.style.transform = '';
   canvasL.style.transition = '';
 
-  const viewerFilename = $('viewer-filename');
-  if (viewerFilename) {
-    viewerFilename.textContent = '';
-    viewerFilename.removeAttribute('data-tooltip');
-    viewerFilename.classList.remove('cyber-tooltip', 'tooltip-bottom');
-  }
+  syncFilenameDisplays();
 
   buildSidebar();
   updateCounter();
@@ -1735,9 +1779,9 @@ function buildMenuTemplate(type, data) {
           {
             label: getTxt('menu_show_hints'),
             type: 'checkbox',
-            checked: state.settings.app.showTopHints !== false,
+            checked: state.settings.app.showShortcutGuide !== false,
             action: () => {
-              state.settings.app.showTopHints = (state.settings.app.showTopHints !== false) ? false : true;
+              state.settings.app.showShortcutGuide = (state.settings.app.showShortcutGuide !== false) ? false : true;
               if (isElectron) window.electronAPI.saveSettings(state.settings.app);
               applySettings();
             }
@@ -2099,7 +2143,7 @@ function executeAction(data) {
       closeImage();
       break;
     case 'toggle-hints':
-      state.settings.app.showTopHints = (state.settings.app.showTopHints !== false) ? false : true;
+      state.settings.app.showShortcutGuide = (state.settings.app.showShortcutGuide !== false) ? false : true;
       if (isElectron) window.electronAPI.saveSettings(state.settings.app);
       applySettings();
       break;
@@ -2532,18 +2576,8 @@ function showImage(idx, direction, isInitial = false) {
     const url = getUrl(idx);
     const im = state.images[idx];
     
-    // Update filename info
-    const viewerFilename = $('viewer-filename');
-    if (viewerFilename) {
-      viewerFilename.textContent = im.file.name;
-      if (im.file && im.file.path) {
-        setCyberTooltip(viewerFilename, im.file.path);
-        viewerFilename.classList.add('tooltip-bottom');
-      } else {
-        viewerFilename.removeAttribute('data-tooltip');
-        viewerFilename.classList.remove('cyber-tooltip', 'tooltip-bottom');
-      }
-    }
+    // Update the permanent window title and the fullscreen-only banner.
+    syncFilenameDisplays(im);
 
     if (im.loaded) {
       if (areAnimatedGifsEnabled() || !isGifImage(im)) {
@@ -5050,6 +5084,10 @@ viewerWrap.addEventListener('touchend', e => {
 document.addEventListener('keydown', e => {
   // Escape always closes overlays, even when an input has focus
   if (e.key === 'Escape' || e.key === 'Esc') {
+    if (closeShortcutsPopover()) {
+      e.preventDefault();
+      return;
+    }
     const menuPanel = $('main-menu');
     if (menuPanel && menuPanel.classList.contains('open')) {
       menuPanel.classList.remove('open');
@@ -5324,8 +5362,7 @@ function handleFileDeleted(index) {
     mainImg.src = '';
     dropZone.style.display = 'flex';
     sidebar.innerHTML = '';
-    const viewerFilename = $('viewer-filename');
-    if (viewerFilename) viewerFilename.textContent = '';
+    syncFilenameDisplays();
   } else {
     const nextIdx = Math.min(index, state.images.length - 1);
     syncCurrentIndex(nextIdx);
@@ -5858,6 +5895,7 @@ function applyImmersiveFullscreen(on, opts = {}) {
   state.isGhost = want;
   if (want) state.isCropping = false; // AISLAMIENTO TOTAL
   document.body.classList.toggle('ghost-mode', want);
+  if (want) setShortcutsPopoverOpen(false);
 
   // Presentation is independent of fullscreen:
   // entering FS during slideshow → Esc/stop may leave FS;
@@ -6512,7 +6550,7 @@ function openConfig() {
   if ($('cfg-dbl-click')) $('cfg-dbl-click').value = normalizeDblClickAction(s.dblClickAction);
   if ($('cfg-nav-zoom-mode')) $('cfg-nav-zoom-mode').value = normalizeNavZoomMode(s.navZoomMode);
   $('cfg-nav-autohide').checked = s.navAutoHide !== false;
-  $('cfg-show-hints').checked = s.showTopHints !== false;
+  $('cfg-show-hints').checked = s.showShortcutGuide !== false;
   $('cfg-disable-tooltips').checked = !!s.disableTooltips;
   $('cfg-hud-delay').value = s.hudAutoHideDelay;
   $('cfg-hud-delay-val').textContent = (s.hudAutoHideDelay / 1000).toFixed(1) + 's';
@@ -6605,7 +6643,7 @@ function collectConfigSettings() {
     toggleHotkey: $('cfg-hotkey') ? ($('cfg-hotkey').value.trim() || 'disabled') : 'disabled',
     bannerAutoHide: $('cfg-banner-autohide').checked,
     navAutoHide: $('cfg-nav-autohide').checked,
-    showTopHints: $('cfg-show-hints').checked,
+    showShortcutGuide: $('cfg-show-hints').checked,
     disableTooltips: $('cfg-disable-tooltips').checked,
     hudAutoHideDelay: parseInt($('cfg-hud-delay').value, 10),
     alphaBackground: normalizeAlphaBackground($('cfg-alpha-bg') && $('cfg-alpha-bg').value),
@@ -6642,7 +6680,7 @@ function getFactoryAppSettings() {
     bannerAutoHide: true,
     hudAutoHideDelay: 2000,
     disableTooltips: false,
-    showTopHints: true,
+    showShortcutGuide: true,
     alphaBackground: 'checker-dark',
     imageOutline: false,
     slideshowIntervalMs: 3000,
@@ -7031,25 +7069,12 @@ function applySettings() {
   }
   document.body.classList.toggle('statusbar-visible', !!s.statusbarVisible);
 
-  // Title bar hints visibility (also forced off in empty-state via CSS)
-  const showHints = s.showTopHints !== false;
-  const hintsEl = $('top-hints');
-  if (hintsEl) {
-    hintsEl.classList.toggle('hidden', !showHints);
-  }
-  const hintsCloseBtn = document.getElementById('hints-close');
-  if (hintsCloseBtn && !hintsCloseBtn.dataset.bound) {
-    hintsCloseBtn.dataset.bound = '1';
-    hintsCloseBtn.addEventListener('click', () => {
-      state.settings.app.showTopHints = false;
-      if (isElectron) window.electronAPI.saveSettings(state.settings.app);
-      applySettings();
-    });
-  }
-  if (hintsCloseBtn) {
-    const _lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
-    hintsCloseBtn.setAttribute('aria-label', (I18N[_lang] && I18N[_lang].hints_close_title) || (I18N.en && I18N.en.hints_close_title) || '');
-  }
+  // This is intentionally a new preference: an old hidden hint row must not
+  // hide the newly discoverable shortcut-guide button.
+  const shortcutsButton = $('btn-shortcuts');
+  const showShortcutsButton = s.showShortcutGuide !== false;
+  if (shortcutsButton) shortcutsButton.classList.toggle('hidden', !showShortcutsButton);
+  if (!showShortcutsButton) setShortcutsPopoverOpen(false);
 
   // Disable all tooltips (user setting)
   document.body.classList.toggle("no-tooltips", !!s.disableTooltips);
@@ -7259,7 +7284,7 @@ if (isElectron) {
 function syncRotationPendingState(pending) {
   document.body.classList.toggle('rotation-pending', pending);
   const allowed = new Set(['btn-rot-l', 'btn-rot-r', 'btn-commit', 'btn-discard']);
-  document.querySelectorAll('#kbd-hint button, #nav-container button, #sidebar-controls button, #btn-menu, #btn-config').forEach((el) => {
+  document.querySelectorAll('#kbd-hint button, #nav-container button, #sidebar-controls button, #btn-menu, #btn-config, #btn-shortcuts').forEach((el) => {
     if (allowed.has(el.id)) return;
     if (pending) {
       if (!el.dataset.rotationWasDisabled) el.dataset.rotationWasDisabled = el.disabled ? '1' : '0';
@@ -7845,6 +7870,35 @@ $('btn-go-end').addEventListener('click', (e) => {
 
 $('btn-config').addEventListener('click', openConfig);
 
+(function initTitlebarControls() {
+  const filename = $('titlebar-filename');
+  const shortcutsButton = $('btn-shortcuts');
+  const shortcutsPopover = $('shortcuts-popover');
+
+  if (filename) {
+    filename.addEventListener('pointerdown', event => {
+      if (event.button != null && event.button !== 0) return;
+      // Electron can otherwise treat the initial press as a titlebar drag.
+      // Opening on pointerdown makes Properties reliable on the first click.
+      event.preventDefault();
+      event.stopPropagation();
+      const image = state.images[state.current];
+      if (image && image.file && image.file.path) showPropertiesPanel(image.file.path);
+    });
+  }
+
+  if (!shortcutsButton || !shortcutsPopover) return;
+  shortcutsButton.addEventListener('click', () => {
+    setShortcutsPopoverOpen(shortcutsPopover.hidden);
+  });
+  document.addEventListener('pointerdown', event => {
+    if (shortcutsPopover.hidden) return;
+    if (!shortcutsPopover.contains(event.target) && !shortcutsButton.contains(event.target)) {
+      setShortcutsPopoverOpen(false);
+    }
+  });
+})();
+
 // ── MAIN MENU (☰) ──
 (function initMainMenu() {
   const btn = $('btn-menu');
@@ -7945,7 +7999,7 @@ $('btn-config').addEventListener('click', openConfig);
     const tb = panel.querySelector('[data-action="toolbar"]');
     if (tb) tb.classList.toggle('checked', state.toolbarOpen !== false);
     const th = panel.querySelector('[data-action="toggle-hints"]');
-    if (th) th.classList.toggle('checked', !!(state.settings && state.settings.app && state.settings.app.showTopHints !== false));
+    if (th) th.classList.toggle('checked', !!(state.settings && state.settings.app && state.settings.app.showShortcutGuide !== false));
     const ab = panel.querySelector('[data-action="toggle-alpha-bg"]');
     if (ab) {
       const mode = state.settings && state.settings.app
@@ -8072,7 +8126,7 @@ $('btn-config').addEventListener('click', openConfig);
         setToolbarOpen(!(state.toolbarOpen !== false));
         break;
       case 'toggle-hints':
-        state.settings.app.showTopHints = (state.settings.app.showTopHints !== false) ? false : true;
+        state.settings.app.showShortcutGuide = (state.settings.app.showShortcutGuide !== false) ? false : true;
         if (isElectron) window.electronAPI.saveSettings(state.settings.app);
         applySettings();
         break;
@@ -8601,8 +8655,7 @@ async function toggleFavoritesView() {
       mainImg.src = '';
       dropZone.style.display = 'flex';
       $('sidebar-inner').innerHTML = '';
-      const viewerFilename = $('viewer-filename');
-      if (viewerFilename) viewerFilename.textContent = '';
+      syncFilenameDisplays();
       updateCounter();
     }
     if (state.nonFavImages.length > 0) {
