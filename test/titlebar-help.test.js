@@ -79,7 +79,8 @@ describe('title bar Help menu', () => {
   });
 
   it('uses localized glass for menus without affecting the viewer surface', () => {
-    assert.match(css, /\.menu-panel,\s*\.menu-sub\s*\{[\s\S]*?background:\s*var\(--cyber-panel\);[\s\S]*?box-shadow:/);
-    assert.match(css, /@supports\s*\(backdrop-filter:\s*blur\(1px\)\)\s*\{[\s\S]*?\.menu-panel,[\s\S]*?\.menu-sub[\s\S]*?backdrop-filter:\s*blur\(20px\) saturate\(140%\);/);
+    assert.match(css, /\.menu-panel,\s*\.menu-sub\s*\{[\s\S]*?background:\s*[\s\S]*?border-color:[\s\S]*?box-shadow:/);
+    assert.match(css, /\.menu-panel,[\s\S]*?\.menu-sub[\s\S]*?-webkit-backdrop-filter:\s*blur\(26px\) saturate\(145%\);[\s\S]*?backdrop-filter:\s*blur\(26px\) saturate\(145%\);/);
+    assert.match(css, /@supports\s+not\s+\(\(backdrop-filter:\s*blur\(1px\)\)\s+or\s+\(-webkit-backdrop-filter:\s*blur\(1px\)\)\)/);
   });
 });
