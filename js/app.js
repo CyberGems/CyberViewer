@@ -1159,11 +1159,7 @@ function hideInterfaceMenus() {
   const btnMenu = $('btn-menu');
   if (mainMenu) {
     mainMenu.classList.remove('open');
-    mainMenu.querySelectorAll('.menu-cat.sub-open').forEach((cat) => {
-      if (cat._subCloseTimer) { clearTimeout(cat._subCloseTimer); cat._subCloseTimer = 0; }
-      cat.classList.remove('sub-open');
-      cat.setAttribute('aria-expanded', 'false');
-    });
+    submenuPortal.closeAll(mainMenu);
   }
   if (btnMenu) {
     btnMenu.classList.remove('open');
@@ -1178,6 +1174,130 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('blur', hideInterfaceMenus);
 window.addEventListener('cv-window-blur', hideInterfaceMenus);
+
+// A backdrop-filter cannot reach past an ancestor that has already been
+// composited. Keep flyouts as direct children of body while they are open so
+// each one samples the viewer image, just like the root menus do.
+const submenuPortal = (() => {
+  const GAP = 4;
+  const EDGE = 10;
+
+  function rootFor(cat) {
+    return cat._submenuPortalRoot || cat.closest('.menu-panel');
+  }
+
+  function directSubmenu(cat) {
+    return cat._submenuPortalSubmenu || cat.querySelector(':scope > .menu-sub');
+  }
+
+  function markChildren(sub, owner, root) {
+    sub._submenuPortalOwner = owner;
+    sub._submenuPortalRoot = root;
+    sub.querySelectorAll(':scope > .menu-cat[data-sub]').forEach((child) => {
+      child._submenuPortalParent = owner;
+      child._submenuPortalRoot = root;
+    });
+  }
+
+  function position(cat, sub, root) {
+    const catRect = cat.getBoundingClientRect();
+    const subWidth = sub.offsetWidth;
+    const subHeight = sub.offsetHeight;
+    const isContext = root && root.classList.contains('context-menu-panel');
+    let opensRight = isContext && !root.classList.contains('open-left');
+    let left = opensRight ? catRect.right + GAP : catRect.left - GAP - subWidth;
+
+    // Prefer the root menu's direction, but keep every level usable at the
+    // viewport edge (especially long recent-file menus).
+    if (left < EDGE && catRect.right + GAP + subWidth <= window.innerWidth - EDGE) {
+      opensRight = true;
+      left = catRect.right + GAP;
+    } else if (left + subWidth > window.innerWidth - EDGE && catRect.left - GAP - subWidth >= EDGE) {
+      opensRight = false;
+      left = catRect.left - GAP - subWidth;
+    }
+
+    const top = Math.min(
+      Math.max(EDGE, catRect.top - 7),
+      Math.max(EDGE, window.innerHeight - subHeight - EDGE)
+    );
+    sub.style.left = Math.round(Math.max(EDGE, Math.min(left, window.innerWidth - subWidth - EDGE))) + 'px';
+    sub.style.top = Math.round(top) + 'px';
+    sub.classList.toggle('submenu-portal-right', opensRight);
+    cat.classList.toggle('submenu-portal-child-right', opensRight);
+    cat.classList.toggle('submenu-portal-child-left', !opensRight);
+  }
+
+  function open(cat) {
+    const sub = directSubmenu(cat);
+    const root = rootFor(cat);
+    if (!sub || !root) return;
+
+    cat._submenuPortalSubmenu = sub;
+    if (!sub.classList.contains('submenu-portal')) {
+      const placeholder = document.createComment('submenu-portal');
+      sub.parentNode.insertBefore(placeholder, sub);
+      sub._submenuPortalPlaceholder = placeholder;
+      document.body.appendChild(sub);
+      sub.classList.add('submenu-portal');
+    }
+    markChildren(sub, cat, root);
+    position(cat, sub, root);
+    sub.classList.add('submenu-portal-open');
+  }
+
+  function restore(sub) {
+    if (!sub) return;
+    sub.querySelectorAll('.menu-cat[data-sub]').forEach((cat) => restore(cat._submenuPortalSubmenu));
+    const placeholder = sub._submenuPortalPlaceholder;
+    if (placeholder && placeholder.parentNode) {
+      placeholder.parentNode.insertBefore(sub, placeholder);
+      placeholder.remove();
+    }
+    sub.classList.remove('submenu-portal', 'submenu-portal-open', 'submenu-portal-right');
+    sub.style.left = '';
+    sub.style.top = '';
+    sub._submenuPortalPlaceholder = null;
+    sub._submenuPortalOwner = null;
+    sub._submenuPortalRoot = null;
+  }
+
+  function close(cat) {
+    if (!cat) return;
+    if (cat._subCloseTimer) { clearTimeout(cat._subCloseTimer); cat._subCloseTimer = 0; }
+    cat.classList.remove('sub-open');
+    cat.classList.remove('submenu-portal-child-right', 'submenu-portal-child-left');
+    cat.setAttribute('aria-expanded', 'false');
+    restore(cat._submenuPortalSubmenu);
+  }
+
+  function closeAll(root) {
+    if (!root) return;
+    const cats = new Set(root.querySelectorAll('.menu-cat.sub-open'));
+    document.querySelectorAll('.menu-sub.submenu-portal').forEach((sub) => {
+      if (sub._submenuPortalRoot === root && sub._submenuPortalOwner) cats.add(sub._submenuPortalOwner);
+    });
+    cats.forEach(close);
+  }
+
+  function contains(root, target) {
+    if (root && root.contains(target)) return true;
+    return Array.from(document.querySelectorAll('.menu-sub.submenu-portal')).some((sub) =>
+      sub._submenuPortalRoot === root && sub.contains(target)
+    );
+  }
+
+  function belongsTo(cat, target) {
+    const sub = cat && cat._submenuPortalSubmenu;
+    return !!(cat && (cat.contains(target) || (sub && sub.contains(target))));
+  }
+
+  function parentFor(cat) {
+    return cat._submenuPortalParent || (cat.parentElement && cat.parentElement.closest('.menu-cat[data-sub]'));
+  }
+
+  return { open, close, closeAll, contains, belongsTo, parentFor, position };
+})();
 
 let contextMenuCloseListener = null;
 let contextMenuListenerTimer = null;
@@ -1208,11 +1328,7 @@ function showCustomContextMenu(e, type, data) {
   const btnMenu = $('btn-menu');
   if (mainMenu && mainMenu.classList.contains('open')) {
     mainMenu.classList.remove('open');
-    mainMenu.querySelectorAll('.menu-cat.sub-open').forEach((cat) => {
-      if (cat._subCloseTimer) { clearTimeout(cat._subCloseTimer); cat._subCloseTimer = 0; }
-      cat.classList.remove('sub-open');
-      cat.setAttribute('aria-expanded', 'false');
-    });
+    submenuPortal.closeAll(mainMenu);
     if (btnMenu) {
       btnMenu.classList.remove('open');
       btnMenu.setAttribute('aria-expanded', 'false');
@@ -1233,6 +1349,7 @@ function showCustomContextMenu(e, type, data) {
   const menu = $('custom-ctx-menu');
   if (!menu) return;
 
+  submenuPortal.closeAll(menu);
   menu.innerHTML = '';
   menu.className = 'menu-panel context-menu-panel';
 
@@ -1274,7 +1391,7 @@ function showCustomContextMenu(e, type, data) {
   menu.classList.add('open');
 
   contextMenuCloseListener = (evt) => {
-    if (!menu.contains(evt.target)) {
+    if (!submenuPortal.contains(menu, evt.target)) {
       hideCustomContextMenu();
     }
   };
@@ -1291,6 +1408,7 @@ function hideCustomContextMenu() {
   clearContextMenuListeners();
   const menu = $('custom-ctx-menu');
   if (menu) {
+    submenuPortal.closeAll(menu);
     menu.style.display = 'none';
     menu.classList.remove('open');
   }
@@ -1708,34 +1826,6 @@ function renderMenuTemplate(container, template) {
       sub.className = 'menu-sub menu-recent-sub';
       renderMenuTemplate(sub, item.items || []);
       cat.appendChild(sub);
-
-      cat.addEventListener('mouseenter', () => {
-        if (item.enabled === false) return;
-        sub.style.top = '';
-        sub.style.left = '';
-        sub.style.right = '';
-        
-        let rect = sub.getBoundingClientRect();
-        const winH = window.innerHeight;
-        if (rect.bottom > winH) {
-          const parentRect = cat.getBoundingClientRect();
-          let topVal = winH - 10 - parentRect.top - rect.height;
-          if (parentRect.top + topVal < 10) {
-            topVal = 10 - parentRect.top;
-          }
-          sub.style.top = topVal + 'px';
-        }
-        
-        rect = sub.getBoundingClientRect();
-        const winW = window.innerWidth;
-        if (rect.right > winW) {
-          sub.style.left = 'auto';
-          sub.style.right = 'calc(100% + 4px)';
-        } else if (rect.left < 0) {
-          sub.style.left = 'calc(100% + 4px)';
-          sub.style.right = 'auto';
-        }
-      });
 
       container.appendChild(cat);
     } else {
@@ -7781,13 +7871,9 @@ $('btn-config').addEventListener('click', openConfig);
     panel.classList.remove('open');
     btn.classList.remove('open');
     btn.setAttribute('aria-expanded', 'false');
-    panel.querySelectorAll('.menu-cat.sub-open').forEach((cat) => {
-      if (cat._subCloseTimer) { clearTimeout(cat._subCloseTimer); cat._subCloseTimer = 0; }
-      cat.classList.remove('sub-open');
-      cat.setAttribute('aria-expanded', 'false');
-    });
+    submenuPortal.closeAll(panel);
     const a = document.activeElement;
-    if (a && panel.contains(a)) a.blur();
+    if (a && submenuPortal.contains(panel, a)) a.blur();
   }
   function fillRecentList(listEl, items, opts) {
     if (!listEl) return;
@@ -7886,11 +7972,7 @@ $('btn-config').addEventListener('click', openConfig);
     if (typeof hideCustomContextMenu === 'function') hideCustomContextMenu();
     refreshMenuState();
     // Reset any submenu kept open by the close-delay so the menu reopens fresh.
-    panel.querySelectorAll('.menu-cat.sub-open').forEach((el) => {
-      if (el._subCloseTimer) { clearTimeout(el._subCloseTimer); el._subCloseTimer = 0; }
-      el.classList.remove('sub-open');
-      el.setAttribute('aria-expanded', 'false');
-    });
+    submenuPortal.closeAll(panel);
     panel.classList.add('open');
     positionMenu();
     btn.classList.add('open');
@@ -7924,7 +8006,8 @@ $('btn-config').addEventListener('click', openConfig);
     panel.classList.contains('open') ? closeMenu() : openMenu();
   });
   document.addEventListener('pointerdown', e => {
-    if (panel.classList.contains('open') && !panel.contains(e.target) && !btn.contains(e.target)) closeMenu();
+    const outsideRootMenu = !panel.contains(e.target) && !btn.contains(e.target);
+    if (panel.classList.contains('open') && outsideRootMenu && !submenuPortal.contains(panel, e.target)) closeMenu();
   });
   window.addEventListener('resize', positionMenu);
 
@@ -8041,10 +8124,10 @@ $('btn-config').addEventListener('click', openConfig);
     }
   }
 
-  // Event delegation so dynamically built Recent items work
-  panel.addEventListener('click', e => {
+  // Event delegation keeps working after an open submenu is portaled to body.
+  document.addEventListener('click', e => {
     const item = e.target.closest('.menu-item');
-    if (!item || !panel.contains(item)) return;
+    if (!item || !submenuPortal.contains(panel, item)) return;
     e.stopPropagation();
     if (item.classList.contains('disabled') || item.classList.contains('menu-recent-empty')) return;
     const action = item.dataset.action;
@@ -8081,43 +8164,49 @@ $('btn-config').addEventListener('click', openConfig);
     const sib = cat.parentElement ? cat.parentElement.querySelectorAll(':scope > .menu-cat.sub-open') : null;
     if (sib) sib.forEach((el) => {
       if (el !== cat) {
-        clearTimer(el);
-        el.classList.remove('sub-open');
-        el.setAttribute('aria-expanded', 'false');
+        submenuPortal.close(el);
       }
     });
     if (cat.classList.contains('sub-open')) return;
     cat.classList.add('sub-open');
     cat.setAttribute('aria-expanded', 'true');
+    submenuPortal.open(cat);
   }
   function scheduleClose(cat) {
     clearTimer(cat);
     cat[TKEY] = setTimeout(() => {
       cat[TKEY] = 0;
-      cat.classList.remove('sub-open');
-      cat.setAttribute('aria-expanded', 'false');
+      submenuPortal.close(cat);
     }, SUB_CLOSE_DELAY);
   }
 
+  function categoryForTarget(target) {
+    if (!target || !target.closest) return null;
+    const category = target.closest('.menu-cat[data-sub]');
+    if (category) return category;
+    const portaledSubmenu = target.closest('.menu-sub.submenu-portal');
+    return portaledSubmenu ? portaledSubmenu._submenuPortalOwner : null;
+  }
+
   document.addEventListener('mouseover', (e) => {
-    const cat = e.target && e.target.closest ? e.target.closest('.menu-cat[data-sub]') : null;
+    const cat = categoryForTarget(e.target);
     if (cat) openSub(cat);
   });
   document.addEventListener('focusin', (e) => {
-    const cat = e.target && e.target.closest ? e.target.closest('.menu-cat[data-sub]') : null;
+    const cat = categoryForTarget(e.target);
     if (cat) openSub(cat);
   });
   document.addEventListener('mouseout', (e) => {
-    const cat = e.target && e.target.closest ? e.target.closest('.menu-cat[data-sub]') : null;
+    const cat = categoryForTarget(e.target);
     if (!cat) return;
     const rt = e.relatedTarget;
     // Leaving a category fades its submenu after a brief delay; also fade any open
     // ancestor submenus if the pointer left their region too (nested flyouts).
-    if (!rt || !cat.contains(rt)) scheduleClose(cat);
-    let parent = cat.parentElement ? cat.parentElement.closest('.menu-cat[data-sub]') : null;
+    if (!rt || !submenuPortal.belongsTo(cat, rt)) scheduleClose(cat);
+    let parent = submenuPortal.parentFor(cat);
     while (parent) {
-      if ((!rt || !parent.contains(rt)) && parent.classList.contains('sub-open')) scheduleClose(parent);
-      parent = parent.parentElement ? parent.parentElement.closest('.menu-cat[data-sub]') : null;
+      if ((!rt || !submenuPortal.belongsTo(parent, rt)) && parent.classList.contains('sub-open')) scheduleClose(parent);
+      parent = submenuPortal.parentFor(parent);
     }
   });
 })();
