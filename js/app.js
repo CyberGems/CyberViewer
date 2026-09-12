@@ -104,6 +104,7 @@ const state = {
       statusbarVisible: true, 
       closeToTray: false, 
       closeImageOnTray: true, 
+      trayRecentImages: true,
       autoStart: false, 
       accentColor: '#00d4ff',
       language: 'en',
@@ -140,9 +141,9 @@ const state = {
 };
 
 /** Max entries in File → Recent images / folders (balance usefulness vs menu height). */
-const RECENT_MAX = 8;
-/** Shorter list for right-click menus (avoid tall nested flyouts). */
-const RECENT_CTX_MAX = 5;
+const RECENT_MAX = 10;
+/** Max entries for right-click menus and tray menu. */
+const RECENT_CTX_MAX = 10;
 
 // UI strings: i18n/ui.js → window.CV_I18N (source: i18n/ui.json)
 const I18N = (typeof window !== 'undefined' && window.CV_I18N) ? window.CV_I18N : { en: {}, es: {} };
@@ -6769,6 +6770,8 @@ const CONFIG_CONTROL_ICON_BY_ID = {
   'cfg-ss-fs': 'fullscreen',
   'cfg-tray': 'panel-bottom',
   'cfg-close-image-tray': 'eye-off',
+  'cfg-tray-recent-images': 'image',
+  'cfg-clear-recent-images': 'image',
   'cfg-autostart': 'play',
   'cfg-contextmenu': 'settings',
   'cfg-multiple': 'copy',
@@ -6835,6 +6838,7 @@ function openConfig() {
   $('cfg-statusbar').checked = s.statusbarVisible;
   $('cfg-tray').checked = s.closeToTray;
   if ($('cfg-close-image-tray')) $('cfg-close-image-tray').checked = s.closeImageOnTray !== false;
+  if ($('cfg-tray-recent-images')) $('cfg-tray-recent-images').checked = s.trayRecentImages !== false;
   $('cfg-autostart').checked = s.autoStart;
   $('cfg-contextmenu').checked = s.contextMenuEnabled || false;
   $('cfg-multiple').checked = s.allowMultipleInstances === true;
@@ -6858,8 +6862,8 @@ function openConfig() {
 
   // Slideshow settings
   if ($('cfg-ss-interval')) $('cfg-ss-interval').value = String(getSlideshowIntervalMs());
-  if ($('cfg-ss-loop')) $('cfg-ss-loop').checked = isSlideshowLoop();
-  if ($('cfg-ss-fs')) $('cfg-ss-fs').checked = isSlideshowEnterFs();
+  if ($('cfg-ss-loop')) $('cfg-ss-loop').checked = s.slideshowLoop !== false;
+  if ($('cfg-ss-fs')) $('cfg-ss-fs').checked = s.slideshowEnterFullscreen !== false;
   
   // Monitor selection
   if (isElectron) {
@@ -6932,6 +6936,7 @@ function collectConfigSettings() {
     statusbarVisible: $('cfg-statusbar').checked,
     closeToTray: $('cfg-tray').checked,
     closeImageOnTray: !!($('cfg-close-image-tray') && $('cfg-close-image-tray').checked),
+    trayRecentImages: !!($('cfg-tray-recent-images') && $('cfg-tray-recent-images').checked),
     autoStart: $('cfg-autostart').checked,
     preferredDisplayId: $('cfg-monitor').value,
     language: $('cfg-lang').value,
@@ -6964,6 +6969,7 @@ function getFactoryAppSettings() {
     statusbarVisible: true,
     closeToTray: false,
     closeImageOnTray: true,
+    trayRecentImages: true,
     autoStart: false,
     startMinimized: false,
     accentColor: '#00d4ff',
@@ -7271,6 +7277,10 @@ const clearRecentHistoryBtn = $('cfg-clear-recent-history');
 if (clearRecentHistoryBtn) {
   clearRecentHistoryBtn.addEventListener('click', () => { clearRecentHistory(); });
 }
+const clearRecentImagesBtn = $('cfg-clear-recent-images');
+if (clearRecentImagesBtn) {
+  clearRecentImagesBtn.addEventListener('click', () => { clearRecentFiles(); });
+}
 
 // ── Global toggle hotkey capture (accelerator format, e.g. "Alt+Shift+V") ──
 (function () {
@@ -7544,6 +7554,17 @@ if (isElectron) {
   window.electronAPI.onOpenSettings(() => {
     openConfig();
   });
+
+  if (typeof window.electronAPI.onRecentFilesCleared === 'function') {
+    window.electronAPI.onRecentFilesCleared(() => {
+      const app = ensureAppSettings();
+      app.recentFiles = [];
+      const lang = app.language || 'en';
+      if (typeof showToast === 'function') {
+        showToast((I18N[lang] && I18N[lang].toast_recent_cleared) || 'RECENT LIST CLEARED', 'info');
+      }
+    });
+  }
 
   // Load settings from Electron
   window.electronAPI.getSettings().then(s => {

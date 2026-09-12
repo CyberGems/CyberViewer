@@ -46,6 +46,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readClipboardImage: () => ipcRenderer.invoke('clipboard:read-image'),
   moveToTrash: (path) => ipcRenderer.invoke('move-to-trash', path),
   onOpenSettings: (cb) => ipcRenderer.on('open-settings', () => cb()),
+  onRecentFilesCleared: (cb) => ipcRenderer.on('recent-files-cleared', () => cb()),
   showItemInFolder: (path) => ipcRenderer.send('show-item-in-folder', path),
   openContainingFolder: (path) => ipcRenderer.invoke('open-containing-folder', path),
   openNativeProperties: (path) => ipcRenderer.send('open-native-properties', path),

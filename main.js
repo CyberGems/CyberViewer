@@ -119,6 +119,7 @@ function loadSettings() {
     app: {
       closeToTray: false,
       closeImageOnTray: true,
+      trayRecentImages: true,
       startMinimized: false,
       autoStart: false,
       accentColor: '#00d4ff',
@@ -638,6 +639,31 @@ function executePendingTrayAction() {
   if (action === 'help-check-updates') {
     showFromTray();
     if (win && !win.isDestroyed()) win.webContents.send('menu-action', { action: 'check-updates' });
+    return;
+  }
+  if (action && typeof action === 'object' && action.type === 'open-file') {
+    showFromTray();
+    if (win && !win.isDestroyed()) {
+      try {
+        pathAllowlist.allow(action.filePath);
+      } catch (_) {}
+      win.webContents.send('open-file', action.filePath);
+    }
+    return;
+  }
+  if (action === 'clear-recent') {
+    clearRecentFilesFromMain();
+    return;
+  }
+}
+
+function clearRecentFilesFromMain() {
+  const current = loadSettings();
+  const appSettings = { ...(current.app || {}), recentFiles: [] };
+  saveSettings({ app: appSettings });
+  updateTrayMenu();
+  if (win && !win.isDestroyed()) {
+    win.webContents.send('recent-files-cleared');
   }
 }
 
@@ -702,6 +728,41 @@ function buildTrayContextMenuTemplate() {
   const iconUpdate = loadTrayMenuIcon('update.png');
   const iconQuit = loadTrayMenuIcon('quit.png');
 
+  const recentFiles = (settings.app && Array.isArray(settings.app.recentFiles)) ? settings.app.recentFiles : [];
+  const showTrayRecents = !settings.app || settings.app.trayRecentImages !== false;
+  let recentItem = null;
+  if (showTrayRecents) {
+    const validRecents = recentFiles.filter((p) => p && typeof p === 'string').slice(0, 10);
+    const recentSubmenu = [];
+    if (validRecents.length === 0) {
+      recentSubmenu.push({
+        label: t.tray_no_recent || 'No recent images',
+        enabled: false
+      });
+    } else {
+      validRecents.forEach((filePath) => {
+        const name = (path.basename(filePath) || filePath).replace(/&/g, '&&');
+        recentSubmenu.push({
+          label: name,
+          click: () => {
+            pendingTrayAction = { type: 'open-file', filePath };
+          }
+        });
+      });
+      recentSubmenu.push({ type: 'separator' });
+      recentSubmenu.push({
+        label: t.tray_clear_recent || 'Clear recent list',
+        click: () => {
+          pendingTrayAction = 'clear-recent';
+        }
+      });
+    }
+    recentItem = {
+      label: t.tray_recent_images || 'Recent images',
+      submenu: recentSubmenu
+    };
+  }
+
   return [
     {
       label: 'CyberViewer v' + app.getVersion(),
@@ -715,6 +776,7 @@ function buildTrayContextMenuTemplate() {
       accelerator: shortcut || undefined,
       click: () => { pendingTrayAction = visible ? 'hide' : 'show'; }
     },
+    ...(recentItem ? [recentItem] : []),
     {
       label: t.tray_settings,
       ...(iconSettings ? { icon: iconSettings } : {}),

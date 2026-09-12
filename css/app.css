@@ -830,6 +830,7 @@
   .context-menu-panel {
     position: fixed !important;
     right: auto !important;
+    max-width: 320px;
     display: none;
     animation: none;
   }
@@ -974,6 +975,7 @@
     font-weight: 500;
     letter-spacing: 0.2px;
     min-width: 0;
+    max-width: 170px;
     flex: 1 1 auto;
     display: inline-flex;
     align-items: center;
@@ -1343,33 +1345,41 @@
   #sidebar-folder.cyber-tooltip.tooltip-bottom:has(#btn-toggle-favs:focus-visible)::before {
     opacity: 0 !important;
   }
-  #sidebar-folder #btn-toggle-favs.cyber-tooltip::after {
+  #sidebar-folder #btn-toggle-favs.cyber-tooltip::after,
+  #sidebar-folder #btn-toggle-favs.cyber-tooltip.tooltip-align-right::after {
     top: calc(100% + 6px);
     bottom: auto;
-    left: auto;
-    right: 0;
+    left: 50% !important;
+    right: auto !important;
     width: max-content;
     max-width: min(220px, calc(100vw - 16px));
     padding: 5px 8px;
     background: rgba(8, 12, 18, 0.98) !important;
     border: 1px solid var(--cyber-accent);
     box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.3);
-    transform: translateY(-4px) !important;
+    transform: translateX(-25%) translateY(-4px) !important;
   }
-  #sidebar-folder #btn-toggle-favs.cyber-tooltip::before {
+  #sidebar-folder #btn-toggle-favs.cyber-tooltip::before,
+  #sidebar-folder #btn-toggle-favs.cyber-tooltip.tooltip-align-right::before {
     top: calc(100% + 0px);
     bottom: auto;
-    left: auto;
-    right: 10px;
-    transform: translateY(-4px) !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) translateY(-4px) !important;
     border-width: 0 6px 6px 6px;
     border-color: transparent transparent var(--cyber-accent) transparent;
   }
   #sidebar-folder #btn-toggle-favs.cyber-tooltip:hover::after,
-  #sidebar-folder #btn-toggle-favs.cyber-tooltip:hover::before,
   #sidebar-folder #btn-toggle-favs.cyber-tooltip:focus-visible::after,
-  #sidebar-folder #btn-toggle-favs.cyber-tooltip:focus-visible::before {
-    transform: translateY(0) !important;
+  #sidebar-folder #btn-toggle-favs.cyber-tooltip.tooltip-align-right:hover::after,
+  #sidebar-folder #btn-toggle-favs.cyber-tooltip.tooltip-align-right:focus-visible::after {
+    transform: translateX(-25%) translateY(0) !important;
+  }
+  #sidebar-folder #btn-toggle-favs.cyber-tooltip:hover::before,
+  #sidebar-folder #btn-toggle-favs.cyber-tooltip:focus-visible::before,
+  #sidebar-folder #btn-toggle-favs.cyber-tooltip.tooltip-align-right:hover::before,
+  #sidebar-folder #btn-toggle-favs.cyber-tooltip.tooltip-align-right:focus-visible::before {
+    transform: translateX(-50%) translateY(0) !important;
   }
 
   /* Narrow panel: path tooltip wraps under the header */
@@ -5636,6 +5646,26 @@
     color: var(--cyber-accent2) !important;
     background: rgba(var(--cyber-accent2-rgb), 0.1) !important;
     box-shadow: 0 0 10px rgba(var(--cyber-accent2-rgb), 0.22) !important;
+  }
+  #modal-config .cfg-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  #modal-config .config-clear-btn {
+    min-width: 96px;
+    height: 28px;
+    padding: 3px 10px;
+    font-size: 11px;
+    border-color: rgba(var(--preview-accent-rgb), 0.5);
+    color: var(--preview-accent);
+  }
+  #modal-config .config-clear-btn:hover {
+    border-color: var(--preview-accent) !important;
+    color: var(--preview-accent) !important;
+    background: rgba(var(--preview-accent-rgb), 0.1) !important;
+    box-shadow: 0 0 10px rgba(var(--preview-accent-rgb), 0.25) !important;
   }
 
   /* Dialog close & cancel buttons reddish hover (match window close X) */
