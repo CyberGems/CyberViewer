@@ -513,6 +513,7 @@ function setShortcutsPopoverOpen(open) {
   popover.hidden = !next;
   button.classList.toggle('open', next);
   button.setAttribute('aria-expanded', String(next));
+  if (next) button.blur();
   return next;
 }
 

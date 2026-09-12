@@ -108,6 +108,42 @@ describe('title bar Help menu', () => {
     }
   });
 
+  it('suppresses shortcuts button tooltip when open and provides an expanded 2-column shortcuts cheat sheet', () => {
+    // Tooltip suppression when open
+    assert.match(css, /#btn-shortcuts\.open\.cyber-tooltip::after[\s\S]*?opacity:\s*0 !important;/);
+    assert.match(css, /#btn-shortcuts\[aria-expanded="true"\]\.cyber-tooltip::after[\s\S]*?opacity:\s*0 !important;/);
+    assert.match(appJs, /button\.classList\.toggle\('open',\s*next\);[\s\S]*?if \(next\) button\.blur\(\);/);
+
+    // 2-column grid structure in HTML & CSS
+    assert.match(html, /class="shortcuts-grid"[\s\S]*?class="shortcuts-col"[\s\S]*?data-i18n="shortcuts_sec_view"[\s\S]*?data-i18n="shortcuts_sec_edit"/);
+    assert.match(css, /\.shortcuts-grid\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*1fr 1fr;/);
+    assert.match(css, /\.shortcuts-popover\s*\{[\s\S]*?width:\s*min\(390px,\s*calc\(100vw - 24px\)\);/);
+
+    // Key combinations present
+    const expectedKeys = [
+      '<kbd>F</kbd>', '<kbd>1</kbd>', '<kbd>S</kbd>', '<kbd>Ctrl</kbd><kbd>O</kbd>',
+      '<kbd>Ctrl</kbd><kbd>D</kbd>', '<kbd>Q</kbd><kbd>E</kbd>', '<kbd>H</kbd>',
+      '<kbd>C</kbd>', '<kbd>R</kbd>', '<kbd>J</kbd>', '<kbd>Ctrl</kbd><kbd>C</kbd>',
+      '<kbd>Ctrl</kbd><kbd>V</kbd>', '<kbd>Del</kbd>', '<kbd>Esc</kbd>'
+    ];
+    for (const key of expectedKeys) {
+      assert.ok(html.includes(key), `shortcuts popover should contain ${key}`);
+    }
+
+    // Bilingual localization for all added keys
+    const i18nKeys = [
+      'shortcuts_sec_view', 'shortcuts_sec_edit', 'shortcuts_1_1', 'shortcuts_slideshow',
+      'shortcuts_rotate', 'shortcuts_flip', 'shortcuts_adjust', 'shortcuts_copy',
+      'shortcuts_paste', 'shortcuts_favorite', 'shortcuts_delete', 'shortcuts_close'
+    ];
+    for (const lang of ['en', 'es']) {
+      for (const key of i18nKeys) {
+        assert.equal(typeof ui[lang][key], 'string', `${lang}.${key} should be defined`);
+        assert.ok(ui[lang][key].trim().length > 0);
+      }
+    }
+  });
+
   it('uses CyberViewer destinations and the existing external-link bridge', () => {
     const urls = [
       'https://github.com/CyberGems/CyberViewer/wiki',

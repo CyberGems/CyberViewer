@@ -35,12 +35,36 @@
   </button>
   <section id="shortcuts-popover" class="shortcuts-popover" role="dialog" aria-labelledby="shortcuts-popover-title" hidden>
     <div id="shortcuts-popover-title" class="shortcuts-popover-title" data-i18n="shortcuts_title">Atajos de teclado</div>
-    <dl class="shortcuts-list">
-      <div><dt><kbd>←</kbd><kbd>→</kbd></dt><dd data-i18n="navigate_hint">NAVEGAR</dd></div>
-      <div><dt><kbd data-i18n="key_scroll">Rueda</kbd></dt><dd data-i18n="zoom_hint">ZOOM</dd></div>
-      <div><dt><kbd data-i18n="key_drag">Arrastrar</kbd></dt><dd data-i18n="pan_hint">MOVER</dd></div>
-      <div><dt><kbd data-i18n="key_enter">Intro</kbd></dt><dd data-i18n="fullscreen">PANTALLA</dd></div>
-    </dl>
+    <div class="shortcuts-grid">
+      <div class="shortcuts-col">
+        <div class="shortcuts-col-heading" data-i18n="shortcuts_sec_view">VISTA Y NAVEGACIÓN</div>
+        <dl class="shortcuts-list">
+          <div><dt><kbd>←</kbd><kbd>→</kbd></dt><dd data-i18n="navigate_hint">NAVEGAR</dd></div>
+          <div><dt><kbd data-i18n="key_scroll">Rueda</kbd></dt><dd data-i18n="zoom_hint">ZOOM</dd></div>
+          <div><dt><kbd data-i18n="key_drag">Arrastrar</kbd></dt><dd data-i18n="pan_hint">MOVER</dd></div>
+          <div><dt><kbd data-i18n="key_enter">Intro</kbd></dt><dd data-i18n="fullscreen">PANTALLA</dd></div>
+          <div><dt><kbd>F</kbd></dt><dd data-i18n="fit_to_window">AJUSTAR</dd></div>
+          <div><dt><kbd>1</kbd></dt><dd data-i18n="shortcuts_1_1">1:1 REAL</dd></div>
+          <div><dt><kbd>S</kbd></dt><dd data-i18n="shortcuts_slideshow">PRESENTACIÓN</dd></div>
+          <div><dt><kbd>Ctrl</kbd><kbd>O</kbd></dt><dd data-i18n="open_dir">ABRIR</dd></div>
+          <div><dt><kbd>Ctrl</kbd><kbd>D</kbd></dt><dd data-i18n="shortcuts_favorite">FAVORITO</dd></div>
+        </dl>
+      </div>
+      <div class="shortcuts-col">
+        <div class="shortcuts-col-heading" data-i18n="shortcuts_sec_edit">EDICIÓN Y ACCIONES</div>
+        <dl class="shortcuts-list">
+          <div><dt><kbd>Q</kbd><kbd>E</kbd></dt><dd data-i18n="shortcuts_rotate">ROTAR 90°</dd></div>
+          <div><dt><kbd>H</kbd></dt><dd data-i18n="shortcuts_flip">VOLTEAR</dd></div>
+          <div><dt><kbd>C</kbd></dt><dd data-i18n="crop_hint_txt">RECORTAR</dd></div>
+          <div><dt><kbd>R</kbd></dt><dd data-i18n="resize_hint_txt">REDIM</dd></div>
+          <div><dt><kbd>J</kbd></dt><dd data-i18n="shortcuts_adjust">AJUSTES</dd></div>
+          <div><dt><kbd>Ctrl</kbd><kbd>C</kbd></dt><dd data-i18n="shortcuts_copy">COPIAR</dd></div>
+          <div><dt><kbd>Ctrl</kbd><kbd>V</kbd></dt><dd data-i18n="shortcuts_paste">PEGAR</dd></div>
+          <div><dt><kbd>Del</kbd></dt><dd data-i18n="shortcuts_delete">PAPELERA</dd></div>
+          <div><dt><kbd>Esc</kbd></dt><dd data-i18n="shortcuts_close">CERRAR</dd></div>
+        </dl>
+      </div>
+    </div>
   </section>
   <button type="button" class="win-btn tooltip-bottom" id="btn-config" data-i18n-title="config" data-i18n-aria="config" title="Configuración" aria-label="Configuración">
     <span class="titlebar-config-glyph" aria-hidden="true">&#9881;&#xFE0E;</span>

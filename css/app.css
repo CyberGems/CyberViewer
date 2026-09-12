@@ -5059,14 +5059,36 @@
 
   #btn-shortcuts.hidden { display: none; }
   #btn-shortcuts.open { color: var(--cyber-accent); background: rgba(var(--cyber-accent-rgb), 0.10); }
+
+  /* Hide shortcuts guide tooltip while the popover is open (hover stays on button) */
+  #btn-shortcuts.open.cyber-tooltip::after,
+  #btn-shortcuts.open.cyber-tooltip::before,
+  #btn-shortcuts.open.cyber-tooltip:hover::after,
+  #btn-shortcuts.open.cyber-tooltip:hover::before,
+  #btn-shortcuts[aria-expanded="true"].cyber-tooltip::after,
+  #btn-shortcuts[aria-expanded="true"].cyber-tooltip::before,
+  #btn-shortcuts[aria-expanded="true"].cyber-tooltip:hover::after,
+  #btn-shortcuts[aria-expanded="true"].cyber-tooltip:hover::before {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+  #btn-shortcuts.open:hover,
+  #btn-shortcuts[aria-expanded="true"]:hover {
+    z-index: 1000000 !important;
+  }
+
   .shortcuts-popover {
     position: fixed;
     top: 54px;
     right: 138px;
     z-index: 1000001;
-    width: min(286px, calc(100vw - 24px));
+    width: min(390px, calc(100vw - 24px));
+    max-height: min(480px, calc(100vh - 70px));
+    overflow-y: auto;
+    scrollbar-width: thin;
     box-sizing: border-box;
-    padding: 12px;
+    padding: 12px 14px;
     border: 1px solid rgba(var(--cyber-accent-rgb), 0.42);
     border-radius: 6px;
     background: linear-gradient(135deg, rgba(38, 53, 72, 0.96), rgba(10, 16, 26, 0.94));
@@ -5077,38 +5099,72 @@
   }
   .shortcuts-popover[hidden] { display: none; }
   .shortcuts-popover-title {
-    margin-bottom: 9px;
+    margin-bottom: 10px;
     color: var(--cyber-accent);
     font: 700 11px/1.2 var(--font-ui);
     letter-spacing: 0.12em;
     text-transform: uppercase;
+  }
+  .shortcuts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 440px) {
+    .shortcuts-grid {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+  }
+  .shortcuts-col {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .shortcuts-col-heading {
+    margin-bottom: 4px;
+    padding-bottom: 4px;
+    color: var(--cyber-accent);
+    font: 700 9px/1.2 var(--font-ui);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.85;
+    border-bottom: 1px solid rgba(var(--cyber-accent-rgb), 0.22);
   }
   .shortcuts-list { margin: 0; }
   .shortcuts-list > div {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: 8px;
     min-height: 27px;
-    border-top: 1px solid rgba(var(--cyber-accent-rgb), 0.12);
+    border-top: 1px solid rgba(var(--cyber-accent-rgb), 0.10);
+  }
+  .shortcuts-list > div:first-child {
+    border-top: none;
   }
   .shortcuts-list dt,
   .shortcuts-list dd { margin: 0; }
-  .shortcuts-list dt { display: flex; gap: 4px; }
+  .shortcuts-list dt { display: flex; gap: 3px; flex-shrink: 0; align-items: center; }
   .shortcuts-list dd {
     color: var(--cyber-muted);
     font: 600 10px/1 var(--font-ui);
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .shortcuts-list kbd {
-    min-width: 18px;
-    padding: 2px 5px;
+    min-width: 16px;
+    padding: 2px 4px;
     border: 1px solid rgba(var(--cyber-accent-rgb), 0.34);
     border-radius: 3px;
     color: var(--cyber-text);
-    background: rgba(0, 0, 0, 0.18);
+    background: rgba(0, 0, 0, 0.25);
     font: 600 10px/1 var(--font-ui);
     text-align: center;
+    white-space: nowrap;
   }
 
   /* ── OVERRIDES & IMPROVEMENTS FOR MODAL RESIZE (CYBERPUNK AESTHETIC) ── */
