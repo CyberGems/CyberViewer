@@ -8572,15 +8572,20 @@ function syncFavoritesToggleButtonState(lang) {
   }
   const favLbl = btn.querySelector('.fav-lbl');
   const favStar = btn.querySelector('.fav-star');
+  const tooltip = state.showingFavs
+    ? (lang === 'es' ? 'Mostrar galería completa' : 'Show full gallery')
+    : (lang === 'es' ? 'Mostrar Favoritos' : 'Show Favorites');
+
+  setCyberTooltip(btn, tooltip);
+  btn.setAttribute('aria-label', tooltip);
+  btn.setAttribute('aria-pressed', String(!!state.showingFavs));
   
   if (state.showingFavs) {
     btn.classList.add('active');
-    setCyberTooltip(btn, lang === 'es' ? 'Mostrar galería completa' : 'Show full gallery');
     if (favLbl) favLbl.textContent = lang === 'es' ? 'TODAS' : 'ALL';
     if (favStar) favStar.innerHTML = '&#9734;';
   } else {
     btn.classList.remove('active');
-    setCyberTooltip(btn, lang === 'es' ? 'Mostrar Favoritos' : 'Show Favorites');
     if (favLbl) favLbl.textContent = lang === 'es' ? 'FAVORITOS' : 'FAVORITES';
     if (favStar) favStar.innerHTML = '&#9733;';
   }

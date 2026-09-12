@@ -768,11 +768,6 @@ function buildTrayContextMenuTemplate() {
         }
       ]
     },
-    {
-      label: t.tray_about || t.about,
-      ...(iconAbout ? { icon: iconAbout } : {}),
-      click: () => { pendingTrayAction = 'about'; }
-    },
     { type: 'separator' },
     {
       label: t.tray_exit,

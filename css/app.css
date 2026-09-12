@@ -1175,6 +1175,73 @@
   .sidebar-folder.is-favs .sidebar-folder-name {
     color: #ffb700;
   }
+  #sidebar-folder #btn-toggle-favs {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    min-height: 28px;
+    padding: 0;
+    margin: -2px -2px -2px 0;
+    border-color: transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: color-mix(in srgb, var(--cyber-text) 72%, var(--cyber-muted));
+    box-shadow: none;
+    font-size: 15px;
+    letter-spacing: 0;
+  }
+  #sidebar-folder #btn-toggle-favs:hover:not(:disabled):not(.is-disabled) {
+    color: #ffb700;
+    background: rgba(255, 183, 0, 0.08);
+    border-color: rgba(255, 183, 0, 0.5);
+    box-shadow: 0 0 10px rgba(255, 183, 0, 0.16);
+    transform: translateY(-1px);
+  }
+  #sidebar-folder #btn-toggle-favs .fav-star {
+    font-size: 16px;
+    line-height: 1;
+  }
+  #sidebar-folder #btn-toggle-favs .fav-lbl {
+    display: none;
+  }
+
+  /* The folder path and Favorites action share this compact header. When the
+     pointer is over the action, suppress the parent path tooltip to avoid a
+     pair of overlapping bubbles. */
+  #sidebar-folder.cyber-tooltip.tooltip-bottom:has(#btn-toggle-favs:hover)::after,
+  #sidebar-folder.cyber-tooltip.tooltip-bottom:has(#btn-toggle-favs:hover)::before,
+  #sidebar-folder.cyber-tooltip.tooltip-bottom:has(#btn-toggle-favs:focus-visible)::after,
+  #sidebar-folder.cyber-tooltip.tooltip-bottom:has(#btn-toggle-favs:focus-visible)::before {
+    opacity: 0 !important;
+  }
+  #sidebar-folder #btn-toggle-favs.cyber-tooltip::after {
+    top: calc(100% + 6px);
+    bottom: auto;
+    left: auto;
+    right: 0;
+    width: max-content;
+    max-width: min(220px, calc(100vw - 16px));
+    padding: 5px 8px;
+    background: rgba(8, 12, 18, 0.98) !important;
+    border: 1px solid var(--cyber-accent);
+    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.3);
+    transform: translateY(-4px) !important;
+  }
+  #sidebar-folder #btn-toggle-favs.cyber-tooltip::before {
+    top: calc(100% + 0px);
+    bottom: auto;
+    left: auto;
+    right: 10px;
+    transform: translateY(-4px) !important;
+    border-width: 0 6px 6px 6px;
+    border-color: transparent transparent var(--cyber-accent) transparent;
+  }
+  #sidebar-folder #btn-toggle-favs.cyber-tooltip:hover::after,
+  #sidebar-folder #btn-toggle-favs.cyber-tooltip:hover::before,
+  #sidebar-folder #btn-toggle-favs.cyber-tooltip:focus-visible::after,
+  #sidebar-folder #btn-toggle-favs.cyber-tooltip:focus-visible::before {
+    transform: translateY(0) !important;
+  }
 
   /* Narrow panel: path tooltip wraps under the header */
   #sidebar-folder.cyber-tooltip.tooltip-bottom::after {
@@ -1466,6 +1533,9 @@
     line-height: 1.35;
     letter-spacing: 0.2px;
     padding: 5px 6px;
+    background: rgba(8, 12, 18, 0.98) !important;
+    border: 1px solid var(--cyber-accent);
+    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.3);
     z-index: 40;
   }
   #sidebar-controls .cyber-tooltip::before {
@@ -1498,6 +1568,23 @@
   }
   #sidebar-controls .sidebar-nav-btn.cyber-tooltip:hover::before {
     transform: translateX(-50%) translateY(0) !important;
+  }
+  #sidebar-controls #btn-center.cyber-tooltip::after {
+    left: 0;
+    right: auto;
+    width: min(220px, calc(100vw - 24px));
+    max-width: none;
+    text-align: left;
+    transform: translateY(6px) !important;
+  }
+  #sidebar-controls #btn-center.cyber-tooltip::before {
+    left: 20px;
+    right: auto;
+    transform: translateY(6px) !important;
+  }
+  #sidebar-controls #btn-center.cyber-tooltip:hover::after,
+  #sidebar-controls #btn-center.cyber-tooltip:hover::before {
+    transform: translateY(0) !important;
   }
   #sidebar-controls #btn-go-start.cyber-tooltip::after {
     left: 0;
