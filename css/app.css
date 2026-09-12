@@ -4645,6 +4645,10 @@
   .titlebar-filename-extension {
     flex: 0 0 auto;
     white-space: nowrap;
+    color: color-mix(in srgb, var(--cyber-accent) 68%, var(--cyber-text));
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    opacity: 0.78;
   }
   .titlebar-filename:empty,
   .titlebar-filename[data-empty="true"] { display: none; }
@@ -4653,6 +4657,11 @@
     color: var(--cyber-accent);
     background: rgba(var(--cyber-accent-rgb), 0.09);
     outline: none;
+  }
+  .titlebar-filename:hover .titlebar-filename-extension,
+  .titlebar-filename:focus-visible .titlebar-filename-extension {
+    color: var(--cyber-accent);
+    opacity: 1;
   }
   body.ghost-mode .titlebar-filename { display: none; }
 

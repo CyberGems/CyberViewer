@@ -74,6 +74,7 @@ describe('title bar Help menu', () => {
     assert.match(html, /id="titlebar-filename"[^>]*data-empty="true"[^>]*>[\s\S]*class="titlebar-filename-base"[\s\S]*class="titlebar-filename-extension"/);
     assert.match(css, /\.titlebar-filename-base\s*\{[\s\S]*?text-overflow:\s*ellipsis;/);
     assert.match(css, /\.titlebar-filename-extension\s*\{[\s\S]*?flex:\s*0 0 auto;/);
+    assert.match(css, /\.titlebar-filename-extension\s*\{[\s\S]*?color:\s*color-mix\([\s\S]*?opacity:\s*0\.78;/);
     assert.match(appJs, /function syncFilenameDisplays\(image = state\.images\[state\.current\]\)/);
     assert.match(appJs, /splitFilenameExtension\(name\)/);
     assert.match(appJs, /showPropertiesPanel\(image\.file\.path\)/);
@@ -83,6 +84,16 @@ describe('title bar Help menu', () => {
         assert.ok(ui[lang][key].trim().length > 0);
       }
     }
+  });
+
+  it('uses distinct fullscreen and slideshow icon silhouettes', () => {
+    const fs = html.match(/id="btn-fs-hud"[\s\S]*?<\/button>/);
+    const slideshow = html.match(/id="btn-slideshow"[\s\S]*?<\/button>/);
+    assert.ok(fs && slideshow, 'fullscreen and slideshow buttons should be present');
+    assert.match(fs[0], /data-i18n-aria="fs_title"[\s\S]*?M9 4H4v5M15 4h5v5M20 15v5h-5M9 20H4v-5/);
+    assert.match(slideshow[0], /data-i18n-aria="ss_title"[\s\S]*?<rect x="6" y="5" width="15" height="15" rx="2"\/>[\s\S]*?M12 10v5l4-2\.5-4-2\.5z/);
+    assert.match(appJs, /menu_slideshow: 'presentation'/);
+    assert.match(appJs, /'presentation': '<rect x="6" y="5"/);
   });
 
   it('provides the shortcut guide from a compact title-bar button', () => {
