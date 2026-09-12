@@ -599,16 +599,23 @@ function loadFiles(files, initialIdx = 0) {
   });
   state.preloadCache.clear();
   thumbLoadInflight.clear();
-  state.images = imgs.map(f => ({
-    file: f,
-    url: null,
-    thumbUrl: null,
-    w: 0,
-    h: 0,
-    loaded: false,
-    // File API uses .size; scan-folder returns size on the plain object
-    size: (f && (f.size || f.size === 0)) ? f.size : 0
-  }));
+  const firstPath = imgs[0] && imgs[0].path;
+  const dir = firstPath ? folderDirFromPath(firstPath).toLowerCase() : '';
+  const cachedFolder = dir ? folderScanCache.get(dir) : null;
+  state.images = imgs.map(f => {
+    const p = f && f.path ? f.path.toLowerCase() : '';
+    const cachedThumb = cachedFolder && p ? cachedFolder.thumbs.get(p) : null;
+    return {
+      file: f,
+      url: null,
+      thumbUrl: cachedThumb || null,
+      w: 0,
+      h: 0,
+      loaded: false,
+      // File API uses .size; scan-folder returns size on the plain object
+      size: (f && (f.size || f.size === 0)) ? f.size : 0
+    };
+  });
 
   const pathsToAllow = state.images.map(im => im.file && im.file.path).filter(Boolean);
   const finishLoad = () => {
@@ -621,10 +628,17 @@ function loadFiles(files, initialIdx = 0) {
     showImage(initialIdx, null, true);
     // Kick the active thumb immediately with priority (does not wait for full paint)
     schedulePriorityThumb(initialIdx);
+    const doneCount = state.images.filter(im => im && im.thumbUrl).length;
+    const totalCount = state.images.length;
+    updateThumbProgress(doneCount, totalCount);
     const ready = state.mainImageReady || Promise.resolve();
     ready.then(() => {
       if (state.currentIdx === initialIdx || state.current === initialIdx) {
-        startBackgroundScan();
+        if (state.sidebarOpen && doneCount < totalCount) {
+          startBackgroundScan();
+        } else if (totalCount > 0 && doneCount === totalCount) {
+          updateThumbProgress(totalCount, totalCount);
+        }
       }
     });
   };
@@ -647,6 +661,36 @@ function loadFiles(files, initialIdx = 0) {
  * already-decoded image is never fetched twice. Guards with openSeq so a stale scan
  * (e.g. the user opened another file meanwhile) never clobbers the current state.
  */
+const folderScanCache = new Map();
+const MAX_FOLDER_SCAN_CACHE = 30;
+
+function computeFolderSignature(files) {
+  if (!Array.isArray(files) || files.length === 0) return '0:0';
+  let totalBytes = 0;
+  for (let i = 0; i < files.length; i++) {
+    totalBytes += (files[i].size || 0);
+  }
+  const first = files[0].path || files[0].name || '';
+  const last = files[files.length - 1].path || files[files.length - 1].name || '';
+  return `${files.length}:${totalBytes}:${first}:${last}`;
+}
+
+function recordCachedThumb(filePath, thumbUrl) {
+  if (!filePath || !thumbUrl) return;
+  const dir = folderDirFromPath(filePath).toLowerCase();
+  if (!dir) return;
+  let entry = folderScanCache.get(dir);
+  if (!entry) {
+    entry = { signature: '', thumbs: new Map(), completed: false };
+    folderScanCache.set(dir, entry);
+    if (folderScanCache.size > MAX_FOLDER_SCAN_CACHE) {
+      const oldestKey = folderScanCache.keys().next().value;
+      folderScanCache.delete(oldestKey);
+    }
+  }
+  entry.thumbs.set(filePath.toLowerCase(), thumbUrl);
+}
+
 function mergeNeighbors(neighbors, filePath, seq) {
   if (!Array.isArray(neighbors) || !neighbors.length) return;
 
@@ -665,16 +709,29 @@ function mergeNeighbors(neighbors, filePath, seq) {
   const keepLoaded = !!cur && !!cur.file && cur.file.path &&
     cur.file.path.toLowerCase() === norm;
 
+  const dir = folderDirFromPath(filePath).toLowerCase();
+  const sig = computeFolderSignature(files);
+  let cachedFolder = folderScanCache.get(dir);
+  if (!cachedFolder) {
+    cachedFolder = { signature: sig, thumbs: new Map(), completed: false };
+    folderScanCache.set(dir, cachedFolder);
+  } else {
+    cachedFolder.signature = sig;
+  }
+
   state.images = files.map(f => {
-    if (keepLoaded && f.path.toLowerCase() === norm) {
+    const pLower = f.path ? f.path.toLowerCase() : '';
+    const cachedThumb = cachedFolder.thumbs.get(pLower) || null;
+    if (keepLoaded && pLower === norm) {
       cur.file = f;            // now carries the real on-disk size from the scan
       cur.size = (f.size || f.size === 0) ? f.size : cur.size;
+      if (!cur.thumbUrl && cachedThumb) cur.thumbUrl = cachedThumb;
       return cur;             // same object the provisional showImage closure captured
     }
     return {
       file: f,
       url: null,
-      thumbUrl: null,
+      thumbUrl: cachedThumb,
       w: 0,
       h: 0,
       loaded: false,
@@ -689,12 +746,21 @@ function mergeNeighbors(neighbors, filePath, seq) {
   updateFileStats();
   schedulePriorityThumb(targetIdx);
 
+  const doneCount = state.images.filter(im => im && im.thumbUrl).length;
+  const totalCount = state.images.length;
+  updateThumbProgress(doneCount, totalCount);
+
   // finishLoad skipped its background thumb scan (currentIdx != initialIdx after merge),
   // so kick it here for the now-complete neighbor list.
   const ready = state.mainImageReady || Promise.resolve();
   ready.then(() => {
     if (seq === state.openSeq && state.currentIdx === targetIdx && state.sidebarOpen) {
-      startBackgroundScan();
+      if (doneCount < totalCount) {
+        startBackgroundScan();
+      } else {
+        cachedFolder.completed = true;
+        updateThumbProgress(totalCount, totalCount);
+      }
     }
   }).catch(() => { /* ignore */ });
 }
@@ -923,9 +989,28 @@ async function startBackgroundScan() {
   }
 
   let processed = 0;
-  let completedAll = true;
+  for (let i = 0; i < total; i++) {
+    if (state.images[i] && state.images[i].thumbUrl) {
+      processed++;
+    }
+  }
+
+  if (processed === total) {
+    state.scanInProgress = false;
+    updateThumbProgress(total, total);
+    const firstPath = state.images[0]?.file?.path;
+    if (firstPath) {
+      const dir = folderDirFromPath(firstPath).toLowerCase();
+      const entry = folderScanCache.get(dir);
+      if (entry) entry.completed = true;
+    }
+    return;
+  }
+
   state.scanInProgress = true;
-  let lastProgressPaint = 0;
+  updateThumbProgress(processed, total);
+  let completedAll = true;
+  let lastProgressPaint = performance.now();
 
   // Expand outward from the current index so nearby thumbs warm first
   const start = Math.max(0, state.currentIdx >= 0 ? state.currentIdx : state.current);
@@ -948,6 +1033,17 @@ async function startBackgroundScan() {
       break;
     }
 
+    const im = state.images[idx];
+    if (!im || im.hidden || !im.file?.path) continue;
+
+    if (im.thumbUrl) {
+      const imgEl = sidebar.querySelector(`.thumb-item[data-index="${idx}"] .thumb-static`);
+      if (imgEl && imgEl.style.opacity === '0') {
+        setSidebarThumbSrc(idx, imgEl);
+      }
+      continue;
+    }
+
     // Pause/delay background scanning loop when user is actively interacting with the canvas
     let wasPaused = false;
     while (Date.now() - state.lastCanvasInteraction < SCAN_PAUSE_GRACE_MS) {
@@ -966,18 +1062,16 @@ async function startBackgroundScan() {
       if (radarEl) radarEl.classList.remove('paused');
     }
 
-    const im = state.images[idx];
-    if (!im || im.hidden || !im.file?.path) continue;
-
-    if (!im.thumbUrl) {
-      try {
-        const isCurrent = idx === state.currentIdx || idx === state.current;
-        const thumbUrl = await window.electronAPI.getThumbnail(im.file.path, {
-          priority: isCurrent
-        });
-        if (thumbUrl) im.thumbUrl = thumbUrl;
-      } catch (_) { /* skip */ }
-    }
+    try {
+      const isCurrent = idx === state.currentIdx || idx === state.current;
+      const thumbUrl = await window.electronAPI.getThumbnail(im.file.path, {
+        priority: isCurrent
+      });
+      if (thumbUrl) {
+        im.thumbUrl = thumbUrl;
+        recordCachedThumb(im.file.path, thumbUrl);
+      }
+    } catch (_) { /* skip */ }
     processed++;
 
     // Throttle radar HUD updates (~8/s) to cut layout thrash on large folders
@@ -999,6 +1093,12 @@ async function startBackgroundScan() {
   updateThumbProgress(processed, total);
   if (completedAll && seq === state.openSeq) {
     state.scanInProgress = false;
+    const firstPath = state.images[0]?.file?.path;
+    if (firstPath) {
+      const dir = folderDirFromPath(firstPath).toLowerCase();
+      const entry = folderScanCache.get(dir);
+      if (entry) entry.completed = true;
+    }
   }
 }
 
@@ -2301,6 +2401,7 @@ async function loadThumb(i, imgEl, opts) {
       const thumbUrl = await window.electronAPI.getThumbnail(im.file.path, { priority });
       if (thumbUrl) {
         im.thumbUrl = thumbUrl;
+        recordCachedThumb(im.file.path, thumbUrl);
         return;
       }
     }
@@ -5391,6 +5492,9 @@ function handleFileDeleted(index) {
     showImage(nextIdx, null);
   }
   updateCounter();
+  const delTotal = state.images.length;
+  const delDone = state.images.filter(x => x && x.thumbUrl).length;
+  updateThumbProgress(delDone, delTotal, !state.sidebarOpen);
 }
 
 async function trashCurrentImage() {
@@ -5821,10 +5925,19 @@ function setSidebarOpen(open) {
   }
 
   if (state.sidebarOpen) {
-    startBackgroundScan();
+    const total = state.images.length;
+    const done = state.images.filter(im => im && im.thumbUrl).length;
+    if (total > 0 && done === total) {
+      state.scanInProgress = false;
+      updateThumbProgress(total, total);
+    } else {
+      startBackgroundScan();
+    }
   } else {
     state.scanInProgress = false;
-    updateThumbProgress(0, 0, true);
+    const total = state.images.length;
+    const done = state.images.filter(im => im && im.thumbUrl).length;
+    updateThumbProgress(done, total, true);
   }
 }
 
