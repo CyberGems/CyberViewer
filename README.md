@@ -84,7 +84,7 @@ Most image viewers are either bloated with features you never use or so barebone
 - **Settings backup** — export/import configuration as JSON
 
 ### 🎨 Customization
-- **Accent colors** — Cyan, Pink, Green, Orange
+- **Accent colors** — Cyan, Pink, Green, Orange, Violet, Blue, Red, Mint
 - **Background styles** — Checker-dark, Checker-light, Solid
 - **Interface tweaks** — sidebar, statusbar, tooltips, hints, auto-hide delays, double-click behavior
 - **Tabbed settings** — General, Appearance, Interface, Slideshow, System

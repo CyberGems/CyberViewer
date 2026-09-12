@@ -6583,7 +6583,9 @@ function openConfig() {
   // Set active color + live preview in modal
   const accent = s.accentColor || '#00d4ff';
   document.querySelectorAll('#modal-config .color-opt').forEach(opt => {
-    opt.classList.toggle('active', opt.dataset.color === accent);
+    const isActive = opt.dataset.color === accent;
+    opt.classList.toggle('active', isActive);
+    opt.setAttribute('aria-pressed', isActive ? 'true' : 'false');
   });
   setConfigAccentPreview(accent);
   setConfigAutosaveState(true, { visible: false });
@@ -6770,8 +6772,12 @@ function scheduleConfigAutosave({ immediate = false, toast = false } = {}) {
 
 document.querySelectorAll('#modal-config .color-opt').forEach(opt => {
   opt.addEventListener('click', () => {
-    document.querySelectorAll('#modal-config .color-opt').forEach(o => o.classList.remove('active'));
+    document.querySelectorAll('#modal-config .color-opt').forEach(o => {
+      o.classList.remove('active');
+      o.setAttribute('aria-pressed', 'false');
+    });
     opt.classList.add('active');
+    opt.setAttribute('aria-pressed', 'true');
     setConfigAccentPreview(opt.dataset.color);
     scheduleConfigAutosave({ immediate: true });
   });

@@ -4477,16 +4477,27 @@
   }
 
   /* ── COLOR PICKER ── */
-  .color-grid { display: flex; gap: 10px; }
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 24px);
+    gap: 10px;
+  }
   .color-opt {
     width: 24px; height: 24px;
+    box-sizing: border-box;
+    padding: 0;
     border-radius: 4px;
     cursor: pointer;
     border: 2px solid transparent;
+    appearance: none;
     transition: transform 200ms, box-shadow 200ms, border-color 200ms;
   }
   .color-opt:hover { transform: scale(1.1); }
   .color-opt.active { border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.3); }
+  .color-opt:focus-visible {
+    outline: 2px solid var(--preview-accent);
+    outline-offset: 3px;
+  }
 
   /* ── CONTEXT MENU ── */
   #ctx-menu {
