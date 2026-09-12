@@ -192,7 +192,7 @@ const MENU_ICON_BY_I18N = {
   menu_slideshow_start: 'play', menu_slideshow_pause: 'pause', menu_slideshow_resume: 'play', menu_slideshow_stop: 'stop', menu_slideshow_exit: 'quit',
   menu_toolbar: 'panel-bottom', menu_show_hints: 'keyboard',
   menu_alpha_bg: 'grid', menu_next: 'next', menu_prev: 'prev',
-  menu_favorite: 'star', menu_favs_view: 'star',
+  menu_favorite: 'star', menu_favs_view: 'star', menu_favs_close: 'star',
   menu_favorites: 'star', menu_favorite_add: 'star', menu_favorite_remove: 'star',
   menu_go_start: 'skip-start', menu_go_end: 'skip-end',
   menu_hide_session: 'eye-off', menu_restore_hidden: 'eye',
@@ -8205,6 +8205,17 @@ $('btn-config').addEventListener('click', openConfig);
       const dis = !hasImg || !isFav;
       remFav.classList.toggle('disabled', dis);
       remFav.setAttribute('aria-disabled', String(dis));
+    }
+    const favsViewBtn = panel.querySelector('[data-action="favorites-view"]');
+    if (favsViewBtn) {
+      const lbl = favsViewBtn.querySelector('.menu-label');
+      if (lbl) {
+        const key = state.showingFavs ? 'menu_favs_close' : 'menu_favs_view';
+        lbl.dataset.i18n = key;
+        const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+        const t = (I18N[lang] && I18N[lang][key]) || (I18N.en && I18N.en[key]) || '';
+        if (t) lbl.textContent = t;
+      }
     }
     const sb = panel.querySelector('[data-action="sidebar"]');
     if (sb) sb.classList.toggle('checked', !!state.sidebarOpen);

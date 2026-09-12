@@ -44,7 +44,7 @@ test('menu favorites separation', async (t) => {
   });
 
   await t.test('keeps bilingual translations for all favorites keys in English and Spanish', () => {
-    const keys = ['menu_favorites', 'menu_favorite_add', 'menu_favorite_remove', 'menu_favs_view'];
+    const keys = ['menu_favorites', 'menu_favorite_add', 'menu_favorite_remove', 'menu_favs_view', 'menu_favs_close'];
     for (const lang of ['en', 'es']) {
       for (const key of keys) {
         assert.equal(typeof ui[lang][key], 'string', `${lang}.${key} should be a string`);
@@ -59,12 +59,15 @@ test('menu favorites separation', async (t) => {
     assert.equal(ui.es.menu_favorite_remove, 'Eliminar');
     assert.equal(ui.en.menu_favs_view, 'Favorites View');
     assert.equal(ui.es.menu_favs_view, 'Ver favoritos');
+    assert.equal(ui.en.menu_favs_close, 'Close Favorites');
+    assert.equal(ui.es.menu_favs_close, 'Cerrar favoritos');
   });
 
   await t.test('maps star icon for favorites menu items in app.js', () => {
     assert.match(appJs, /menu_favorites:\s*'star'/);
     assert.match(appJs, /menu_favorite_add:\s*'star'/);
     assert.match(appJs, /menu_favorite_remove:\s*'star'/);
+    assert.match(appJs, /menu_favs_close:\s*'star'/);
   });
 
   await t.test('wires addFavorite and removeFavorite helpers and refresh state', () => {
@@ -74,5 +77,6 @@ test('menu favorites separation', async (t) => {
     assert.match(appJs, /case 'favorite-remove':\s*removeFavorite\(\);/);
     assert.match(appJs, /data-action="favorite-add"/);
     assert.match(appJs, /data-action="favorite-remove"/);
+    assert.match(appJs, /state\.showingFavs\s*\?\s*'menu_favs_close'\s*:\s*'menu_favs_view'/);
   });
 });
