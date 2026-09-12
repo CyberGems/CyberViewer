@@ -18,7 +18,7 @@
   <a href="https://github.com/CyberGems/CyberViewer/wiki"><img src="https://img.shields.io/badge/%F0%9F%93%96_Wiki-Documentation-222222?style=flat-square&logo=github&logoColor=white" alt="Wiki" height="24" /></a>
 </p>
 
-A fast, lightweight Windows image viewer by **CyberGems**: open, browse folders, zoom/pan, and perform light edits (rotate, crop, resize, adjust colors). Built with **Electron 35** and **vanilla JavaScript**, it delivers a modern, dark-themed "cyber" UI with neon accents.
+A fast, lightweight Windows image viewer by **CyberGems**. Open images, browse folders, zoom and pan, and perform light edits such as rotate, crop, resize, and color adjustments. Built with **Electron 35** and **vanilla JavaScript**, CyberViewer delivers a modern, dark-themed "cyber" UI with neon accents.
 
 *Free and open source (GPLv3): no ads, no tracking, and no data collection. Just enjoy it.*
 
@@ -30,11 +30,12 @@ Most image viewers are either bloated with features you never use or so barebone
 
 | Need | Solution |
 |---|---|
-| Open images instantly | Streaming `cvlocal://` protocol — no full RAM load, even for large files |
+| Open images instantly | Streaming `cvlocal://` protocol with no full RAM load, even for large files |
 | Browse a whole folder | Thumbnail sidebar with lazy loading and radar scan progress |
 | Quick edits without Photoshop | Rotate, crop, resize, flip, adjust brightness/contrast/saturation/blur |
 | Immersive viewing | Fullscreen mode with auto-hiding UI, slideshow with loop |
-| Stay in your workflow | System tray, auto-start, global hotkey, Explorer context menu |
+| Set the desktop wallpaper | Fill, Fit, Center, or Span the current image across Windows |
+| Stay in your workflow | System tray, recent images, auto-start, global hotkey, Explorer context menu |
 | Bilingual (EN / ES) | Complete UI localization with instant language switching |
 
 ---
@@ -42,52 +43,53 @@ Most image viewers are either bloated with features you never use or so barebone
 ## ✨ Key Features
 
 ### 🖼️ Viewing
-- **Lightning-fast open** — custom streaming protocol loads images without hogging RAM
-- **Folder browsing** — thumbnail sidebar with lazy loading, priority queue, and scan progress indicator
-- **Zoom & pan** — 5% to 2000%, fit-to-window, original size (1:1), mouse wheel + drag
-- **Animated GIF support** — toggle playback on/off
-- **AVIF support** — open modern AVIF images with Chromium-backed decoding
-- **Fullscreen immersive mode** — ghost UI auto-hides for distraction-free viewing
-- **Drag & drop** — drop images or folders directly onto the window
-- **Clipboard paste** — paste images from clipboard (`Ctrl+V`)
+- **Lightning-fast open:** custom streaming protocol loads images without hogging RAM
+- **Supported formats:** JPG, JPEG, PNG, GIF, WebP, BMP, TIFF, TIF, ICO, and AVIF
+- **Folder browsing:** thumbnail sidebar with lazy loading, priority queue, and scan progress indicator
+- **Zoom and pan:** 5% to 2000%, fit-to-window, original size (1:1), mouse wheel, and drag
+- **Animated GIF support:** toggle playback on or off
+- **Fullscreen immersive mode:** ghost UI auto-hides for distraction-free viewing
+- **Drag and drop:** drop images or folders directly onto the window
+- **Clipboard paste:** paste images from the clipboard (`Ctrl+V`)
 
 ### ✏️ Editing
-- **Rotate** — left 90° (`Q`) / right 90° (`E`) with save/discard workflow
-- **Crop** — interactive overlay with handles, optional create-copy mode
-- **Resize** — width/height with aspect-lock, presets (720p, 1080p, 25%, 50%, 200%), quality resampling
-- **Adjust** — brightness, contrast, saturation, blur, grayscale, invert — with live A/B preview
-- **Flip** — horizontal (`H`) / vertical (`Shift+H`)
+- **Rotate:** left 90° (`Q`) or right 90° (`E`) with save/discard workflow
+- **Crop:** interactive overlay with handles and optional create-copy mode
+- **Resize:** width and height controls with aspect lock, presets (720p, 1080p, 25%, 50%, 200%), and quality resampling
+- **Adjust:** brightness, contrast, saturation, blur, grayscale, and invert with live A/B preview
+- **Flip:** horizontal (`H`) or vertical (`Shift+H`)
 
 ### 🎬 Slideshow
-- Start/pause/stop with dedicated HUD
-- Configurable interval (2s, 3s, 5s, 10s)
-- Loop mode
+- Start, pause, and stop controls with a dedicated HUD
+- Configurable interval: 2s, 3s, 5s, or 10s
+- Loop mode for the current folder
 - Option to enter fullscreen on start
 
 ### 📁 File Operations
-- **Save** (overwrite) / **Save As**
-- **Copy** image to clipboard (`Ctrl+C`) or copy file path
+- **Save** (overwrite) or **Save As**
+- **Copy** the image to the clipboard (`Ctrl+C`) or copy its file path
 - **Move to trash** (`Delete`)
-- **Show in folder** / open containing folder
-- **Export to PDF** and **Print** (page size, orientation, margins)
-- **Favorites** — mark and filter favorite images
-- **Recent history** — last 8 files/folders
+- **Show in folder** or open the containing folder
+- **Export to PDF** and **Print** with page size, orientation, and margin controls
+- **Set as wallpaper** with Fill, Fit, Center, or Span styles
+- **Favorites** with dedicated add, remove, and view actions
+- **Recent history** with up to 10 files and 10 folders
 
 ### ⚙️ System Integration
-- **System tray** — custom HTML popup menu, minimize/close-to-tray
-- **Auto-start with Windows** — launch minimized on boot
-- **Global hotkey** — toggle show/hide (default: `Alt+Shift+V`)
-- **Explorer context menu** — right-click images to open in CyberViewer
-- **File associations** — set as default viewer for JPG, PNG, GIF, WEBP, BMP, TIFF, ICO, AVIF
-- **Multiple instances** — optional, for power users
-- **Auto-update** — built-in GitHub Releases updater with silent install
-- **Settings backup** — export/import configuration as JSON
+- **System tray:** custom HTML popup menu with recent images, plus minimize/close-to-tray behavior
+- **Auto-start with Windows:** launch minimized on sign-in
+- **Global hotkey:** configurable show/hide shortcut, default `Alt+Shift+V`
+- **Explorer context menu:** right-click supported images to open them in CyberViewer
+- **File associations:** set CyberViewer as the default viewer for JPG, PNG, GIF, WebP, BMP, TIFF, ICO, or AVIF
+- **Multiple instances:** optional mode for power users
+- **Auto-update:** built-in GitHub Releases updater with silent install
+- **Settings backup:** export or import configuration and favorites as JSON
 
 ### 🎨 Customization
-- **Accent colors** — Cyan, Pink, Green, Orange, Violet, Blue, Red, Mint
-- **Background styles** — Checker-dark, Checker-light, Solid
-- **Interface tweaks** — sidebar, statusbar, tooltips, hints, auto-hide delays, double-click behavior
-- **Tabbed settings** — General, Appearance, Interface, Slideshow, System
+- **Accent colors:** Cyan, Pink, Green, Orange, Violet, Blue, Red, and Mint
+- **Background styles:** Checker-dark, Checker-light, or Solid
+- **Interface tweaks:** sidebar, toolbar, status bar, tooltips, shortcut guide, auto-hide delays, and double-click behavior
+- **Tabbed settings:** General, Appearance, Interface, Slideshow, System, and Backup & Data
 
 ---
 
@@ -100,7 +102,7 @@ Most image viewers are either bloated with features you never use or so barebone
 
 ```
 CyberViewer/
-├── main.js              Electron main process (IPC, tray, protocol, window management)
+├── main.js              Electron main process: IPC, tray, protocol, and window management
 ├── preload.js           contextBridge → window.electronAPI (secure IPC)
 ├── tray-preload.js      Tray menu preload
 ├── CyberViewer.html     Shell markup (all UI modals/menus)
@@ -116,7 +118,7 @@ CyberViewer/
 │   ├── updater.js       electron-updater integration
 │   └── settings-backup.js Import/export settings
 ├── i18n/
-│   ├── menu.json        Menu/tray/dialog strings (EN/ES)
+│   ├── menu.json        Menu, tray, and dialog strings (EN/ES)
 │   ├── ui.json          Renderer UI strings (source of truth)
 │   └── ui.js            Generated loader (npm run i18n:sync)
 ├── assets/              Icons
@@ -140,6 +142,14 @@ npm install
 npm start
 ```
 
+### Checks and localization
+
+```powershell
+npm test
+npm run lint
+npm run i18n:sync       # regenerate i18n/ui.js from i18n/ui.json
+```
+
 ### Build (Production)
 
 ```powershell
@@ -151,8 +161,8 @@ npm run build:portable   # portable only
 
 | Artifact | Description |
 |---|---|
-| `CyberViewer-Setup-1.17.0.exe` | NSIS installer |
-| `CyberViewer-Portable-1.17.0.exe` | Portable build |
+| `CyberViewer-Setup-<version>.exe` | NSIS installer |
+| `CyberViewer-Portable-<version>.exe` | Portable build |
 
 ### NSIS Installer Features
 - Optional "Set CyberViewer as default image viewer" (checked by default)
@@ -220,7 +230,7 @@ Installed (NSIS) builds use **electron-updater** against GitHub Releases:
 
 1. **About → Check for Updates** (or menu Help)
 2. **Download update** when a newer version is available
-3. **Install & restart** — silent install, no wizard, auto-relaunch
+3. **Install & restart:** silent install, no wizard, and automatic relaunch
 
 Download/install is always user-requested. With "Check for updates on startup" enabled (default), the app notifies on startup that an update exists (toast + About banner), but will not download until you ask.
 
@@ -249,7 +259,7 @@ If you’d like to support future updates, I’d truly appreciate it. You can al
 <div align="center">
 
 <details>
-<summary><b>Crypto donations (BTC, ETH, USDT, LTC) — click to view addresses</b></summary>
+<summary><b>Crypto donations (BTC, ETH, USDT, LTC): click to view addresses</b></summary>
 
 | Asset | Address | QR |
 |---|---|---|
