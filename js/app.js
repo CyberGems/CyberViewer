@@ -998,7 +998,7 @@ async function startBackgroundScan() {
     try { await state.mainImageReady; } catch (_) { /* ignore */ }
   }
 
-  let { done } = getFolderThumbStats();
+  const { done } = getFolderThumbStats();
 
   if (done >= total) {
     state.scanInProgress = false;
@@ -1031,16 +1031,10 @@ async function startBackgroundScan() {
     }
   }
 
+  const pending = [];
   for (const idx of order) {
-    if (seq !== state.openSeq || !state.scanInProgress || !state.sidebarOpen) {
-      updateThumbProgress(getFolderThumbStats().done, total, true);
-      completedAll = false;
-      break;
-    }
-
     const im = state.images[idx];
     if (!im || im.hidden || !im.file?.path) continue;
-
     if (im.thumbUrl) {
       const imgEl = sidebar.querySelector(`.thumb-item[data-index="${idx}"] .thumb-static`);
       if (imgEl && imgEl.style.opacity === '0') {
@@ -1048,56 +1042,100 @@ async function startBackgroundScan() {
       }
       continue;
     }
+    if (!im.thumbFailed) {
+      pending.push(idx);
+    }
+  }
 
-    // Pause/delay background scanning loop when user is actively interacting with the canvas
-    let wasPaused = false;
-    while (Date.now() - state.lastCanvasInteraction < SCAN_PAUSE_GRACE_MS) {
+  if (pending.length === 0) {
+    state.scanInProgress = false;
+    updateThumbProgress(total, total);
+    const firstPath = state.images[0]?.file?.path;
+    if (firstPath) {
+      const dir = folderDirFromPath(firstPath).toLowerCase();
+      const entry = folderScanCache.get(dir);
+      if (entry) entry.completed = true;
+    }
+    return;
+  }
+
+  const SCAN_CONCURRENCY = 3;
+  let pendingIdx = 0;
+
+  const runWorker = async () => {
+    while (pendingIdx < pending.length) {
       if (seq !== state.openSeq || !state.scanInProgress || !state.sidebarOpen) {
+        completedAll = false;
         break;
       }
-      if (!wasPaused) {
-        wasPaused = true;
-        const radarEl = $('footer-radar');
-        if (radarEl) radarEl.classList.add('paused');
-      }
-      await new Promise(resolve => setTimeout(resolve, 200));
-    }
-    if (wasPaused) {
-      const radarEl = $('footer-radar');
-      if (radarEl) radarEl.classList.remove('paused');
-    }
 
-    try {
-      const isCurrent = idx === state.currentIdx || idx === state.current;
-      const thumbUrl = await window.electronAPI.getThumbnail(im.file.path, {
-        priority: isCurrent
-      });
-      if (thumbUrl) {
-        im.thumbUrl = thumbUrl;
-        recordCachedThumb(im.file.path, thumbUrl);
-      } else {
+      // Pause/delay background scanning loop when user is actively interacting with the canvas
+      let wasPaused = false;
+      while (Date.now() - state.lastCanvasInteraction < SCAN_PAUSE_GRACE_MS) {
+        if (seq !== state.openSeq || !state.scanInProgress || !state.sidebarOpen) {
+          break;
+        }
+        if (!wasPaused) {
+          wasPaused = true;
+          const radarEl = $('footer-radar');
+          if (radarEl) radarEl.classList.add('paused');
+        }
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      if (wasPaused) {
+        const radarEl = $('footer-radar');
+        if (radarEl) radarEl.classList.remove('paused');
+      }
+
+      if (seq !== state.openSeq || !state.scanInProgress || !state.sidebarOpen) {
+        completedAll = false;
+        break;
+      }
+
+      const itemPos = pendingIdx++;
+      if (itemPos >= pending.length) break;
+      const idx = pending[itemPos];
+      const im = state.images[idx];
+      if (!im || !im.file?.path || im.thumbUrl || im.thumbFailed) continue;
+
+      try {
+        const isCurrent = idx === state.currentIdx || idx === state.current;
+        const thumbUrl = await window.electronAPI.getThumbnail(im.file.path, {
+          priority: isCurrent
+        });
+        if (thumbUrl) {
+          im.thumbUrl = thumbUrl;
+          recordCachedThumb(im.file.path, thumbUrl);
+        } else {
+          im.thumbFailed = true;
+        }
+      } catch (_) {
         im.thumbFailed = true;
       }
-    } catch (_) {
-      im.thumbFailed = true;
-    }
 
-    // Throttle radar HUD updates (~8/s) to cut layout thrash on large folders
-    const currentDone = getFolderThumbStats().done;
-    const now = performance.now();
-    if (now - lastProgressPaint > 120 || currentDone >= total) {
-      lastProgressPaint = now;
-      updateThumbProgress(currentDone, total);
-    }
+      // Throttle radar HUD updates (~8/s) to cut layout thrash on large folders
+      const currentDone = getFolderThumbStats().done;
+      const now = performance.now();
+      if (now - lastProgressPaint > 120 || currentDone >= total) {
+        lastProgressPaint = now;
+        updateThumbProgress(currentDone, total);
+      }
 
-    const imgEl = sidebar.querySelector(`.thumb-item[data-index="${idx}"] .thumb-static`);
-    if (imgEl && im.thumbUrl && imgEl.style.opacity === '0') {
-      setSidebarThumbSrc(idx, imgEl);
-    }
+      const imgEl = sidebar.querySelector(`.thumb-item[data-index="${idx}"] .thumb-static`);
+      if (imgEl && im.thumbUrl && imgEl.style.opacity === '0') {
+        setSidebarThumbSrc(idx, imgEl);
+      }
 
-    // A small polite delay to yield to user UI interaction thread
-    await new Promise(resolve => setTimeout(resolve, 20));
+      // Cooperative yield to UI thread so animations/scroll stay butter smooth
+      await new Promise(resolve => setTimeout(resolve, 6));
+    }
+  };
+
+  const workers = [];
+  for (let w = 0; w < SCAN_CONCURRENCY; w++) {
+    workers.push(runWorker());
   }
+  await Promise.all(workers);
 
   const finalDone = getFolderThumbStats().done;
   updateThumbProgress(finalDone, total);

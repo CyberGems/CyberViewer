@@ -1286,6 +1286,17 @@ let thumbInFlight = 0;
 /** @type {{ resolve: () => void, priority: boolean }[]} */
 const thumbWaiters = [];
 
+let evictTimer = null;
+function scheduleThumbCacheEviction() {
+  if (evictTimer) return;
+  evictTimer = setTimeout(() => {
+    evictTimer = null;
+    try {
+      evictThumbCache(thumbCachePath);
+    } catch (_) {}
+  }, 10000);
+}
+
 function acquireThumbSlot(priority) {
   if (thumbInFlight < THUMB_CONCURRENCY) {
     thumbInFlight++;
@@ -1400,12 +1411,22 @@ ipcMain.handle('get-thumbnail', async (event, filePath, opts) => {
         // do not keep repainting the sidebar. Chromium also provides the AVIF
         // decoder that nativeImage does not guarantee across platforms.
       } else {
-        const img = nativeImage.createFromPath(abs);
-        if (img.isEmpty()) return null;
-        const thumb = img.resize({ height: 100, quality: 'better' });
+        let thumb = null;
+        if (typeof nativeImage.createThumbnailFromPath === 'function') {
+          try {
+            thumb = await nativeImage.createThumbnailFromPath(abs, { width: 160, height: 100 });
+          } catch (_) {
+            thumb = null;
+          }
+        }
+        if (!thumb || thumb.isEmpty()) {
+          const img = nativeImage.createFromPath(abs);
+          if (img.isEmpty()) return null;
+          thumb = img.resize({ height: 100, quality: 'good' });
+        }
         await fs.promises.writeFile(cacheFile, thumb.toJPEG(80));
       }
-      evictThumbCache(thumbCachePath);
+      scheduleThumbCacheEviction();
       return toMediaUrl(cacheFile);
     } finally {
       releaseThumbSlot();
