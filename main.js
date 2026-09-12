@@ -718,6 +718,7 @@ function buildTrayContextMenuTemplate() {
   const help = buildTrayHelpModel(t);
   const iconBrand = loadTrayBrandIcon();
   const iconShow = loadTrayMenuIcon('show-hide.png');
+  const iconRecent = loadTrayMenuIcon('recent-images.png');
   const iconSettings = loadTrayMenuIcon('settings.png');
   const iconHelp = loadTrayMenuIcon('help.png');
   const iconFaq = loadTrayMenuIcon('faq.png');
@@ -759,6 +760,7 @@ function buildTrayContextMenuTemplate() {
     }
     recentItem = {
       label: t.tray_recent_images || 'Recent images',
+      ...(iconRecent ? { icon: iconRecent } : {}),
       submenu: recentSubmenu
     };
   }
