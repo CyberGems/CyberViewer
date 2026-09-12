@@ -2843,8 +2843,8 @@
   #kbd-hint #btn-open-hud .kbd-ico,
   #kbd-hint #btn-show-folder .kbd-ico {
     margin-right: 0;
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
   }
   #kbd-hint #btn-open-hud,
   #kbd-hint #btn-show-folder {
@@ -2898,8 +2898,8 @@
   /* One SVG size and stroke in both docked and floating toolbars. */
   #kbd-hint .kbd-btn > .kbd-ico {
     display: block;
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     margin: 0;
     stroke-width: 1.8;
   }
@@ -3008,7 +3008,8 @@
     color: var(--cyber-accent);
   }
   #kbd-hint #btn-orig-hud {
-    font-size: 13px;
+    font-size: 14px;
+    font-weight: 600;
     letter-spacing: 0;
   }
   .kbd-btn:focus,
@@ -3046,8 +3047,8 @@
     flex-shrink: 0;
   }
   .kbd-ico.kbd-ico-solo {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     margin-right: 0;
     vertical-align: middle;
   }

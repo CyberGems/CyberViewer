@@ -75,4 +75,10 @@ describe('tray and interface recent images (10 items)', () => {
     assert.match(appCss, /\.menu-header-sub\s*\{[\s\S]*?max-width:\s*170px;/);
     assert.match(appCss, /\.menu-header-sub-base\s*\{[\s\S]*?text-overflow:\s*ellipsis;/);
   });
+
+  it('sizes toolbar icons to 18px while preserving button dimensions and positions', () => {
+    assert.match(appCss, /#kbd-hint \.kbd-btn > \.kbd-ico\s*\{[\s\S]*?width:\s*18px;[\s\S]*?height:\s*18px;/);
+    assert.match(appCss, /#kbd-hint #btn-orig-hud\s*\{[\s\S]*?font-size:\s*14px;/);
+    assert.match(appCss, /\.kbd-ico\.kbd-ico-solo\s*\{[\s\S]*?width:\s*18px;[\s\S]*?height:\s*18px;/);
+  });
 });
