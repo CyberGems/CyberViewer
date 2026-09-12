@@ -2257,15 +2257,50 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px dashed rgba(200, 216, 232, 0.68);
-    border-radius: 12px;
-    background: rgba(24, 30, 45, 0.42);
+    border: 1.5px dashed rgba(var(--cyber-accent-rgb), 0.48);
+    border-radius: 14px;
+    background: radial-gradient(circle at center, rgba(var(--cyber-accent-rgb), 0.09) 0%, rgba(13, 17, 23, 0.55) 100%);
+    box-shadow: 0 0 16px rgba(var(--cyber-accent-rgb), 0.14), inset 0 0 10px rgba(var(--cyber-accent-rgb), 0.05);
+    color: var(--cyber-accent);
+    transition: all var(--transition);
+    animation: dropTileBreathe 3.6s ease-in-out infinite alternate;
   }
-  #drop-zone .drop-action-tile .drop-logo {
-    width: 42px;
-    height: 42px;
-    margin: 0;
-    filter: drop-shadow(0 0 12px rgba(var(--cyber-logo-glow-rgb), 0.5));
+  @media (prefers-reduced-motion: reduce) {
+    #drop-zone .drop-action-tile {
+      animation: none;
+    }
+  }
+  @keyframes dropTileBreathe {
+    0% {
+      border-color: rgba(var(--cyber-accent-rgb), 0.40);
+      box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.10), inset 0 0 8px rgba(var(--cyber-accent-rgb), 0.04);
+    }
+    100% {
+      border-color: rgba(var(--cyber-accent-rgb), 0.72);
+      box-shadow: 0 0 22px rgba(var(--cyber-accent-rgb), 0.24), inset 0 0 14px rgba(var(--cyber-accent-rgb), 0.08);
+    }
+  }
+  #drop-zone .drop-frame:hover .drop-action-tile,
+  #drop-zone.dragover .drop-action-tile {
+    border-color: var(--cyber-accent);
+    box-shadow: 0 0 26px rgba(var(--cyber-accent-rgb), 0.35), inset 0 0 14px rgba(var(--cyber-accent-rgb), 0.12);
+    transform: scale(1.03);
+  }
+
+  #drop-zone .drop-tile-icon {
+    width: 44px;
+    height: 44px;
+    display: block;
+    color: var(--cyber-accent);
+    filter: drop-shadow(0 0 10px rgba(var(--cyber-accent-rgb), 0.5));
+    transition: transform var(--transition), filter var(--transition);
+    user-select: none;
+    pointer-events: none;
+  }
+  #drop-zone .drop-frame:hover .drop-tile-icon,
+  #drop-zone.dragover .drop-tile-icon {
+    filter: drop-shadow(0 0 14px rgba(var(--cyber-accent-rgb), 0.8));
+    transform: scale(1.04);
   }
 
   .drop-title {
