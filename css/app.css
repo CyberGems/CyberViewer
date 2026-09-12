@@ -931,6 +931,83 @@
 
   .menu-divider { height: 1px; margin: 5px 8px; background: rgba(var(--cyber-accent-rgb), 0.16); }
 
+  /* Context menu title header */
+  .menu-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 5px 8px 6px 8px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid rgba(var(--cyber-accent-rgb), 0.16);
+    user-select: none;
+    min-width: 0;
+  }
+  .menu-header-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+  .menu-header-icon {
+    width: 13px;
+    height: 13px;
+    display: block;
+    flex-shrink: 0;
+    color: var(--cyber-accent);
+  }
+  .menu-header-tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--cyber-accent);
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: rgba(var(--cyber-accent-rgb), 0.12);
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.28);
+    line-height: 1.35;
+  }
+  .menu-header-sub {
+    font-size: 11px;
+    color: var(--cyber-muted);
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 170px;
+    text-align: right;
+    pointer-events: auto;
+    cursor: default;
+  }
+
+  /* Color accents per context type */
+  .menu-header-image .menu-header-icon {
+    color: var(--cyber-icon);
+  }
+  .menu-header-image .menu-header-tag {
+    color: var(--cyber-icon);
+    background: rgba(var(--cyber-icon-rgb), 0.12);
+    border-color: rgba(var(--cyber-icon-rgb), 0.32);
+  }
+
+  .menu-header-slideshow .menu-header-icon {
+    color: var(--cyber-accent3);
+  }
+  .menu-header-slideshow .menu-header-tag {
+    color: var(--cyber-accent3);
+    background: rgba(var(--cyber-accent3-rgb), 0.12);
+    border-color: rgba(var(--cyber-accent3-rgb), 0.32);
+  }
+
+  .menu-header-thumb .menu-header-icon {
+    color: var(--cyber-accent);
+  }
+  .menu-header-thumb .menu-header-tag {
+    color: var(--cyber-accent);
+  }
+
   /* flyout submenu opens to the LEFT (button sits on the right edge).
      Visibility is driven only by .sub-open (JS). :hover cannot start a CSS
      transition because the panel jumps to the open style in the same frame. */

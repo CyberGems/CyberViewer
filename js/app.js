@@ -237,6 +237,7 @@ const MENU_ICONS = {
   'panel-bottom': '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 15h18"/>',
   'keyboard': '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M12 10h.01M17 10h.01M8 14h8"/>',
   'grid': '<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+  'layout': '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>',
   'next': '<path d="M9 6l6 6-6 6"/>',
   'prev': '<path d="M15 6l-6 6 6 6"/>',
   'star': '<path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.9-5.2-2.7-5.2 2.7 1-5.9-4.3-4.1 5.9-.9z"/>',
@@ -1648,7 +1649,18 @@ function buildMenuTemplate(type, data) {
   if (type === 'thumb') {
     const hiddenCount = state.images.filter(im => im.hidden).length;
     const isFavThumb = !!(state.settings.app.favorites && data.path && state.settings.app.favorites.includes(data.path));
+    const thumbName = data.path ? fileNameFromPath(data.path) : '';
+    const thumbIdx = (data.index !== undefined) ? `#${data.index + 1}` : '';
+    const thumbSub = [thumbIdx, thumbName].filter(Boolean).join(' · ');
     return [
+      {
+        type: 'header',
+        icon: 'folder',
+        label: getTxt('ctx_header_thumb'),
+        subtitle: thumbSub,
+        subTitleAttr: data.path || '',
+        variant: 'thumb'
+      },
       {
         label: getTxt('menu_file'),
         isSub: true,
@@ -1722,7 +1734,16 @@ function buildMenuTemplate(type, data) {
     ];
   } else if (type === 'image') {
     const hiddenCount = state.images.filter(im => im.hidden).length;
+    const imgName = data.path ? fileNameFromPath(data.path) : (state.images[data.index]?.file?.name || '');
     return [
+      {
+        type: 'header',
+        icon: 'image',
+        label: getTxt('ctx_header_image'),
+        subtitle: imgName,
+        subTitleAttr: data.path || '',
+        variant: 'image'
+      },
       {
         label: getTxt('menu_save_as'),
         action: () => showSaveAsDialog(data.path)
@@ -1858,6 +1879,13 @@ function buildMenuTemplate(type, data) {
     const intervalSec = (getSlideshowIntervalMs() / 1000) + 's';
     return [
       {
+        type: 'header',
+        icon: 'presentation',
+        label: getTxt('ctx_header_slideshow'),
+        subtitle: getTxt('ctx_header_slideshow_sub'),
+        variant: 'slideshow'
+      },
+      {
         label: state.slideshowPlaying ? getTxt('menu_slideshow_pause') : getTxt('menu_slideshow_resume'),
         shortcut: 'Space',
         action: () => toggleSlideshowPlay()
@@ -1903,7 +1931,20 @@ function buildMenuTemplate(type, data) {
     const tMenu = I18N[lang] || I18N.en;
     const closeSpec = windowCloseMenuSpec();
     return [
+      {
+        type: 'header',
+        icon: 'layout',
+        label: getTxt('ctx_header_canvas'),
+        subtitle: getTxt('ctx_header_canvas_sub'),
+        variant: 'canvas'
+      },
       ...buildOpenFileContextItems(tMenu),
+      ...(hasImages ? [
+        {
+          label: getTxt('menu_close_image'),
+          action: () => closeImage()
+        }
+      ] : []),
       { type: 'separator' },
       {
         label: getTxt('menu_paste'),
@@ -2013,6 +2054,38 @@ function buildMenuTemplate(type, data) {
 
 function renderMenuTemplate(container, template) {
   template.forEach(item => {
+    if (item.type === 'header') {
+      const hdr = document.createElement('div');
+      hdr.className = 'menu-header' + (item.variant ? ` menu-header-${item.variant}` : '');
+
+      const main = document.createElement('div');
+      main.className = 'menu-header-main';
+
+      const icon = iconForItem(item);
+      if (icon) {
+        icon.classList.add('menu-header-icon');
+        main.appendChild(icon);
+      }
+
+      const tag = document.createElement('span');
+      tag.className = 'menu-header-tag';
+      tag.textContent = item.label;
+      main.appendChild(tag);
+
+      hdr.appendChild(main);
+
+      if (item.subtitle) {
+        const sub = document.createElement('span');
+        sub.className = 'menu-header-sub';
+        sub.textContent = item.subtitle;
+        if (item.subTitleAttr) sub.title = item.subTitleAttr;
+        hdr.appendChild(sub);
+      }
+
+      container.appendChild(hdr);
+      return;
+    }
+
     if (item.type === 'separator') {
       const sep = document.createElement('div');
       sep.className = 'menu-divider';
