@@ -1,6 +1,6 @@
 {
   "name": "cyberviewer",
-  "version": "1.15.0",
+  "version": "1.16.0",
   "description": "CyberViewer — Visor de imágenes rápido y centrado, por CyberGems",
   "main": "main.js",
   "author": "CyberGems <info@cybergems.org>",
@@ -69,49 +69,67 @@
       "icon": "assets/icon.ico",
       "fileAssociations": [
         {
-          "ext": ["jpg", "jpeg"],
+          "ext": [
+            "jpg",
+            "jpeg"
+          ],
           "name": "JPEG Image",
           "description": "JPEG Image",
           "role": "Viewer"
         },
         {
-          "ext": ["png"],
+          "ext": [
+            "png"
+          ],
           "name": "PNG Image",
           "description": "PNG Image",
           "role": "Viewer"
         },
         {
-          "ext": ["gif"],
+          "ext": [
+            "gif"
+          ],
           "name": "GIF Image",
           "description": "GIF Image",
           "role": "Viewer"
         },
         {
-          "ext": ["webp"],
+          "ext": [
+            "webp"
+          ],
           "name": "WebP Image",
           "description": "WebP Image",
           "role": "Viewer"
         },
         {
-          "ext": ["bmp"],
+          "ext": [
+            "bmp"
+          ],
           "name": "BMP Image",
           "description": "BMP Image",
           "role": "Viewer"
         },
         {
-          "ext": ["tiff", "tif"],
+          "ext": [
+            "tiff",
+            "tif"
+          ],
           "name": "TIFF Image",
           "description": "TIFF Image",
           "role": "Viewer"
         },
         {
-          "ext": ["ico"],
+          "ext": [
+            "ico"
+          ],
           "name": "Icon Image",
           "description": "Icon Image",
           "role": "Viewer"
         },
         {
-          "ext": ["avif"],
+          "ext": [
+            "avif"
+          ],
           "name": "AVIF Image",
           "description": "AVIF Image",
           "role": "Viewer"
@@ -127,7 +145,10 @@
       "shortcutName": "CyberViewer",
       "artifactName": "${productName}-Setup-${version}.${ext}",
       "runAfterFinish": true,
-      "installerLanguages": ["en_US", "es_ES"],
+      "installerLanguages": [
+        "en_US",
+        "es_ES"
+      ],
       "warningsAsErrors": false,
       "include": "build/installer.nsh"
     },
