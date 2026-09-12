@@ -17,7 +17,8 @@ const {
   zoomToSlider,
   screenCaptureZoom,
   folderDirFromPath,
-  folderNameFromPath
+  folderNameFromPath,
+  splitFilenameExtension
 } = require('../js/media-helpers');
 
 describe('mediaUrl', () => {
@@ -225,5 +226,20 @@ describe('folder path helpers', () => {
   it('handles trailing separators and empty', () => {
     assert.equal(folderDirFromPath(''), '');
     assert.equal(folderNameFromPath('C:\\Photos\\trip\\'), 'trip');
+  });
+});
+
+describe('splitFilenameExtension', () => {
+  it('keeps the final extension separate from the truncatable base name', () => {
+    assert.deepEqual(splitFilenameExtension('photo.vacations.webp'), {
+      base: 'photo.vacations',
+      extension: '.webp'
+    });
+  });
+
+  it('handles names without a usable extension', () => {
+    assert.deepEqual(splitFilenameExtension('README'), { base: 'README', extension: '' });
+    assert.deepEqual(splitFilenameExtension('.hidden'), { base: '.hidden', extension: '' });
+    assert.deepEqual(splitFilenameExtension('photo.'), { base: 'photo.', extension: '' });
   });
 });

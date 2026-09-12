@@ -266,6 +266,14 @@
     return parts.length ? parts[parts.length - 1] : '';
   }
 
+  /** Split a filename so a title-bar layout can truncate only its base name. */
+  function splitFilenameExtension(fileName) {
+    const name = String(fileName || '');
+    const dot = name.lastIndexOf('.');
+    if (dot <= 0 || dot === name.length - 1) return { base: name, extension: '' };
+    return { base: name.slice(0, dot), extension: name.slice(dot) };
+  }
+
   // Print / PDF export helpers (Chromium engine, no native deps)
 
   /** Named page surfaces in inches (portrait orientation). */
@@ -371,6 +379,7 @@
     screenCaptureZoom,
     folderDirFromPath,
     folderNameFromPath,
+    splitFilenameExtension,
     PRINT_PAGE_INCHES,
     cmToPx,
     cmToIn,

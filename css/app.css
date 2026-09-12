@@ -4618,7 +4618,9 @@
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     max-width: clamp(160px, 36vw, 640px);
     overflow: hidden;
     border: 0;
@@ -4634,7 +4636,18 @@
     -webkit-app-region: no-drag !important;
     user-select: none;
   }
-  .titlebar-filename:empty { display: none; }
+  .titlebar-filename-base {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .titlebar-filename-extension {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  .titlebar-filename:empty,
+  .titlebar-filename[data-empty="true"] { display: none; }
   .titlebar-filename:hover,
   .titlebar-filename:focus-visible {
     color: var(--cyber-accent);

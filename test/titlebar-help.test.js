@@ -71,7 +71,11 @@ describe('title bar Help menu', () => {
     assert.doesNotMatch(html, /id="top-hints"/);
     assert.match(css, /body:not\(\.ghost-mode\) #viewer-filename\s*\{\s*display:\s*none !important;/);
     assert.match(css, /body\.ghost-mode \.titlebar-filename\s*\{\s*display:\s*none;/);
+    assert.match(html, /id="titlebar-filename"[^>]*data-empty="true"[^>]*>[\s\S]*class="titlebar-filename-base"[\s\S]*class="titlebar-filename-extension"/);
+    assert.match(css, /\.titlebar-filename-base\s*\{[\s\S]*?text-overflow:\s*ellipsis;/);
+    assert.match(css, /\.titlebar-filename-extension\s*\{[\s\S]*?flex:\s*0 0 auto;/);
     assert.match(appJs, /function syncFilenameDisplays\(image = state\.images\[state\.current\]\)/);
+    assert.match(appJs, /splitFilenameExtension\(name\)/);
     assert.match(appJs, /showPropertiesPanel\(image\.file\.path\)/);
     for (const lang of ['en', 'es']) {
       for (const key of ['titlebar_filename_aria', 'titlebar_filename_hint']) {

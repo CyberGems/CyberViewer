@@ -466,12 +466,25 @@ function syncFilenameDisplays(image = state.images[state.current]) {
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
   const t = I18N[lang] || I18N.en || {};
 
-  [viewerFilename, titlebarFilename].forEach(el => {
-    if (!el) return;
-    el.textContent = name || '';
-    el.removeAttribute('data-tooltip');
-    el.classList.remove('cyber-tooltip');
-  });
+  if (viewerFilename) {
+    viewerFilename.textContent = name || '';
+    viewerFilename.removeAttribute('data-tooltip');
+    viewerFilename.classList.remove('cyber-tooltip');
+  }
+  if (titlebarFilename) {
+    const base = titlebarFilename.querySelector('.titlebar-filename-base');
+    const extension = titlebarFilename.querySelector('.titlebar-filename-extension');
+    const parts = splitFilenameExtension(name);
+    if (base && extension) {
+      base.textContent = parts.base;
+      extension.textContent = parts.extension;
+    } else {
+      titlebarFilename.textContent = name || '';
+    }
+    titlebarFilename.dataset.empty = name ? 'false' : 'true';
+    titlebarFilename.removeAttribute('data-tooltip');
+    titlebarFilename.classList.remove('cyber-tooltip');
+  }
   if (!filePath) return;
 
   if (viewerFilename) {
@@ -1001,6 +1014,13 @@ const folderNameFromPath = CVMedia.folderNameFromPath || function (dirPath) {
   const norm = String(dirPath).replace(/[\\/]+$/, '');
   const parts = norm.split(/[\\/]/).filter(Boolean);
   return parts.length ? parts[parts.length - 1] : '';
+};
+
+const splitFilenameExtension = CVMedia.splitFilenameExtension || function (fileName) {
+  const name = String(fileName || '');
+  const dot = name.lastIndexOf('.');
+  if (dot <= 0 || dot === name.length - 1) return { base: name, extension: '' };
+  return { base: name.slice(0, dot), extension: name.slice(dot) };
 };
 
 function updateSidebarFolderHeader() {
