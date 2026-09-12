@@ -459,6 +459,9 @@ function updateLanguage(lang = 'en') {
   if (typeof syncFilenameDisplays === 'function') {
     syncFilenameDisplays();
   }
+  if (typeof window.__cvSyncTitleBarUpdateButton === 'function') {
+    window.__cvSyncTitleBarUpdateButton();
+  }
 }
 
 /** Keep the window title and fullscreen banner in sync with the active image. */
@@ -7609,7 +7612,7 @@ if (isElectron) {
 function syncRotationPendingState(pending) {
   document.body.classList.toggle('rotation-pending', pending);
   const allowed = new Set(['btn-rot-l', 'btn-rot-r', 'btn-commit', 'btn-discard']);
-  document.querySelectorAll('#kbd-hint button, #nav-container button, #sidebar-controls button, #btn-menu, #btn-config, #btn-shortcuts').forEach((el) => {
+  document.querySelectorAll('#kbd-hint button, #nav-container button, #sidebar-controls button, #btn-menu, #btn-config, #btn-shortcuts, #titlebar-update-btn').forEach((el) => {
     if (allowed.has(el.id)) return;
     if (pending) {
       if (!el.dataset.rotationWasDisabled) el.dataset.rotationWasDisabled = el.disabled ? '1' : '0';
@@ -7722,36 +7725,23 @@ $('btn-go-end').addEventListener('click', (e) => {
     return app.updateNotify;
   }
 
-  /** Soft badge on the menu button — always visible while an update is pending. */
-  function syncUpdateMenuBadge() {
-    const wrap = document.querySelector('.menu-wrap');
-    const btn = $('btn-menu');
-    if (!wrap || !btn) return;
+  /** Expandable CyberPaste-style update button on the titlebar — visible while an update is pending. */
+  function syncTitleBarUpdateButton() {
+    const updateBtn = $('titlebar-update-btn');
+    const oldBadge = $('update-menu-badge');
+    if (oldBadge) oldBadge.remove();
+    const menuBtn = $('btn-menu');
+    if (menuBtn) menuBtn.classList.remove('has-update-badge');
 
-    let badge = $('update-menu-badge');
-    if (!badge) {
-      badge = document.createElement('button');
-      badge.type = 'button';
-      badge.id = 'update-menu-badge';
-      badge.className = 'update-menu-badge';
-      badge.setAttribute('aria-label', 'Update available');
-      wrap.appendChild(badge);
-      badge.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (typeof window.openAbout === 'function') window.openAbout();
-        else if ($('btn-about')) $('btn-about').click();
-      });
-    }
+    if (!updateBtn) return;
 
     const s = updateStatus;
-    const pending = s && (s.state === 'available' || s.state === 'downloaded');
+    const pending = !!(s && (s.state === 'available' || s.state === 'downloaded'));
     const t = tAbout();
     const ver = (s && s.version) ? String(s.version) : '';
 
-    badge.classList.toggle('visible', !!pending);
-    badge.classList.toggle('ready', !!(s && s.state === 'downloaded'));
-    btn.classList.toggle('has-update-badge', !!pending);
+    updateBtn.style.display = pending ? 'inline-flex' : 'none';
+    updateBtn.classList.toggle('ready', !!(s && s.state === 'downloaded'));
 
     if (pending) {
       const tip = s.state === 'downloaded'
@@ -7759,12 +7749,12 @@ $('btn-go-end').addEventListener('click', (e) => {
             .replace('{version}', ver)
         : (t.update_badge_available || 'Update available: v{version} — click for details')
             .replace('{version}', ver);
-      badge.setAttribute('aria-label', tip);
-      setCyberTooltip(badge, tip);
-      badge.classList.add('cyber-tooltip', 'tooltip-bottom', 'tooltip-align-right');
+      updateBtn.setAttribute('aria-label', tip);
+      setCyberTooltip(updateBtn, tip);
+      updateBtn.classList.add('cyber-tooltip', 'tooltip-bottom');
     } else {
-      badge.removeAttribute('data-tooltip');
-      badge.classList.remove('cyber-tooltip');
+      updateBtn.removeAttribute('data-tooltip');
+      updateBtn.classList.remove('cyber-tooltip');
     }
   }
 
@@ -7806,11 +7796,12 @@ $('btn-go-end').addEventListener('click', (e) => {
     updateStatus = status || { state: 'idle' };
     window.__cvUpdateStatus = updateStatus;
     syncUpdateActions(overlay);
-    syncUpdateMenuBadge();
+    syncTitleBarUpdateButton();
     maybeToastUpdateStatus(updateStatus, opts);
   }
   window.__cvApplyUpdateStatus = applyUpdateStatus;
-  window.__cvSyncUpdateBadge = syncUpdateMenuBadge;
+  window.__cvSyncUpdateBadge = syncTitleBarUpdateButton;
+  window.__cvSyncTitleBarUpdateButton = syncTitleBarUpdateButton;
 
   function renderUpdateStatusText(el) {
     if (!el) return;
@@ -8041,10 +8032,6 @@ $('btn-go-end').addEventListener('click', (e) => {
                 <span id="about-latest-version" class="about-update-version-value">—</span>
               </div>
             </div>
-            <div id="about-release-notes" class="about-release-notes" style="display:none">
-              <div class="about-release-notes-heading">${t.about_release_notes || "What's new"}</div>
-              <div id="about-release-notes-body" class="about-release-notes-body"></div>
-            </div>
             <div id="about-update-progress" class="about-update-progress" style="display:none">
               <div class="about-update-track"><div id="about-update-bar" class="about-update-bar"></div></div>
             </div>
@@ -8059,10 +8046,14 @@ $('btn-go-end').addEventListener('click', (e) => {
                 ${t.about_install_btn}
               </button>
             </div>
+            <div id="about-update-status" class="about-update-status" aria-live="polite"></div>
+            <div id="about-release-notes" class="about-release-notes" style="display:none">
+              <div class="about-release-notes-heading">${t.about_release_notes || "What's new"}</div>
+              <div id="about-release-notes-body" class="about-release-notes-body"></div>
+            </div>
             <button type="button" id="about-btn-release" class="top-btn about-release-btn" style="display:none">
               ${t.about_view_release || 'View release page'}
             </button>
-            <div id="about-update-status" class="about-update-status" aria-live="polite"></div>
             ${!updateInfo.canUpdate && updateInfo.portable ? `<div class="about-update-hint">${t.about_portable_hint}</div>` : ''}
           </div>
         </div>
@@ -8191,6 +8182,14 @@ $('btn-go-end').addEventListener('click', (e) => {
   window.openAbout = openAbout;
   $('btn-about').addEventListener('click', openAbout);
   $('logo-trigger').addEventListener('click', openAbout);
+  const titlebarUpdateBtn = $('titlebar-update-btn');
+  if (titlebarUpdateBtn) {
+    titlebarUpdateBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openAbout();
+    });
+  }
 })();
 
 $('btn-config').addEventListener('click', openConfig);

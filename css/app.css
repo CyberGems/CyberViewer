@@ -749,45 +749,98 @@
     visibility: hidden;
   }
 
-  /* Soft update indicator on the menu control (non-blocking) */
-  .update-menu-badge {
-    position: absolute;
-    top: 3px;
-    right: 3px;
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: var(--cyber-accent);
-    box-shadow: 0 0 8px rgba(var(--cyber-accent-rgb), 0.85);
-    border: 1px solid rgba(8, 10, 14, 0.85);
-    z-index: 5;
-    cursor: pointer;
-    display: none;
+  /* ── TITLEBAR UPDATE BUTTON (CyberPaste style) ── */
+  .titlebar-update-btn {
+    display: inline-flex;
+    height: 28px;
+    width: auto;
+    align-items: center;
+    align-self: center;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 9999px;
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.5);
+    background: rgba(var(--cyber-accent-rgb), 0.1);
+    color: var(--cyber-accent);
+    box-shadow: 0 0 8px rgba(var(--cyber-accent-rgb), 0.2);
     padding: 0;
-    margin: 0;
+    margin: 0 4px 0 0;
+    cursor: pointer;
     -webkit-app-region: no-drag;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
   }
-  .update-menu-badge.visible {
-    display: block;
-    animation: updateBadgePulse 2.4s ease-in-out infinite;
+
+  .titlebar-update-btn:hover,
+  .titlebar-update-btn:focus-visible {
+    border-color: rgba(var(--cyber-accent-rgb), 0.85);
+    background: rgba(var(--cyber-accent-rgb), 0.2);
+    box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.38);
+    outline: none;
   }
-  .update-menu-badge.ready {
-    background: var(--cyber-accent3);
-    box-shadow: 0 0 10px rgba(var(--cyber-accent3-rgb), 0.9);
+
+  .titlebar-update-btn.ready {
+    border-color: rgba(var(--cyber-accent3-rgb), 0.55);
+    background: rgba(var(--cyber-accent3-rgb), 0.12);
+    color: var(--cyber-accent3);
+    box-shadow: 0 0 8px rgba(var(--cyber-accent3-rgb), 0.25);
   }
-  .update-menu-badge:hover {
-    transform: scale(1.15);
+
+  .titlebar-update-btn.ready:hover,
+  .titlebar-update-btn.ready:focus-visible {
+    border-color: rgba(var(--cyber-accent3-rgb), 0.85);
+    background: rgba(var(--cyber-accent3-rgb), 0.24);
+    box-shadow: 0 0 12px rgba(var(--cyber-accent3-rgb), 0.42);
   }
-  .update-menu-badge:focus-visible {
-    outline: 1px solid var(--cyber-accent);
-    outline-offset: 2px;
+
+  .titlebar-update-label-wrap {
+    display: grid;
+    grid-template-columns: 0fr;
+    align-items: center;
+    height: 28px;
+    overflow: hidden;
+    opacity: 0;
+    transition: grid-template-columns 200ms ease-out, opacity 200ms ease-out;
   }
-  @keyframes updateBadgePulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.55; }
+
+  .titlebar-update-btn:hover .titlebar-update-label-wrap,
+  .titlebar-update-btn:focus-visible .titlebar-update-label-wrap {
+    grid-template-columns: 1fr;
+    opacity: 1;
   }
-  #btn-menu.has-update-badge {
-    border-color: rgba(var(--cyber-accent-rgb), 0.55);
+
+  .titlebar-update-label-inner {
+    display: flex;
+    height: 28px;
+    min-width: 0;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .titlebar-update-label {
+    white-space: nowrap;
+    padding-left: 10px;
+    padding-right: 2px;
+    font-family: var(--font-ui);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.5px;
+    color: inherit;
+  }
+
+  .titlebar-update-icon {
+    display: flex;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .titlebar-update-icon svg {
+    width: 14px;
+    height: 14px;
+    color: inherit;
   }
 
   .menu-panel {
@@ -6187,6 +6240,7 @@
   color: var(--cyber-accent);
 }
 .about-release-notes {
+  margin-top: 10px;
   margin-bottom: 10px;
 }
 .about-release-notes-heading {

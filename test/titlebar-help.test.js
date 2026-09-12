@@ -145,4 +145,48 @@ describe('title bar Help menu', () => {
     assert.match(css, /#topbar::after\s*\{[\s\S]*?box-shadow:\s*0 0 2px rgba\(var\(--cyber-accent-rgb\),\s*0\.35\);/);
     assert.match(css, /body:not\(\.window-maximized\)::after\s*\{[\s\S]*?box-shadow:\s*0 -1px 2px rgba\(var\(--cyber-accent-rgb\),\s*0\.15\);/);
   });
+
+  it('provides CyberPaste-style expandable titlebar update button and removes obsolete burger badge', () => {
+    // Titlebar markup placement
+    const updateBtnIdx = html.indexOf('id="titlebar-update-btn"');
+    const shortcutsIdx = html.indexOf('id="btn-shortcuts"');
+    assert.ok(updateBtnIdx > 0, 'titlebar-update-btn must be present in CyberViewer.html');
+    assert.ok(shortcutsIdx > updateBtnIdx, 'titlebar-update-btn must precede shortcuts button');
+    assert.match(html, /id="titlebar-update-btn"[\s\S]*?class="titlebar-update-label" data-i18n="titlebar_update_btn">Actualizar<\/span>/);
+    assert.match(html, /class="titlebar-update-icon"[\s\S]*?<line x1="12" y1="5" x2="12" y2="19"[\s\S]*?<polyline points="19 12 12 19 5 12"/);
+
+    // CSS CyberPaste pill, neon styling, and hover expansion
+    assert.match(css, /\.titlebar-update-btn\s*\{[\s\S]*?border-radius:\s*9999px;[\s\S]*?border:\s*1px solid rgba\(var\(--cyber-accent-rgb\),\s*0\.5\);/);
+    assert.match(css, /\.titlebar-update-btn\.ready\s*\{[\s\S]*?color:\s*var\(--cyber-accent3\);/);
+    assert.match(css, /\.titlebar-update-label-wrap\s*\{[\s\S]*?grid-template-columns:\s*0fr;[\s\S]*?opacity:\s*0;/);
+    assert.match(css, /\.titlebar-update-btn:hover \.titlebar-update-label-wrap[\s\S]*?grid-template-columns:\s*1fr;[\s\S]*?opacity:\s*1;/);
+    assert.doesNotMatch(css, /\.update-menu-badge\s*\{/);
+
+    // Bilingual i18n
+    assert.equal(ui.en.titlebar_update_btn, 'Update');
+    assert.equal(ui.es.titlebar_update_btn, 'Actualizar');
+
+    // JS updater controller and click binding
+    assert.match(appJs, /function syncTitleBarUpdateButton\(\)/);
+    assert.match(appJs, /updateBtn\.style\.display\s*=\s*pending \? 'inline-flex' : 'none';/);
+    assert.match(appJs, /updateBtn\.classList\.toggle\('ready',\s*!!\(s && s\.state === 'downloaded'\)\);/);
+    assert.match(appJs, /titlebarUpdateBtn\.addEventListener\('click',\s*\(e\)\s*=>\s*\{[\s\S]*?openAbout\(\);/);
+  });
+
+  it('places About modal update action buttons directly above the changelog peek', () => {
+    const detailsIdx = appJs.indexOf('id="about-update-details"');
+    const progressIdx = appJs.indexOf('id="about-update-progress"');
+    const actionsIdx = appJs.indexOf('class="about-update-actions"');
+    const statusIdx = appJs.indexOf('id="about-update-status"');
+    const notesIdx = appJs.indexOf('id="about-release-notes"');
+    const releaseBtnIdx = appJs.indexOf('id="about-btn-release"');
+
+    assert.ok(detailsIdx > 0, 'about-update-details must be present');
+    assert.ok(progressIdx > detailsIdx, 'progress must follow details');
+    assert.ok(actionsIdx > progressIdx, 'action buttons must follow progress');
+    assert.ok(statusIdx > actionsIdx, 'status text must follow actions');
+    assert.ok(notesIdx > statusIdx, 'release notes must be below action buttons so user does not need to scroll');
+    assert.ok(releaseBtnIdx > notesIdx, 'view release page button must follow notes');
+    assert.match(css, /\.about-release-notes\s*\{[\s\S]*?margin-top:\s*10px;[\s\S]*?margin-bottom:\s*10px;/);
+  });
 });
