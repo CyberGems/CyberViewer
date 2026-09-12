@@ -90,10 +90,11 @@ describe('title bar Help menu', () => {
     const fs = html.match(/id="btn-fs-hud"[\s\S]*?<\/button>/);
     const slideshow = html.match(/id="btn-slideshow"[\s\S]*?<\/button>/);
     assert.ok(fs && slideshow, 'fullscreen and slideshow buttons should be present');
-    assert.match(fs[0], /data-i18n-aria="fs_title"[\s\S]*?M9 4H4v5M15 4h5v5M20 15v5h-5M9 20H4v-5/);
-    assert.match(slideshow[0], /data-i18n-aria="ss_title"[\s\S]*?<rect x="6" y="5" width="15" height="15" rx="2"\/>[\s\S]*?M12 10v5l4-2\.5-4-2\.5z/);
+    assert.match(fs[0], /data-i18n-aria="fs_title"[\s\S]*?M9 4H4v5M4 4l5 5M15 4h5v5M20 4l-5 5M4 15v5h5M4 20l5-5M15 20h5v-5M20 20l-5-5/);
+    assert.match(slideshow[0], /data-i18n-aria="ss_title"[\s\S]*?<path d="M6 8H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2"\/>[\s\S]*?<rect x="6" y="5" width="15" height="15" rx="2"\/>[\s\S]*?M12 10v5l4-2\.5-4-2\.5z/);
     assert.match(appJs, /menu_slideshow: 'presentation'/);
     assert.match(appJs, /'presentation': '<rect x="6" y="5"/);
+    assert.match(appJs, /'fullscreen': '<path d="M9 4H4v5M4 4l5 5/);
   });
 
   it('provides the shortcut guide from a compact title-bar button', () => {
