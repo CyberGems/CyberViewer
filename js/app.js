@@ -1657,7 +1657,9 @@ function buildMenuTemplate(type, data) {
         type: 'header',
         icon: 'folder',
         label: getTxt('ctx_header_thumb'),
+        prefix: thumbIdx,
         subtitle: thumbSub,
+        subtitleFilename: thumbName,
         subTitleAttr: data.path || '',
         variant: 'thumb'
       },
@@ -1741,6 +1743,7 @@ function buildMenuTemplate(type, data) {
         icon: 'image',
         label: getTxt('ctx_header_image'),
         subtitle: imgName,
+        subtitleFilename: imgName,
         subTitleAttr: data.path || '',
         variant: 'image'
       },
@@ -2077,8 +2080,39 @@ function renderMenuTemplate(container, template) {
       if (item.subtitle) {
         const sub = document.createElement('span');
         sub.className = 'menu-header-sub';
-        sub.textContent = item.subtitle;
         if (item.subTitleAttr) sub.title = item.subTitleAttr;
+
+        if (item.subtitleFilename) {
+          const parts = splitFilenameExtension(item.subtitleFilename);
+          if (parts && parts.extension) {
+            if (item.prefix) {
+              const prefixSpan = document.createElement('span');
+              prefixSpan.className = 'menu-header-sub-prefix';
+              prefixSpan.textContent = `${item.prefix} · `;
+              sub.appendChild(prefixSpan);
+            }
+            const baseSpan = document.createElement('span');
+            baseSpan.className = 'menu-header-sub-base';
+            baseSpan.textContent = parts.base;
+            sub.appendChild(baseSpan);
+
+            const extSpan = document.createElement('span');
+            extSpan.className = 'menu-header-sub-ext';
+            extSpan.textContent = parts.extension;
+            sub.appendChild(extSpan);
+          } else {
+            const textSpan = document.createElement('span');
+            textSpan.className = 'menu-header-sub-base';
+            textSpan.textContent = item.subtitle;
+            sub.appendChild(textSpan);
+          }
+        } else {
+          const textSpan = document.createElement('span');
+          textSpan.className = 'menu-header-sub-base';
+          textSpan.textContent = item.subtitle;
+          sub.appendChild(textSpan);
+        }
+
         hdr.appendChild(sub);
       }
 

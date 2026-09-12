@@ -83,5 +83,14 @@ test('context menu headers and canvas close-image', async (t) => {
     assert.ok(appCss.includes('.menu-header-image .menu-header-icon'), 'CSS should have .menu-header-image accent');
     assert.ok(appCss.includes('.menu-header-slideshow .menu-header-icon'), 'CSS should have .menu-header-slideshow accent');
     assert.ok(appCss.includes('.menu-header-thumb .menu-header-icon'), 'CSS should have .menu-header-thumb accent');
+    assert.ok(appCss.includes('.menu-header-sub-base {'), 'CSS should define .menu-header-sub-base');
+    assert.ok(appCss.includes('.menu-header-sub-ext {'), 'CSS should define .menu-header-sub-ext');
+  });
+
+  await t.test('preserves filename extension when rendering menu-header-sub', () => {
+    assert.ok(appJs.includes('subtitleFilename: imgName'), 'image context menu passes subtitleFilename');
+    assert.ok(appJs.includes('splitFilenameExtension(item.subtitleFilename)'), 'renderMenuTemplate uses splitFilenameExtension');
+    assert.ok(appJs.includes('menu-header-sub-base'), 'renderMenuTemplate outputs menu-header-sub-base');
+    assert.ok(appJs.includes('menu-header-sub-ext'), 'renderMenuTemplate outputs menu-header-sub-ext');
   });
 });
