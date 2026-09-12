@@ -1371,7 +1371,7 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 6px;
+    gap: 8px;
     z-index: 30;
     box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
     flex-shrink: 0;
@@ -1387,7 +1387,13 @@
     height: 28px;
     padding: 4px 6px;
     font-size: 10px;
+    font-weight: 500;
     letter-spacing: 0.4px;
+    color: color-mix(in srgb, var(--cyber-text) 72%, var(--cyber-muted));
+    background: rgba(8, 10, 14, 0.42);
+    border: 1px solid var(--cyber-border);
+    border-radius: 6px;
+    box-shadow: none;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1395,6 +1401,13 @@
     min-width: 0;
     outline: none;
     -webkit-tap-highlight-color: transparent;
+  }
+  #sidebar-controls .kbd-btn:hover:not(:disabled):not(.is-disabled) {
+    color: var(--cyber-accent);
+    background: rgba(var(--cyber-accent-rgb), 0.08);
+    border-color: color-mix(in srgb, var(--cyber-accent) 62%, var(--cyber-border));
+    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.16);
+    transform: translateY(-1px);
   }
   #sidebar-controls .kbd-btn:focus,
   #sidebar-controls .kbd-btn:focus-visible,
@@ -1407,7 +1420,7 @@
   #sidebar-nav-row {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
   }
   #sidebar-controls .sidebar-nav-btn {
     flex: 1 1 0;
@@ -1416,8 +1429,8 @@
     letter-spacing: 0;
   }
   .sidebar-nav-icon {
-    width: 15px;
-    height: 15px;
+    width: 16px;
+    height: 16px;
     display: block;
     flex-shrink: 0;
   }
@@ -1486,20 +1499,20 @@
   #sidebar-controls .sidebar-nav-btn.cyber-tooltip:hover::before {
     transform: translateX(-50%) translateY(0) !important;
   }
-  #sidebar-controls #btn-center.cyber-tooltip::after {
+  #sidebar-controls #btn-go-start.cyber-tooltip::after {
     left: 0;
     right: auto;
     transform: translateY(6px) !important;
   }
-  #sidebar-controls #btn-center.cyber-tooltip::before {
+  #sidebar-controls #btn-go-start.cyber-tooltip::before {
     left: 20px;
     right: auto;
     transform: translateY(6px) !important;
   }
-  #sidebar-controls #btn-center.cyber-tooltip:hover::after {
+  #sidebar-controls #btn-go-start.cyber-tooltip:hover::after {
     transform: translateY(0) !important;
   }
-  #sidebar-controls #btn-center.cyber-tooltip:hover::before {
+  #sidebar-controls #btn-go-start.cyber-tooltip:hover::before {
     transform: translateY(0) !important;
   }
   #sidebar-controls #btn-go-end.cyber-tooltip::after {
