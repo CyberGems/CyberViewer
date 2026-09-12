@@ -230,7 +230,7 @@ const MENU_ICONS = {
   'square': '<rect x="5" y="5" width="14" height="14" rx="1"/>',
   'fullscreen': '<path d="M9 4H4v5M4 4l5 5M15 4h5v5M20 4l-5 5M4 15v5h5M4 20l5-5M15 20h5v-5M20 20l-5-5"/>',
   'play': '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M10 9l6 3-6 3z"/>',
-  'presentation': '<rect x="6" y="5" width="15" height="15" rx="2"/><path d="M6 8H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2"/><path d="M12 10v5l4-2.5-4-2.5z" fill="currentColor" stroke="none"/>',
+  'presentation': '<rect x="6" y="5" width="15" height="15" rx="2"/><path d="M6 8H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h1"/><path d="M12 10v5l4-2.5-4-2.5z" fill="currentColor" stroke="none"/>',
   'loop': '<path d="M17 2l4 4-4 4"/><path d="M3 6h18"/><path d="M7 22l-4-4 4-4"/><path d="M21 18H3"/>',
   'panel-left': '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/>',
   'panel-bottom': '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 15h18"/>',
