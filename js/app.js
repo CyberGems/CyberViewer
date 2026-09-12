@@ -1255,7 +1255,7 @@ function buildSidebar() {
   if (hasImages) {
     const startIndicator = document.createElement('div');
     startIndicator.className = 'sidebar-boundary-label start';
-    startIndicator.textContent = lang === 'es' ? '— INICIO —' : '— START —';
+    startIndicator.textContent = lang === 'es' ? 'INICIO' : 'START';
     fragment.appendChild(startIndicator);
   }
 
@@ -1274,11 +1274,15 @@ function buildSidebar() {
     img.draggable = false; // Bloquear drag nativo
 
     let animatedImg = null;
+    let gifBadge = null;
     if (isGifImage(im)) {
       animatedImg = document.createElement('img');
       animatedImg.className = 'thumb-animated';
       animatedImg.alt = '';
       animatedImg.draggable = false;
+      gifBadge = document.createElement('span');
+      gifBadge.className = 'thumb-gif-badge';
+      gifBadge.textContent = 'GIF';
     }
 
     const idx = document.createElement('span');
@@ -1287,6 +1291,7 @@ function buildSidebar() {
 
     item.appendChild(img);
     if (animatedImg) item.appendChild(animatedImg);
+    if (gifBadge) item.appendChild(gifBadge);
     item.appendChild(idx);
 
     thumbObserver.observe(item);
@@ -1313,7 +1318,7 @@ function buildSidebar() {
   if (hasImages) {
     const endIndicator = document.createElement('div');
     endIndicator.className = 'sidebar-boundary-label end';
-    endIndicator.textContent = lang === 'es' ? '— FIN —' : '— END —';
+    endIndicator.textContent = lang === 'es' ? 'FIN' : 'END';
     fragment.appendChild(endIndicator);
   }
 
