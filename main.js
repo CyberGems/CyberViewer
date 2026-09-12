@@ -1699,6 +1699,90 @@ ipcMain.on('open-native-properties', (event, filePath) => {
   if (filePath) openNativeProperties(filePath);
 });
 
+let wallpaperScriptWritten = false;
+async function setDesktopWallpaper(filePath, style = 'fill') {
+  try {
+    if (process.platform !== 'win32') {
+      return { success: false, error: 'Platform not supported' };
+    }
+    const cleanPath = resolveAllowedPath(filePath);
+    if (!fs.existsSync(cleanPath)) {
+      return { success: false, error: 'File not found' };
+    }
+
+    const styleMap = {
+      'fill': '10',
+      'fit': '6',
+      'center': '0',
+      'span': '22',
+      'stretch': '2'
+    };
+    const styleCode = styleMap[style] || '10';
+
+    const ext = path.extname(cleanPath).toLowerCase();
+    let targetPath = cleanPath;
+    if (!['.jpg', '.jpeg', '.png', '.bmp'].includes(ext)) {
+      let img = nativeImage.createFromPath(cleanPath);
+      if (img.isEmpty()) {
+        const raw = fs.readFileSync(cleanPath);
+        img = nativeImage.createFromBuffer(raw);
+      }
+      if (img.isEmpty()) {
+        return { success: false, error: 'Unable to process image format' };
+      }
+      const cachePath = path.join(app.getPath('userData'), 'wallpaper_cache.png');
+      fs.writeFileSync(cachePath, img.toPNG());
+      targetPath = cachePath;
+    }
+
+    const scriptPath = path.join(app.getPath('userData'), 'set_wallpaper.ps1');
+    const psScriptContent = `param(
+    [Parameter(Mandatory=$true)][string]$ImagePath,
+    [string]$Style = "10"
+)
+$ErrorActionPreference = 'Stop'
+Set-ItemProperty -Path 'HKCU:\\Control Panel\\Desktop' -Name 'WallpaperStyle' -Value $Style
+Set-ItemProperty -Path 'HKCU:\\Control Panel\\Desktop' -Name 'TileWallpaper' -Value '0'
+$code = @'
+using System;
+using System.Runtime.InteropServices;
+public class WallpaperHelper {
+    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
+}
+'@
+Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue
+[WallpaperHelper]::SystemParametersInfo(0x0014, 0, $ImagePath, 0x01 -bor 0x02)
+`;
+
+    if (!wallpaperScriptWritten || !fs.existsSync(scriptPath)) {
+      fs.writeFileSync(scriptPath, psScriptContent, 'utf-8');
+      wallpaperScriptWritten = true;
+    }
+
+    return await new Promise((resolve) => {
+      execFile(
+        'powershell.exe',
+        ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', scriptPath, targetPath, styleCode],
+        { windowsHide: true },
+        (err) => {
+          if (err) {
+            console.error('Failed to set wallpaper:', err);
+            resolve({ success: false, error: err.message });
+          } else {
+            resolve({ success: true });
+          }
+        }
+      );
+    });
+  } catch (err) {
+    console.error('Error setting desktop wallpaper:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+ipcMain.handle('set-wallpaper', (event, filePath, style) => setDesktopWallpaper(filePath, style));
+
 ipcMain.handle('get-file-info', (event, filePath) => {
   try {
     const stats = fs.statSync(resolveAllowedPath(filePath));

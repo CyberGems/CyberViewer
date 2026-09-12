@@ -63,7 +63,12 @@
     "dialog_import_settings_title": "Import settings",
     "dialog_settings_filter": "JSON files",
     "monitor_primary": "[Primary] ",
-    "monitor_label": "Monitor {id}"
+    "monitor_label": "Monitor {id}",
+    "set_wallpaper": "Set as wallpaper",
+    "wallpaper_fill": "Fill",
+    "wallpaper_fit": "Fit",
+    "wallpaper_center": "Center",
+    "wallpaper_span": "Span"
   },
   "es": {
     "file": "Archivo",
@@ -129,6 +134,11 @@
     "dialog_import_settings_title": "Importar ajustes",
     "dialog_settings_filter": "Archivos JSON",
     "monitor_primary": "[Principal] ",
-    "monitor_label": "Monitor {id}"
+    "monitor_label": "Monitor {id}",
+    "set_wallpaper": "Establecer como fondo de pantalla",
+    "wallpaper_fill": "Rellenar",
+    "wallpaper_fit": "Ajustar",
+    "wallpaper_center": "Centrar",
+    "wallpaper_span": "Extender"
   }
 }

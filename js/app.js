@@ -198,6 +198,9 @@ const MENU_ICON_BY_I18N = {
   menu_go_start: 'skip-start', menu_go_end: 'skip-end',
   menu_hide_session: 'eye-off', menu_restore_hidden: 'eye',
   menu_maximize: 'maximize', menu_autohide_nav: 'eye-off',
+  menu_set_wallpaper: 'monitor',
+  wallpaper_style_fill: 'maximize', wallpaper_style_fit: 'fit',
+  wallpaper_style_center: 'square', wallpaper_style_span: 'layout',
   config: 'gear', about: 'info',
   favorite_add: 'star', favorite_remove: 'star'
 };
@@ -205,6 +208,7 @@ const MENU_ICON_BY_I18N = {
 // SVG markup (inner) for each icon name. Rendered as stroke icons that
 // inherit currentColor, matching the existing burger-button style.
 const MENU_ICONS = {
+  'monitor': '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>',
   'file': '<path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5"/>',
   'image': '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-4.5-4.5L7 19"/>',
   'folder': '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
@@ -1701,6 +1705,35 @@ function buildMenuTemplate(type, data) {
         ]
       },
       {
+        label: getTxt('menu_set_wallpaper'),
+        isSub: true,
+        icon: 'monitor',
+        enabled: !!data.path,
+        visible: !!data.path,
+        items: [
+          {
+            label: getTxt('wallpaper_style_fill'),
+            icon: 'maximize',
+            action: () => setAsWallpaper(data.path, 'fill')
+          },
+          {
+            label: getTxt('wallpaper_style_fit'),
+            icon: 'fit',
+            action: () => setAsWallpaper(data.path, 'fit')
+          },
+          {
+            label: getTxt('wallpaper_style_center'),
+            icon: 'square',
+            action: () => setAsWallpaper(data.path, 'center')
+          },
+          {
+            label: getTxt('wallpaper_style_span'),
+            icon: 'layout',
+            action: () => setAsWallpaper(data.path, 'span')
+          }
+        ]
+      },
+      {
         label: getTxt('menu_go'),
         isSub: true,
         items: [
@@ -1759,6 +1792,33 @@ function buildMenuTemplate(type, data) {
       {
         label: getTxt('menu_close_image'),
         action: () => closeImage()
+      },
+      {
+        label: getTxt('menu_set_wallpaper'),
+        isSub: true,
+        icon: 'monitor',
+        items: [
+          {
+            label: getTxt('wallpaper_style_fill'),
+            icon: 'maximize',
+            action: () => setAsWallpaper(data.path, 'fill')
+          },
+          {
+            label: getTxt('wallpaper_style_fit'),
+            icon: 'fit',
+            action: () => setAsWallpaper(data.path, 'fit')
+          },
+          {
+            label: getTxt('wallpaper_style_center'),
+            icon: 'square',
+            action: () => setAsWallpaper(data.path, 'center')
+          },
+          {
+            label: getTxt('wallpaper_style_span'),
+            icon: 'layout',
+            action: () => setAsWallpaper(data.path, 'span')
+          }
+        ]
       },
       { type: 'separator' },
       {
@@ -2428,6 +2488,9 @@ function executeAction(data) {
       break;
     case 'close-image':
       closeImage();
+      break;
+    case 'set-wallpaper':
+      setAsWallpaper(data.path, data.style || 'fill');
       break;
     case 'toggle-hints':
       state.settings.app.showShortcutGuide = (state.settings.app.showShortcutGuide !== false) ? false : true;
@@ -8461,6 +8524,10 @@ $('btn-config').addEventListener('click', openConfig);
       case 'properties':
         openPropertiesForCurrent();
         break;
+      case 'set-wallpaper-fill':   setAsWallpaper(null, 'fill'); break;
+      case 'set-wallpaper-fit':    setAsWallpaper(null, 'fit'); break;
+      case 'set-wallpaper-center': setAsWallpaper(null, 'center'); break;
+      case 'set-wallpaper-span':   setAsWallpaper(null, 'span'); break;
       case 'trash':          trashCurrentImage(); break;
       case 'rotate-left':    rotate(-90); break;
       case 'rotate-right':   rotate(90); break;
@@ -9130,6 +9197,31 @@ function openPropertiesForCurrent() {
   const im = state.images[state.current];
   const fpath = im ? imageDiskPath(im) : '';
   showPropertiesPanel(fpath);
+}
+
+async function setAsWallpaper(targetPath, style = 'fill') {
+  const p = targetPath || (state.current >= 0 && state.images[state.current] ? imageDiskPath(state.images[state.current]) : null);
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  if (!p) {
+    showToast(lang === 'es' ? 'CARGA UNA IMAGEN PRIMERO' : 'LOAD AN IMAGE FIRST', 'warn');
+    return;
+  }
+  if (!isElectron || !window.electronAPI || !window.electronAPI.setWallpaper) {
+    showToast(lang === 'es' ? 'NO DISPONIBLE EN MODO WEB' : 'NOT AVAILABLE IN WEB MODE', 'warn');
+    return;
+  }
+  try {
+    const res = await window.electronAPI.setWallpaper(p, style);
+    if (res && res.success) {
+      showToast(lang === 'es' ? 'FONDO DE PANTALLA ESTABLECIDO' : 'WALLPAPER SET', 'success');
+    } else {
+      const msg = res?.error || (lang === 'es' ? 'ERROR AL CAMBIAR FONDO' : 'FAILED TO SET WALLPAPER');
+      showToast(msg, 'danger');
+    }
+  } catch (err) {
+    console.error('Error setting desktop wallpaper:', err);
+    showToast(lang === 'es' ? 'ERROR AL CAMBIAR FONDO' : 'FAILED TO SET WALLPAPER', 'danger');
+  }
 }
 
 function buildPropsBadges(name, fpath, isFav) {
