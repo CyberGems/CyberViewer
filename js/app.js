@@ -556,10 +556,8 @@ function closeImage() {
   updateCounter();
   updateFileStats();
 
-  const radarPct = $('radar-pct');
-  if (radarPct) radarPct.textContent = '0%';
-  const radarCount = $('radar-count');
-  if (radarCount) radarCount.textContent = ' [0/0] ';
+  state.openSeq++;
+  updateThumbProgress(0, 0);
 
   zoomVal.textContent = '100%';
   const zoomPct = $('zoom-pct');
@@ -628,15 +626,14 @@ function loadFiles(files, initialIdx = 0) {
     showImage(initialIdx, null, true);
     // Kick the active thumb immediately with priority (does not wait for full paint)
     schedulePriorityThumb(initialIdx);
-    const doneCount = state.images.filter(im => im && im.thumbUrl).length;
-    const totalCount = state.images.length;
+    const { done: doneCount, total: totalCount } = getFolderThumbStats();
     updateThumbProgress(doneCount, totalCount);
     const ready = state.mainImageReady || Promise.resolve();
     ready.then(() => {
       if (state.currentIdx === initialIdx || state.current === initialIdx) {
         if (state.sidebarOpen && doneCount < totalCount) {
           startBackgroundScan();
-        } else if (totalCount > 0 && doneCount === totalCount) {
+        } else if (totalCount > 0 && doneCount >= totalCount) {
           updateThumbProgress(totalCount, totalCount);
         }
       }
@@ -661,6 +658,19 @@ function loadFiles(files, initialIdx = 0) {
  * already-decoded image is never fetched twice. Guards with openSeq so a stale scan
  * (e.g. the user opened another file meanwhile) never clobbers the current state.
  */
+function getFolderThumbStats() {
+  const total = Array.isArray(state.images) ? state.images.length : 0;
+  if (total === 0) return { done: 0, total: 0 };
+  let done = 0;
+  for (let i = 0; i < total; i++) {
+    const im = state.images[i];
+    if (im && (im.thumbUrl || im.thumbFailed || !im.file?.path)) {
+      done++;
+    }
+  }
+  return { done, total };
+}
+
 const folderScanCache = new Map();
 const MAX_FOLDER_SCAN_CACHE = 30;
 
@@ -715,8 +725,9 @@ function mergeNeighbors(neighbors, filePath, seq) {
   if (!cachedFolder) {
     cachedFolder = { signature: sig, thumbs: new Map(), completed: false };
     folderScanCache.set(dir, cachedFolder);
-  } else {
+  } else if (cachedFolder.signature !== sig) {
     cachedFolder.signature = sig;
+    cachedFolder.completed = false;
   }
 
   state.images = files.map(f => {
@@ -746,8 +757,7 @@ function mergeNeighbors(neighbors, filePath, seq) {
   updateFileStats();
   schedulePriorityThumb(targetIdx);
 
-  const doneCount = state.images.filter(im => im && im.thumbUrl).length;
-  const totalCount = state.images.length;
+  const { done: doneCount, total: totalCount } = getFolderThumbStats();
   updateThumbProgress(doneCount, totalCount);
 
   // finishLoad skipped its background thumb scan (currentIdx != initialIdx after merge),
@@ -988,14 +998,9 @@ async function startBackgroundScan() {
     try { await state.mainImageReady; } catch (_) { /* ignore */ }
   }
 
-  let processed = 0;
-  for (let i = 0; i < total; i++) {
-    if (state.images[i] && state.images[i].thumbUrl) {
-      processed++;
-    }
-  }
+  let { done } = getFolderThumbStats();
 
-  if (processed === total) {
+  if (done >= total) {
     state.scanInProgress = false;
     updateThumbProgress(total, total);
     const firstPath = state.images[0]?.file?.path;
@@ -1008,7 +1013,7 @@ async function startBackgroundScan() {
   }
 
   state.scanInProgress = true;
-  updateThumbProgress(processed, total);
+  updateThumbProgress(done, total);
   let completedAll = true;
   let lastProgressPaint = performance.now();
 
@@ -1028,7 +1033,7 @@ async function startBackgroundScan() {
 
   for (const idx of order) {
     if (seq !== state.openSeq || !state.scanInProgress || !state.sidebarOpen) {
-      updateThumbProgress(processed, total, true);
+      updateThumbProgress(getFolderThumbStats().done, total, true);
       completedAll = false;
       break;
     }
@@ -1070,15 +1075,19 @@ async function startBackgroundScan() {
       if (thumbUrl) {
         im.thumbUrl = thumbUrl;
         recordCachedThumb(im.file.path, thumbUrl);
+      } else {
+        im.thumbFailed = true;
       }
-    } catch (_) { /* skip */ }
-    processed++;
+    } catch (_) {
+      im.thumbFailed = true;
+    }
 
     // Throttle radar HUD updates (~8/s) to cut layout thrash on large folders
+    const currentDone = getFolderThumbStats().done;
     const now = performance.now();
-    if (now - lastProgressPaint > 120 || processed === total) {
+    if (now - lastProgressPaint > 120 || currentDone >= total) {
       lastProgressPaint = now;
-      updateThumbProgress(processed, total);
+      updateThumbProgress(currentDone, total);
     }
 
     const imgEl = sidebar.querySelector(`.thumb-item[data-index="${idx}"] .thumb-static`);
@@ -1090,7 +1099,8 @@ async function startBackgroundScan() {
     await new Promise(resolve => setTimeout(resolve, 20));
   }
 
-  updateThumbProgress(processed, total);
+  const finalDone = getFolderThumbStats().done;
+  updateThumbProgress(finalDone, total);
   if (completedAll && seq === state.openSeq) {
     state.scanInProgress = false;
     const firstPath = state.images[0]?.file?.path;
@@ -2403,6 +2413,8 @@ async function loadThumb(i, imgEl, opts) {
         im.thumbUrl = thumbUrl;
         recordCachedThumb(im.file.path, thumbUrl);
         return;
+      } else {
+        im.thumbFailed = true;
       }
     }
   })();
@@ -5492,8 +5504,7 @@ function handleFileDeleted(index) {
     showImage(nextIdx, null);
   }
   updateCounter();
-  const delTotal = state.images.length;
-  const delDone = state.images.filter(x => x && x.thumbUrl).length;
+  const { done: delDone, total: delTotal } = getFolderThumbStats();
   updateThumbProgress(delDone, delTotal, !state.sidebarOpen);
 }
 
@@ -5674,6 +5685,9 @@ function insertPastedImage(blob, mime = 'image/png') {
   }
 
   // Clear previous folder image list and isolate the pasted image session
+  state.openSeq++;
+  state.scanInProgress = false;
+  im.thumbUrl = url;
   state.images = [im];
   state.current = 0;
   state.currentIdx = 0;
@@ -5681,6 +5695,7 @@ function insertPastedImage(blob, mime = 'image/png') {
   buildSidebar();
   showImage(0, null, true);
 
+  updateThumbProgress(1, 1);
   updateSaveButton();
   syncEmptyState();
 }
@@ -5925,9 +5940,8 @@ function setSidebarOpen(open) {
   }
 
   if (state.sidebarOpen) {
-    const total = state.images.length;
-    const done = state.images.filter(im => im && im.thumbUrl).length;
-    if (total > 0 && done === total) {
+    const { done, total } = getFolderThumbStats();
+    if (total > 0 && done >= total) {
       state.scanInProgress = false;
       updateThumbProgress(total, total);
     } else {
@@ -5935,8 +5949,7 @@ function setSidebarOpen(open) {
     }
   } else {
     state.scanInProgress = false;
-    const total = state.images.length;
-    const done = state.images.filter(im => im && im.thumbUrl).length;
+    const { done, total } = getFolderThumbStats();
     updateThumbProgress(done, total, true);
   }
 }
@@ -8752,6 +8765,10 @@ async function toggleFavoritesView() {
       syncFavoritesToggleButtonState(lang);
       
       state.images = mapped;
+      state.openSeq++;
+      const favStats1 = getFolderThumbStats();
+      updateThumbProgress(favStats1.done, favStats1.total, !state.sidebarOpen);
+      if (state.sidebarOpen && favStats1.done < favStats1.total) startBackgroundScan();
       buildSidebar();
       dropZone.style.display = 'none';
       showImage(0, null, true);
@@ -8775,6 +8792,10 @@ async function toggleFavoritesView() {
       syncFavoritesToggleButtonState(lang);
       
       state.images = mapped;
+      state.openSeq++;
+      const favStats2 = getFolderThumbStats();
+      updateThumbProgress(favStats2.done, favStats2.total, !state.sidebarOpen);
+      if (state.sidebarOpen && favStats2.done < favStats2.total) startBackgroundScan();
       buildSidebar();
       dropZone.style.display = 'none';
       showImage(0, null, true);
@@ -8785,6 +8806,10 @@ async function toggleFavoritesView() {
     syncFavoritesToggleButtonState(lang);
     
     state.images = [...state.nonFavImages];
+    state.openSeq++;
+    const fullStats = getFolderThumbStats();
+    updateThumbProgress(fullStats.done, fullStats.total, !state.sidebarOpen);
+    if (state.sidebarOpen && fullStats.done < fullStats.total) startBackgroundScan();
     buildSidebar();
     if (state.nonFavCurrent !== -1 && state.nonFavCurrent < state.images.length) {
       showImage(state.nonFavCurrent, null, true);
