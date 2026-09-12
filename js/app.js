@@ -193,6 +193,7 @@ const MENU_ICON_BY_I18N = {
   menu_toolbar: 'panel-bottom', menu_show_hints: 'keyboard',
   menu_alpha_bg: 'grid', menu_next: 'next', menu_prev: 'prev',
   menu_favorite: 'star', menu_favs_view: 'star',
+  menu_favorites: 'star', menu_favorite_add: 'star', menu_favorite_remove: 'star',
   menu_go_start: 'skip-start', menu_go_end: 'skip-end',
   menu_hide_session: 'eye-off', menu_restore_hidden: 'eye',
   menu_maximize: 'maximize', menu_autohide_nav: 'eye-off',
@@ -8190,6 +8191,21 @@ $('btn-config').addEventListener('click', openConfig);
   function refreshMenuState() {
     const hasImg = state.current !== -1 && state.images && state.images.length > 0;
     panel.querySelectorAll('[data-needs-image]').forEach(el => el.classList.toggle('disabled', !hasImg));
+    const im = hasImg ? state.images[state.current] : null;
+    const favs = (state.settings && state.settings.app && state.settings.app.favorites) || [];
+    const isFav = !!(im && im.file && im.file.path && favs.includes(im.file.path));
+    const addFav = panel.querySelector('[data-action="favorite-add"]');
+    if (addFav) {
+      const dis = !hasImg || isFav;
+      addFav.classList.toggle('disabled', dis);
+      addFav.setAttribute('aria-disabled', String(dis));
+    }
+    const remFav = panel.querySelector('[data-action="favorite-remove"]');
+    if (remFav) {
+      const dis = !hasImg || !isFav;
+      remFav.classList.toggle('disabled', dis);
+      remFav.setAttribute('aria-disabled', String(dis));
+    }
     const sb = panel.querySelector('[data-action="sidebar"]');
     if (sb) sb.classList.toggle('checked', !!state.sidebarOpen);
     const tb = panel.querySelector('[data-action="toolbar"]');
@@ -8344,6 +8360,8 @@ $('btn-config').addEventListener('click', openConfig);
       case 'next':           next(); break;
       case 'prev':           prev(); break;
       case 'favorite':       $('btn-fav').click(); break;
+      case 'favorite-add':    addFavorite(); break;
+      case 'favorite-remove': removeFavorite(); break;
       case 'favorites-view':
         (async () => {
           const wasShowing = state.showingFavs;
@@ -8671,32 +8689,61 @@ elementsToHide.forEach(item => {
 });
 
 // ── FAVORITES SYSTEM ──
+function addFavorite() {
+  const idx = state.current;
+  if (idx === -1) return;
+  const im = state.images[idx];
+  if (!im || !im.file || !im.file.path) return;
+
+  const path = im.file.path;
+  const favs = state.settings.app.favorites || [];
+  if (!favs.includes(path)) {
+    favs.push(path);
+    state.settings.app.favorites = favs;
+    if (isElectron) {
+      window.electronAPI.saveSettings(state.settings.app);
+    }
+    const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+    showToast(lang === 'es' ? 'AÑADIDO A FAVORITOS' : 'ADDED TO FAVORITES', 'success');
+    updateFavButtonState();
+    if (typeof buildSidebar === 'function') buildSidebar();
+  }
+}
+
+function removeFavorite() {
+  const idx = state.current;
+  if (idx === -1) return;
+  const im = state.images[idx];
+  if (!im || !im.file || !im.file.path) return;
+
+  const path = im.file.path;
+  const favs = state.settings.app.favorites || [];
+  const index = favs.indexOf(path);
+  if (index !== -1) {
+    favs.splice(index, 1);
+    state.settings.app.favorites = favs;
+    if (isElectron) {
+      window.electronAPI.saveSettings(state.settings.app);
+    }
+    const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+    showToast(lang === 'es' ? 'ELIMINADO DE FAVORITOS' : 'REMOVED FROM FAVORITES', 'info');
+    updateFavButtonState();
+    if (typeof buildSidebar === 'function') buildSidebar();
+  }
+}
+
 function toggleFavorite() {
   const idx = state.current;
   if (idx === -1) return;
   const im = state.images[idx];
   if (!im || !im.file || !im.file.path) return;
-  
   const path = im.file.path;
   const favs = state.settings.app.favorites || [];
-  const index = favs.indexOf(path);
-  
-  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
-  
-  if (index === -1) {
-    favs.push(path);
-    showToast(lang === 'es' ? 'AÑADIDO A FAVORITOS' : 'ADDED TO FAVORITES', 'success');
+  if (favs.includes(path)) {
+    removeFavorite();
   } else {
-    favs.splice(index, 1);
-    showToast(lang === 'es' ? 'ELIMINADO DE FAVORITOS' : 'REMOVED FROM FAVORITES', 'info');
+    addFavorite();
   }
-  
-  state.settings.app.favorites = favs;
-  if (isElectron) {
-    window.electronAPI.saveSettings(state.settings.app);
-  }
-  
-  updateFavButtonState();
 }
 
 // Toggle favorite for a specific image path (used by the thumb context menu,
