@@ -25,10 +25,12 @@ Welcome to the official **CyberViewer {{VERSION}}** release! CyberViewer is a fa
 
 ### 📦 Downloads & Packages
 
+> ⬇️ **Direct download:** click a file name to download it now. Same files as in **Assets** at the bottom of this page.
+
 | File | Description | Platform |
 | :--- | :--- | :--- |
-| **`CyberViewer-Setup-{{VERSION_NUM}}.exe`** | 🚀 **Recommended Installer** (NSIS setup with Start Menu and Desktop shortcuts) | Windows 10 / 11 (x64) |
-| **`CyberViewer-Portable-{{VERSION_NUM}}.exe`** | 📦 **Portable Build** (no installation required) | Windows 10 / 11 (x64) |
+| **[`CyberViewer-Setup-{{VERSION_NUM}}.exe`](https://github.com/CyberGems/CyberViewer/releases/download/{{VERSION}}/CyberViewer-Setup-{{VERSION_NUM}}.exe)** | 🚀 **Recommended Installer** (NSIS setup with Start Menu and Desktop shortcuts) | Windows 10 / 11 (x64) |
+| **[`CyberViewer-Portable-{{VERSION_NUM}}.exe`](https://github.com/CyberGems/CyberViewer/releases/download/{{VERSION}}/CyberViewer-Portable-{{VERSION_NUM}}.exe)** | 📦 **Portable Build** (no installation required) | Windows 10 / 11 (x64) |
 
 The `latest.yml` and `.blockmap` files support the in-app update workflow and are not intended for direct download.
 
@@ -38,14 +40,6 @@ The `latest.yml` and `.blockmap` files support the in-app update workflow and ar
 
 - **`CyberViewer-Setup-{{VERSION_NUM}}.exe`** — SHA256: `{{INSTALLER_HASH}}`
 - **`CyberViewer-Portable-{{VERSION_NUM}}.exe`** — SHA256: `{{PORTABLE_HASH}}`
-
----
-
-### 🧪 Verification
-
-- `npm run lint`
-- `npm test`
-- `npm run build`
 
 ---
 
