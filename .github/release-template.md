@@ -6,20 +6,12 @@ Welcome to the official **CyberViewer {{VERSION}}** release! CyberViewer is a fa
 
 ### ✨ Key Features & Highlights
 
-- 🖼️ **Image Viewing & Inspection**:
-  - Describe the most important viewer, zoom, 1:1, comparison, or format improvements in this release.
-  - Mention any supported image-format or file-association changes.
+<!-- Maintainer: replace the bullets below with this version's highlights before tagging. This fallback is publish-ready as-is. -->
 
-- 🧭 **Navigation & Workflow**:
-  - Describe keyboard, mouse, drag-and-drop, explorer, or multi-image workflow improvements.
-  - Mention changes to the toolbar, hints, thumbnails, or window behavior.
-
-- 🎨 **Interface & Accessibility**:
-  - Describe visual refinements, interaction feedback, responsive layout, and bilingual UI updates.
-  - Mention About, settings, tray, and update-experience changes when relevant.
-
-- 🔄 **Updates & Reliability**:
-  - Summarize updater, startup, packaging, DPI, multi-monitor, and stability improvements.
+- 🖼️ **Image Viewing & Inspection**: accurate rendering with zoom, 1:1 view, comparison tools, and broad image-format support with file associations.
+- 🧭 **Navigation & Workflow**: keyboard and mouse navigation, drag-and-drop, toolbar hints, thumbnails, and multi-image workflows.
+- 🎨 **Interface & Accessibility**: polished visual feedback, responsive layout, bilingual interface (English/Spanish), and refined About, settings, tray, and update experience.
+- 🔄 **Updates & Reliability**: in-app updater plus startup, packaging, DPI, multi-monitor, and stability improvements.
 
 ---
 
