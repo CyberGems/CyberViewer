@@ -99,3 +99,61 @@ jobs:
 
           echo "Release ${TAG} published:"
           gh release view "$TAG" --json url,isDraft,assets --jq '{url,isDraft,assets:[.assets[].name]}'
+
+      # Render .github/release-template.md with the real version and SHA256
+      # hashes so the release body matches the rest of the suite (direct
+      # download links, no manual copy-paste).
+      - name: Render release notes from template
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          VER_NUM="${TAG#v}"
+
+          retry() {
+            local attempt=1
+            local max=6
+            local delay=8
+            until "$@"; do
+              if [ "$attempt" -ge "$max" ]; then
+                echo "Giving up after ${max} attempts: $*" >&2
+                return 1
+              fi
+              echo "Attempt ${attempt}/${max} failed; retrying in ${delay}s..." >&2
+              sleep "$delay"
+              attempt=$((attempt + 1))
+              delay=$((delay * 2))
+            done
+          }
+
+          INSTALLER=$(ls dist/CyberViewer-Setup-*.exe | head -1)
+          if [ -z "$INSTALLER" ]; then
+            echo "::error::Setup installer not found under dist/"
+            exit 1
+          fi
+          PORTABLE=$(ls dist/CyberViewer-Portable-*.exe | head -1)
+          if [ -z "$PORTABLE" ]; then
+            echo "::error::Portable build not found under dist/"
+            exit 1
+          fi
+          INSTALLER_HASH=$(sha256sum "$INSTALLER" | cut -d' ' -f1)
+          PORTABLE_HASH=$(sha256sum "$PORTABLE" | cut -d' ' -f1)
+          echo "installer: $INSTALLER"
+          echo "sha256:   $INSTALLER_HASH"
+          echo "portable: $PORTABLE"
+          echo "sha256:   $PORTABLE_HASH"
+
+          # Render .github/release-template.md with the release facts
+          sed -e "s/{{VERSION}}/$TAG/g" \
+              -e "s/{{VERSION_NUM}}/$VER_NUM/g" \
+              -e "s/{{INSTALLER_HASH}}/$INSTALLER_HASH/g" \
+              -e "s/{{PORTABLE_HASH}}/$PORTABLE_HASH/g" \
+              .github/release-template.md > FINAL_RELEASE_NOTES.md
+
+          # Apply the rendered notes (keeps draft state when present)
+          retry gh release edit "$TAG" --notes-file FINAL_RELEASE_NOTES.md
+
+          echo "Release ${TAG} notes applied from template."
