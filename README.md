@@ -7,18 +7,18 @@
 <h1 align="center">CyberViewer: A modern, feature-packed image viewer for Windows</h1>
 
 <p align="center">
-  <a href="https://github.com/CyberGems/CyberViewer/releases/latest"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FCyberGems%2FCyberViewer%2Fmain%2Fpackage.json&query=%24.version&prefix=%E2%9A%A1%20RELEASE%20v&style=for-the-badge&label=&labelColor=555555&color=555555" alt="Download Latest Release" /><img src="https://img.shields.io/badge/-(WINDOWS_64--BIT)-0047B3?style=for-the-badge&logo=windows&logoColor=white" alt="Windows 64-bit" /></a>
-  &nbsp;<a href="https://github.com/CyberGems/CyberViewer/releases"><img src="https://img.shields.io/badge/All_Releases-Changelog-18181B?style=for-the-badge&logo=github&logoColor=white" alt="All Releases" /></a>
+  <a href="https://github.com/CyberGems/CyberViewer/releases/latest"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FCyberGems%2FCyberViewer%2Fmain%2Fpackage.json&query=%24.version&prefix=%20Download%20CyberViewer%20v&suffix=%20&style=for-the-badge&label=&labelColor=7B1FA2&color=7B1FA2" alt="Download Latest Release" /><img src="https://img.shields.io/badge/Windows_64--bit-0078D4?style=for-the-badge" alt="Windows 64-bit" /></a>
+  &nbsp;<a href="https://github.com/CyberGems/CyberViewer/releases"><img src="https://img.shields.io/badge/All_releases-2B3137?style=for-the-badge&logo=github&logoColor=white" alt="All Releases" /><img src="https://img.shields.io/badge/Changelog-3B444B?style=for-the-badge" alt="Changelog" /></a>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/license-GPL--3.0-blue.svg" alt="License" height="24" />&nbsp;
-  <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4.svg?logo=windows&logoColor=white" alt="Platform" height="24" />&nbsp;
-  <img src="https://img.shields.io/badge/Electron-35-512BD4.svg?logo=electron&logoColor=white" alt="Electron" height="24" />&nbsp;
-  <a href="https://github.com/CyberGems/CyberViewer/wiki"><img src="https://img.shields.io/badge/%F0%9F%93%96_Wiki-Documentation-222222?style=flat-square&logo=github&logoColor=white" alt="Wiki" height="24" /></a>
+  <img src="https://img.shields.io/badge/License-GPL--3.0-1F2428.svg?style=flat-square&color=7B1FA2" alt="License" />&nbsp;
+  <img src="https://img.shields.io/badge/Platform-Windows_10_|_11-1F2428.svg?style=flat-square&color=0078D4" alt="Platform" />&nbsp;
+  <img src="https://img.shields.io/badge/Electron-35-1F2428.svg?style=flat-square&logo=electron&logoColor=white&color=47848F" alt="Electron" />&nbsp;
+  <a href="https://github.com/CyberGems/CyberViewer/wiki"><img src="https://img.shields.io/badge/Wiki-Documentation-1F2428?style=flat-square&logo=gitbook&logoColor=white&color=7B1FA2" alt="Wiki" /></a>
 </p>
 
-A fast, lightweight Windows image viewer by **CyberGems**. Open images, browse folders, zoom and pan, and perform light edits such as rotate, crop, resize, and color adjustments. Built with **Electron 35** and **vanilla JavaScript**, CyberViewer delivers a modern, dark-themed "cyber" UI with neon accents.
+A fast, lightweight Windows image viewer by **CyberGems**. Open images, browse folders, zoom and pan, and perform light edits such as rotate, crop, resize, and color adjustments, all wrapped in a modern, dark-themed "cyber" UI with neon accents. Built with **Electron 35** and **vanilla JavaScript**.
 
 *Free and open source (GPLv3): no ads, no tracking, and no data collection. Just enjoy it.*
 
