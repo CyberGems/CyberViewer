@@ -18,7 +18,11 @@
   <a href="https://github.com/CyberGems/CyberViewer/wiki"><img src="https://img.shields.io/badge/Wiki-Documentation-1F2428?style=flat-square&logo=gitbook&logoColor=white&color=7B1FA2" alt="Wiki" /></a>
 </p>
 
-A fast, lightweight Windows image viewer by **CyberGems**. Open images, browse folders, zoom and pan, and perform light edits such as rotate, crop, resize, and color adjustments, all wrapped in a modern, dark-themed "cyber" UI with neon accents. Built with **Electron 35** and **vanilla JavaScript**.
+---
+
+## What is CyberViewer?
+
+CyberViewer is a fast, lightweight image viewer for Windows that covers everyday viewing and editing without the weight of a full graphics suite. Open large images quickly, browse complete folders through a thumbnail sidebar, zoom and pan smoothly, run slideshows, and manage recent files. Essential tools for rotation, cropping, resizing, flipping, and color adjustment are built in, alongside wallpaper controls and Windows Explorer integration. The interface stays focused, dark, and highly customizable. Built with **Electron 35** and **vanilla JavaScript**.
 
 *Free and open source (GPLv3): no ads, no tracking, and no data collection. Just enjoy it.*
 
