@@ -1,6 +1,13 @@
-## 📋 CyberViewer {{VERSION}} — Release Notes
+## 📋 CyberViewer {{VERSION}}: Release Notes
 
-Welcome to the official **CyberViewer {{VERSION}}** release! CyberViewer is a fast, privacy-first Windows image viewer focused on accurate rendering, productive inspection tools, and a polished desktop experience.
+### 🚀 What's new in this release
+
+<!-- Maintainer: Rewrite the marked paragraph for every release. Use 25-45 words, lead with user-facing changes, and do not repeat the app name or version. -->
+<!-- changelog-summary:start -->
+Viewing, inspection, navigation, and multi-image workflows are more cohesive, while interface feedback, update handling, packaging reliability, DPI behavior, and multi-monitor support receive a broad round of polish.
+<!-- changelog-summary:end -->
+
+> **New to CyberViewer?** A fast, lightweight Windows image viewer with essential editing and inspection tools built in.
 
 ---
 
