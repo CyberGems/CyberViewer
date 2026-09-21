@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/CyberGems/CyberViewer/main/assets/icon.png" width="120" alt="CyberViewer">
+</p>
+
 ## 📋 CyberViewer {{VERSION}}: Release Notes
 
 ### 🚀 What's new in this release
