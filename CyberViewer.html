@@ -500,15 +500,21 @@
   <div class="modal-box tray-pin-modal-box">
     <div class="modal-header">
       <div class="modal-title" id="tray-pin-title">
-        <span class="modal-header-icon" data-modal-icon="pin" aria-hidden="true"></span>
+        <span class="modal-header-icon tray-pin-brand-icon" aria-hidden="true">
+          <img src="assets/icon.png" alt="" draggable="false">
+        </span>
         <span data-i18n="tray_pin_title">Keep CyberViewer visible in the system tray</span>
       </div>
-      <button class="win-btn modal-close-btn" data-close-modal="modal-tray-pin" data-i18n-title="close" title="Close">&#10005;</button>
+      <button class="win-btn modal-close-btn cyber-tooltip tooltip-bottom tooltip-align-right"
+        data-close-modal="modal-tray-pin" data-i18n-title="close" data-i18n-aria="close"
+        data-tooltip="Close" aria-label="Close">&#10005;</button>
     </div>
     <div class="modal-body tray-pin-modal-body">
       <div class="tray-pin-hero">
-        <div class="tray-pin-icon" aria-hidden="true"><span data-modal-icon="pin"></span></div>
-        <p data-i18n="tray_pin_desc">Windows may place new tray icons behind the overflow menu. Use Windows Settings to choose whether CyberViewer stays visible next to the clock.</p>
+        <div class="tray-pin-icon" aria-hidden="true">
+          <img class="tray-pin-logo-img" src="assets/icon.png" alt="" draggable="false">
+        </div>
+        <p id="tray-pin-desc" data-i18n="tray_pin_desc">Windows may place new tray icons behind the overflow (^). Use Windows Settings to choose whether CyberViewer stays visible next to the clock.</p>
       </div>
       <ol class="tray-pin-steps">
         <li data-i18n="tray_pin_step_one">Open Windows Settings.</li>

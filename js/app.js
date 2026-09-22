@@ -408,6 +408,43 @@ function decorateModalHeaderIcons() {
 }
 decorateModalHeaderIcons();
 
+function renderTrayPinDescription(lang = 'en') {
+  const description = $('tray-pin-desc');
+  if (!description) return;
+
+  const translations = I18N[lang] || I18N.en || {};
+  const text = translations.tray_pin_desc ||
+    'Windows may place new tray icons behind the overflow (^). Use Windows Settings to choose whether CyberViewer stays visible next to the clock.';
+  const marker = '(^)';
+  const markerIndex = text.indexOf(marker);
+
+  description.replaceChildren();
+  if (markerIndex < 0) {
+    description.textContent = text;
+    return;
+  }
+
+  const beforeMarker = text.slice(0, markerIndex);
+  const afterMarker = text.slice(markerIndex + marker.length);
+  const match = beforeMarker.match(/^(.*\s)(\S+\s+\S+\s*)$/s);
+  const prefix = match ? match[1] : beforeMarker;
+  const overflowLead = match ? match[2].trimEnd() : '';
+
+  description.appendChild(document.createTextNode(prefix));
+
+  const noWrapGroup = document.createElement('span');
+  noWrapGroup.className = 'tray-pin-overflow-group';
+  noWrapGroup.appendChild(document.createTextNode(overflowLead));
+
+  const indicator = document.createElement('span');
+  indicator.className = 'tray-overflow-indicator';
+  indicator.setAttribute('aria-hidden', 'true');
+  noWrapGroup.appendChild(indicator);
+
+  description.appendChild(noWrapGroup);
+  description.appendChild(document.createTextNode(afterMarker));
+}
+
 function updateLanguage(lang = 'en') {
   document.documentElement.lang = lang;
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -420,6 +457,7 @@ function updateLanguage(lang = 'en') {
       }
     }
   });
+  renderTrayPinDescription(lang);
 
   document.querySelectorAll('[data-i18n-title]').forEach(el => {
     const key = el.dataset.i18nTitle;
