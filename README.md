@@ -1,4 +1,8 @@
 <p align="center">
+  English · <a href="./README.es.md">Español</a>
+</p>
+
+<p align="center">
   <a href="https://cybergems.org/apps/cyberviewer/">
     <img src="https://cybergems.org/banners/cyberviewer.png" alt="CyberViewer, a fast image viewer with essential editing tools" />
   </a>
@@ -95,6 +99,41 @@ Most image viewers are either bloated with features you never use or so barebone
 
 ---
 
+## 🚀 Getting Started
+
+### Install (Recommended)
+
+1. Download the latest installer or portable build from [Releases](https://github.com/CyberGems/CyberViewer/releases/latest)
+2. Run the `CyberViewer-Setup` installer or the portable executable
+3. Launch CyberViewer and press `Alt+Shift+V` to show or hide it from anywhere. No other requirements needed: you do **not** need Node.js
+
+### 🛡️ Windows SmartScreen
+
+Windows may show a SmartScreen warning the first time you run the CyberViewer installer: this is an unsigned hobby app, so Windows hasn't built reputation for the file yet. This is expected; the source is public so you can inspect exactly what it does. The same can appear when launching the portable build.
+
+To continue:
+
+<details>
+<summary><strong>See how to run the installer (step by step)</strong></summary>
+
+Windows shows this warning for any installer without a paid code-signing certificate; it does not mean the file is unsafe. Do <strong>not</strong> click "Don't run":
+
+1. Run the installer. Windows may show the blue "Windows protected your PC" dialog.
+
+![Windows SmartScreen warning](https://cybergems.org/branding/smartscreen-warning.svg)
+
+2. Click the small **More info** link.
+
+![SmartScreen dialog after More info](https://cybergems.org/branding/smartscreen-runanyway.svg)
+
+3. Click **Run anyway**. The installer starts normally.
+
+You can verify the file independently: compare the SHA with the GitHub release, scan it on VirusTotal, or build from source. More details: [SmartScreen guide on the website](https://cybergems.org/download#smartscreen).
+
+</details>
+
+---
+
 ## 🛠️ Tech Stack & Architecture
 
 - **Platform:** Windows 10 / 11 (x64)
@@ -127,16 +166,16 @@ CyberViewer/
 └── test/                Node unit tests
 ```
 
----
+### Building from Source (Developers)
 
-## 🚀 Getting Started
+Only needed if you want to work on CyberViewer or build it yourself; regular users can skip this section.
 
-### Prerequisites
+#### Prerequisites
 
 - **Node.js LTS** → https://nodejs.org
 - Windows 10/11 (x64)
 
-### Development
+#### Development
 
 ```powershell
 cd C:\path\to\CyberViewer
@@ -144,7 +183,7 @@ npm install
 npm start
 ```
 
-### Checks and localization
+#### Checks and localization
 
 ```powershell
 npm test
@@ -152,50 +191,25 @@ npm run lint
 npm run i18n:sync       # regenerate i18n/ui.js from i18n/ui.json
 ```
 
-### Build (Production)
+#### Build (Production)
 
 ```powershell
 npm run build            # NSIS installer + portable
 npm run build:portable   # portable only
 ```
 
-### Outputs (in `dist/`)
+#### Outputs (in `dist/`)
 
 | Artifact | Description |
 |---|---|
 | `CyberViewer-Setup-<version>.exe` | NSIS installer |
 | `CyberViewer-Portable-<version>.exe` | Portable build |
 
-### NSIS Installer Features
+#### NSIS Installer Features
 - Optional "Set CyberViewer as default image viewer" (checked by default)
 - Per-user (HKCU) file associations
 - Desktop/Start Menu shortcuts
 - Bilingual installer (en_US, es_ES)
-
-### 🛡️ Windows SmartScreen
-
-Windows may show a SmartScreen warning the first time you run the CyberViewer installer: this is an unsigned hobby app, so Windows hasn't built reputation for the file yet. This is expected; the source is public so you can inspect exactly what it does. The same can appear when launching the portable build.
-
-To continue:
-
-<details>
-<summary><strong>See how to run the installer (step by step)</strong></summary>
-
-Windows shows this warning for any installer without a paid code-signing certificate; it does not mean the file is unsafe. Do <strong>not</strong> click "Don't run":
-
-1. Run the installer. Windows may show the blue "Windows protected your PC" dialog.
-
-![Windows SmartScreen warning](https://cybergems.org/branding/smartscreen-warning.svg)
-
-2. Click the small **More info** link.
-
-![SmartScreen dialog after More info](https://cybergems.org/branding/smartscreen-runanyway.svg)
-
-3. Click **Run anyway**. The installer starts normally.
-
-You can verify the file independently: compare the SHA with the GitHub release, scan it on VirusTotal, or build from source. More details: [SmartScreen guide on the website](https://cybergems.org/download#smartscreen).
-
-</details>
 
 ---
 
