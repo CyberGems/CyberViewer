@@ -210,10 +210,11 @@ const state = {
   nonFavCurrent: -1,
   settings: { 
     app: { 
-      sidebarOpen: false, 
-      statusbarVisible: true, 
-      closeToTray: false, 
-      closeImageOnTray: true, 
+      sidebarOpen: false,
+      statusbarVisible: true,
+      closeToTray: false,
+      closeChoiceMade: false,
+      closeImageOnTray: true,
       trayRecentImages: true,
       autoStart: false, 
       accentColor: '#00d4ff',
@@ -5630,6 +5631,7 @@ document.addEventListener('keydown', e => {
     closeModal('modal-print-export');
     closeModal('modal-cyber-confirm');
     closeModal('modal-tray-pin');
+    closeModal('modal-first-close');
     const aboutOverlay = $('about-overlay');
     if (aboutOverlay) aboutOverlay.classList.remove('active');
     e.preventDefault();
@@ -5664,6 +5666,15 @@ document.addEventListener('keydown', e => {
   }
   if (e.key === 'F1') { e.preventDefault(); $('btn-about').click(); return; }
   if (e.key === '?') { e.preventDefault(); setShortcutsPopoverOpen($('shortcuts-popover').hidden); return; }
+
+  // First-close dialog: Enter → minimize to tray, Space → quit (CyberNotes map).
+  // Focused inputs keep their native behavior (the INPUT/TEXTAREA guard above
+  // already returned); preventDefault cancels native button activation so the
+  // choice never fires twice.
+  if ($('modal-first-close').classList.contains('active')) {
+    if (e.key === 'Enter') { e.preventDefault(); chooseFirstClose('tray'); return; }
+    if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); chooseFirstClose('quit'); return; }
+  }
 
   // Enter applies/confirms in modals
   if (e.key === 'Enter') {
@@ -6743,7 +6754,7 @@ document.querySelectorAll('[data-close-modal]').forEach(btn => {
     closeModal(btn.getAttribute('data-close-modal'));
   });
 });
-['modal-resize', 'modal-adjust', 'modal-config', 'modal-properties', 'modal-cyber-confirm', 'modal-print-export', 'modal-tray-pin'].forEach(id => {
+['modal-resize', 'modal-adjust', 'modal-config', 'modal-properties', 'modal-cyber-confirm', 'modal-print-export', 'modal-tray-pin', 'modal-first-close'].forEach(id => {
   const overlay = $(id);
   if (!overlay) return;
   overlay.addEventListener('click', (e) => {
@@ -6755,6 +6766,43 @@ const trayPinDismissBtn = $('btn-tray-pin-dismiss');
 if (trayPinDismissBtn) trayPinDismissBtn.addEventListener('click', dismissTrayPinReminder);
 const trayPinSettingsBtn = $('btn-tray-pin-settings');
 if (trayPinSettingsBtn) trayPinSettingsBtn.addEventListener('click', () => { void openTrayPinSettings(); });
+
+// ── FIRST-CLOSE DIALOG (minimize to tray vs quit, CyberNotes pattern) ──
+// The main process intercepts the window close and asks via 'confirm-first-close'
+// until the user makes (and optionally remembers) a choice.
+function chooseFirstClose(action) {
+  const remember = !!($('cfg-first-close-remember') && $('cfg-first-close-remember').checked);
+  closeModal('modal-first-close');
+  // Keep the in-memory settings in sync with what main will persist
+  const prevCloseToTray = state.settings && state.settings.app && state.settings.app.closeToTray === true;
+  if (state.settings && state.settings.app) {
+    if (remember) {
+      state.settings.app.closeChoiceMade = true;
+      state.settings.app.closeToTray = action === 'tray';
+    }
+  }
+  // First time tray is chosen: remind about pinning the icon once the window
+  // is visible again (the reminder pops on the next visibilitychange).
+  if (action === 'tray' && !prevCloseToTray && !isTrayPinReminderDismissed()) {
+    pendingTrayPinReminder = true;
+  }
+  if (isElectron && window.electronAPI.respondFirstClose) {
+    void window.electronAPI.respondFirstClose(action, remember);
+  }
+}
+
+const firstCloseTrayBtn = $('btn-first-close-tray');
+if (firstCloseTrayBtn) firstCloseTrayBtn.addEventListener('click', () => chooseFirstClose('tray'));
+const firstCloseQuitBtn = $('btn-first-close-quit');
+if (firstCloseQuitBtn) firstCloseQuitBtn.addEventListener('click', () => chooseFirstClose('quit'));
+
+if (typeof window.electronAPI.onConfirmFirstClose === 'function') {
+  window.electronAPI.onConfirmFirstClose(() => {
+    const checkbox = $('cfg-first-close-remember');
+    if (checkbox) checkbox.checked = false;
+    openModal('modal-first-close');
+  });
+}
 
 // ── PRINT / EXPORT PDF (Chromium engine, no native deps) ──
 function bakePrintCanvas() {
@@ -7209,6 +7257,7 @@ function getFactoryAppSettings() {
     sidebarOpen: false,
     statusbarVisible: true,
     closeToTray: false,
+    closeChoiceMade: false,
     closeImageOnTray: true,
     trayRecentImages: true,
     autoStart: false,

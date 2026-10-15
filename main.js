@@ -158,6 +158,7 @@ function loadSettings() {
         if (data.app.allowMultipleInstances === undefined) data.app.allowMultipleInstances = false;
         if (data.app.showFileName === undefined) data.app.showFileName = true;
         if (data.app.animateGifs === undefined) data.app.animateGifs = true;
+        if (data.app.closeChoiceMade === undefined) data.app.closeChoiceMade = false;
       if (data.app.dblClickAction === undefined) data.app.dblClickAction = 'fullscreen';
         if (data.app.toggleHotkey === undefined || data.app.toggleHotkey === '') {
           data.app.toggleHotkey = DEFAULT_TOGGLE_HOTKEY;
@@ -173,6 +174,7 @@ function loadSettings() {
     app: {
       closeToTray: false,
       closeImageOnTray: true,
+      closeChoiceMade: false,
       trayRecentImages: true,
       startMinimized: false,
       autoStart: false,
@@ -501,10 +503,25 @@ function createWindow() {
   win.loadURL(loadUrl);
 
   win.on('close', (event) => {
-    if (!isQuitting && wantsTray()) {
-      event.preventDefault();
-      hideToTray();
-      return false;
+    if (!isQuitting) {
+      const s = loadSettings().app;
+      // First close: ask what to do (CyberNotes pattern) unless the user already
+      // made a choice (dialog or Settings). Ephemeral file-arg instances never tray.
+      const isEphemeral = allowMultipleInstances && instanceHasInitialFile;
+      if (!isEphemeral && !s.closeChoiceMade && !s.closeToTray) {
+        event.preventDefault();
+        // Make sure the window is visible so the dialog can be read
+        if (win.isMinimized()) win.restore();
+        if (!win.isVisible()) win.show();
+        win.focus();
+        try { win.webContents.send('confirm-first-close'); } catch (_) { /* ignore */ }
+        return false;
+      }
+      if (wantsTray()) {
+        event.preventDefault();
+        hideToTray();
+        return false;
+      }
     }
     persistWindowState();
   });
@@ -1020,6 +1037,31 @@ ipcMain.on('win-maximize', () => {
   else win.maximize();
 });
 ipcMain.on('win-close', () => win.close());
+
+// ── First-close choice (CyberNotes pattern) ──
+// The renderer asks after the window's close event was intercepted. "remember"
+// persists the choice (closeChoiceMade + closeToTray) so future closes act
+// silently; without it the dialog asks again on the next close.
+ipcMain.handle('first-close-choice', (_e, action, remember) => {
+  if (action !== 'tray' && action !== 'quit') return false;
+  if (remember) {
+    const app = Object.assign({}, loadSettings().app, {
+      closeChoiceMade: true,
+      closeToTray: action === 'tray'
+    });
+    saveSettings({ app });
+  }
+
+  if (action === 'tray') {
+    // Hiding needs the tray icon to exist so the window can be brought back
+    if (!tray) createTray();
+    hideToTray();
+    return true;
+  }
+  isQuitting = true;
+  app.quit();
+  return true;
+});
 ipcMain.on('win-devtools', () => {
   // DevTools only outside packaged builds
   if (!app.isPackaged && win && !win.isDestroyed()) {

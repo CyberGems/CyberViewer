@@ -190,7 +190,7 @@ describe('title bar Help menu', () => {
   it('separates the app controls from the window controls with an elegant fading divider', () => {
     // The divider sits between the app/action buttons and the window controls
     assert.match(html, /class="win-sep" aria-hidden="true"><\/div>\s*<button class="win-btn" id="win-min"/);
-    assert.match(css, /\.win-sep\s*\{[^}]*width:\s*1px;[^}]*height:\s*20px;[^}]*linear-gradient\(to bottom,\s*transparent,\s*rgba\(var\(--cyber-accent-rgb\),\s*0\.32\)\s*50%,\s*transparent\);[^}]*\}/);
+    assert.match(css, /\.win-sep\s*\{[^}]*width:\s*1px;[^}]*height:\s*20px;[^}]*linear-gradient\(to bottom,\s*transparent,\s*rgba\(var\(--cyber-accent-rgb\),\s*0\.26\)\s*50%,\s*transparent\);[^}]*\}/);
   });
 
   it('clears the stuck hover highlight on the minimize button after window restore', () => {

@@ -796,8 +796,8 @@
     flex-shrink: 0;
     align-self: center;
     border-radius: 1px;
-    background: linear-gradient(to bottom, transparent, rgba(var(--cyber-accent-rgb), 0.32) 50%, transparent);
-    box-shadow: 0 0 3px rgba(var(--cyber-accent-rgb), 0.12);
+    background: linear-gradient(to bottom, transparent, rgba(var(--cyber-accent-rgb), 0.26) 50%, transparent);
+    box-shadow: 0 0 3px rgba(var(--cyber-accent-rgb), 0.10);
   }
   #btn-config { font-size: 15px; }
   .titlebar-config-glyph {
@@ -3668,6 +3668,127 @@
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
+  }
+
+  /* ── FIRST-CLOSE DIALOG (minimize to tray vs quit, CyberNotes pattern) ── */
+  .first-close-box { max-width: 520px; }
+  .first-close-body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .first-close-question {
+    margin: 0;
+    font-family: var(--font-ui);
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--cyber-muted);
+  }
+  .first-close-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--cyber-border);
+    cursor: pointer;
+    text-align: left;
+    color: var(--cyber-text);
+    font-family: var(--font-ui);
+    transition: border-color var(--transition), background var(--transition);
+  }
+  .first-close-option:hover {
+    border-color: var(--cyber-accent);
+    background: rgba(var(--cyber-accent-rgb), 0.06);
+  }
+  .first-close-option:focus-visible {
+    outline: 1px solid var(--cyber-accent);
+    outline-offset: 2px;
+  }
+  .first-close-option.is-danger:hover {
+    border-color: var(--cyber-accent2);
+    background: rgba(var(--cyber-accent2-rgb), 0.06);
+  }
+  .first-close-option.is-danger:focus-visible {
+    outline-color: var(--cyber-accent2);
+  }
+  .first-close-option-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--cyber-accent-rgb), 0.12);
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.32);
+    color: var(--cyber-accent);
+  }
+  .first-close-option.is-danger .first-close-option-icon {
+    background: rgba(var(--cyber-accent2-rgb), 0.14);
+    border-color: rgba(var(--cyber-accent2-rgb), 0.32);
+    color: var(--cyber-accent2);
+  }
+  .first-close-option-svg { width: 17px; height: 17px; }
+  .first-close-option-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .first-close-option-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--cyber-menu-text);
+  }
+  .first-close-option-sub {
+    font-size: 12px;
+    color: var(--cyber-muted);
+    line-height: 1.4;
+  }
+  .first-close-key-hint { opacity: 0.45; }
+  .first-close-remember {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    cursor: pointer;
+    user-select: none;
+    font-family: var(--font-ui);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cyber-text);
+  }
+  .first-close-remember input { display: none; }
+  .first-close-checkmark {
+    width: 17px;
+    height: 17px;
+    border-radius: 4px;
+    border: 1.5px solid var(--cyber-border);
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .first-close-remember input:checked + .first-close-checkmark {
+    background: var(--cyber-accent);
+    border-color: var(--cyber-accent);
+  }
+  .first-close-remember input:checked + .first-close-checkmark::after {
+    content: '';
+    width: 9px;
+    height: 5px;
+    border-left: 2px solid var(--cyber-black);
+    border-bottom: 2px solid var(--cyber-black);
+    transform: rotate(-45deg) translate(0.5px, -1px);
+  }
+  .first-close-remember input:focus-visible + .first-close-checkmark {
+    outline: 1px solid var(--cyber-accent);
+    outline-offset: 2px;
   }
 
   /* Wide tool modals: avoid ghost scrollbars; keep overflow visible so tooltips aren't clipped */
