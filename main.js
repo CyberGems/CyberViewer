@@ -43,6 +43,60 @@ const menuI18n = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'i18n', 'menu.json'), 'utf8')
 );
 
+// ── Window lifecycle diagnostics ─────────────────────────────────────
+// Symptom under investigation: when the app auto-starts with Windows
+// (login item "--startup"), the window created hidden during early boot
+// can present a black frame when it is later shown, until the app is
+// relaunched. A BrowserWindow created before DWM/Explorer compositing is
+// fully up may never receive a proper first frame. This small timeline
+// log (<app logs>/cyberviewer-window.log) pins the exact breakpoint so
+// the boot path can be analyzed per machine. Internal only, no UI text.
+const WINDOW_DIAG_FILE = 'cyberviewer-window.log';
+
+function diagWindow(event, extra) {
+  try {
+    const entry = {
+      t: new Date().toISOString(),
+      pid: process.pid,
+      event,
+      ...(extra || {})
+    };
+    const file = path.join(app.getPath('logs'), WINDOW_DIAG_FILE);
+    let lines = [];
+    try {
+      lines = fs.readFileSync(file, 'utf8').split('\n').filter(Boolean);
+    } catch (_) { /* first run */ }
+    lines.push(JSON.stringify(entry));
+    fs.writeFileSync(file, lines.slice(-200).join('\n') + '\n');
+  } catch (_) { /* diagnostics must never break the app */ }
+}
+
+function diagGpuStatus() {
+  try {
+    const s = app.getGPUFeatureStatus();
+    return {
+      compositing: s['gpu_compositing'],
+      rasterization: s['gpu_rasterization'],
+      canvas2d: s['2d_canvas'],
+      webgl: s['webgl']
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
+// A window that was created hidden during early boot can otherwise end up
+// presenting only its background color (black #080a0e) when first shown.
+// Requesting a fresh renderer frame after the window becomes visible is
+// cheap and resolves most of those cases.
+function nudgeCompositorFrame() {
+  if (!win || win.isDestroyed()) return;
+  try {
+    win.webContents.invalidate();
+    diagWindow('compositor-nudge');
+  } catch (_) { /* ignore */ }
+}
+
 /** Matches the config placeholder. Empty/missing settings resolve to this. */
 const DEFAULT_TOGGLE_HOTKEY = 'Alt+Shift+V';
 
@@ -306,6 +360,7 @@ function persistWindowState() {
 function createWindow() {
   const settings = loadSettings();
   const startup = resolveStartupBounds(settings);
+  diagWindow('window-creating', { startup: !!startup });
   // Prefer maximized when previously maximized, first-run, or saved size was DPI-inflated
   const startMaximized =
     settings.window.maximized === true ||
@@ -364,9 +419,11 @@ function createWindow() {
 
     const isStartupLaunch = process.argv.includes('--startup');
     const shouldStartMinimized = settings.app.autoStart && isStartupLaunch;
+    diagWindow('reveal', { isStartupLaunch, shouldStartMinimized });
 
     if (shouldStartMinimized) {
       if (!tray) createTray();
+      diagWindow('startup-minimized-to-tray');
       return;
     }
 
@@ -424,10 +481,12 @@ function createWindow() {
   // Register before loadURL to avoid missing a fast ui-ready
   const onUiReady = () => {
     ipcMain.removeListener('ui-ready', onUiReady);
+    diagWindow('ui-ready');
     revealWindow();
   };
   ipcMain.on('ui-ready', onUiReady);
   win.once('ready-to-show', () => {
+    diagWindow('ready-to-show');
     // Fallback if renderer never acks
     setTimeout(() => revealWindow(), 1500);
   });
@@ -450,7 +509,10 @@ function createWindow() {
     persistWindowState();
   });
 
-  win.on('show', () => updateTrayMenu());
+  win.on('show', () => {
+    try { diagWindow('window-shown', { maximized: win.isMaximized() }); } catch (_) { /* ignore */ }
+    updateTrayMenu();
+  });
   win.on('hide', () => updateTrayMenu());
   win.on('minimize', () => updateTrayMenu());
   win.on('restore', () => updateTrayMenu());
@@ -529,9 +591,13 @@ function hideToTray() {
 
 function showFromTray() {
   if (!win || win.isDestroyed()) return;
+  diagWindow('show-from-tray');
   if (win.isMinimized()) win.restore();
   if (!win.isVisible()) win.show();
   win.focus();
+  // The window was created hidden at login; ask the compositor for a fresh
+  // frame once visible in case DWM never presented the boot-time frame.
+  setTimeout(nudgeCompositorFrame, 200);
   updateTrayMenu();
 }
 
@@ -2209,15 +2275,22 @@ if (!gotTheLock) {
 } else {
   app.on('second-instance', (event, commandLine) => {
     if (win) {
+      diagWindow('second-instance');
       if (win.isMinimized()) win.restore();
       win.show();
       win.focus();
+      setTimeout(nudgeCompositorFrame, 200);
       const filePath = getFilePathFromArgs(commandLine);
       if (filePath) win.webContents.send('open-file', filePath);
     }
   });
 
   app.whenReady().then(() => {
+    diagWindow('boot', {
+      packaged: app.isPackaged,
+      startupArg: process.argv.includes('--startup'),
+      gpu: diagGpuStatus()
+    });
     registerMediaProtocol();
     pathAllowlist.allow(thumbCachePath);
     evictThumbCache(thumbCachePath);
