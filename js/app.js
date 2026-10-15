@@ -7788,6 +7788,18 @@ if (isElectron) {
     window.electronAPI.onWindowBlur(hideInterfaceMenus);
   }
 
+  // On restore (minimize → taskbar/tray) Chromium still holds :hover on the
+  // minimize button until the cursor moves. Force a one-frame hit-test reset
+  // so the highlight clears (or re-applies) per the real cursor position.
+  if (typeof window.electronAPI.onWindowRestore === 'function') {
+    window.electronAPI.onWindowRestore(() => {
+      document.body.classList.add('hover-reset');
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        document.body.classList.remove('hover-reset');
+      }));
+    });
+  }
+
   window.electronAPI.onOpenFile(async (filePath) => {
     hideInterfaceMenus();
     if (filePath) await openImagePath(filePath);

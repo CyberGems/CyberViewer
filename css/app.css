@@ -788,7 +788,17 @@
 
   .win-btn:hover { color: var(--cyber-accent); background: rgba(0,212,255,0.08); }
   #win-close:hover { color: var(--cyber-accent2); background: rgba(255,45,120,0.12); }
-  .win-sep { width: 1px; height: 20px; background: var(--cyber-border); margin: 0 4px; flex-shrink: 0; }
+  /* Elegant fading divider between the app controls and the window controls */
+  .win-sep {
+    width: 1px;
+    height: 20px;
+    margin: 0 7px;
+    flex-shrink: 0;
+    align-self: center;
+    border-radius: 1px;
+    background: linear-gradient(to bottom, transparent, rgba(var(--cyber-accent-rgb), 0.32) 50%, transparent);
+    box-shadow: 0 0 3px rgba(var(--cyber-accent-rgb), 0.12);
+  }
   #btn-config { font-size: 15px; }
   .titlebar-config-glyph {
     display: flex;
@@ -3548,6 +3558,15 @@
     opacity: 0 !important;
     visibility: hidden !important;
     transition: none !important;
+  }
+
+  /* One-frame hit-test reset after window restore: Chromium keeps :hover on the
+     button clicked to minimize until the cursor moves again, so the minimize
+     button shows a stuck highlight. Toggling pointer-events off (and back two
+     frames later) forces a re-hit-test against the real cursor position. */
+  body.hover-reset,
+  body.hover-reset * {
+    pointer-events: none !important;
   }
 
   /* User setting: disable all CSS tooltips everywhere (modal, sidebar, viewer chrome). */

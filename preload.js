@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openDevTools: () => ipcRenderer.send('win-devtools'),
   onOpenFile: (cb) => ipcRenderer.on('open-file', (e, path) => cb(path)),
   onWindowBlur: (cb) => ipcRenderer.on('window-blur', () => cb()),
+  onWindowRestore: (cb) => ipcRenderer.on('window-restore', () => cb()),
   scanFolder: (path) => ipcRenderer.invoke('scan-folder', path),
   getThumbnail: (path, opts) => ipcRenderer.invoke('get-thumbnail', path, opts || {}),
   toMediaUrl: (path) => ipcRenderer.invoke('to-media-url', path),

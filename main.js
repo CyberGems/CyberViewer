@@ -511,11 +511,17 @@ function createWindow() {
 
   win.on('show', () => {
     try { diagWindow('window-shown', { maximized: win.isMaximized() }); } catch (_) { /* ignore */ }
+    // Chromium keeps :hover on the button clicked to minimize until the cursor
+    // moves again; tell the renderer to re-hit-test on restore/show.
+    try { win.webContents.send('window-restore'); } catch (_) { /* ignore */ }
     updateTrayMenu();
   });
   win.on('hide', () => updateTrayMenu());
   win.on('minimize', () => updateTrayMenu());
-  win.on('restore', () => updateTrayMenu());
+  win.on('restore', () => {
+    try { win.webContents.send('window-restore'); } catch (_) { /* ignore */ }
+    updateTrayMenu();
+  });
   win.on('blur', () => {
     if (win && !win.isDestroyed()) win.webContents.send('window-blur');
   });

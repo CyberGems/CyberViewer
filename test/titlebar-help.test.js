@@ -10,6 +10,8 @@ const html = fs.readFileSync(path.join(root, 'CyberViewer.html'), 'utf8');
 const appJs = fs.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
 const css = fs.readFileSync(path.join(root, 'css', 'app.css'), 'utf8');
 const ui = JSON.parse(fs.readFileSync(path.join(root, 'i18n', 'ui.json'), 'utf8'));
+const mainJs = fs.readFileSync(path.join(root, 'main.js'), 'utf8');
+const preload = fs.readFileSync(path.join(root, 'preload.js'), 'utf8');
 
 function mainMenuMarkup() {
   const start = html.indexOf('<div id="main-menu"');
@@ -183,6 +185,24 @@ describe('title bar Help menu', () => {
 
     assert.match(css, /#topbar::after\s*\{[\s\S]*?box-shadow:\s*0 0 2px rgba\(var\(--cyber-accent-rgb\),\s*0\.35\);/);
     assert.match(css, /body:not\(\.window-maximized\)::after\s*\{[\s\S]*?box-shadow:\s*0 -1px 2px rgba\(var\(--cyber-accent-rgb\),\s*0\.15\);/);
+  });
+
+  it('separates the app controls from the window controls with an elegant fading divider', () => {
+    // The divider sits between the app/action buttons and the window controls
+    assert.match(html, /class="win-sep" aria-hidden="true"><\/div>\s*<button class="win-btn" id="win-min"/);
+    assert.match(css, /\.win-sep\s*\{[^}]*width:\s*1px;[^}]*height:\s*20px;[^}]*linear-gradient\(to bottom,\s*transparent,\s*rgba\(var\(--cyber-accent-rgb\),\s*0\.32\)\s*50%,\s*transparent\);[^}]*\}/);
+  });
+
+  it('clears the stuck hover highlight on the minimize button after window restore', () => {
+    // main process notifies the renderer on restore (minimize → taskbar) and
+    // show (minimize → tray), the two paths that leave :hover stuck
+    assert.match(mainJs, /win\.on\('restore', \(\) => \{[\s\S]*?webContents\.send\('window-restore'\)/);
+    assert.match(mainJs, /win\.on\('show', \(\) => \{[\s\S]*?webContents\.send\('window-restore'\)/);
+    // preload bridge
+    assert.match(preload, /onWindowRestore:\s*\(cb\)\s*=>\s*ipcRenderer\.on\('window-restore',\s*\(\)\s*=>\s*cb\(\)\)/);
+    // renderer toggles a one-frame pointer-events reset to force a re-hit-test
+    assert.match(appJs, /onWindowRestore\(\(\) => \{[\s\S]*?classList\.add\('hover-reset'\);[\s\S]*?requestAnimationFrame\(\(\) => requestAnimationFrame\(\(\) => \{[\s\S]*?classList\.remove\('hover-reset'\);/);
+    assert.match(css, /body\.hover-reset,\s*body\.hover-reset \*\s*\{\s*pointer-events:\s*none !important;\s*\}/);
   });
 
   it('mirrors the CyberNotes title bar: hotkeys on every control with tooltip badges', () => {
