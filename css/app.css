@@ -3358,21 +3358,26 @@
 
   /* Enter icon + key hint in action buttons */
   .btn-enter-icon {
-    width: 12px;
-    height: 12px;
+    width: 13px;
+    height: 13px;
     flex-shrink: 0;
-    opacity: 0.7;
+    opacity: 0.75;
   }
   .btn-key-hint {
-    font-size: 9px;
-    font-weight: 500;
-    opacity: 0.35;
+    font-size: 11px;
+    font-weight: 600;
+    opacity: 0.55;
     letter-spacing: 0.02em;
     flex-shrink: 0;
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 3px;
-    padding: 1px 4px;
-    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    padding: 2px 6px;
+    line-height: 1.25;
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 4px;
+    background: rgba(255,255,255,0.05);
     text-transform: none;
   }
   .btn-label {
@@ -3749,7 +3754,6 @@
     color: var(--cyber-muted);
     line-height: 1.4;
   }
-  .first-close-key-hint { opacity: 0.45; }
   .first-close-remember {
     display: flex;
     align-items: center;

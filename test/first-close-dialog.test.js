@@ -17,7 +17,7 @@ const ui = JSON.parse(fs.readFileSync(path.join(root, 'i18n', 'ui.json'), 'utf8'
 describe('first-close dialog (minimize to tray vs quit)', () => {
   it('renders the CyberNotes-style dialog with two options and a remember checkbox', () => {
     assert.match(html, /id="modal-first-close"[^>]*aria-labelledby="first-close-title"/);
-    assert.match(html, /id="btn-first-close-tray"[\s\S]*?data-i18n="first_close_tray"[\s\S]*?data-i18n="first_close_tray_sub"[\s\S]*?data-i18n="first_close_key_enter"/);
+    assert.match(html, /id="btn-first-close-tray"[\s\S]*?data-i18n="first_close_tray"[\s\S]*?data-i18n="first_close_tray_sub"[\s\S]*?<span class="btn-key-hint" aria-hidden="true"><svg class="btn-enter-icon"/);
     assert.match(html, /id="btn-first-close-quit"[^>]*>[\s\S]*?data-i18n="first_close_quit"[\s\S]*?data-i18n="first_close_quit_sub"[\s\S]*?data-i18n="first_close_key_space"/);
     assert.match(html, /class="first-close-option is-danger" id="btn-first-close-quit"/);
     assert.match(html, /<input type="checkbox" id="cfg-first-close-remember">/);
@@ -75,7 +75,7 @@ describe('first-close dialog (minimize to tray vs quit)', () => {
     const keys = [
       'first_close_title', 'first_close_question', 'first_close_tray', 'first_close_tray_sub',
       'first_close_quit', 'first_close_quit_sub', 'first_close_remember',
-      'first_close_key_enter', 'first_close_key_space'
+      'first_close_key_space'
     ];
     for (const lang of ['en', 'es']) {
       for (const key of keys) {
@@ -91,5 +91,52 @@ describe('first-close dialog (minimize to tray vs quit)', () => {
 
   it('includes closeChoiceMade in settings backups', () => {
     assert.match(backupLib, /'closeChoiceMade',/);
+  });
+});
+
+describe('modal hotkey badges audit', () => {
+  it('badges every hotkey action in every modal with a consistent chip', () => {
+    // [button id, expected badge] — Enter badges are chips wrapping the arrow SVG
+    const enterChip = '<span class="btn-key-hint" aria-hidden="true"><svg class="btn-enter-icon"';
+    const escChip = '<span class="btn-key-hint">Esc</span>';
+    const expectations = [
+      // [regex locating the button tag, expected badge snippet inside it]
+      [/id="btn-confirm-ok"/, enterChip],
+      [/id="btn-confirm-cancel"/, escChip],
+      [/id="btn-tray-pin-dismiss"/, escChip],
+      [/id="btn-tray-pin-settings"/, enterChip],
+      [/id="btn-first-close-tray"/, enterChip],
+      [/id="btn-first-close-quit"/, '<span class="btn-key-hint" data-i18n="first_close_key_space">'],
+      [/id="btn-print-now"/, enterChip],
+      [/class="top-btn btn-cancel[^"]*" data-close-modal="modal-print-export"/, escChip],
+      [/id="props-close-btn"/, enterChip],
+      [/id="btn-confirm-resize"/, enterChip],
+      [/class="top-btn btn-cancel[^"]*" data-close-modal="modal-resize"/, escChip],
+      [/id="btn-confirm-adjust"/, enterChip],
+      [/class="top-btn btn-cancel[^"]*" data-close-modal="modal-adjust"/, escChip],
+      [/class="config-nav-close"/, '<span class="btn-key-hint" aria-hidden="true"><svg class="btn-enter-icon config-close-enter"'],
+      [/id="btn-crop-confirm"/, enterChip],
+      [/id="btn-crop-cancel"/, escChip]
+    ];
+    for (const [btnRe, badge] of expectations) {
+      const m = html.match(new RegExp('<button[^>]*' + btnRe.source + '[^>]*>[\\s\\S]*?</button>'));
+      assert.ok(m, `button matching ${btnRe.source} not found`);
+      assert.ok(m[0].includes(badge), `button ${btnRe.source} should carry badge: ${badge}`);
+    }
+  });
+
+  it('leaves no bare Enter icon outside a chip', () => {
+    // Every btn-enter-icon SVG must sit inside a .btn-key-hint chip
+    const svgs = html.match(/<svg class="btn-enter-icon/g) || [];
+    const chips = html.match(/<span class="btn-key-hint"[^>]*><svg class="btn-enter-icon/g) || [];
+    assert.equal(svgs.length, chips.length, 'every Enter SVG must be chip-wrapped');
+    assert.ok(svgs.length >= 8, 'audit covers all modals with Enter actions');
+  });
+
+  it('uses one enlarged badge style for all hints', () => {
+    assert.match(css, /\.btn-key-hint \{[\s\S]*?font-size: 11px;[\s\S]*?min-width: 20px;[\s\S]*?padding: 2px 6px;[\s\S]*?border-radius: 4px;[\s\S]*?\}/);
+    assert.match(css, /\.btn-enter-icon \{[\s\S]*?width: 13px;[\s\S]*?height: 13px;/);
+    // No per-dialog opacity overrides remain
+    assert.doesNotMatch(css, /\.first-close-key-hint/);
   });
 });
