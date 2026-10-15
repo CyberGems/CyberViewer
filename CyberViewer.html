@@ -11,13 +11,13 @@
 </head>
 <body class="statusbar-visible" data-alpha-bg="checker-dark" data-image-outline="off">
 <div id="topbar" style="position:fixed;top:0;left:0;width:100%;height:48px;z-index:999999;display:flex;align-items:center;background:var(--cyber-panel);">
-  <div class="logo" id="logo-trigger">
+  <div class="logo" id="logo-trigger" data-i18n-tt="titlebar_about" data-tooltip-kbd="F1">
     <img src="assets/icon.png" class="logo-img" alt="CyberViewer Logo">
     <div class="logo-text"><span style="color:#E6E6E6">Cyber</span><span class="logo-text-viewer">Viewer</span></div>
   </div>
   <div style="flex:1;-webkit-app-region:drag"></div>
-  <button id="titlebar-filename" type="button" class="titlebar-filename cyber-tooltip tooltip-bottom" data-empty="true" data-i18n-aria="titlebar_filename_aria" aria-label="Abrir propiedades"><span class="titlebar-filename-base"></span><span class="titlebar-filename-extension"></span></button>
-  <button type="button" id="titlebar-update-btn" class="titlebar-update-btn tooltip-bottom" style="display:none" aria-label="Actualizar">
+  <button id="titlebar-filename" type="button" class="titlebar-filename" data-empty="true" data-i18n-aria="titlebar_filename_aria" data-tooltip-kbd="Ctrl+I" aria-label="Abrir propiedades"><span class="titlebar-filename-base"></span><span class="titlebar-filename-extension"></span></button>
+  <button type="button" id="titlebar-update-btn" class="titlebar-update-btn" data-tooltip-kbd="Alt+U" style="display:none" aria-label="Actualizar">
     <span class="titlebar-update-label-wrap">
       <span class="titlebar-update-label-inner">
         <span class="titlebar-update-label" data-i18n="titlebar_update_btn">Actualizar</span>
@@ -30,7 +30,7 @@
       </svg>
     </span>
   </button>
-  <button type="button" class="win-btn tooltip-bottom" id="btn-shortcuts" data-i18n-title="shortcuts_title" data-i18n-aria="shortcuts_title" aria-haspopup="dialog" aria-controls="shortcuts-popover" aria-expanded="false">
+  <button type="button" class="win-btn" id="btn-shortcuts" data-i18n-tt="shortcuts_title" data-i18n-aria="shortcuts_title" data-tooltip-kbd="?" aria-haspopup="dialog" aria-controls="shortcuts-popover" aria-expanded="false">
     <svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="2.5"/><path d="M6.5 9.5h.01M10 9.5h.01M14 9.5h.01M17.5 9.5h.01M6.5 13h.01M10 13h.01M14 13h.01M17.5 13h.01M8.5 15.5h7"/></svg>
   </button>
   <section id="shortcuts-popover" class="shortcuts-popover" role="dialog" aria-labelledby="shortcuts-popover-title" hidden>
@@ -48,6 +48,9 @@
           <div><dt><kbd>S</kbd></dt><dd data-i18n="shortcuts_slideshow">PRESENTACIÓN</dd></div>
           <div><dt><kbd>Ctrl</kbd><kbd>O</kbd></dt><dd data-i18n="open_dir">ABRIR</dd></div>
           <div><dt><kbd>Ctrl</kbd><kbd>D</kbd></dt><dd data-i18n="shortcuts_favorite">FAVORITO</dd></div>
+          <div><dt><kbd>Ctrl</kbd><kbd>I</kbd></dt><dd data-i18n="shortcuts_props">PROPIEDADES</dd></div>
+          <div><dt><kbd>F1</kbd></dt><dd data-i18n="shortcuts_about">ACERCA DE</dd></div>
+          <div><dt><kbd>?</kbd></dt><dd data-i18n="shortcuts_help">ATAJOS</dd></div>
         </dl>
       </div>
       <div class="shortcuts-col">
@@ -62,15 +65,20 @@
           <div><dt><kbd>Ctrl</kbd><kbd>V</kbd></dt><dd data-i18n="shortcuts_paste">PEGAR</dd></div>
           <div><dt><kbd>Del</kbd></dt><dd data-i18n="shortcuts_delete">PAPELERA</dd></div>
           <div><dt><kbd>Esc</kbd></dt><dd data-i18n="shortcuts_close">CERRAR</dd></div>
+          <div><dt><kbd>Ctrl</kbd><kbd>,</kbd></dt><dd data-i18n="shortcuts_config">CONFIGURACIÓN</dd></div>
+          <div><dt><kbd>Alt</kbd><kbd>M</kbd></dt><dd data-i18n="shortcuts_menu">MENÚ</dd></div>
+          <div><dt><kbd>Alt</kbd><kbd>N</kbd></dt><dd data-i18n="shortcuts_min">MINIMIZAR</dd></div>
+          <div><dt><kbd>Alt</kbd><kbd>X</kbd></dt><dd data-i18n="shortcuts_max">MAXIMIZAR</dd></div>
+          <div><dt><kbd>Alt</kbd><kbd>F4</kbd></dt><dd data-i18n="shortcuts_close_window">CERRAR VENTANA</dd></div>
         </dl>
       </div>
     </div>
   </section>
-  <button type="button" class="win-btn tooltip-bottom" id="btn-config" data-i18n-title="config" data-i18n-aria="config" title="Configuración" aria-label="Configuración">
-    <span class="titlebar-config-glyph" aria-hidden="true">&#9881;&#xFE0E;</span>
+  <button type="button" class="win-btn" id="btn-config" data-i18n-tt="config" data-i18n-aria="config" data-tooltip-kbd="Ctrl+," aria-label="Configuración">
+    <svg class="win-ico titlebar-config-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
   </button>
   <div class="menu-wrap">
-    <button type="button" class="win-btn tooltip-bottom" id="btn-menu" data-i18n-title="menu" title="Menú" aria-label="Menú" aria-haspopup="true" aria-expanded="false"><svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <button type="button" class="win-btn" id="btn-menu" data-i18n-tt="menu" data-tooltip-kbd="Alt+M" aria-label="Menú" aria-haspopup="true" aria-expanded="false"><svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button>
     <div id="main-menu" class="menu-panel" role="menu">
       <button class="menu-item menu-flat" data-action="paste-image"><span class="menu-label" data-i18n="menu_paste">Pegar imagen</span><span class="menu-shortcut">Ctrl+V</span></button>
       <div class="menu-divider"></div>
@@ -187,10 +195,10 @@
       <button class="menu-item danger" data-action="quit"><span class="menu-label" data-i18n="menu_quit">Salir</span></button>
     </div>
   </div>
-  <button class="win-btn tooltip-bottom" id="btn-about" data-i18n-title="about" title="Acerca de CyberViewer" style="display:none">&#9432;&#xFE0E;</button>
-  <button class="win-btn tooltip-bottom cyber-tooltip" id="win-min" data-i18n-title="minimize" data-tooltip="Minimizar"><svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
-  <button class="win-btn tooltip-bottom cyber-tooltip" id="win-max" data-i18n-title="maximize" data-tooltip="Maximizar"><svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
-  <button class="win-btn tooltip-bottom tooltip-align-right cyber-tooltip" id="win-close" data-i18n-title="close" data-tooltip="Cerrar"><svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
+  <button class="win-btn" id="btn-about" data-i18n-tt="about" data-tooltip-kbd="F1" style="display:none">&#9432;&#xFE0E;</button>
+  <button class="win-btn" id="win-min" data-i18n-tt="minimize" data-tooltip="Minimizar" data-tooltip-kbd="Alt+N"><svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+  <button class="win-btn" id="win-max" data-i18n-tt="maximize" data-tooltip="Maximizar" data-tooltip-kbd="Alt+X"><svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
+  <button class="win-btn" id="win-close" data-i18n-tt="close" data-tooltip="Cerrar" data-tooltip-kbd="Alt+F4"><svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
 </div>
 <div id="app">
 
@@ -670,7 +678,7 @@
   <div class="modal-box config-modal-box">
     <div class="modal-header">
       <div class="modal-title">
-        <span class="config-header-icon titlebar-config-glyph" aria-hidden="true">&#9881;&#xFE0E;</span>
+        <svg class="config-header-icon titlebar-config-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
         <span data-i18n="config_title">Configuración</span>
       </div>
       <button class="win-btn modal-close-btn" data-close-modal="modal-config">&#10005;</button>

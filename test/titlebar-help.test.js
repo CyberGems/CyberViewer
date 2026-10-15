@@ -109,9 +109,9 @@ describe('title bar Help menu', () => {
   });
 
   it('suppresses shortcuts button tooltip when open and provides an expanded 2-column shortcuts cheat sheet', () => {
-    // Tooltip suppression when open
-    assert.match(css, /#btn-shortcuts\.open\.cyber-tooltip::after[\s\S]*?opacity:\s*0 !important;/);
-    assert.match(css, /#btn-shortcuts\[aria-expanded="true"\]\.cyber-tooltip::after[\s\S]*?opacity:\s*0 !important;/);
+    // Tooltip suppression when open (titlebar tooltip card guard, CyberNotes style)
+    assert.match(appJs, /function ttSuppressedWhileOpen\(el\)[\s\S]*?btn-shortcuts[\s\S]*?shortcuts-popover/);
+    assert.match(appJs, /function ttShow\(el\)\s*\{\s*if \(ttSuppressedWhileOpen\(el\)\) return;/);
     assert.match(appJs, /button\.classList\.toggle\('open',\s*next\);[\s\S]*?if \(next\) button\.blur\(\);/);
 
     // 2-column grid structure in HTML & CSS
@@ -134,7 +134,10 @@ describe('title bar Help menu', () => {
     const i18nKeys = [
       'shortcuts_sec_view', 'shortcuts_sec_edit', 'shortcuts_1_1', 'shortcuts_slideshow',
       'shortcuts_rotate', 'shortcuts_flip', 'shortcuts_adjust', 'shortcuts_copy',
-      'shortcuts_paste', 'shortcuts_favorite', 'shortcuts_delete', 'shortcuts_close'
+      'shortcuts_paste', 'shortcuts_favorite', 'shortcuts_delete', 'shortcuts_close',
+      'shortcuts_props', 'shortcuts_about', 'shortcuts_help', 'shortcuts_config',
+      'shortcuts_menu', 'shortcuts_min', 'shortcuts_max', 'shortcuts_close_window',
+      'titlebar_about'
     ];
     for (const lang of ['en', 'es']) {
       for (const key of i18nKeys) {
@@ -180,6 +183,43 @@ describe('title bar Help menu', () => {
 
     assert.match(css, /#topbar::after\s*\{[\s\S]*?box-shadow:\s*0 0 2px rgba\(var\(--cyber-accent-rgb\),\s*0\.35\);/);
     assert.match(css, /body:not\(\.window-maximized\)::after\s*\{[\s\S]*?box-shadow:\s*0 -1px 2px rgba\(var\(--cyber-accent-rgb\),\s*0\.15\);/);
+  });
+
+  it('mirrors the CyberNotes title bar: hotkeys on every control with tooltip badges', () => {
+    // Hotkey wiring in the global keydown handler
+    assert.match(appJs, /case 'm': e\.preventDefault\(\); \$\('btn-menu'\)\.click\(\); return;/);
+    assert.match(appJs, /if \(updateBtn && updateBtn\.style\.display !== 'none'\) updateBtn\.click\(\);/);
+    assert.match(appJs, /case 'n': e\.preventDefault\(\); if \(isElectron\) window\.electronAPI\.minimize\(\); return;/);
+    assert.match(appJs, /case 'x': e\.preventDefault\(\); if \(isElectron\) window\.electronAPI\.maximize\(\); return;/);
+    assert.match(appJs, /if \(e\.key === 'F4'\) \{ e\.preventDefault\(\); if \(isElectron\) window\.electronAPI\.close\(\); return; \}/);
+    assert.match(appJs, /if \(e\.key === 'F1'\) \{ e\.preventDefault\(\); \$\('btn-about'\)\.click\(\); return; \}/);
+    assert.match(appJs, /if \(e\.key === '\?'\) \{ e\.preventDefault\(\); setShortcutsPopoverOpen\(\$\('shortcuts-popover'\)\.hidden\); return; \}/);
+
+    // Every titlebar control carries a hotkey badge for its tooltip card
+    const badges = [
+      ['logo-trigger', 'F1'], ['titlebar-filename', 'Ctrl+I'], ['titlebar-update-btn', 'Alt+U'],
+      ['btn-shortcuts', '?'], ['btn-config', 'Ctrl+,'], ['btn-menu', 'Alt+M'],
+      ['btn-about', 'F1'], ['win-min', 'Alt+N'], ['win-max', 'Alt+X'], ['win-close', 'Alt+F4']
+    ];
+    for (const [id, kbd] of badges) {
+      const escaped = kbd.replace(/[+,?]/g, m => '\\' + m);
+      assert.match(html, new RegExp(`id="${id}"[^>]*data-tooltip-kbd="${escaped}"`), `${id} should badge ${kbd}`);
+    }
+
+    // Tooltip card renders the badge as a <kbd> chip (CyberNotes naming)
+    assert.match(appJs, /ttKbdEl = document\.createElement\('kbd'\);/);
+    assert.match(appJs, /ttKbdEl\.className = 'tooltip-shortcut-key';/);
+    assert.match(css, /#titlebar-tooltip \.tooltip-shortcut-key\s*\{[\s\S]*?font-size:\s*9px;/);
+    assert.match(css, /#titlebar-tooltip\.is-visible\s*\{[\s\S]*?opacity:\s*1;/);
+  });
+
+  it('swaps the burger for a lucide More (...) icon like CyberNotes', () => {
+    const menu = html.match(/id="btn-menu"[\s\S]*?<\/button>/);
+    assert.ok(menu, 'menu button markup should be present');
+    // lucide MoreHorizontal: three horizontal dots
+    assert.match(menu[0], /<svg class="menu-ico"[^>]*><circle cx="5" cy="12" r="1"\/><circle cx="12" cy="12" r="1"\/><circle cx="19" cy="12" r="1"\/><\/svg>/);
+    assert.doesNotMatch(menu[0], /M4 7h16/);
+    assert.match(html, /id="btn-menu"[^>]*data-i18n-tt="menu"[^>]*data-tooltip-kbd="Alt\+M"/);
   });
 
   it('provides CyberPaste-style expandable titlebar update button and removes obsolete burger badge', () => {

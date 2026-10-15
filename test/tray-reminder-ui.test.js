@@ -33,8 +33,13 @@ describe('title bar and welcome banner visuals', () => {
     assert.match(css, /\.logo:hover \.logo-img,[\s\S]*?filter: drop-shadow\(0 0 5px/);
   });
 
-  it('uses the requested gear glyph and removes duplicate welcome branding', () => {
-    assert.match(html, /class="titlebar-config-glyph"[^>]*>\&\#9881;/);
+  it('uses the lucide Settings gear icon (same as CyberNotes) and removes duplicate welcome branding', () => {
+    // Title-bar Config button and modal header share the same lucide Settings glyph
+    assert.match(html, /<svg class="win-ico titlebar-config-glyph"[\s\S]*?M12\.22 2h-\.44[\s\S]*?<circle cx="12" cy="12" r="3"\/><\/svg>/);
+    assert.match(html, /<svg class="config-header-icon titlebar-config-glyph"[\s\S]*?M12\.22 2h-\.44[\s\S]*?<circle cx="12" cy="12" r="3"\/><\/svg>/);
+    // The old unicode gear glyph is gone from both Config spots
+    assert.doesNotMatch(html, /class="win-ico titlebar-config-glyph"[^>]*>&#9881;/);
+    assert.doesNotMatch(html, /class="config-header-icon titlebar-config-glyph"[^>]*>&#9881;/);
     assert.doesNotMatch(html, /drop-brand/);
   });
 

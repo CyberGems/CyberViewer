@@ -37,6 +37,116 @@ function setCyberTooltip(el, text) {
   el.classList.add('cyber-tooltip');
 }
 
+// ── TITLEBAR TOOLTIPS WITH HOTKEY BADGES (CyberNotes pattern) ──
+// The CSS tooltips (attr(data-tooltip)) cannot render a chip badge inside the
+// bubble, so the title bar uses a portaled card: same look as CyberNotes,
+// showing a <kbd> badge whenever data-tooltip-kbd is present. Text comes from
+// data-tooltip (dynamic) or from the data-i18n-tt key (localized).
+const TT_SHOW_DELAY_MS = 250;
+const TT_VIEWPORT_MARGIN = 8;
+const TT_GAP = 8;
+let ttCard = null;
+let ttLabelEl = null;
+let ttKbdEl = null;
+let ttAnchor = null;
+let ttShowTimer = null;
+
+function ttLanguage() {
+  return (state.settings && state.settings.app && state.settings.app.language) || 'en';
+}
+
+function ttTextFor(el) {
+  if (el.dataset.tooltip) return el.dataset.tooltip;
+  const key = el.dataset.i18nTt;
+  if (key) {
+    const pack = I18N[ttLanguage()] || I18N.en || {};
+    return pack[key] || '';
+  }
+  return '';
+}
+
+/** Keep the card suppressed while the anchor's own menu/popover is open. */
+function ttSuppressedWhileOpen(el) {
+  if (el.id === 'btn-shortcuts') {
+    const popover = $('shortcuts-popover');
+    return !!(popover && !popover.hidden);
+  }
+  if (el.id === 'btn-menu') return el.classList.contains('open');
+  return false;
+}
+
+function ttPositionCard() {
+  if (!ttCard || !ttAnchor) return;
+  const rect = ttAnchor.getBoundingClientRect();
+  const card = ttCard.getBoundingClientRect();
+  let left = rect.left + rect.width / 2 - card.width / 2;
+  left = Math.max(TT_VIEWPORT_MARGIN, Math.min(left, window.innerWidth - card.width - TT_VIEWPORT_MARGIN));
+  const top = rect.bottom + TT_GAP;
+  const arrowX = Math.max(12, Math.min(rect.left + rect.width / 2 - left, card.width - 12));
+  ttCard.style.left = `${Math.round(left)}px`;
+  ttCard.style.top = `${Math.round(top)}px`;
+  ttCard.style.setProperty('--tt-arrow-x', `${Math.round(arrowX)}px`);
+}
+
+function ttShow(el) {
+  if (ttSuppressedWhileOpen(el)) return;
+  const text = ttTextFor(el);
+  if (!text) return;
+  if (!ttCard) {
+    ttCard = document.createElement('div');
+    ttCard.id = 'titlebar-tooltip';
+    ttCard.setAttribute('role', 'tooltip');
+    ttCard.hidden = true;
+    ttLabelEl = document.createElement('span');
+    ttLabelEl.className = 'tt-label';
+    ttKbdEl = document.createElement('kbd');
+    ttKbdEl.className = 'tooltip-shortcut-key';
+    ttKbdEl.hidden = true;
+    ttCard.append(ttLabelEl, ttKbdEl);
+    document.body.appendChild(ttCard);
+  }
+  ttAnchor = el;
+  ttLabelEl.textContent = text;
+  const kbd = el.dataset.tooltipKbd;
+  ttKbdEl.textContent = kbd || '';
+  ttKbdEl.hidden = !kbd;
+  ttCard.hidden = false;
+  ttPositionCard();
+  requestAnimationFrame(() => ttCard.classList.add('is-visible'));
+}
+
+function ttHide() {
+  clearTimeout(ttShowTimer);
+  ttShowTimer = null;
+  ttAnchor = null;
+  if (ttCard) {
+    ttCard.classList.remove('is-visible');
+    ttCard.hidden = true;
+  }
+}
+
+function ttBind(el) {
+  if (!el) return;
+  el.addEventListener('mouseenter', () => {
+    clearTimeout(ttShowTimer);
+    ttShowTimer = setTimeout(() => ttShow(el), TT_SHOW_DELAY_MS);
+  });
+  el.addEventListener('mouseleave', ttHide);
+  el.addEventListener('focus', () => ttShow(el));
+  el.addEventListener('blur', ttHide);
+  el.addEventListener('click', ttHide);
+}
+
+// Hide on scroll/wheel, window blur and tab hide, like the CyberNotes tooltip.
+['wheel', 'scroll'].forEach(type => window.addEventListener(type, ttHide, true));
+window.addEventListener('blur', ttHide);
+document.addEventListener('visibilitychange', () => { if (document.hidden) ttHide(); });
+
+// Bind every title bar control. Labels update via data-tooltip / data-i18n-tt.
+['logo-trigger', 'titlebar-filename', 'titlebar-update-btn', 'btn-shortcuts',
+  'btn-config', 'btn-menu', 'btn-about', 'win-min', 'win-max', 'win-close'
+].forEach(id => ttBind($(id)));
+
 const ZOOM_MIN = 0.05;
 const ZOOM_MAX = 20;
 const PRELOAD_RANGE = 2;
@@ -480,6 +590,13 @@ function updateLanguage(lang = 'en') {
     }
   });
 
+  document.querySelectorAll('[data-i18n-tt]').forEach(el => {
+    const key = el.dataset.i18nTt;
+    if (I18N[lang] && I18N[lang][key] !== undefined) {
+      el.setAttribute('data-tooltip', I18N[lang][key]);
+    }
+  });
+
   document.querySelectorAll('[data-i18n-alt]').forEach(el => {
     const key = el.dataset.i18nAlt;
     if (I18N[lang] && I18N[lang][key] !== undefined) {
@@ -531,8 +648,7 @@ function syncFilenameDisplays(image = state.images[state.current]) {
       titlebarFilename.textContent = name || '';
     }
     titlebarFilename.dataset.empty = name ? 'false' : 'true';
-    titlebarFilename.removeAttribute('data-tooltip');
-    titlebarFilename.classList.remove('cyber-tooltip');
+    delete titlebarFilename.dataset.tooltip;
   }
   if (!filePath) return;
 
@@ -542,8 +658,8 @@ function syncFilenameDisplays(image = state.images[state.current]) {
   }
   if (titlebarFilename) {
     const actionHint = t.titlebar_filename_hint || 'Click to open properties';
-    setCyberTooltip(titlebarFilename, `${filePath}\n${actionHint}`);
-    titlebarFilename.classList.add('tooltip-bottom');
+    // The title bar uses the tooltip card (Ctrl+I badge), not the CSS bubble.
+    titlebarFilename.dataset.tooltip = `${filePath}\n${actionHint}`;
   }
 }
 
@@ -5529,6 +5645,26 @@ document.addEventListener('keydown', e => {
 
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
+  // ── TITLEBAR HOTKEYS (same assignments as the CyberNotes title bar) ──
+  // Modifiers are read directly: the shared isCtrl const is declared further
+  // down and would hit its temporal dead zone here.
+  if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+    switch (e.key.toLowerCase()) {
+      case 'm': e.preventDefault(); $('btn-menu').click(); return;
+      case 'u': {
+        e.preventDefault();
+        const updateBtn = $('titlebar-update-btn');
+        if (updateBtn && updateBtn.style.display !== 'none') updateBtn.click();
+        return;
+      }
+      case 'n': e.preventDefault(); if (isElectron) window.electronAPI.minimize(); return;
+      case 'x': e.preventDefault(); if (isElectron) window.electronAPI.maximize(); return;
+    }
+    if (e.key === 'F4') { e.preventDefault(); if (isElectron) window.electronAPI.close(); return; }
+  }
+  if (e.key === 'F1') { e.preventDefault(); $('btn-about').click(); return; }
+  if (e.key === '?') { e.preventDefault(); setShortcutsPopoverOpen($('shortcuts-popover').hidden); return; }
+
   // Enter applies/confirms in modals
   if (e.key === 'Enter') {
     if (state.isCropping) {
@@ -7628,12 +7764,13 @@ if (isElectron) {
       document.body.classList.add('window-maximized');
       btn.classList.add('maximized');
       btn.innerHTML = WIN_RESTORE_ICO;
-      setCyberTooltip(btn, t.menu_restore || 'Restore');
+      // Tooltip card text; the Alt+X badge comes from data-tooltip-kbd.
+      btn.dataset.tooltip = t.menu_restore || 'Restore';
     } else {
       document.body.classList.remove('window-maximized');
       btn.classList.remove('maximized');
       btn.innerHTML = WIN_MAX_ICO;
-      setCyberTooltip(btn, t.maximize || 'Maximize');
+      btn.dataset.tooltip = t.maximize || 'Maximize';
     }
     suppressTooltips();
     releaseTooltipsOnNextPointer();
@@ -7852,11 +7989,10 @@ $('btn-go-end').addEventListener('click', (e) => {
         : (t.update_badge_available || 'Update available: v{version} — click for details')
             .replace('{version}', ver);
       updateBtn.setAttribute('aria-label', tip);
-      setCyberTooltip(updateBtn, tip);
-      updateBtn.classList.add('cyber-tooltip', 'tooltip-bottom');
+      // Tooltip card text; the Alt+U badge comes from data-tooltip-kbd.
+      updateBtn.dataset.tooltip = tip;
     } else {
-      updateBtn.removeAttribute('data-tooltip');
-      updateBtn.classList.remove('cyber-tooltip');
+      delete updateBtn.dataset.tooltip;
     }
   }
 

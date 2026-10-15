@@ -459,6 +459,72 @@
     transform: translateY(-50%) translateX(0) !important;
   }
 
+  /* ── TITLEBAR TOOLTIPS WITH HOTKEY BADGES (CyberNotes pattern) ── */
+  #titlebar-tooltip {
+    position: fixed;
+    z-index: 1000001;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    max-width: min(420px, calc(100vw - 16px));
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: rgba(8, 12, 18, 0.96);
+    border: 1px solid var(--cyber-accent);
+    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.3);
+    color: #fff;
+    font-family: var(--font-ui);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    line-height: 1.45;
+    white-space: pre-line;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1), transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  #titlebar-tooltip[hidden] { display: none; }
+
+  #titlebar-tooltip.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Arrow tracks the anchor center (clamped), like CyberNotes */
+  #titlebar-tooltip::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: var(--tt-arrow-x, 50%);
+    width: 8px;
+    height: 8px;
+    background: rgba(8, 12, 18, 0.96);
+    border-left: 1px solid var(--cyber-accent);
+    border-top: 1px solid var(--cyber-accent);
+    transform: translateX(-50%) rotate(45deg);
+  }
+
+  #titlebar-tooltip .tooltip-shortcut-key {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    padding: 0 4px;
+    border: 1px solid var(--cyber-border);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--cyber-muted);
+    font-family: var(--font-mono, monospace);
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+
+  #titlebar-tooltip .tooltip-shortcut-key[hidden] { display: none; }
+
   /* Statusbar tooltips: sit just above the bar (not 64px away into the HUD) */
   #statusbar .cyber-tooltip::after {
     bottom: calc(100% + 8px);
@@ -740,14 +806,7 @@
   .menu-ico { width: 15px; height: 15px; display: block; flex-shrink: 0; }
   .win-ico { width: 15px; height: 15px; display: block; flex-shrink: 0; }
   #btn-menu.open { color: var(--cyber-accent); background: rgba(0,212,255,0.10); }
-  /* Hide burger tooltip while the menu is open (hover stays on the button) */
-  #btn-menu.open.cyber-tooltip::after,
-  #btn-menu.open.cyber-tooltip::before,
-  #btn-menu.open.cyber-tooltip:hover::after,
-  #btn-menu.open.cyber-tooltip:hover::before {
-    opacity: 0 !important;
-    visibility: hidden;
-  }
+  /* Menu tooltip suppression while open is handled in ttSuppressedWhileOpen() */
 
   /* ── TITLEBAR UPDATE BUTTON (CyberPaste style) ── */
   .titlebar-update-btn {
@@ -5119,19 +5178,7 @@
   #btn-shortcuts.hidden { display: none; }
   #btn-shortcuts.open { color: var(--cyber-accent); background: rgba(var(--cyber-accent-rgb), 0.10); }
 
-  /* Hide shortcuts guide tooltip while the popover is open (hover stays on button) */
-  #btn-shortcuts.open.cyber-tooltip::after,
-  #btn-shortcuts.open.cyber-tooltip::before,
-  #btn-shortcuts.open.cyber-tooltip:hover::after,
-  #btn-shortcuts.open.cyber-tooltip:hover::before,
-  #btn-shortcuts[aria-expanded="true"].cyber-tooltip::after,
-  #btn-shortcuts[aria-expanded="true"].cyber-tooltip::before,
-  #btn-shortcuts[aria-expanded="true"].cyber-tooltip:hover::after,
-  #btn-shortcuts[aria-expanded="true"].cyber-tooltip:hover::before {
-    opacity: 0 !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-  }
+  /* Shortcuts-guide tooltip suppression while open is handled in ttSuppressedWhileOpen() */
   #btn-shortcuts.open:hover,
   #btn-shortcuts[aria-expanded="true"]:hover {
     z-index: 1000000 !important;
