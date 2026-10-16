@@ -42,6 +42,20 @@ window.CVVideo = (() => {
         item.setAttribute('aria-disabled', String(disabled));
       }
     });
+    if (window.CVYouTubeSource.isYouTube(state.images[state.current])) {
+      document.querySelectorAll('#main-menu [data-action]').forEach(item => {
+        if (['properties', 'trash', 'show-folder', 'copy-path', 'favorite', 'original', 'fit'].includes(item.dataset.action)) {
+          item.dataset.youtubeDisabled = '1';
+          item.classList.add('disabled'); item.setAttribute('aria-disabled', 'true');
+        }
+      });
+    } else {
+      document.querySelectorAll('#main-menu [data-youtube-disabled]').forEach(item => {
+        delete item.dataset.youtubeDisabled;
+        const disabled = state.current < 0 || document.body.classList.contains('image-error');
+        item.classList.toggle('disabled', disabled); item.setAttribute('aria-disabled', String(disabled));
+      });
+    }
   }
 
   function sync() {
@@ -240,15 +254,18 @@ window.CVVideo = (() => {
     }
   }
   function toggle() {
+    if (window.CVYouTube.active()) { window.CVYouTube.command('toggle'); return; }
     if (!element.paused) { element.pause(); return; }
     return play();
   }
   function toggleMute() {
+    if (window.CVYouTube.active()) { window.CVYouTube.command('mute'); return; }
     if (audioStatus === 'unavailable') return;
     element.muted = !element.muted;
     reveal();
   }
   function seekBy(seconds) {
+    if (window.CVYouTube.active()) { window.CVYouTube.command('seek', { seconds }); return; }
     reveal();
     if (owner && Number.isFinite(element.duration)) element.currentTime = Math.max(0, Math.min(element.duration, element.currentTime + seconds));
   }

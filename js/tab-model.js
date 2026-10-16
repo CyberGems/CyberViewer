@@ -1,18 +1,20 @@
 (function (root, factory) {
   'use strict';
-  const api = factory();
+  const api = factory(typeof module === 'object' && module.exports ? require('./youtube-source') : root.CVYouTubeSource);
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.CVTabs = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (youtube) {
   'use strict';
 
   const MAX_TABS = 2000;
   function pathKey(value) {
+    const source = youtube?.parse(value);
+    if (source) return 'youtube:' + source.url;
     return typeof value === 'string' ? value.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase() : '';
   }
   function defaultView() {
     return { viewMode: 'fit', selectedViewMode: 'fit', zoom: 1, panX: 0, panY: 0,
-      currentRotation: 0, visualRotation: 0, hasChanges: false, videoTime: 0 };
+      currentRotation: 0, visualRotation: 0, hasChanges: false, videoTime: 0, youtubeIndex: 0, youtubeVideoId: '' };
   }
   function cleanView(value = {}) {
     const result = defaultView();
@@ -29,6 +31,8 @@
     result.visualRotation = result.currentRotation;
     result.hasChanges = result.currentRotation !== 0;
     if (Number.isFinite(value.videoTime)) result.videoTime = Math.max(0, Math.min(1e9, value.videoTime));
+    if (Number.isSafeInteger(value.youtubeIndex)) result.youtubeIndex = Math.max(0, Math.min(100000, value.youtubeIndex));
+    if (youtube?.VIDEO_ID.test(value.youtubeVideoId)) result.youtubeVideoId = value.youtubeVideoId;
     return result;
   }
   class TabModel {

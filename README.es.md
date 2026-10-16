@@ -26,7 +26,7 @@
 
 CyberViewer es un visor de imágenes y videos rápido y ligero para Windows que cubre la visualización y edición del día a día sin el peso de una suite gráfica completa. Abre imágenes grandes rápidamente, recorre carpetas completas mediante una barra lateral de miniaturas, haz zoom y desplázate con fluidez, ejecuta presentaciones y gestiona archivos recientes. Las herramientas esenciales de rotación, recorte, redimensionado, volteo y ajuste de color están integradas, junto con controles de fondo de escritorio e integración con el Explorador de Windows. La interfaz se mantiene enfocada, oscura y altamente personalizable. Construido con **Electron 35** y **JavaScript vanilla**.
 
-*Gratuito y de código abierto (GPLv3): sin anuncios, sin rastreo y sin recogida de datos. Solo disfrútalo.*
+*Gratuito y de código abierto (GPLv3). CyberViewer no añade publicidad ni analítica. La reproducción opcional de YouTube se conecta a YouTube y usa su reproductor oficial.*
 
 ---
 
@@ -68,6 +68,13 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 - Un solo reproductor activo mantiene ligeras las pestañas inactivas. La posición se conserva al cambiar de pestaña y, si activas la restauración de sesión, al reiniciar.
 - Las miniaturas de video son fotogramas estáticos. La edición, la copia de imágenes, el fondo de escritorio y la impresión/exportación quedan deshabilitados para videos. Las presentaciones siguen mostrando imágenes y omiten videos.
 - Los códecs de video no compatibles muestran un error. Los videos silenciosos se reproducen sin avisos automáticos de audio; volumen y silencio se atenúan y deshabilitan cuando la reproducción no produce audio decodificable, y se recuperan si el audio aparece más adelante. Puedes consultar la información de audio en el menú del reproductor. HEVC y el audio multicanal no tienen compatibilidad universal; no se incluye un transcodificador ni se necesita un reproductor externo.
+
+### Videos y playlists de YouTube
+- Selecciona **Abrir enlace de YouTube** en el menú principal o pulsa **Ctrl+L**. Pega el enlace de un video, Short, directo o playlist pública. Los enlaces con video y playlist conservan ese contexto; se admiten marcas de tiempo e índices de playlist.
+- El reproductor oficial de YouTube ofrece reproducción, volumen, subtítulos, calidad y su selector de playlist. CyberViewer añade anterior/siguiente, repetir playlist, reintentar, abrir el video actual en YouTube y pantalla completa nativa (**Ctrl+F**, **Esc** para salir). La barra inferior queda fuera del video y desaparece en pantalla completa.
+- **Reproducir al abrir**, en el diálogo del enlace, comparte la preferencia guardada de los videos locales. YouTube puede exigir un clic en su propio botón Reproducir. Solo queda un reproductor en línea activo; cambiar de pestaña o suspender la aplicación lo libera. La restauración opcional de sesión conserva el elemento actual y la posición de reproducción.
+- Se necesita internet y permiso de inserción. Los elementos privados, restringidos por edad o región, eliminados o que no permiten inserción pueden estar indisponibles. Los errores ofrecen reintentar o abrir en YouTube. Esta fase usa directamente la playlist del reproductor, sin catálogo independiente con búsqueda, inicio de sesión ni descargas.
+- YouTube controla la transmisión, las recomendaciones, la publicidad y el tratamiento de datos según sus propias políticas. El contenido remoto se ejecuta en un entorno aislado sin acceso a las API de archivos o ajustes de CyberViewer.
 
 ### ✏️ Edición
 - **Rotar:** 90° a la izquierda (`Q`) o a la derecha (`E`) con flujo de guardar/descartar
@@ -199,6 +206,7 @@ npm test
 npm run lint
 npm run test:workspace # regresión de imágenes y pestañas con perfil aislado
 npm run test:video     # pruebas de video aisladas; requiere FFmpeg en PATH (solo desarrollo)
+npm run test:youtube   # pruebas reales de YouTube/playlists con perfil aislado; requiere internet
 npm run i18n:sync       # regenera i18n/ui.js desde i18n/ui.json
 ```
 
@@ -228,6 +236,7 @@ npm run build:portable   # solo portable
 | Tecla | Acción |
 |---|---|
 | `Ctrl+O` | Abrir imágenes o videos |
+| `Ctrl+L` | Abrir enlace de video o playlist de YouTube |
 | `Ctrl+Tab` / `Ctrl+Mayús+Tab` | Pestaña siguiente / anterior |
 | `Ctrl+W` | Cerrar pestaña |
 | `Ctrl+Mayús+T` | Reabrir pestaña cerrada |

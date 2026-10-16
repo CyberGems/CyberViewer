@@ -26,7 +26,7 @@
 
 CyberViewer is a fast, lightweight image and video viewer for Windows that covers everyday viewing and editing without the weight of a full graphics suite. Open large images quickly, browse complete folders through a thumbnail sidebar, zoom and pan smoothly, run slideshows, and manage recent files. Essential tools for rotation, cropping, resizing, flipping, and color adjustment are built in, alongside wallpaper controls and Windows Explorer integration. The interface stays focused, dark, and highly customizable. Built with **Electron 35** and **vanilla JavaScript**.
 
-*Free and open source (GPLv3): no ads, no tracking, and no data collection. Just enjoy it.*
+*Free and open source (GPLv3). CyberViewer adds no advertising or analytics. Optional YouTube playback connects to YouTube and uses its official player.*
 
 ---
 
@@ -68,6 +68,13 @@ Most image viewers are either bloated with features you never use or so barebone
 - One active player keeps inactive tabs lightweight. Playback position survives tab changes and, when session restore is enabled, restarts.
 - Video thumbnails are static frames. Image editing, image copying, wallpaper, and print/export actions are disabled for videos. Slideshows continue to show images and skip videos.
 - Unsupported video codecs show an error. Silent videos play without automatic audio notices; volume and mute are dimmed and disabled when playback yields no decodable audio, and recover if audio becomes available later. Audio information is available on request in the playback menu. HEVC and multichannel audio are not universally supported; there is no bundled transcoder or external player dependency.
+
+### YouTube videos and playlists
+- Choose **Open YouTube link** in the main menu or press **Ctrl+L**. Paste a video, Shorts, live stream, or public playlist link. Links containing a video and a playlist retain that context; timestamps and playlist indexes are supported.
+- The official YouTube player provides playback, volume, captions, quality, and its playlist selector. CyberViewer adds previous/next, playlist repeat, retry, opening the current video in YouTube, and native fullscreen (**Ctrl+F**, **Esc** to exit). Its footer stays outside the video and disappears in fullscreen.
+- **Autoplay on open** in the link dialog shares the saved local-video preference. YouTube can still require a click on its own Play button. One online player is active at a time; changing tabs or suspending the application releases it. Optional session restore retains the current item and playback position.
+- Internet access and permission to embed are required. Private, age-restricted, removed, region-blocked, and embedding-disabled items may be unavailable. Errors offer retry or opening in YouTube. This phase uses the embedded playlist directly, without a separate searchable playlist catalog, account sign-in, or downloads.
+- YouTube controls its stream, recommendations, advertising, and data processing under its own policies. Remote content runs in a separate sandbox without access to CyberViewer's file or settings APIs.
 
 ### ✏️ Editing
 - **Rotate:** left 90° (`Q`) or right 90° (`E`) with save/discard workflow
@@ -201,6 +208,7 @@ npm test
 npm run lint
 npm run test:workspace # isolated image/tab regression tests
 npm run test:video     # isolated video tests; requires FFmpeg on PATH (development only)
+npm run test:youtube   # live YouTube/playlist tests with an isolated profile; requires internet
 npm run i18n:sync       # regenerate i18n/ui.js from i18n/ui.json
 ```
 
@@ -231,6 +239,7 @@ npm run build:portable   # portable only
 | Key | Action |
 |---|---|
 | `Ctrl+O` | Open images or videos |
+| `Ctrl+L` | Open a YouTube video or playlist link |
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
 | `Ctrl+W` | Close tab |
 | `Ctrl+Shift+T` | Reopen closed tab |

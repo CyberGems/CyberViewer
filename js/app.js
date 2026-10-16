@@ -202,6 +202,8 @@ const state = {
   visualRotation: 0,
   hasChanges: false,
   videoTime: 0,
+  youtubeIndex: 0,
+  youtubeVideoId: '',
   isCropping: false,
   isGhost: false,
   zoomTimer: null,
@@ -262,6 +264,7 @@ const RECENT_CTX_MAX = 10;
 // UI strings: i18n/ui.js → window.CV_I18N (source: i18n/ui.json)
 const I18N = (typeof window !== 'undefined' && window.CV_I18N) ? window.CV_I18N : { en: {}, es: {} };
 window.CVVideo.initialize();
+if (isElectron) window.CVYouTube.initialize();
 const TRAY_PIN_REMINDER_KEY = 'cyberviewer_tray_pin_reminder_dismissed';
 let pendingTrayPinReminder = false;
 const TITLEBAR_HELP_URLS = Object.freeze({
@@ -293,7 +296,7 @@ const MENU_ICON_BY_I18N = {
   menu_help_faq: 'help-circle', menu_help_changelog: 'tag', menu_help_website: 'globe',
   menu_help_donate: 'heart', menu_prefs: 'gear', menu_about: 'info',
   menu_updates: 'download',
-  menu_open: 'image', menu_open_folder: 'folder', menu_recent: 'clock',
+  menu_open: 'image', menu_open_folder: 'folder', menu_recent: 'clock', youtube_open: 'play',
   menu_recent_folders: 'folder', menu_paste: 'clipboard', menu_close_image: 'close',
   menu_show: 'folder-open', menu_open_containing_folder: 'folder-open', menu_save: 'save', menu_copy: 'copy',
   menu_copy_path: 'link', menu_save_as: 'save',
@@ -567,6 +570,7 @@ function renderTrayPinDescription(lang = 'en') {
 
 function updateLanguage(lang = 'en') {
   window.CVVideo.localize();
+  window.CVYouTube.localize();
   document.documentElement.lang = lang;
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.dataset.i18n;
@@ -701,6 +705,7 @@ function closeImage() {
 }
 
 function clearViewer() {
+  window.CVYouTube.unload();
   window.CVVideo.unload();
   if (typeof stopSlideshow === 'function') stopSlideshow({ silent: true });
   state.scanInProgress = false;
@@ -807,7 +812,7 @@ function loadFiles(files, initialIdx = 0, internal = false) {
     };
   });
 
-  const pathsToAllow = state.images.map(im => im.file && im.file.path).filter(Boolean);
+  const pathsToAllow = state.images.filter(im => !window.CVYouTubeSource.isYouTube(im)).map(im => im.file && im.file.path).filter(Boolean);
   const finishLoad = () => {
     syncCurrentIndex(initialIdx);
     console.log('Archivos cargados:', state.images.length);
@@ -1169,6 +1174,7 @@ async function openRecentFolder(dirPath) {
 }
 
 async function startBackgroundScan() {
+  if (window.CVYouTube?.active()) return;
   const total = state.images.length;
   if (total === 0 || !isElectron) return;
 
@@ -2551,6 +2557,14 @@ async function showSaveAsDialog(filePath) {
 }
 
 function executeAction(data) {
+  if (data.action === 'open-youtube') { window.CVYouTube.openDialog(); return; }
+  if (data.action === 'fullscreen') { toggleFullscreen(); return; }
+  if (data.action === 'youtube-tab-next' || data.action === 'youtube-tab-previous') {
+    const tabs = window.CVWorkspace.model.tabs;
+    const index = tabs.findIndex(tab => tab.id === window.CVWorkspace.model.activeId);
+    if (tabs.length) void window.CVWorkspace.activate(tabs[(index + (data.action === 'youtube-tab-next' ? 1 : tabs.length - 1)) % tabs.length].id);
+    return;
+  }
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
   switch (data.action) {
     case 'remove-from-list':
@@ -2807,6 +2821,7 @@ async function loadThumb(i, imgEl, opts) {
   if (!state.sidebarOpen || !imgEl) return;
   const im = state.images[i];
   if (!im) return;
+  if (window.CVYouTubeSource.isYouTube(im)) return;
   const seq = state.openSeq;
   const isLive = () => seq === state.openSeq && state.images[i] === im && imgEl.isConnected;
   const key = im.file?.path || im.url || im;
@@ -3043,6 +3058,7 @@ function updateThumbProgress(p, t, _paused = false) {
 function getUrl(i) {
   const im = state.images[i];
   if (!im) return '';
+  if (window.CVYouTubeSource.isYouTube(im)) return im.file.path;
   if (im.missingDraft) return 'data:image/png;base64,';
   if (im.url) return im.url;
 
@@ -3092,6 +3108,7 @@ function showImage(idx, direction, isInitial = false) {
   if (idx < 0 || idx >= state.images.length) return;
   if (state.transitioning && direction !== null) return;
   if (!window.CVWorkspace.beforeShow(state.images[idx])) return;
+  window.CVYouTube.unload();
   window.CVVideo.unload();
   if (state.resolveMainImage) state.resolveMainImage();
   const seq = state.openSeq;
@@ -3157,6 +3174,11 @@ function showImage(idx, direction, isInitial = false) {
     // Update the permanent window title and the fullscreen-only banner.
     syncFilenameDisplays(im);
 
+    if (window.CVYouTubeSource.isYouTube(im)) {
+      window.CVYouTube.load(im, markMainReady);
+      updateHUDStates();
+      return;
+    }
     if (window.CVFormats.isVideo(im)) {
       state.currentRotation = 0; state.visualRotation = 0; state.hasChanges = false;
       window.CVVideo.load(im, url, markMainReady);
@@ -4793,6 +4815,7 @@ function viewerFitSize() {
 }
 
 function fitToWindow(w, h) {
+  if (window.CVYouTube.active()) { window.CVYouTube.resize(); return; }
   const { vw, vh } = viewerFitSize();
   if (!w || !h) { state.zoom = 1; return; }
   const scale = Math.min(vw / w, vh / h);
@@ -4930,6 +4953,7 @@ $('zoom-slider').addEventListener('wheel', (e) => {
 }, { passive: false });
 
 function updateFileStats() {
+  if (window.CVYouTube.active()) return;
   const dimsEl = $('img-dims');
   const weightEl = $('img-weight');
   if (!dimsEl || !weightEl) return;
@@ -5536,6 +5560,7 @@ function clearImageError() {
 
 // ── MOUSE / TOUCH ──
 viewerWrap.addEventListener('wheel', e => {
+  if (window.CVYouTube.active()) return;
   if (e.target.closest('#video-controls')) return;
   if (window.CVVideo.active() && state.isGhost) { e.preventDefault(); return; }
   if (state.images.length === 0 || state.isCropping) return;
@@ -5545,6 +5570,7 @@ viewerWrap.addEventListener('wheel', e => {
 }, { passive: false });
 
 viewerWrap.addEventListener('mousedown', e => {
+  if (window.CVYouTube.active()) return;
   if (e.target.closest('#video-controls')) return;
   if (window.CVVideo.active() && state.isGhost) return;
   if (e.target.closest('#kbd-hint') || e.target.closest('#topbar') || e.target.closest('#sidebar')) return;
@@ -5572,6 +5598,7 @@ window.addEventListener('mouseup', () => {
 
 // Double click action (configurable: fullscreen / toggle zoom (fit<->1:1) / fit / original / none)
 viewerWrap.addEventListener('dblclick', e => {
+  if (window.CVYouTube.active()) return;
   if (e.target.closest('#video-controls')) return;
   if (e.target.closest('#kbd-hint') || e.target.closest('#topbar') || e.target.closest('#sidebar') || e.target.closest('#nav-container')) return;
   // The drop-zone buttons already handle their own clicks; don't open the dialog twice on double-click.
@@ -5619,6 +5646,7 @@ viewerWrap.addEventListener('dblclick', e => {
 // Touch pinch
 let lastPinchDist = 0;
 viewerWrap.addEventListener('touchstart', e => {
+  if (window.CVYouTube.active()) return;
   if (e.target.closest('#video-controls')) return;
   if (window.CVVideo.active() && state.isGhost) return;
   if (e.target.closest('#kbd-hint') || e.target.closest('#topbar') || e.target.closest('#sidebar')) return;
@@ -5637,6 +5665,7 @@ viewerWrap.addEventListener('touchstart', e => {
 });
 
 viewerWrap.addEventListener('touchmove', e => {
+  if (window.CVYouTube.active()) return;
   if (e.target.closest('#video-controls')) return;
   if (window.CVVideo.active() && state.isGhost) { e.preventDefault(); return; }
   e.preventDefault();
@@ -5677,6 +5706,7 @@ viewerWrap.addEventListener('touchend', e => {
 
 // ── KEYBOARD ──
 document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l' && !e.altKey) { e.preventDefault(); window.CVYouTube.openDialog(); return; }
   if (window.CVWorkspace.busy && e.key !== 'F4') { e.preventDefault(); return; }
   // Escape always closes overlays, even when an input has focus
   if (e.key === 'Escape' || e.key === 'Esc') {
@@ -5714,6 +5744,7 @@ document.addEventListener('keydown', e => {
     }
     if (state.isGhost) toggleFullscreen();
     closeModal('modal-config');
+    closeModal('modal-youtube');
     closeModal('modal-resize');
     closeModal('modal-adjust');
     closeModal('modal-properties');
@@ -5978,6 +6009,7 @@ function handleFileDeleted(index) {
 }
 
 async function trashCurrentImage() {
+  if (window.CVYouTube.active()) return;
   const idx = state.current;
   if (idx === -1) return;
   const im = state.images[idx];
@@ -6556,6 +6588,7 @@ function syncGhostCloseTooltip() {
 function scheduleFullscreenRefit() {
   setTimeout(() => {
     document.body.classList.remove('no-hud-transition');
+    if (window.CVYouTube.active()) { window.CVYouTube.resize(); return; }
     const im = state.images[state.current];
     if (!im) return;
     if (state.viewMode === 'original') {
@@ -9203,6 +9236,7 @@ $('btn-config').addEventListener('click', openConfig);
     }
     switch (action) {
       case 'open-image':     openImageDialog(); break;
+      case 'open-youtube':   window.CVYouTube.openDialog(); break;
       case 'open-folder':    openFolderDialog(); break;
       case 'open-recent': {
         const path = itemEl && itemEl.dataset ? itemEl.dataset.path : null;
@@ -9644,6 +9678,7 @@ function removeFavorite() {
 }
 
 function toggleFavorite() {
+  if (window.CVYouTube.active()) return;
   const idx = state.current;
   if (idx === -1) return;
   const im = state.images[idx];
@@ -9799,6 +9834,7 @@ let propsNativePath = null;
 let propsSummaryText = '';
 
 function openPropertiesForCurrent() {
+  if (window.CVYouTube.active()) return;
   if (!checkImageLoaded()) return;
   const im = state.images[state.current];
   const fpath = im ? imageDiskPath(im) : '';

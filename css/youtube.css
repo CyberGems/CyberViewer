@@ -1,0 +1,27 @@
+#youtube-panel[hidden], #youtube-retry[hidden], #youtube-url-error[hidden] { display: none !important; }
+#youtube-panel { position: absolute; inset: 0; display: flex; flex-direction: column; background: #000; z-index: 15; }
+#youtube-slot { flex: 1; min-height: 200px; background: #000; }
+#youtube-footer { display: flex; gap: 10px; align-items: center; min-height: 60px; padding: 8px 16px; box-sizing: border-box; color: var(--cyber-text); background: var(--cyber-panel); font: 12px var(--font-ui); }
+.youtube-summary { flex: 1; min-width: 60px; display: flex; flex-direction: column; gap: 3px; }
+#youtube-title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12px; }
+#youtube-status { color: var(--cyber-muted); font-size: 11px; line-height: 1.4; }
+#youtube-footer button { background: transparent; color: inherit; border: 1px solid var(--cyber-border); border-radius: 5px; padding: 7px 9px; font: inherit; cursor: pointer; white-space: nowrap; }
+#youtube-footer button:hover { background: rgba(var(--cyber-accent-rgb), .1); }
+#youtube-footer button:disabled { opacity: .35; cursor: default; }
+.youtube-loop { display: flex; gap: 5px; align-items: center; white-space: nowrap; }
+.youtube-loop input { accent-color: var(--cyber-accent); }
+.youtube-loop:has(input:disabled) { opacity: .35; }
+body.youtube-active #canvas-layer, body.youtube-active #spinner,
+body.youtube-active #sidebar, body.youtube-active #sidebar-handle, body.youtube-active #sidebar-edge-rail,
+body.youtube-active #video-controls, body.youtube-active #ghost-close { display: none !important; }
+body.youtube-active.ghost-mode #youtube-footer { display: none; }
+body.youtube-active #viewer-wrap { margin: 0 !important; }
+.youtube-dialog { width: min(520px, calc(100vw - 48px)); padding: 26px; }
+.youtube-dialog h2 { font-size: 18px; font-weight: 600; margin: 0 0 12px; }
+.youtube-dialog p { color: var(--cyber-muted); font-size: 13px; line-height: 1.5; }
+.youtube-dialog label { display: block; margin: 20px 0 8px; font-size: 12px; }
+.youtube-dialog label.youtube-loop { display: flex; }
+#youtube-url { width: 100%; box-sizing: border-box; background: var(--cyber-black); color: var(--cyber-text); border: 1px solid var(--cyber-border); border-radius: 6px; padding: 12px; font: 13px var(--font-ui); }
+#youtube-url-error { color: var(--cyber-accent2) !important; }
+.youtube-dialog-actions { margin-top: 22px; display: flex; gap: 10px; justify-content: flex-end; }
+@media (max-width: 1000px) { #youtube-footer { flex-wrap: wrap; gap: 7px; } .youtube-summary { flex-basis: 100%; } }

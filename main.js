@@ -22,6 +22,7 @@ const { initUpdater, setAutoCheckEnabled, isPortableBuild } = require('./lib/upd
 const { buildBackup, parseBackup } = require('./lib/settings-backup');
 const autoBackup = require('./lib/auto-backup');
 const { SessionStore } = require('./lib/session-store');
+const { YouTubePlayer } = require('./lib/youtube-player');
 const {
   TRAY_HELP_URLS, buildTrayHelpModel, taskbarSettingsLaunch
 } = require('./lib/tray-help');
@@ -264,6 +265,7 @@ function registerMediaProtocol() {
 }
 
 let win;
+let youtubePlayer;
 let tray = null;
 let isQuitting = false;
 
@@ -377,6 +379,7 @@ function createWindow() {
     }
   });
 
+  youtubePlayer = new YouTubePlayer(win);
   try {
     win.setBackgroundColor('#080a0e');
   } catch (_) { /* ignore */ }
@@ -1091,6 +1094,16 @@ ipcMain.on('win-devtools', () => {
     win.webContents.openDevTools();
   }
 });
+
+ipcMain.handle('youtube:open', async (event, id, value, bounds) => {
+  if (!youtubePlayer?.accepts(event)) return { ok: false };
+  try { return { ok: await youtubePlayer.open(id, value, bounds) }; }
+  catch (_) { return { ok: false }; }
+});
+ipcMain.on('youtube:resize', (event, id, bounds) => { if (youtubePlayer?.accepts(event)) youtubePlayer.resize(id, bounds); });
+ipcMain.on('youtube:command', (event, id, value) => { if (youtubePlayer?.accepts(event)) youtubePlayer.command(id, value); });
+ipcMain.on('youtube:close', (event, id) => { if (youtubePlayer?.accepts(event)) youtubePlayer.close(id); });
+ipcMain.on('youtube:state', (event, value) => youtubePlayer?.report(event, value));
 
 ipcMain.handle('win-set-fullscreen', (event, flag) => {
   if (!win || win.isDestroyed()) return false;

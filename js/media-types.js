@@ -1,9 +1,9 @@
 (function (root, factory) {
   'use strict';
-  const api = factory();
+  const api = factory(typeof module === 'object' && module.exports ? require('./youtube-source') : root.CVYouTubeSource);
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.CVFormats = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (youtube) {
   'use strict';
   const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.tif', '.ico', '.avif']);
   const VIDEO_EXTS = new Set(['.mp4', '.m4v', '.webm', '.mov', '.mkv']);
@@ -13,8 +13,8 @@
     const name = typeof file === 'string' ? file : file?.path || file?.name || '';
     return /\.[^.\\/]+$/.exec(name)?.[0].toLowerCase() || '';
   }
-  const isVideo = value => VIDEO_EXTS.has(extension(value));
-  const isSupportedFile = file => MEDIA_EXTS.has(extension(file)) || (!file?.path && file?.type?.startsWith('image/'));
+  const isVideo = value => !!youtube?.isYouTube(value) || VIDEO_EXTS.has(extension(value));
+  const isSupportedFile = file => !!youtube?.isYouTube(file) || MEDIA_EXTS.has(extension(file)) || (!file?.path && file?.type?.startsWith('image/'));
   function formatTime(seconds) {
     if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
     const total = Math.floor(seconds);

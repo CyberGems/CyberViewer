@@ -11,9 +11,10 @@
     "build:portable": "electron-builder --win portable --x64 --publish never",
     "test": "node --test test/**/*.test.js",
     "test:workspace": "node scripts/test-workspace.cjs",
-    "lint": "eslint main.js preload.js tray-preload.js lib test js",
+    "lint": "eslint main.js preload.js tray-preload.js youtube-preload.js lib test js",
     "i18n:sync": "node scripts/sync-i18n-ui.js",
-    "test:video": "node scripts/test-video.cjs"
+    "test:video": "node scripts/test-video.cjs",
+    "test:youtube": "node scripts/test-youtube.cjs"
   },
   "dependencies": {
     "electron-updater": "^6.6.2"
@@ -34,6 +35,7 @@
       "CyberViewer.html",
       "main.js",
       "preload.js",
+      "youtube-preload.js",
       "tray-preload.js",
       "tray-menu.html",
       "css/**",

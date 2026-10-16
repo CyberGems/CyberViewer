@@ -8,6 +8,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   close: () => ipcRenderer.send('win-close'),
   setFullScreen: (flag) => ipcRenderer.invoke('win-set-fullscreen', !!flag),
   isFullScreen: () => ipcRenderer.invoke('win-is-fullscreen'),
+  youtube: {
+    open: (id, value, bounds) => ipcRenderer.invoke('youtube:open', id, value, bounds),
+    resize: (id, bounds) => ipcRenderer.send('youtube:resize', id, bounds),
+    command: (id, value) => ipcRenderer.send('youtube:command', id, value),
+    close: id => ipcRenderer.send('youtube:close', id),
+    onState: callback => {
+      const handler = (_event, value) => callback(value);
+      ipcRenderer.on('youtube:state', handler);
+      return () => ipcRenderer.removeListener('youtube:state', handler);
+    }
+  },
   onWinState: (cb) => ipcRenderer.on('win-state', (_, state) => cb(state)),
   onFullscreenChanged: (cb) => {
     const handler = (_, isFs) => cb(!!isFs);

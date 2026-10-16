@@ -48,7 +48,7 @@ window.CVWorkspace = (() => {
     const tab = model.active;
     if (!tab || state.images[state.current] !== tab.image || suspended || pendingView?.tab === tab) return;
     for (const key of Object.keys(defaultView())) tab.view[key] = state[key];
-    tab.source = state.showingFavs ? 'favorites' : 'folder';
+    tab.source = window.CVYouTubeSource.isYouTube(tab.image) ? 'youtube' : state.showingFavs ? 'favorites' : 'folder';
     tab.hiddenPaths = state.images.filter(image => image.hidden && image.file.path).map(image => image.file.path);
     tab.scrollTop = $('sidebar-scroll')?.scrollTop || 0;
   }
@@ -69,7 +69,7 @@ window.CVWorkspace = (() => {
   }
   async function scan(tab, seq) {
     const filePath = tab.image.file.path;
-    if (!isElectron || !filePath) return;
+    if (!isElectron || !filePath || window.CVYouTubeSource.isYouTube(filePath)) return;
     const dir = pathKey(folderDirFromPath(filePath));
     const cached = folderScanCache.get(dir);
     if (cached?.files && Date.now() - cached.scannedAt < 2000) {
@@ -105,7 +105,7 @@ window.CVWorkspace = (() => {
     pendingView = { tab, view: { ...tab.view } };
     const seq = state.openSeq;
     render();
-    if (isElectron && tab.image.file.path) {
+    if (isElectron && tab.image.file.path && !window.CVYouTubeSource.isYouTube(tab.image)) {
       try {
         const result = await window.electronAPI.registerPaths([tab.image.file.path]);
         if (seq !== state.openSeq || model.active !== tab) return false;
@@ -150,7 +150,7 @@ window.CVWorkspace = (() => {
     try {
       for (let index = 0; index < accepted.length; index++) {
         const file = accepted[index];
-        const tab = model.open(imageForFile(file), { activate: false, source: options.source });
+        const tab = model.open(imageForFile(file), { activate: false, source: options.source, view: options.view });
         if (index === initialIdx) target = tab;
       }
     } catch (error) {
@@ -167,6 +167,22 @@ window.CVWorkspace = (() => {
   async function openPath(filePath, options = {}) {
     if (!filePath) return false;
     return openFiles([{ name: filePath.split(/[\\/]/).pop(), path: filePath, size: 0, type: '' }], 0, options);
+  }
+  async function openYouTube(value) {
+    const source = window.CVYouTubeSource.parse(value);
+    if (!source || !canSwitch()) return false;
+    const existing = model.findPath(source.url);
+    if (existing) {
+      if (source.startSeconds || source.index) {
+        const view = { videoTime: source.startSeconds, youtubeIndex: source.index, youtubeVideoId: source.videoId || '' };
+        Object.assign(existing.view, view);
+        if (model.active === existing) Object.assign(state, view);
+      }
+      return activate(existing.id, { force: true });
+    }
+    const file = { name: 'YouTube · ' + (source.videoId || source.playlistId), path: source.url, size: 0, youtube: source };
+    const result = await openFiles([file], 0, { source: 'youtube', view: { videoTime: source.startSeconds, youtubeIndex: source.index, youtubeVideoId: source.videoId || '' } });
+    return result;
   }
   // Folder browsing replaces only a clean tab. A pending edit/paste stays open;
   // a target already in the workspace is focused instead of duplicated.
@@ -503,6 +519,7 @@ window.CVWorkspace = (() => {
     if (busy || state.isCropping || isEditing()) { pendingSuspend = true; return; }
     pendingSuspend = false;
     capture();
+    window.CVYouTube.unload();
     window.CVVideo.unload();
     stopSlideshow({ silent: true });
     state.openSeq++; state.scanInProgress = false;
@@ -640,7 +657,7 @@ window.CVWorkspace = (() => {
     render();
   }
   return { model, get busy() { return busy; }, get ready() { return ready; }, capture, render,
-    activate, openPath, openFiles, beforeShow, viewFor, restoreView, closeTabs, reopen,
+    activate, openPath, openFiles, openYouTube, beforeShow, viewFor, restoreView, closeTabs, reopen,
     contextMenu, clearPreloads, release, changed, flush, settingsChanged, restore, edit, dialog,
     suspend, resume, imageBound, relocate, fileDeleted, initialize, isEditing };
 })();
