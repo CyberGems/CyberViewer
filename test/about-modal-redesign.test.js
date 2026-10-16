@@ -143,4 +143,59 @@ describe('About modal redesign (CyberFeeds pattern)', () => {
       assert.ok(uiI18n.es[`about_suite_${key}`], `missing ES about_suite_${key}`);
     }
   });
+
+  it('update actions use CyberFeeds ghost/primary buttons with icons', () => {
+    const start = appJs.indexOf('overlay.innerHTML = `');
+    const end = appJs.indexOf('overlay.querySelector(\'#about-close-btn\')', start);
+    const tpl = appJs.slice(start, end);
+    // idle check button: ghost class + refresh icon + sentence-case label
+    assert.match(tpl, /id="about-btn-update" class="top-btn about-action-btn about-action-ghost">\s*\$\{iconHtml\('rotate-cw'\)\}\s*<span>\$\{t\.about_check_updates\}<\/span>/);
+    // download: primary + download icon
+    assert.match(tpl, /id="about-btn-download" class="top-btn about-action-btn about-action-primary"[\s\S]*?\$\{iconHtml\('download'\)\}/);
+    // install: primary + check icon
+    assert.match(tpl, /id="about-btn-install" class="top-btn about-action-btn about-action-primary"[\s\S]*?\$\{iconHtml\('check-circle'\)\}/);
+    // release page link stays ghost
+    assert.match(tpl, /id="about-btn-release" class="top-btn about-action-btn about-action-ghost about-release-btn"/);
+    // old all-caps outline variants are gone
+    assert.doesNotMatch(tpl, /about-action-accent/);
+    assert.doesNotMatch(tpl, /id="about-btn-(download|install)" class="top-btn active/);
+    // check-circle icon exists in the catalog
+    assert.match(appJs, /'check-circle': '<circle cx="12" cy="12" r="9"\/><path d="M8\.5 12\.5l2\.5 2\.5 4\.5-5\.5"\/>'/);
+  });
+
+  it('spins the refresh icon while the update check runs', () => {
+    assert.match(appJs, /spinIco\.classList\.toggle\('spin-icon', s === 'checking'\)/);
+    assert.match(css, /\.about-action-btn \.spin-icon\s*\{\s*animation: about-spin 0\.8s linear infinite;/);
+    assert.match(css, /@keyframes about-spin\s*\{/);
+  });
+
+  it('shows the auto-update hint under the toggle (CyberFeeds pattern)', () => {
+    const start = appJs.indexOf('overlay.innerHTML = `');
+    const end = appJs.indexOf('overlay.querySelector(\'#about-close-btn\')', start);
+    const tpl = appJs.slice(start, end);
+    // hint renders right after the toggle row, guarded by the i18n key
+    assert.match(tpl, /<\/div>\s*\$\{t\.about_auto_updates_hint \? `<div class="about-update-hint">\$\{t\.about_auto_updates_hint\}<\/div>` : ''\}/);
+    assert.match(css, /\.about-update-hint\s*\{[\s\S]*?font-size: 10px;/);
+    assert.ok(uiI18n.en.about_auto_updates_hint, 'missing EN about_auto_updates_hint');
+    assert.ok(uiI18n.es.about_auto_updates_hint, 'missing ES about_auto_updates_hint');
+  });
+
+  it('keeps About action buttons sentence-case with ghost/primary styling', () => {
+    // .top-btn is uppercase app-wide; About must override it (CyberFeeds look)
+    assert.match(css, /\.about-action-btn\s*\{[\s\S]*?text-transform: none;/);
+    assert.match(css, /\.about-action-btn\s*\{[\s\S]*?font-weight: 500;/);
+    // ghost: transparent, no border, muted
+    assert.match(css, /\.about-action-ghost,\s*\.about-action-ghost:hover\s*\{\s*border-color: transparent;\s*background: transparent;\s*color: var\(--cyber-muted\);/);
+    // primary: solid accent fill with dark label
+    assert.match(css, /\.about-action-primary,\s*\.about-action-primary:hover\s*\{\s*border-color: var\(--cyber-accent\);\s*background: var\(--cyber-accent\);\s*color: #08111c;/);
+  });
+
+  it('uses CyberFeeds sentence-case labels for update actions in both languages', () => {
+    assert.equal(uiI18n.en.about_check_updates, 'Check for updates');
+    assert.equal(uiI18n.es.about_check_updates, 'Buscar actualizaciones');
+    assert.equal(uiI18n.en.about_install_btn, 'Restart and update');
+    assert.equal(uiI18n.es.about_install_btn, 'Reiniciar y actualizar');
+    assert.equal(uiI18n.en.about_download_btn, 'Download update');
+    assert.equal(uiI18n.es.about_download_btn, 'Descargar actualización');
+  });
 });

@@ -374,6 +374,7 @@ const MENU_ICONS = {
   'heart': '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
   'github': '<path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-1.5 6-6a4.6 4.6 0 0 0-1-3.5 4.2 4.2 0 0 0-.1-3.5S17.5 1 14 3.5a13.4 13.4 0 0 0-8 0C2.5 1 1.6 1.5 1.6 1.5A4.2 4.2 0 0 0 1.5 5a4.6 4.6 0 0 0-1 3.5c0 4.5 3 6 6 6a4.8 4.8 0 0 0-1 3.5v4"/><path d="M9 18c-4.5 2-5-2-7-2"/>',
   'circle-dot': '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>',
+  'check-circle': '<circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/>',
   'tag': '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z"/><circle cx="7" cy="7" r="1"/>'
 }
 
@@ -8538,6 +8539,8 @@ $('btn-go-end').addEventListener('click', (e) => {
     if (checkBtn) {
       checkBtn.disabled = s === 'checking' || s === 'downloading';
       checkBtn.style.display = (s === 'available' || s === 'downloaded' || s === 'downloading') ? 'none' : '';
+      const spinIco = checkBtn.querySelector('.menu-ico');
+      if (spinIco) spinIco.classList.toggle('spin-icon', s === 'checking');
     }
     if (downloadBtn) {
       downloadBtn.style.display = s === 'available' ? '' : 'none';
@@ -8662,14 +8665,17 @@ $('btn-go-end').addEventListener('click', (e) => {
             <div class="about-maintenance">
               <div id="about-update-banner" class="about-update-banner" aria-live="polite"></div>
               <div class="about-update-actions">
-                <button type="button" id="about-btn-update" class="top-btn about-action-btn about-action-accent">
-                  ${t.about_check_updates}
+                <button type="button" id="about-btn-update" class="top-btn about-action-btn about-action-ghost">
+                  ${iconHtml('rotate-cw')}
+                  <span>${t.about_check_updates}</span>
                 </button>
-                <button type="button" id="about-btn-download" class="top-btn active about-action-btn" style="display:none">
-                  ${t.about_download_btn}
+                <button type="button" id="about-btn-download" class="top-btn about-action-btn about-action-primary" style="display:none">
+                  ${iconHtml('download')}
+                  <span>${t.about_download_btn}</span>
                 </button>
-                <button type="button" id="about-btn-install" class="top-btn active about-action-btn" style="display:none">
-                  ${t.about_install_btn}
+                <button type="button" id="about-btn-install" class="top-btn about-action-btn about-action-primary" style="display:none">
+                  ${iconHtml('check-circle')}
+                  <span>${t.about_install_btn}</span>
                 </button>
               </div>
               <div id="about-update-progress" class="about-update-progress" style="display:none">
@@ -8681,6 +8687,7 @@ $('btn-go-end').addEventListener('click', (e) => {
                   <span class="about-auto-update-label">${t.about_check_on_startup}</span>
                 </button>
               </div>
+              ${t.about_auto_updates_hint ? `<div class="about-update-hint">${t.about_auto_updates_hint}</div>` : ''}
               <div id="about-update-details" class="about-update-details" style="display:none">
                 <div class="about-update-version-card">
                   <span class="about-update-version-label">${t.about_current_version || 'Current'}</span>
@@ -8696,7 +8703,7 @@ $('btn-go-end').addEventListener('click', (e) => {
                 <div class="about-release-notes-heading">${t.about_release_notes || "What's new"}</div>
                 <div id="about-release-notes-body" class="about-release-notes-body"></div>
               </div>
-              <button type="button" id="about-btn-release" class="top-btn about-release-btn" style="display:none">
+              <button type="button" id="about-btn-release" class="top-btn about-action-btn about-action-ghost about-release-btn" style="display:none">
                 ${t.about_view_release || 'View release page'}
               </button>
               ${!updateInfo.canUpdate && updateInfo.portable ? `<div class="about-update-hint">${t.about_portable_hint}</div>` : ''}

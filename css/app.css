@@ -6689,6 +6689,48 @@
   white-space: normal;
   line-height: 1.25;
   min-height: 38px;
+  /* CyberFeeds sentence-case ghost/primary buttons: override .top-btn caps */
+  text-transform: none;
+  font-weight: 500;
+}
+/* Ghost (idle check): transparent, no border, muted text (CyberFeeds .btn-ghost) */
+.about-action-ghost,
+.about-action-ghost:hover {
+  border-color: transparent;
+  background: transparent;
+  color: var(--cyber-muted);
+}
+.about-action-ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--cyber-text);
+}
+/* Primary (download/install): solid accent fill, dark label (CyberFeeds .btn-primary) */
+.about-action-primary,
+.about-action-primary:hover {
+  border-color: var(--cyber-accent);
+  background: var(--cyber-accent);
+  color: #08111c;
+  box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.25);
+}
+.about-action-primary:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+.about-action-primary:disabled,
+.about-action-ghost:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.about-action-btn .menu-ico {
+  width: 14px;
+  height: 14px;
+}
+/* Spinning refresh glyph while the update check runs */
+.about-action-btn .spin-icon {
+  animation: about-spin 0.8s linear infinite;
+}
+@keyframes about-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 .about-action-accent {
   border-color: var(--cyber-accent);
@@ -6820,8 +6862,7 @@
 }
 .about-release-btn {
   margin-top: 0;
-  border-color: rgba(var(--cyber-accent-rgb), 0.24);
-  color: var(--cyber-muted);
+  /* border/background/color come from .about-action-ghost (CyberFeeds pattern) */
 }
 .about-release-btn:hover {
   border-color: rgba(var(--cyber-accent-rgb), 0.45);
