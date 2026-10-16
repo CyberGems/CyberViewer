@@ -375,6 +375,8 @@ const MENU_ICONS = {
   'github': '<path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-1.5 6-6a4.6 4.6 0 0 0-1-3.5 4.2 4.2 0 0 0-.1-3.5S17.5 1 14 3.5a13.4 13.4 0 0 0-8 0C2.5 1 1.6 1.5 1.6 1.5A4.2 4.2 0 0 0 1.5 5a4.6 4.6 0 0 0-1 3.5c0 4.5 3 6 6 6a4.8 4.8 0 0 0-1 3.5v4"/><path d="M9 18c-4.5 2-5-2-7-2"/>',
   'circle-dot': '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/>',
   'check-circle': '<circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/>',
+  'gem': '<path d="M6 3h12l4 6-10 13L2 9z"/><path d="M2 9h20"/><path d="M9.5 3L12 9l2.5-6"/><path d="M12 9l-3.5 12"/><path d="M12 9l3.5 12"/>',
+  'bug': '<rect x="7" y="8" width="10" height="11" rx="5"/><path d="M9.5 8V6.5a2.5 2.5 0 0 1 5 0V8"/><path d="M12 8v11"/><path d="M3 11h4M17 11h4M3 16h4M17 16h4"/><path d="M12 19v2"/>',
   'tag': '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z"/><circle cx="7" cy="7" r="1"/>'
 }
 
@@ -8632,13 +8634,11 @@ $('btn-go-end').addEventListener('click', (e) => {
     overlay.innerHTML = `
       <div class="modal-box about-modal" role="dialog" aria-modal="true" aria-label="${t.about_title}">
         <div class="about-glass" aria-hidden="true">
-          <span class="about-glow about-glow-accent"></span>
-          <span class="about-glow about-glow-violet"></span>
           <span class="about-hairline"></span>
         </div>
         <div class="modal-header about-modal-header">
           <div class="about-header-spacer"></div>
-          <button class="win-btn modal-close-btn" id="about-close-btn" aria-label="${t.close || 'Close'}">&#10005;</button>
+          <button class="win-btn modal-close-btn cyber-tooltip" id="about-close-btn" data-tooltip="${t.close || 'Close'}" aria-label="${t.close || 'Close'}">&#10005;</button>
         </div>
         <div class="modal-body about-modal-body">
           <div class="about-hero">
@@ -8741,7 +8741,7 @@ $('btn-go-end').addEventListener('click', (e) => {
               rel="noopener noreferrer"
               data-tooltip="${t.about_website_tooltip}"
               aria-label="${t.about_website_tooltip}"
-            >${iconHtml('globe')}</a>
+            >${iconHtml('gem')}</a>
             <a
               class="about-footer-icon cyber-tooltip"
               href="https://github.com/CyberGems/CyberViewer/wiki"
@@ -8765,7 +8765,7 @@ $('btn-go-end').addEventListener('click', (e) => {
               rel="noopener noreferrer"
               data-tooltip="${t.about_issues_tooltip}"
               aria-label="${t.about_issues_tooltip}"
-            >${iconHtml('circle-dot')}</a>
+            >${iconHtml('bug')}</a>
             <a
               class="about-footer-icon cyber-tooltip tooltip-align-right"
               href="https://github.com/CyberGems/CyberViewer/releases"

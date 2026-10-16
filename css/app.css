@@ -6253,7 +6253,9 @@
   border: 1px solid rgba(var(--cyber-accent-rgb), 0.28);
   border-radius: 14px;
 }
-/* Glass decor: soft glows behind the content + top hairline, no hit targets */
+/* Glass decor: top hairline only. The corner glows were removed on request:
+   their brightest core sat on the top edge and got clipped by the rounded
+   corners, reading as a hard cut. The logo halo carries the glow accent. */
 .about-glass {
   position: absolute;
   inset: 0;
@@ -6261,27 +6263,6 @@
   overflow: hidden;
   pointer-events: none;
   z-index: 0;
-}
-.about-glow {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(60px);
-}
-.about-glow-accent {
-  top: -80px;
-  left: -70px;
-  width: 210px;
-  height: 210px;
-  background: var(--cyber-accent);
-  opacity: 0.13;
-}
-.about-glow-violet {
-  top: -50px;
-  right: -80px;
-  width: 180px;
-  height: 180px;
-  background: #7c3aed;
-  opacity: 0.11;
 }
 .about-hairline {
   position: absolute;
@@ -6302,6 +6283,37 @@
   padding: 16px 16px 0;
   border-bottom: none;
   justify-content: flex-end;
+  /* Transparent so the card gradient flows through: no tonal seam under the X */
+  background: transparent;
+}
+/* Close button: CyberFeeds ghost hover (subtle bg, no pink glow that gets
+   clipped by the header/body boundary) */
+.about-modal .modal-close-btn:hover {
+  color: var(--cyber-text) !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  box-shadow: none !important;
+}
+/* Close tooltip: below + right-aligned so it stays inside the modal
+   (the default modal-box placement is above, which would clip) */
+.about-modal .modal-close-btn.cyber-tooltip::after {
+  bottom: auto !important;
+  top: calc(100% + 8px) !important;
+  left: auto !important;
+  right: 0 !important;
+  transform: translateX(0) translateY(-4px) !important;
+}
+.about-modal .modal-close-btn.cyber-tooltip::before {
+  bottom: auto !important;
+  top: calc(100% + 2px) !important;
+  left: auto !important;
+  right: 12px !important;
+  transform: translateX(0) translateY(-4px) !important;
+  border-width: 0 6px 6px 6px !important;
+  border-color: transparent transparent var(--cyber-accent) transparent !important;
+}
+.about-modal .modal-close-btn.cyber-tooltip:hover::after,
+.about-modal .modal-close-btn.cyber-tooltip:hover::before {
+  transform: translateX(0) translateY(0) !important;
 }
 .about-header-spacer {
   flex: 1;
@@ -6344,8 +6356,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: 1px solid transparent;
   border-radius: 4px;
@@ -6381,16 +6393,25 @@
 .about-modal .modal-body {
   text-align: center;
   padding: 0 28px 12px;
-  /* Hide scrollbar chrome; content is sized to fit. Scroll still works if needed. */
+  /* Flex child scrolls; header/footer stay put. A slim accent scrollbar keeps
+     the overflow discoverable when content exceeds the 640px card. */
   overflow-x: visible;
   overflow-y: auto;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* legacy Edge */
 }
 .about-modal .modal-body::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none;
+  width: 6px;
+  display: block;
+}
+.about-modal .modal-body::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 3px;
+}
+.about-modal .modal-body::-webkit-scrollbar-thumb {
+  background: rgba(var(--cyber-accent-rgb), 0.28);
+  border-radius: 3px;
+}
+.about-modal .modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--cyber-accent-rgb), 0.5);
 }
 
 /* Hero identity block */
@@ -6505,10 +6526,11 @@
   color: var(--cyber-text);
   line-height: 1.55;
   text-align: center;
-  margin: 0 0 24px;
+  /* Tight gap to the formats box (flex column: margins don't collapse) */
+  margin: 0 0 8px;
 }
 .about-formats {
-  margin: 12px 0 0;
+  margin: 8px 0 0;
   padding: 8px 12px;
   font-size: 11px;
   line-height: 1.5;

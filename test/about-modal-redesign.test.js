@@ -23,11 +23,15 @@ describe('About modal redesign (CyberFeeds pattern)', () => {
     assert.match(tpl, /class="about-header-spacer"/);
     assert.match(tpl, /id="about-close-btn"/);
     assert.doesNotMatch(tpl, /modal-title/);
-    // Glass decor behind the content
+    // Glass decor behind the content: hairline only (corner glows removed —
+    // their brightest core sat on the top edge and read as a hard cut)
     assert.match(tpl, /class="about-glass"/);
-    assert.match(tpl, /about-glow-accent/);
-    assert.match(tpl, /about-glow-violet/);
     assert.match(tpl, /about-hairline/);
+    assert.doesNotMatch(tpl, /about-glow-accent/);
+    assert.doesNotMatch(tpl, /about-glow-violet/);
+    // close button carries a courtesy tooltip
+    assert.match(tpl, /id="about-close-btn" data-tooltip="\$\{t\.close \|\| 'Close'\}"/);
+    assert.match(tpl, /class="win-btn modal-close-btn cyber-tooltip"/);
   });
 
   it('shows the brand, uppercase version label and tagline', () => {
@@ -103,6 +107,19 @@ describe('About modal redesign (CyberFeeds pattern)', () => {
     const tpl = appJs.slice(start, end);
     assert.match(tpl, /class="about-footer-brand"[\s\S]*?>&#169; CyberGems &#8226; 2026</);
     assert.match(tpl, /class="about-footer-links"/);
+    // CyberFeeds icon set: gem (website), book-open (docs), github, bug (issues), tag, heart
+    assert.match(tpl, /\$\{iconHtml\('gem'\)\}/);
+    assert.match(tpl, /\$\{iconHtml\('book-open'\)\}/);
+    assert.match(tpl, /\$\{iconHtml\('github'\)\}/);
+    assert.match(tpl, /\$\{iconHtml\('bug'\)\}/);
+    assert.match(tpl, /\$\{iconHtml\('tag'\)\}/);
+    assert.match(tpl, /\$\{iconHtml\('heart'\)\}/);
+    // old off-pattern footer icons are gone
+    assert.doesNotMatch(tpl, /\$\{iconHtml\('globe'\)\}/);
+    assert.doesNotMatch(tpl, /\$\{iconHtml\('circle-dot'\)\}/);
+    // gem + bug exist in the icon catalog
+    assert.match(appJs, /'gem': '<path d="M6 3h12l4 6-10 13L2 9z"\/>/);
+    assert.match(appJs, /'bug': '<rect x="7" y="8" width="10" height="11" rx="5"\/>/);
   });
 
   it('styles the modal like CyberFeeds: transparent overlay, gradient card, switch', () => {
@@ -113,11 +130,21 @@ describe('About modal redesign (CyberFeeds pattern)', () => {
     assert.match(css, /\.about-modal\s*\{[\s\S]*?background: linear-gradient\(160deg, var\(--cyber-panel\), var\(--cyber-panel-dark\)\);/);
     assert.match(css, /\.about-modal\s*\{[\s\S]*?border: 1px solid rgba\(var\(--cyber-accent-rgb\), 0\.28\);/);
     assert.match(css, /\.about-modal\s*\{[\s\S]*?border-radius: 14px;/);
-    // glass decor pieces (blur lives on the shared .about-glow class)
-    assert.match(css, /\.about-glow\s*\{\s*position: absolute;\s*border-radius: 50%;\s*filter: blur\(60px\);/);
+    // glass decor pieces (hairline only; corner glows removed by request)
     assert.match(css, /\.about-hairline\s*\{[\s\S]*?linear-gradient\(90deg, transparent, rgba\(255, 255, 255, 0\.28\), transparent\)/);
-    // close-only header
-    assert.match(css, /\.about-modal \.modal-header\s*\{\s*flex-shrink: 0;\s*padding: 16px 16px 0;\s*border-bottom: none;\s*justify-content: flex-end;/);
+    assert.doesNotMatch(css, /\.about-glow/);
+    // close-only header: transparent so the gradient flows (no tonal seam)
+    assert.match(css, /\.about-modal \.modal-header\s*\{[\s\S]*?background: transparent;/);
+    // close hover: subtle ghost background, no clipped pink glow
+    assert.match(css, /\.about-modal \.modal-close-btn:hover\s*\{\s*color: var\(--cyber-text\) !important;\s*background: rgba\(255, 255, 255, 0\.07\) !important;\s*box-shadow: none !important;/);
+    // close tooltip renders below + right-aligned (inside the modal)
+    assert.match(css, /\.about-modal \.modal-close-btn\.cyber-tooltip::after\s*\{\s*bottom: auto !important;\s*top: calc\(100% \+ 8px\) !important;/);
+    // slim visible scrollbar so overflow is discoverable
+    assert.match(css, /\.about-modal \.modal-body::-webkit-scrollbar\s*\{\s*width: 6px;\s*display: block;/);
+    assert.doesNotMatch(css, /scrollbar-width: none/);
+    // tight gap between tagline and formats box (flex margins don't collapse)
+    assert.match(css, /\.about-desc\s*\{[\s\S]*?margin: 0 0 8px;/);
+    assert.match(css, /\.about-formats\s*\{\s*margin: 8px 0 0;/);
     // uppercase version label
     assert.match(css, /\.about-version-label\s*\{[\s\S]*?text-transform: uppercase;\s*letter-spacing: 0\.1em;/);
     // section rules + bordered maintenance box + full-width buttons
