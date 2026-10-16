@@ -4461,6 +4461,82 @@
     flex-shrink: 0;
   }
 
+  /* ── AUTO BACKUP LIST ── */
+  .cfg-backup-path {
+    word-break: break-all;
+    font-size: 10px;
+    color: var(--cyber-muted);
+  }
+  .cfg-backup-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .cfg-backup-list-info {
+    width: 100%;
+  }
+  .cfg-backup-list {
+    margin-top: 6px;
+    max-height: 176px;
+    overflow-y: auto;
+    border: 1px solid var(--cyber-border);
+    border-radius: 3px;
+    background: #080a0e;
+    display: flex;
+    flex-direction: column;
+  }
+  .cfg-backup-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--cyber-border);
+  }
+  .cfg-backup-item:last-child {
+    border-bottom: none;
+  }
+  .cfg-backup-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .cfg-backup-name {
+    font-size: 10px;
+    color: var(--cyber-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cfg-backup-sub {
+    font-size: 9px;
+    color: var(--cyber-muted);
+  }
+  .cfg-backup-item-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .cfg-backup-item-actions .top-btn {
+    padding: 3px 7px;
+    font-size: 9px;
+  }
+  .cfg-backup-badge-corrupt {
+    font-size: 8px;
+    color: var(--cyber-accent2);
+    border: 1px solid rgba(var(--cyber-accent2-rgb), 0.4);
+    border-radius: 2px;
+    padding: 1px 4px;
+    margin-left: 6px;
+    white-space: nowrap;
+  }
+  .cfg-backup-empty {
+    margin-top: 4px;
+    font-style: italic;
+  }
+
   /* ── GLOBAL HOTKEY CAPTURE ── */
   .cfg-hotkey {
     display: flex;

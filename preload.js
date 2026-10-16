@@ -24,6 +24,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   exportSettingsBackup: (settings) => ipcRenderer.invoke('settings:export-backup', settings),
   importSettingsBackup: () => ipcRenderer.invoke('settings:import-backup'),
 
+  autoBackupDir: () => ipcRenderer.invoke('auto-backup:dir'),
+  autoBackupList: () => ipcRenderer.invoke('auto-backup:list'),
+  autoBackupRun: () => ipcRenderer.invoke('auto-backup:run'),
+  autoBackupPickFolder: () => ipcRenderer.invoke('auto-backup:pick-folder'),
+  autoBackupOpenFolder: () => ipcRenderer.invoke('auto-backup:open-folder'),
+  autoBackupRestore: (filePath) => ipcRenderer.invoke('auto-backup:restore', filePath),
+  autoBackupDelete: (filePath) => ipcRenderer.invoke('auto-backup:delete', filePath),
+
   showContextMenu: (props) => ipcRenderer.send('show-context-menu', props),
   openDevTools: () => ipcRenderer.send('win-devtools'),
   onOpenFile: (cb) => ipcRenderer.on('open-file', (e, path) => cb(path)),

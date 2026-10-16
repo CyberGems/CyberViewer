@@ -1078,6 +1078,75 @@
             </div>
 
             <div class="config-section">
+              <label class="config-label" data-i18n="cfg_autobackup_section">Automatic Backup</label>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="cfg_autobackup">Scheduled backups</div>
+                  <div class="config-desc" data-i18n="cfg_autobackup_desc">Save settings and favorites automatically on a schedule.</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="cfg-autobackup-enabled">
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div id="cfg-autobackup-body" hidden>
+                <div class="config-row">
+                  <div class="config-info">
+                    <div class="config-name" data-i18n="cfg_autobackup_frequency">Frequency</div>
+                    <div class="config-desc" data-i18n="cfg_autobackup_frequency_desc">How often a new backup is created.</div>
+                  </div>
+                  <select id="cfg-autobackup-frequency" class="cfg-select">
+                    <option value="onStartup" data-i18n="cfg_autobackup_freq_onstartup">On every startup</option>
+                    <option value="hourly" data-i18n="cfg_autobackup_freq_hourly">Hourly</option>
+                    <option value="daily" data-i18n="cfg_autobackup_freq_daily">Daily</option>
+                    <option value="weekly" data-i18n="cfg_autobackup_freq_weekly">Weekly</option>
+                    <option value="monthly" data-i18n="cfg_autobackup_freq_monthly">Monthly</option>
+                  </select>
+                </div>
+                <div class="config-row">
+                  <div class="config-info">
+                    <div class="config-name" data-i18n="cfg_autobackup_max">Backups to keep</div>
+                    <div class="config-desc" data-i18n="cfg_autobackup_max_desc">Backups beyond this limit are deleted, oldest first.</div>
+                  </div>
+                  <select id="cfg-autobackup-max" class="cfg-select">
+                    <option value="1">1</option>
+                    <option value="3">3</option>
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                  </select>
+                </div>
+                <div class="config-row">
+                  <div class="config-info">
+                    <div class="config-name" data-i18n="cfg_autobackup_location">Location</div>
+                    <div class="config-desc cfg-backup-path" id="cfg-autobackup-path" title=""></div>
+                  </div>
+                  <div class="cfg-backup-actions">
+                    <button type="button" id="cfg-autobackup-browse" class="top-btn config-backup-btn" data-i18n="cfg_autobackup_browse">Change…</button>
+                    <button type="button" id="cfg-autobackup-open" class="top-btn config-backup-btn" data-i18n="cfg_autobackup_open">Open Folder</button>
+                    <button type="button" id="cfg-autobackup-reset" class="top-btn config-backup-btn" data-i18n="cfg_autobackup_reset">Reset</button>
+                  </div>
+                </div>
+                <div class="config-row">
+                  <div class="config-info">
+                    <div class="config-name" data-i18n="cfg_autobackup_status">Status</div>
+                    <div class="config-desc" id="cfg-autobackup-status"></div>
+                  </div>
+                  <button type="button" id="cfg-autobackup-run" class="top-btn config-backup-btn" data-i18n="cfg_autobackup_run">Backup Now</button>
+                </div>
+                <div class="config-row">
+                  <div class="config-info cfg-backup-list-info">
+                    <div class="config-name" data-i18n="cfg_autobackup_list">Available backups</div>
+                    <div class="cfg-backup-list" id="cfg-autobackup-list"></div>
+                    <div class="config-desc cfg-backup-empty" id="cfg-autobackup-empty" data-i18n="cfg_autobackup_list_empty" hidden>No backups yet.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="config-section">
               <label class="config-label" data-i18n="cfg_backup_section">Backups</label>
               <div class="config-row">
                 <div class="config-info">

@@ -19,6 +19,7 @@ const { clearThumbCache, evictThumbCache } = require('./lib/thumb-cache');
 const { clampWindowBounds, MIN_W, MIN_H } = require('./lib/window-bounds');
 const { initUpdater, setAutoCheckEnabled } = require('./lib/updater');
 const { buildBackup, parseBackup } = require('./lib/settings-backup');
+const autoBackup = require('./lib/auto-backup');
 const {
   TRAY_HELP_URLS, buildTrayHelpModel, taskbarSettingsLaunch
 } = require('./lib/tray-help');
@@ -1258,6 +1259,267 @@ ipcMain.handle('settings:import-backup', async () => {
   }
 });
 
+// ── Automatic scheduled backups ──
+// Mirrors the CyberFeeds auto-backup model, hardened with the shared, sanitized
+// backup format, corruption-flagged listings, and a safety snapshot taken
+// before every restore so a restore is always reversible.
+
+const AUTO_BACKUP_MAX_READ_BYTES = 2 * 1024 * 1024;
+
+let autoBackupTimer = null;
+let isAutoBackingUp = false;
+
+function getDefaultBackupDirectory() {
+  return path.join(app.getPath('userData'), 'backups');
+}
+
+/** Custom directory when configured and usable, otherwise the default one. */
+function getResolvedBackupDirectory() {
+  const settings = loadSettings();
+  const custom = autoBackup.pickAutoBackupSettings(settings.app.autoBackup).customPath;
+  if (custom) {
+    try {
+      if (!fs.existsSync(custom)) fs.mkdirSync(custom, { recursive: true });
+      return custom;
+    } catch (err) {
+      console.error('[AutoBackup] Custom backup path unusable, using default:', err);
+    }
+  }
+  const defaultDir = getDefaultBackupDirectory();
+  try {
+    if (!fs.existsSync(defaultDir)) fs.mkdirSync(defaultDir, { recursive: true });
+  } catch (err) {
+    console.error('[AutoBackup] Error creating default backup directory:', err);
+  }
+  return defaultDir;
+}
+
+function readBackupEntry(dir, filename) {
+  let stats;
+  try {
+    stats = fs.statSync(path.join(dir, filename));
+  } catch (_) {
+    return null;
+  }
+  const info = autoBackup.makeBackupInfo(dir, filename, stats);
+  // Flag unreadable/oversized/corrupt files so the UI can disable their restore.
+  info.valid = true;
+  if (stats.size > AUTO_BACKUP_MAX_READ_BYTES) {
+    info.valid = false;
+  } else {
+    try {
+      info.valid = parseBackup(fs.readFileSync(path.join(dir, filename), 'utf-8')).ok;
+    } catch (_) {
+      info.valid = false;
+    }
+  }
+  return info;
+}
+
+async function performAutoBackup(trigger = 'manual', opts = {}) {
+  if (isAutoBackingUp) return { ok: false, error: 'Backup in progress' };
+  isAutoBackingUp = true;
+  try {
+    const settings = loadSettings();
+    const ab = autoBackup.pickAutoBackupSettings(settings.app.autoBackup);
+    const targetDir = getResolvedBackupDirectory();
+    if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+
+    const filename0 = autoBackup.formatBackupFilename(new Date());
+    let finalPath = path.join(targetDir, filename0);
+    // Filenames have second resolution: wait for the next second if a backup
+    // already owns this name (e.g. a safety snapshot right after a manual run).
+    for (let attempt = 0; attempt < 5 && fs.existsSync(finalPath); attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      finalPath = path.join(targetDir, autoBackup.formatBackupFilename(new Date()));
+    }
+    if (fs.existsSync(finalPath)) return { ok: false, error: 'FILENAME_COLLISION' };
+    const filename = path.basename(finalPath);
+    const tmpPath = path.join(targetDir, `${filename}.tmp`);
+
+    const data = buildBackup(settings.app, { appVersion: app.getVersion() });
+    fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf-8');
+    fs.renameSync(tmpPath, finalPath);
+
+    const updatedSettings = {
+      ...settings,
+      app: {
+        ...settings.app,
+        autoBackup: { ...ab, lastBackupTime: Date.now() }
+      }
+    };
+    saveSettings(updatedSettings);
+
+    // Protected paths (e.g. the file being restored) survive this prune pass.
+    const protectedPaths = new Set(Array.isArray(opts.keepPaths) ? opts.keepPaths.filter(Boolean) : []);
+    pruneOldBackups(targetDir, ab.maxBackups, protectedPaths);
+
+    console.log(`[AutoBackup] Backup completed (${trigger}): ${finalPath}`);
+    return { ok: true, filePath: finalPath };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error('[AutoBackup] Error performing backup:', errorMsg);
+    return { ok: false, error: errorMsg };
+  } finally {
+    isAutoBackingUp = false;
+  }
+}
+
+function pruneOldBackups(dir, maxBackups, protectedPaths = new Set()) {
+  try {
+    if (!fs.existsSync(dir)) return;
+    const files = fs.readdirSync(dir).filter(autoBackup.isBackupFilename);
+    const entries = files
+      .map((file) => {
+        try {
+          const stats = fs.statSync(path.join(dir, file));
+          return autoBackup.makeBackupInfo(dir, file, stats);
+        } catch (_) {
+          return null;
+        }
+      })
+      .filter(Boolean);
+    const sorted = autoBackup.sortBackupsNewestFirst(entries);
+    const toPrune = autoBackup.selectBackupsToPrune(sorted, maxBackups)
+      .filter((item) => !protectedPaths.has(item.filePath));
+    for (const item of toPrune) {
+      try {
+        fs.unlinkSync(item.filePath);
+        console.log(`[AutoBackup] Pruned old backup file: ${item.filename}`);
+      } catch (err) {
+        console.error(`[AutoBackup] Failed to prune file ${item.filename}:`, err);
+      }
+    }
+  } catch (err) {
+    console.error('[AutoBackup] Error during backup pruning:', err);
+  }
+}
+
+async function checkAndRunScheduledBackup(isStartup = false) {
+  const settings = loadSettings();
+  const now = Date.now();
+  if (!autoBackup.shouldRunBackup(settings.app.autoBackup, now, isStartup)) return;
+  await performAutoBackup(isStartup ? 'startup' : 'scheduled');
+}
+
+async function listAutoBackups() {
+  try {
+    const dir = getResolvedBackupDirectory();
+    if (!fs.existsSync(dir)) return [];
+    const files = fs.readdirSync(dir).filter(autoBackup.isBackupFilename);
+    const list = files.map((file) => readBackupEntry(dir, file)).filter(Boolean);
+    return autoBackup.sortBackupsNewestFirst(list);
+  } catch (err) {
+    console.error('[AutoBackup] Failed to list auto backups:', err);
+    return [];
+  }
+}
+
+/**
+ * Restore an auto backup file. Before applying anything, a safety snapshot of
+ * the current state is written; if that fails the restore is aborted so the
+ * operation stays reversible. Returns parsed settings for the renderer to apply
+ * through the same path as a manual import.
+ */
+async function restoreAutoBackup(filePath) {
+  try {
+    const dir = getResolvedBackupDirectory();
+    if (!autoBackup.isPathInside(dir, filePath)) {
+      return { ok: false, error: 'OUTSIDE_BACKUP_DIR' };
+    }
+    const st = await fs.promises.stat(filePath);
+    if (!st.isFile() || st.size > AUTO_BACKUP_MAX_READ_BYTES) {
+      return { ok: false, error: 'INVALID_FILE' };
+    }
+    const raw = await fs.promises.readFile(filePath, 'utf-8');
+    const parsed = parseBackup(raw);
+    if (!parsed.ok) return parsed;
+
+    const safety = await performAutoBackup('pre-restore', { keepPaths: [filePath] });
+    if (!safety.ok) return { ok: false, error: 'SAFETY_BACKUP_FAILED' };
+
+    console.log(`[AutoBackup] Restoring backup: ${filePath}`);
+    return { ok: true, settings: parsed.settings, favorites: parsed.favorites };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[AutoBackup] Error restoring backup:', msg);
+    return { ok: false, error: msg };
+  }
+}
+
+async function deleteAutoBackup(filePath) {
+  try {
+    const dir = getResolvedBackupDirectory();
+    if (!autoBackup.isPathInside(dir, filePath)) {
+      return { ok: false, error: 'OUTSIDE_BACKUP_DIR' };
+    }
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    return { ok: true };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[AutoBackup] Error deleting backup:', msg);
+    return { ok: false, error: msg };
+  }
+}
+
+function initAutoBackup() {
+  rescheduleAutoBackup();
+  // Startup check: give the window time to settle before writing files.
+  setTimeout(() => {
+    void checkAndRunScheduledBackup(true);
+  }, 10000);
+}
+
+function rescheduleAutoBackup() {
+  if (autoBackupTimer) {
+    clearInterval(autoBackupTimer);
+    autoBackupTimer = null;
+  }
+  // Hourly check; the frequency decision itself lives in shouldRunBackup.
+  autoBackupTimer = setInterval(() => {
+    void checkAndRunScheduledBackup(false);
+  }, 60 * 60 * 1000);
+}
+
+ipcMain.handle('auto-backup:dir', async () => {
+  const settings = loadSettings();
+  const ab = autoBackup.pickAutoBackupSettings(settings.app.autoBackup);
+  return { ok: true, dir: getResolvedBackupDirectory(), custom: !!ab.customPath };
+});
+
+ipcMain.handle('auto-backup:list', async () => {
+  const list = await listAutoBackups();
+  return { ok: true, backups: list, ...autoBackup.summarizeBackups(list) };
+});
+
+ipcMain.handle('auto-backup:run', async () => {
+  return performAutoBackup('manual-trigger');
+});
+
+ipcMain.handle('auto-backup:pick-folder', async () => {
+  const lang = getUiLang();
+  const result = await dialog.showOpenDialog(win, {
+    title: tMenu('dialog_backup_pick_folder_title', lang),
+    properties: ['openDirectory', 'createDirectory']
+  });
+  if (result.canceled || !result.filePaths.length) return { ok: false, canceled: true };
+  return { ok: true, path: result.filePaths[0] };
+});
+
+ipcMain.handle('auto-backup:open-folder', async () => {
+  const dir = getResolvedBackupDirectory();
+  const error = await shell.openPath(dir);
+  return error ? { ok: false, error } : { ok: true, dir };
+});
+
+ipcMain.handle('auto-backup:restore', async (_event, filePath) => {
+  return restoreAutoBackup(filePath);
+});
+
+ipcMain.handle('auto-backup:delete', async (_event, filePath) => {
+  return deleteAutoBackup(filePath);
+});
+
 // ── Print / PDF export (Chromium engine, no native deps) ──
 // The renderer bakes the current image (rotation) to a PNG data URL, then
 // asks the main process to render it in a hidden window and call the native
@@ -2022,7 +2284,18 @@ ipcMain.handle('register-context-menu', async (event, enable, lang) => {
 });
 
 ipcMain.on('save-settings', (event, newSettings) => {
+  const currentSettings = loadSettings();
   saveSettings({ app: newSettings });
+
+  const prevAuto = autoBackup.pickAutoBackupSettings(currentSettings.app.autoBackup);
+  const nextAuto = autoBackup.pickAutoBackupSettings(newSettings.autoBackup);
+  if (
+    prevAuto.enabled !== nextAuto.enabled ||
+    prevAuto.frequency !== nextAuto.frequency ||
+    prevAuto.customPath !== nextAuto.customPath
+  ) {
+    rescheduleAutoBackup();
+  }
 
   if (newSettings.checkUpdatesOnStartup !== undefined) {
     setAutoCheckEnabled(!!newSettings.checkUpdatesOnStartup);
@@ -2361,6 +2634,7 @@ if (!gotTheLock) {
     });
     if (wantsTray()) createTray();
     applyToggleHotkey(settings.app && settings.app.toggleHotkey);
+    initAutoBackup();
 
     if (initialFilePath) {
       win.webContents.once('did-finish-load', () => {

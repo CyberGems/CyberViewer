@@ -7078,6 +7078,12 @@ const CONFIG_CONTROL_ICON_BY_ID = {
   'cfg-multiple': 'copy',
   'cfg-hotkey': 'keyboard',
   'cfg-export-settings': 'save',
+  'cfg-autobackup-enabled': 'save',
+  'cfg-autobackup-frequency': 'clock',
+  'cfg-autobackup-max': 'copy',
+  'cfg-autobackup-path': 'folder',
+  'cfg-autobackup-run': 'info',
+  'cfg-autobackup-list': 'clock',
   'cfg-open-data-folder': 'folder-open',
   'cfg-clear-thumbnail-cache': 'trash',
   'cfg-clear-recent-history': 'clock',
@@ -7161,6 +7167,13 @@ function openConfig() {
   if ($('cfg-alpha-bg')) $('cfg-alpha-bg').value = alphaBg;
   if ($('cfg-image-outline')) $('cfg-image-outline').checked = s.imageOutline === true;
 
+  // Auto-backup settings
+  const ab = currentAutoBackupSettings();
+  if ($('cfg-autobackup-enabled')) $('cfg-autobackup-enabled').checked = ab.enabled;
+  if ($('cfg-autobackup-frequency')) $('cfg-autobackup-frequency').value = ab.frequency;
+  if ($('cfg-autobackup-max')) $('cfg-autobackup-max').value = String(ab.maxBackups);
+  refreshAutoBackupControls();
+
   // Slideshow settings
   if ($('cfg-ss-interval')) $('cfg-ss-interval').value = String(getSlideshowIntervalMs());
   if ($('cfg-ss-loop')) $('cfg-ss-loop').checked = s.slideshowLoop !== false;
@@ -7210,6 +7223,7 @@ function setActiveConfigTab(tabId) {
     panel.classList.toggle('active', active);
     panel.hidden = !active;
   });
+  if (id === 'backup') refreshAutoBackupControls();
 }
 
 document.querySelectorAll('#modal-config [data-config-tab]').forEach(btn => {
@@ -7258,7 +7272,8 @@ function collectConfigSettings() {
     navZoomMode: normalizeNavZoomMode(($('cfg-nav-zoom-mode') && $('cfg-nav-zoom-mode').value) || 'reset'),
     slideshowIntervalMs: parseInt(($('cfg-ss-interval') && $('cfg-ss-interval').value) || '3000', 10),
     slideshowLoop: !!( $('cfg-ss-loop') && $('cfg-ss-loop').checked ),
-    slideshowEnterFullscreen: !!( $('cfg-ss-fs') && $('cfg-ss-fs').checked )
+    slideshowEnterFullscreen: !!( $('cfg-ss-fs') && $('cfg-ss-fs').checked ),
+    autoBackup: collectAutoBackupSettings()
   };
 }
 
@@ -7512,6 +7527,296 @@ async function openDataFolder() {
     console.error('Error opening data folder:', err);
     showToast(t.toast_data_folder_error || 'COULD NOT OPEN DATA FOLDER', 'error');
   }
+}
+
+// ── Automatic backups (config UI) ──
+const AUTO_BACKUP_FREQUENCIES = ['onStartup', 'hourly', 'daily', 'weekly', 'monthly'];
+
+/** Current auto-backup settings with defensive defaults (main sanitizes on save). */
+function currentAutoBackupSettings() {
+  const ab = (state.settings && state.settings.app && state.settings.app.autoBackup) || {};
+  const freq = AUTO_BACKUP_FREQUENCIES.includes(ab.frequency) ? ab.frequency : 'daily';
+  const max = Math.round(Number(ab.maxBackups));
+  return {
+    enabled: ab.enabled === true,
+    frequency: freq,
+    maxBackups: Number.isFinite(max) ? Math.min(50, Math.max(1, max)) : 5,
+    customPath: typeof ab.customPath === 'string' ? ab.customPath : '',
+    lastBackupTime: Number(ab.lastBackupTime) || 0
+  };
+}
+
+function collectAutoBackupSettings() {
+  const cur = currentAutoBackupSettings();
+  const enabled = !!($('cfg-autobackup-enabled') && $('cfg-autobackup-enabled').checked);
+  const freqEl = $('cfg-autobackup-frequency');
+  const maxEl = $('cfg-autobackup-max');
+  const max = Math.round(Number(maxEl && maxEl.value));
+  return {
+    enabled,
+    frequency: freqEl && AUTO_BACKUP_FREQUENCIES.includes(freqEl.value) ? freqEl.value : cur.frequency,
+    maxBackups: Number.isFinite(max) ? Math.min(50, Math.max(1, max)) : cur.maxBackups,
+    customPath: cur.customPath,
+    lastBackupTime: cur.lastBackupTime
+  };
+}
+
+function formatBackupTimestamp(ms, lang) {
+  if (!ms) return '';
+  const locale = lang === 'es' ? 'es-ES' : 'en-US';
+  try {
+    return new Intl.DateTimeFormat(locale, {
+      year: 'numeric', month: 'short', day: '2-digit',
+      hour: '2-digit', minute: '2-digit'
+    }).format(new Date(ms));
+  } catch (_) {
+    return new Date(ms).toISOString().slice(0, 16).replace('T', ' ');
+  }
+}
+
+function formatBackupBytes(bytes, lang) {
+  let n = Number(bytes) || 0;
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let i = 0;
+  while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+  const locale = lang === 'es' ? 'es-ES' : 'en-US';
+  const value = i === 0 ? String(Math.round(n)) : n.toLocaleString(locale, { maximumFractionDigits: 1 });
+  return `${value} ${units[i]}`;
+}
+
+function refreshAutoBackupControls() {
+  const body = $('cfg-autobackup-body');
+  const enabled = !!($('cfg-autobackup-enabled') && $('cfg-autobackup-enabled').checked);
+  if (body) body.hidden = !enabled;
+  if (enabled) {
+    refreshAutoBackupDir();
+    refreshAutoBackupList();
+  }
+}
+
+async function refreshAutoBackupDir() {
+  const el = $('cfg-autobackup-path');
+  if (!el || !isElectron || !window.electronAPI || !window.electronAPI.autoBackupDir) return;
+  try {
+    const res = await window.electronAPI.autoBackupDir();
+    if (!res || !res.ok) return;
+    const { t } = backupUiText();
+    el.textContent = res.custom ? res.dir : (t.cfg_autobackup_location_default || 'Default app data folder');
+    setCyberTooltip(el, res.dir);
+    const resetBtn = $('cfg-autobackup-reset');
+    if (resetBtn) resetBtn.hidden = !res.custom;
+  } catch (_) { /* keep the current label */ }
+}
+
+async function refreshAutoBackupList() {
+  const listEl = $('cfg-autobackup-list');
+  const emptyEl = $('cfg-autobackup-empty');
+  const statusEl = $('cfg-autobackup-status');
+  if (!listEl || !isElectron || !window.electronAPI || !window.electronAPI.autoBackupList) return;
+  const { lang, t } = backupUiText();
+  try {
+    const res = await window.electronAPI.autoBackupList();
+    if (!res || !res.ok) {
+      showToast(t.toast_autobackup_list_error || 'COULD NOT LOAD BACKUPS', 'error');
+      return;
+    }
+    const items = Array.isArray(res.backups) ? res.backups : [];
+    listEl.innerHTML = '';
+    items.forEach((item) => {
+      const row = document.createElement('div');
+      row.className = 'cfg-backup-item';
+
+      const meta = document.createElement('div');
+      meta.className = 'cfg-backup-meta';
+      const name = document.createElement('div');
+      name.className = 'cfg-backup-name';
+      name.textContent = item.filename;
+      const sub = document.createElement('div');
+      sub.className = 'cfg-backup-sub';
+      const parts = [formatBackupTimestamp(item.timestamp, lang), formatBackupBytes(item.sizeBytes, lang)];
+      if (item.valid === false) parts.push(t.cfg_autobackup_corrupt || 'Unreadable');
+      sub.textContent = parts.join(' · ');
+      meta.append(name, sub);
+
+      const actions = document.createElement('div');
+      actions.className = 'cfg-backup-item-actions';
+      const restoreBtn = document.createElement('button');
+      restoreBtn.type = 'button';
+      restoreBtn.className = 'top-btn config-backup-btn';
+      restoreBtn.textContent = t.cfg_autobackup_restore || 'Restore';
+      restoreBtn.disabled = item.valid === false;
+      restoreBtn.addEventListener('click', () => requestRestoreAutoBackup(item));
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'top-btn config-backup-btn';
+      delBtn.textContent = t.cfg_autobackup_delete || 'Delete';
+      delBtn.addEventListener('click', () => requestDeleteAutoBackup(item));
+      actions.append(restoreBtn, delBtn);
+
+      row.append(meta, actions);
+      listEl.appendChild(row);
+    });
+
+    if (emptyEl) emptyEl.hidden = items.length > 0;
+
+    if (statusEl) {
+      const latest = items.length ? formatBackupTimestamp(items[0].timestamp, lang) : '';
+      const summary = (t.cfg_autobackup_status_count || '{count} backups, {size} total')
+        .replace('{count}', String(res.count != null ? res.count : items.length))
+        .replace('{size}', formatBackupBytes(res.totalBytes != null ? res.totalBytes : 0, lang));
+      statusEl.textContent = items.length
+        ? `${(t.cfg_autobackup_status_last || 'Last backup: {time}').replace('{time}', latest)} · ${summary}`
+        : (t.cfg_autobackup_status_never || 'No backup created yet.');
+    }
+  } catch (err) {
+    console.error('Error loading auto backups:', err);
+    showToast(t.toast_autobackup_list_error || 'COULD NOT LOAD BACKUPS', 'error');
+  }
+}
+
+async function runAutoBackupNow() {
+  if (!isElectron || !window.electronAPI || !window.electronAPI.autoBackupRun) return;
+  const btn = $('cfg-autobackup-run');
+  const { t } = backupUiText();
+  if (btn) btn.disabled = true;
+  try {
+    const res = await window.electronAPI.autoBackupRun();
+    if (!res || !res.ok) {
+      showToast(t.toast_autobackup_error || 'COULD NOT CREATE BACKUP', 'error');
+      return;
+    }
+    showToast(t.toast_autobackup_created || 'BACKUP CREATED', 'success');
+    await refreshAutoBackupList();
+  } catch (err) {
+    console.error('Error running auto backup:', err);
+    showToast(t.toast_autobackup_error || 'COULD NOT CREATE BACKUP', 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function pickAutoBackupFolder() {
+  if (!isElectron || !window.electronAPI || !window.electronAPI.autoBackupPickFolder) return;
+  const { t } = backupUiText();
+  try {
+    const res = await window.electronAPI.autoBackupPickFolder();
+    if (!res || res.canceled) return;
+    if (!res.ok) {
+      showToast(t.toast_autobackup_error || 'COULD NOT CREATE BACKUP', 'error');
+      return;
+    }
+    const app = ensureAppSettings();
+    app.autoBackup = { ...currentAutoBackupSettings(), customPath: res.path };
+    persistAppSettings();
+    saveConfigSettings({ toast: false, silent: true });
+    await refreshAutoBackupDir();
+    await refreshAutoBackupList();
+  } catch (err) {
+    console.error('Error picking backup folder:', err);
+    showToast(t.toast_autobackup_error || 'COULD NOT CREATE BACKUP', 'error');
+  }
+}
+
+function resetAutoBackupFolder() {
+  const app = ensureAppSettings();
+  app.autoBackup = { ...currentAutoBackupSettings(), customPath: '' };
+  persistAppSettings();
+  saveConfigSettings({ toast: false, silent: true });
+  refreshAutoBackupDir();
+  refreshAutoBackupList();
+}
+
+async function openAutoBackupFolder() {
+  if (!isElectron || !window.electronAPI || !window.electronAPI.autoBackupOpenFolder) return;
+  const { t } = backupUiText();
+  try {
+    const res = await window.electronAPI.autoBackupOpenFolder();
+    if (!res || !res.ok) {
+      showToast(t.toast_autobackup_folder_error || 'COULD NOT OPEN BACKUP FOLDER', 'error');
+    }
+  } catch (err) {
+    console.error('Error opening backup folder:', err);
+    showToast(t.toast_autobackup_folder_error || 'COULD NOT OPEN BACKUP FOLDER', 'error');
+  }
+}
+
+function requestRestoreAutoBackup(item) {
+  if (!isElectron || !window.electronAPI || !window.electronAPI.autoBackupRestore) return;
+  const { t } = backupUiText();
+  showCyberConfirm({
+    title: t.cfg_autobackup_restore_confirm_title || 'Restore backup',
+    message: t.cfg_autobackup_restore_confirm_message ||
+      'Replace current preferences and favorites with this backup?',
+    detail: t.cfg_autobackup_restore_confirm_detail ||
+      'A safety backup of the current state is saved automatically before restoring.',
+    danger: false,
+    onConfirm: async () => {
+      try {
+        const res = await window.electronAPI.autoBackupRestore(item.filePath);
+        if (!res || res.canceled) return;
+        if (!res.ok) {
+          const msg = res.error === 'SAFETY_BACKUP_FAILED'
+            ? (t.toast_autobackup_error || 'COULD NOT CREATE BACKUP')
+            : (t.toast_autobackup_restore_error || 'COULD NOT RESTORE BACKUP');
+          showToast(msg, 'error');
+          return;
+        }
+        await applyImportedBackup(res);
+        await refreshAutoBackupList();
+      } catch (err) {
+        console.error('Error restoring auto backup:', err);
+        showToast(t.toast_autobackup_restore_error || 'COULD NOT RESTORE BACKUP', 'error');
+      }
+    }
+  });
+}
+
+function requestDeleteAutoBackup(item) {
+  if (!isElectron || !window.electronAPI || !window.electronAPI.autoBackupDelete) return;
+  const { t } = backupUiText();
+  showCyberConfirm({
+    title: t.cfg_autobackup_delete_confirm_title || 'Delete backup',
+    message: t.cfg_autobackup_delete_confirm_message || 'Delete this backup file permanently?',
+    detail: t.cfg_autobackup_delete_confirm_detail || 'This cannot be undone.',
+    danger: true,
+    onConfirm: async () => {
+      try {
+        const res = await window.electronAPI.autoBackupDelete(item.filePath);
+        if (!res || !res.ok) {
+          showToast(t.toast_autobackup_delete_error || 'COULD NOT DELETE BACKUP', 'error');
+          return;
+        }
+        showToast(t.toast_autobackup_deleted || 'BACKUP DELETED', 'info');
+        await refreshAutoBackupList();
+      } catch (err) {
+        console.error('Error deleting auto backup:', err);
+        showToast(t.toast_autobackup_delete_error || 'COULD NOT DELETE BACKUP', 'error');
+      }
+    }
+  });
+}
+
+const autoBackupEnabledToggle = $('cfg-autobackup-enabled');
+if (autoBackupEnabledToggle) {
+  autoBackupEnabledToggle.addEventListener('change', () => {
+    refreshAutoBackupControls();
+  });
+}
+const autoBackupRunBtn = $('cfg-autobackup-run');
+if (autoBackupRunBtn) {
+  autoBackupRunBtn.addEventListener('click', () => { runAutoBackupNow(); });
+}
+const autoBackupBrowseBtn = $('cfg-autobackup-browse');
+if (autoBackupBrowseBtn) {
+  autoBackupBrowseBtn.addEventListener('click', () => { pickAutoBackupFolder(); });
+}
+const autoBackupOpenBtn = $('cfg-autobackup-open');
+if (autoBackupOpenBtn) {
+  autoBackupOpenBtn.addEventListener('click', () => { openAutoBackupFolder(); });
+}
+const autoBackupResetBtn = $('cfg-autobackup-reset');
+if (autoBackupResetBtn) {
+  autoBackupResetBtn.addEventListener('click', () => { resetAutoBackupFolder(); });
 }
 
 function clearRecentHistory() {
