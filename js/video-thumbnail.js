@@ -29,10 +29,12 @@ window.renderVideoThumbnail = url => new Promise(resolve => {
     video.requestVideoFrameCallback(draw);
     video.play().catch(error => { console.warn('Video thumbnail playback failed:', error); finish(null); });
   };
-  video.onloadedmetadata = () => {
+  // Start seeking only once the first frame has initialized the demuxer. Some
+  // Matroska files reject an initial seek during the metadata-only stage.
+  video.onloadeddata = () => {
     const position = Number.isFinite(video.duration) ? Math.min(1, video.duration / 10) : 0;
     if (position > 0) { video.onseeked = captureFrame; video.currentTime = position; }
-    else video.onloadeddata = captureFrame;
+    else captureFrame();
   };
   video.onerror = () => finish(null);
   video.src = url; video.load();

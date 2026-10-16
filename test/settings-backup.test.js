@@ -17,6 +17,7 @@ describe('pickSettings', () => {
     const out = pickSettings({
       closeToTray: true,
       imageOutline: true,
+      videoAutoplay: false,
       language: 'es',
       accentColor: '#FF2D78',
       extra: 'nope',
@@ -24,6 +25,7 @@ describe('pickSettings', () => {
     });
     assert.equal(out.closeToTray, true);
     assert.equal(out.imageOutline, true);
+    assert.equal(out.videoAutoplay, false);
     assert.equal(out.language, 'es');
     assert.equal(out.accentColor, '#ff2d78');
     assert.equal(out.hudAutoHideDelay, 2500);
@@ -58,6 +60,7 @@ describe('buildBackup / parseBackup', () => {
   it('round-trips settings and favorites', () => {
     const backup = buildBackup({
       closeToTray: true,
+      videoAutoplay: false,
       language: 'en',
       accentColor: '#00d4ff',
       favorites: ['C:\\pics\\one.png', 'C:\\pics\\two.jpg'],
@@ -75,6 +78,7 @@ describe('buildBackup / parseBackup', () => {
     const parsed = parseBackup(JSON.stringify(backup));
     assert.equal(parsed.ok, true);
     assert.equal(parsed.settings.closeToTray, true);
+    assert.equal(parsed.settings.videoAutoplay, false);
     assert.equal(parsed.favorites.length, 2);
   });
 

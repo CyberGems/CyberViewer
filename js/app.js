@@ -242,6 +242,7 @@ const state = {
       slideshowLoop: true,
       slideshowEnterFullscreen: true,
       restoreSession: false,
+      videoAutoplay: true,
       showFileName: true,
       navZoomMode: 'reset'
     } 
@@ -1564,6 +1565,7 @@ window.addEventListener('contextmenu', (e) => {
 });
 
 function hideInterfaceMenus() {
+  window.CVVideo.closeMenu();
   const mainMenu = $('main-menu');
   const btnMenu = $('btn-menu');
   if (mainMenu) {
@@ -5819,7 +5821,7 @@ document.addEventListener('keydown', e => {
     if ((key === ' ' || key === 'enter') && e.target.closest('#video-controls button')) return;
     if (key === ' ') { e.preventDefault(); if (!e.repeat) void window.CVVideo.toggle(); return; }
     if (key === 'arrowleft' || key === 'arrowright') { e.preventDefault(); window.CVVideo.seekBy(key === 'arrowleft' ? -5 : 5); return; }
-    if (key === 'm') { e.preventDefault(); if (!e.repeat) window.CVVideo.element.muted = !window.CVVideo.element.muted; return; }
+    if (key === 'm') { e.preventDefault(); if (!e.repeat) window.CVVideo.toggleMute(); return; }
   }
 
   if (pendingRotation) {
@@ -7340,6 +7342,7 @@ function getFactoryAppSettings() {
     slideshowLoop: true,
     slideshowEnterFullscreen: true,
     restoreSession: false,
+    videoAutoplay: true,
     showFileName: true,
     animateGifs: true,
     dblClickAction: 'fullscreen',

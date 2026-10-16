@@ -163,6 +163,7 @@ function loadSettings() {
         if (data.app.restoreSession === undefined) data.app.restoreSession = false;
         if (data.app.showFileName === undefined) data.app.showFileName = true;
         if (data.app.animateGifs === undefined) data.app.animateGifs = true;
+        if (typeof data.app.videoAutoplay !== 'boolean') data.app.videoAutoplay = true;
         if (data.app.closeChoiceMade === undefined) data.app.closeChoiceMade = false;
       if (data.app.dblClickAction === undefined) data.app.dblClickAction = 'fullscreen';
         if (data.app.toggleHotkey === undefined || data.app.toggleHotkey === '') {
@@ -208,6 +209,7 @@ function loadSettings() {
       slideshowLoop: true,
       slideshowEnterFullscreen: true,
       restoreSession: false,
+      videoAutoplay: true,
       showFileName: true,
       animateGifs: true,
       dblClickAction: 'fullscreen',

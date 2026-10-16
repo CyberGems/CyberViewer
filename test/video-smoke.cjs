@@ -42,7 +42,15 @@ app.whenReady().then(async () => {
     console.log('PASS restored video tab and playback position, paused');
   } else {
     const file = path.join(dataDir,'clip #ñ %.mp4');
+    await evaluate('window.CVVideo.element.muted=true;');
     await open(path.basename(file)); await loaded();
+    await waitFor(() => evaluate('return !window.CVVideo.element.paused && window.CVVideo.element.currentTime > .2;'), 'autoplay is enabled by default');
+    assert.equal(await evaluate("return state.settings.app.videoAutoplay && $('video-autoplay').getAttribute('aria-checked') === 'true';"), true);
+    await evaluate("window.CVVideo.element.pause(); $('video-more').click();");
+    assert.equal(await evaluate("return getComputedStyle($('video-more'),'::after').display === 'none' && getComputedStyle($('video-more'),'::before').display === 'none';"), true, 'More tooltip is suppressed while its menu is open');
+    assert.equal(await evaluate("const m=getComputedStyle($('video-menu')), c=getComputedStyle($('main-menu')); return m.backdropFilter === c.backdropFilter && m.backgroundImage === c.backgroundImage;"), true, 'Playback menu shares existing glass surfaces');
+    await evaluate("$('video-autoplay').click(); window.CVVideo.closeMenu();");
+    await waitFor(() => JSON.parse(fs.readFileSync(path.join(dataDir,'settings.json'),'utf8')).app.videoAutoplay === false, 'autoplay preference saved');
     assert.equal(await evaluate('return window.CVVideo.element.paused;'), true);
     await evaluate('window.CVVideo.element.muted = true; await window.CVVideo.toggle();');
     await waitFor(() => evaluate('return window.CVVideo.element.currentTime > .5 && window.CVVideo.element.webkitAudioDecodedByteCount > 0;'), 'video and audio decoded');
@@ -153,15 +161,23 @@ app.whenReady().then(async () => {
 
     for (const name of ['silent.mp4', 'unsupported-audio.mp4']) {
       await open(name); await loaded();
+      assert.equal(await evaluate("return !$('video-volume').disabled && !$('video-mute').disabled;"), true, 'A new source is checked independently');
       await evaluate('window.CVVideo.element.muted=true; await window.CVVideo.toggle();');
-      await waitFor(() => evaluate('return window.CVVideo.element.currentTime > .8;'), name + ' playback without audio');
+      await waitFor(() => evaluate("return window.CVVideo.element.currentTime > .8 && $('video-volume').disabled && $('video-mute').disabled;"), name + ' disables unavailable audio controls');
+      await evaluate("document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'m',bubbles:true}));");
+      assert.equal(await evaluate('return window.CVVideo.element.muted;'), true, 'Mute hotkey respects unavailable audio');
       assert.equal(await evaluate("return $('video-audio-note').hidden && $('video-menu').hidden;"), true, 'Silent or unsupported audio never raises an automatic notice');
       await evaluate("window.CVVideo.element.pause(); $('video-more').click(); $('video-audio-info').click();");
+      fs.writeFileSync(path.join(dataDir,name + '-controls.png'), (await win.webContents.capturePage()).toPNG());
       assert.equal(await evaluate("return !$('video-audio-note').hidden && $('video-audio-note').textContent.includes('puede ser silencioso');"), true, 'Audio information appears only when requested');
       await evaluate("state.settings.app.language='en'; updateLanguage('en');");
       assert.ok(await evaluate("return $('video-audio-note').textContent.includes('may be silent');"));
       await evaluate("state.settings.app.language='es'; updateLanguage('es'); window.CVVideo.closeMenu();");
     }
+    await open('delayed-audio.mp4'); await loaded();
+    await evaluate('window.CVVideo.element.muted=true; await window.CVVideo.toggle();');
+    await waitFor(() => evaluate("return window.CVVideo.element.currentTime>3.5 && window.CVVideo.element.webkitAudioDecodedByteCount>0 && !$('video-volume').disabled && !$('video-mute').disabled;"), 'audio controls recover when a delayed track becomes decodable');
+    console.log('PASS unavailable audio controls, mute guard and delayed-audio recovery');
     await open('damaged.mp4');
     await waitFor(() => evaluate('return document.body.classList.contains("image-error") && !state.transitioning;'), 'incompatible video banner');
     assert.ok(await evaluate("return $('error-banner-sub').textContent.includes('códec');"));
@@ -169,7 +185,33 @@ app.whenReady().then(async () => {
     assert.ok(await evaluate("return $('error-banner-sub').textContent.includes('codec');"));
     console.log('PASS quiet silent/unsupported audio, requested bilingual audio information and invalid-video message');
 
+    for (const name of ['unindexed.mkv', ...(fs.existsSync(path.join(dataDir,'regression-sample.mkv')) ? ['regression-sample.mkv'] : [])]) {
+      await open(name);
+      await waitFor(() => evaluate('return !state.transitioning && window.CVVideo.element.videoWidth > 0 && window.CVVideo.element.readyState >= 2 && !window.CVVideo.element.error;'), name + ' first frame');
+      await evaluate('window.CVVideo.element.muted=true; await window.CVVideo.toggle();');
+      await waitFor(() => evaluate('return window.CVVideo.element.currentTime > .3 && !window.CVVideo.element.error;'), name + ' playback');
+      await evaluate('window.CVVideo.element.pause(); window.CVVideo.element.currentTime=window.CVVideo.element.duration*.7;');
+      await waitFor(() => evaluate('const v=window.CVVideo.element;return !v.seeking && Math.abs(v.currentTime-v.duration*.7)<.3 && !v.error;'), name + ' late seek');
+      const sampleTime = await evaluate('return window.CVVideo.element.currentTime;');
+      await open('autoplay.mp4'); await loaded();
+      await open(name);
+      await waitFor(() => evaluate('return !state.transitioning && window.CVVideo.element.readyState>=2 && !window.CVVideo.element.seeking && !window.CVVideo.element.error;'), name + ' restored tab');
+      assert.ok(Math.abs(await evaluate('return window.CVVideo.element.currentTime;')-sampleTime)<.3, name + ' restored playback position');
+      const thumbnail = await evaluate('return await window.electronAPI.getThumbnail(' + JSON.stringify(path.join(dataDir,name)) + ',{priority:true});');
+      assert.ok(thumbnail, name + ' thumbnail after preload fix');
+    }
+    console.log('PASS unindexed MKV and optional real MKV: first frame, playback, seeking, tab restoration and thumbnail');
+
+    await evaluate("$('video-autoplay').click();");
+    await waitFor(() => JSON.parse(fs.readFileSync(path.join(dataDir,'settings.json'),'utf8')).app.videoAutoplay === true, 'autoplay enabled preference saved');
+    await open('autoplay.mp4'); await loaded();
+    await waitFor(() => evaluate('return !window.CVVideo.element.paused && window.CVVideo.element.currentTime > .2;'), 'autoplay starts a newly loaded video');
+    await evaluate("$('video-autoplay').click();");
+    assert.equal(await evaluate('return window.CVVideo.element.paused;'), false, 'Changing autoplay does not interrupt current playback');
+    await waitFor(() => JSON.parse(fs.readFileSync(path.join(dataDir,'settings.json'),'utf8')).app.videoAutoplay === false, 'manual playback preference saved');
     await open(path.basename(file)); await loaded();
+    assert.equal(await evaluate('return window.CVVideo.element.paused;'), true, 'Disabled autoplay applies to the next loaded video');
+    console.log('PASS default autoplay, persisted on/off switch and manual playback after changing preference');
     await evaluate("window.CVVideo.element.currentTime=6;");
     await waitFor(() => evaluate('return !window.CVVideo.element.seeking;'), 'reset position after keyboard test');
     await evaluate("state.settings.app.language='es'; updateLanguage('es'); window.CVVideo.element.currentTime=6;");

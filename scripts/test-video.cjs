@@ -20,9 +20,29 @@ const sample = (name, args) => run(ffmpeg, ['-v', 'error', '-nostdin', '-y', ...
 const base = path.join(dataDir, 'clip #ñ %.mp4');
 sample(path.basename(base), ['-f','lavfi','-i','testsrc2=size=320x180:rate=24','-f','lavfi','-i','sine=frequency=600:sample_rate=48000','-t','12','-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p','-g','24','-c:a','aac','-movflags','+faststart']);
 for (const ext of ['mov', 'mkv', 'm4v']) sample('compatible.' + ext, ['-i',base,'-c','copy']);
+sample('unindexed.mkv', ['-i',base,'-c','copy']);
+// Cues are optional in Matroska. Replace the final Cues element with an EBML
+// Void of the same length, retaining duration and every encoded media packet.
+// This exercises startup without an index, without storing a private sample.
+const unindexedPath = path.join(dataDir, 'unindexed.mkv');
+const unindexed = fs.readFileSync(unindexedPath);
+const cues = unindexed.lastIndexOf(Buffer.from('1c53bb6b', 'hex'));
+if (cues < 0) throw new Error('Fixture is missing the expected Cues element');
+let sizeBytes = 1, sizeMask = 0x80;
+while (!(unindexed[cues + 4] & sizeMask)) { sizeBytes++; sizeMask >>= 1; }
+let cuesSize = unindexed[cues + 4] & (sizeMask - 1);
+for (let i = 1; i < sizeBytes; i++) cuesSize = cuesSize * 256 + unindexed[cues + 4 + i];
+const elementSize = 4 + sizeBytes + cuesSize;
+if (cues + elementSize !== unindexed.length || elementSize < 5 || elementSize >= 0x0fffffff) throw new Error('Unexpected Matroska fixture layout');
+unindexed[cues] = 0xec;
+unindexed.writeUInt32BE(0x10000000 + elementSize - 5, cues + 1);
+fs.writeFileSync(unindexedPath, unindexed);
+if (process.env.CV_VIDEO_MKV_SAMPLE) fs.copyFileSync(process.env.CV_VIDEO_MKV_SAMPLE, path.join(dataDir, 'regression-sample.mkv'));
 sample('compatible.webm', ['-i',base,'-c:v','libvpx-vp9','-deadline','realtime','-cpu-used','8','-c:a','libopus']);
 sample('unsupported-audio.mp4', ['-i',base,'-c:v','copy','-c:a','ac3']);
 sample('silent.mp4', ['-i',base,'-c:v','copy','-an']);
+sample('delayed-audio.mp4', ['-i',base,'-itsoffset','3','-i',base,'-map','0:v:0','-map','1:a:0','-c','copy','-t','10']);
+fs.copyFileSync(base, path.join(dataDir, 'autoplay.mp4'));
 sample('long.mp4', ['-stream_loop','-1','-i',base,'-t','600','-c','copy','-movflags','+faststart']);
 sample('1080p.mp4', ['-f','lavfi','-i','testsrc2=size=1920x1080:rate=24','-t','3','-an','-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p','-movflags','+faststart']);
 fs.writeFileSync(path.join(dataDir, 'damaged.mp4'), 'Not a video');

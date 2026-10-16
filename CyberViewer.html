@@ -294,7 +294,7 @@
       <div id="viewer-filename" class="hud-hidden-fade"></div>
       <div id="canvas-layer">
         <img id="main-img" data-i18n-alt="main_img_alt" alt="Imagen principal">
-        <video id="main-video" preload="metadata" playsinline hidden></video>
+        <video id="main-video" preload="auto" playsinline hidden></video>
       </div>
 
       <div id="video-controls" role="group" data-i18n-aria="video_controls" hidden>
@@ -309,14 +309,14 @@
               <span id="video-play-label" class="video-sr-only">Reproducir</span>
             </button>
             <button type="button" id="video-back" class="tooltip-right">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4-4 4 4 4M4 8h9a7 7 0 1 1-6 11"/><text x="10" y="17">5</text></svg>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8a8.5 8.5 0 1 1-.5 7M4 3v5h5"/><text x="12" y="16" text-anchor="middle">5</text></svg>
             </button>
             <button type="button" id="video-forward">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 4 4 4-4 4m4-4h-9a7 7 0 1 0 6 11"/><text x="10" y="17">5</text></svg>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8a8.5 8.5 0 1 0 .5 7M20 3v5h-5"/><text x="12" y="16" text-anchor="middle">5</text></svg>
             </button>
             <output id="video-time">0:00 / 0:00</output>
             <div class="video-action-spacer"></div>
-            <div class="video-sound">
+            <div class="video-sound" role="group">
               <button type="button" id="video-mute" aria-pressed="false" aria-keyshortcuts="M">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4Z"/><path class="video-icon-sound" d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/><path class="video-icon-muted" d="m16 9 5 6m0-6-5 6"/></svg>
                 <span id="video-mute-label" class="video-sr-only">Silenciar</span>
@@ -330,15 +330,16 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
             </button>
           </div>
-          <div id="video-menu" role="group" data-i18n-aria="video_more" hidden>
+          <div id="video-menu" class="menu-panel" role="group" data-i18n-aria="video_more" hidden>
             <button type="button" id="video-open"><span data-i18n="menu_open">Abrir archivo...</span><kbd>Ctrl+O</kbd></button>
             <button type="button" id="video-properties"><span data-i18n="menu_props">Propiedades</span><kbd>Ctrl+I</kbd></button>
             <div class="video-menu-divider"></div>
+            <button type="button" id="video-autoplay" role="switch" aria-checked="true"><span data-i18n="video_autoplay">Reproducir al abrir</span><span class="video-menu-switch" aria-hidden="true"></span></button>
             <button type="button" id="video-loop" aria-pressed="false"><span data-i18n="video_loop">Repetir</span><span class="video-loop-check" aria-hidden="true">✓</span></button>
             <button type="button" id="video-audio-info" aria-expanded="false" aria-controls="video-audio-note" data-i18n="video_audio_info">Información de audio</button>
             <p id="video-audio-note" role="status" hidden></p>
           </div>
-          </div>
+        </div>
       </div>
 
       <!-- Loading spinner: kept outside #canvas-layer so it ignores the image

@@ -15,6 +15,7 @@ window.CVVideo = (() => {
   let idleTimer = null;
   let interacting = false;
   let keyboardFocus = false;
+  let audioStatus = 'pending';
   const text = key => (I18N[state.settings.app.language || 'en'] || I18N.en)[key];
   const active = () => window.CVFormats.isVideo(state.images[state.current]);
   const imageActions = new Set(['save', 'save-as', 'export-pdf', 'print', 'copy',
@@ -53,6 +54,7 @@ window.CVVideo = (() => {
     $('video-mute').setAttribute('aria-pressed', String(element.muted));
     $('video-loop').setAttribute('aria-pressed', String(element.loop));
     $('video-loop').classList.toggle('active', element.loop);
+    $('video-autoplay').setAttribute('aria-checked', String(state.settings.app.videoAutoplay !== false));
     const duration = Number.isFinite(element.duration) ? element.duration : 0;
     const current = Number.isFinite(element.currentTime) ? element.currentTime : 0;
     $('video-time').textContent = `${window.CVFormats.formatTime(current)} / ${window.CVFormats.formatTime(duration)}`;
@@ -71,11 +73,22 @@ window.CVVideo = (() => {
       if (second !== lastSavedSecond) { lastSavedSecond = second; window.CVWorkspace.changed(); }
     }
     const played = element.played;
-    const hasPlayed = played.length > 0 && played.end(played.length - 1) - played.start(played.length - 1) > 0.5;
+    let playedSeconds = 0;
+    for (let i = 0; i < played.length; i++) playedSeconds += played.end(i) - played.start(i);
     // Decoded-byte counts cannot distinguish a silent file from an unsupported
     // audio codec. Keep this neutral diagnostic behind an explicit user action.
-    const audioKey = element.webkitAudioDecodedByteCount > 0 ? 'video_audio_available'
-      : hasPlayed ? 'video_no_audio' : 'video_audio_pending';
+    audioStatus = !owner?.loaded ? 'pending' : element.webkitAudioDecodedByteCount > 0 ? 'available'
+      : typeof element.webkitAudioDecodedByteCount === 'number' && (playedSeconds > .75 || (element.ended && playedSeconds > 0)) ? 'unavailable' : 'pending';
+    const unavailable = audioStatus === 'unavailable';
+    $('video-mute').disabled = unavailable;
+    $('video-volume').disabled = unavailable;
+    const sound = document.querySelector('.video-sound');
+    sound.classList.toggle('audio-unavailable', unavailable);
+    sound.setAttribute('aria-label', text(unavailable ? 'video_audio_unavailable' : 'video_volume'));
+    if (unavailable) setCyberTooltip(sound, text('video_audio_unavailable'));
+    else { sound.removeAttribute('data-tooltip'); sound.classList.remove('cyber-tooltip'); }
+    const audioKey = audioStatus === 'available' ? 'video_audio_available'
+      : unavailable ? 'video_no_audio' : 'video_audio_pending';
     $('video-audio-note').textContent = text(audioKey);
   }
 
@@ -159,6 +172,7 @@ window.CVVideo = (() => {
     element.hidden = false;
     element.setAttribute('aria-label', image.file.name);
     let finished = false;
+    let restorePending = savedTime > 0;
     const live = () => token === generation && owner === image && state.images[state.current] === image;
     const fail = () => {
       if (!live()) return;
@@ -175,6 +189,19 @@ window.CVVideo = (() => {
     };
     const ready = () => {
       if (!live() || finished || element.seeking || element.readyState < 2) return;
+      // Some Matroska files cannot seek while the demuxer is still starting.
+      // Decode the first frame before restoring the saved position, then wait
+      // for that seek to finish before exposing the tab as ready.
+      if (restorePending) {
+        restorePending = false;
+        if (Number.isFinite(element.duration)) {
+          const position = Math.min(savedTime, Math.max(0, element.duration - 0.05));
+          if (Math.abs(element.currentTime - position) > 0.05) {
+            element.currentTime = position;
+            return;
+          }
+        }
+      }
       finished = true;
       clearTimeout(timeout);
       image.w = element.videoWidth; image.h = element.videoHeight;
@@ -188,18 +215,13 @@ window.CVVideo = (() => {
       element.pause();
       syncTools(); sync(); reveal();
       onReady();
+      if (live() && state.settings.app.videoAutoplay !== false) void play();
     };
-    const metadata = () => {
-      if (live() && savedTime > 0 && Number.isFinite(element.duration)) {
-        element.currentTime = Math.min(savedTime, Math.max(0, element.duration - 0.05));
-      }
-    };
-    element.addEventListener('loadedmetadata', metadata);
     element.addEventListener('loadeddata', ready);
     element.addEventListener('seeked', ready);
     element.addEventListener('error', fail);
     cleanup = () => {
-      element.removeEventListener('loadedmetadata', metadata); element.removeEventListener('loadeddata', ready);
+      element.removeEventListener('loadeddata', ready);
       element.removeEventListener('seeked', ready); element.removeEventListener('error', fail);
     };
     timeout = setTimeout(fail, 20000);
@@ -208,15 +230,23 @@ window.CVVideo = (() => {
     sync(); syncTools();
   }
 
-  async function toggle() {
+  async function play() {
     if (!owner || !owner.loaded || document.body.classList.contains('image-error')) return;
     reveal();
-    if (!element.paused) { element.pause(); return; }
     if (element.ended) element.currentTime = 0;
     try { await element.play(); }
     catch (error) {
       if (error.name !== 'AbortError') { console.error('Video playback failed:', error); showToast(text('video_play_error'), 'error'); }
     }
+  }
+  function toggle() {
+    if (!element.paused) { element.pause(); return; }
+    return play();
+  }
+  function toggleMute() {
+    if (audioStatus === 'unavailable') return;
+    element.muted = !element.muted;
+    reveal();
   }
   function seekBy(seconds) {
     reveal();
@@ -255,8 +285,13 @@ window.CVVideo = (() => {
     $('video-play').addEventListener('click', () => void toggle());
     $('video-back').addEventListener('click', () => seekBy(-5));
     $('video-forward').addEventListener('click', () => seekBy(5));
-    $('video-mute').addEventListener('click', () => { element.muted = !element.muted; });
+    $('video-mute').addEventListener('click', toggleMute);
     $('video-loop').addEventListener('click', () => { element.loop = !element.loop; sync(); });
+    $('video-autoplay').addEventListener('click', () => {
+      state.settings.app.videoAutoplay = state.settings.app.videoAutoplay === false;
+      window.electronAPI?.saveSettings(state.settings.app);
+      sync();
+    });
     $('video-fullscreen').addEventListener('click', () => { toggleFullscreen(); reveal(); });
     $('video-more').addEventListener('click', () => setMenu($('video-menu').hidden));
     $('video-open').addEventListener('click', () => { closeMenu(); void openImageDialog(); });
@@ -269,10 +304,13 @@ window.CVVideo = (() => {
     $('video-seek').addEventListener('input', event => {
       if (owner && Number.isFinite(element.duration)) element.currentTime = Math.max(0, Math.min(element.duration, Number(event.target.value)));
     });
-    $('video-volume').addEventListener('input', event => { element.volume = Number(event.target.value); element.muted = element.volume === 0; });
+    $('video-volume').addEventListener('input', event => {
+      if (audioStatus === 'unavailable') return;
+      element.volume = Number(event.target.value); element.muted = element.volume === 0;
+    });
     ['timeupdate', 'play', 'pause', 'ended', 'volumechange', 'durationchange', 'seeked'].forEach(event => element.addEventListener(event, sync));
     ['play', 'pause', 'ended'].forEach(event => element.addEventListener(event, reveal));
     localize();
   }
-  return { element, active, load, unload, toggle, seekBy, sync, syncTools, localize, initialize, imageActions, reveal, closeMenu };
+  return { element, active, load, unload, toggle, toggleMute, seekBy, sync, syncTools, localize, initialize, imageActions, reveal, closeMenu };
 })();

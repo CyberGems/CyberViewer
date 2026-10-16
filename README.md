@@ -62,12 +62,12 @@ Most image viewers are either bloated with features you never use or so barebone
 
 ### ▶️ Video playback
 - Open MP4, M4V, WebM, MOV, and MKV through the file picker, drag and drop, folder navigation, or tabs. Support depends on the video and audio codecs inside each file and the computer's decoder capabilities.
-- Play/pause, seek, adjust volume, mute, and loop. Videos open paused; press **Space** to play/pause, **Left/Right** to skip 5 seconds, or **M** to mute. **Up/Down** and **A/D** still navigate files.
+- Play/pause, seek, adjust volume, mute, and loop. Videos play automatically on open by default; turn **Autoplay on open** off in the **…** menu for manual playback. The preference is saved. Press **Space** to play/pause, **Left/Right** to skip 5 seconds, or **M** to mute. **Up/Down** and **A/D** still navigate files.
 - Compact controls sit over the video and hide during playback after inactivity. The **…** menu provides loop, properties, open, and audio information. Image editing bars are hidden while viewing video.
 - Use the fullscreen button or **Ctrl+F** for native fullscreen with the complete frame fitted to the screen. Only the video remains after the controls and cursor hide; moving the pointer or pressing a key reveals the controls. **Esc** returns to the window (or closes the playback menu first).
 - One active player keeps inactive tabs lightweight. Playback position survives tab changes and, when session restore is enabled, restarts.
 - Video thumbnails are static frames. Image editing, image copying, wallpaper, and print/export actions are disabled for videos. Slideshows continue to show images and skip videos.
-- Unsupported video codecs show an error. Silent videos play without automatic audio notices; audio information is available on request in the playback menu. HEVC and multichannel audio are not universally supported; there is no bundled transcoder or external player dependency.
+- Unsupported video codecs show an error. Silent videos play without automatic audio notices; volume and mute are dimmed and disabled when playback yields no decodable audio, and recover if audio becomes available later. Audio information is available on request in the playback menu. HEVC and multichannel audio are not universally supported; there is no bundled transcoder or external player dependency.
 
 ### ✏️ Editing
 - **Rotate:** left 90° (`Q`) or right 90° (`E`) with save/discard workflow
