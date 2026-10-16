@@ -38,6 +38,7 @@ app.whenReady().then(async () => {
     const restored = await evaluate('return {time:window.CVVideo.element.currentTime, paused:window.CVVideo.element.paused, view:window.CVWorkspace.model.active.view, source:window.CVVideo.element.src};');
     assert.ok(Math.abs(restored.time - 6) < .3, JSON.stringify(restored));
     assert.equal(await evaluate('return window.CVVideo.element.paused;'), true);
+    assert.equal(await evaluate("return getComputedStyle($('kbd-hint')).display === 'none' && getComputedStyle($('statusbar')).display === 'none' && $('canvas-layer').clientHeight === $('viewer-wrap').clientHeight;"), true, 'Video fills the viewer without the image toolbar or footer');
     console.log('PASS restored video tab and playback position, paused');
   } else {
     const file = path.join(dataDir,'clip #ñ %.mp4');
@@ -88,6 +89,46 @@ app.whenReady().then(async () => {
     await waitFor(() => evaluate('return !window.CVVideo.element.seeking;'), 'ArrowRight seeks video');
     assert.ok(await evaluate('return Math.abs(window.CVVideo.element.currentTime-7)<.3;'));
     console.log('PASS playback keyboard, five-second seek, volume, mute and loop controls');
+
+    // Exercise the actual native fullscreen transition, not only a CSS class.
+    await evaluate("state.settings.app.hudAutoHideDelay=350; $('video-fullscreen').click();");
+    await waitFor(() => win.isFullScreen(), 'native fullscreen enabled');
+    await waitFor(() => evaluate("return state.isGhost && $('viewer-wrap').clientHeight === innerHeight;"), 'fullscreen viewport');
+    assert.equal(await evaluate("return getComputedStyle($('main-video')).objectFit === 'contain' && getComputedStyle($('canvas-layer')).transform === 'none' && $('main-video').getBoundingClientRect().width === innerWidth && getComputedStyle($('image-tabs')).display === 'none' && getComputedStyle($('topbar')).display === 'none';"), true, 'Native fullscreen fits the complete frame without app chrome');
+    await evaluate('window.CVVideo.element.loop=true; await window.CVVideo.toggle(); window.CVVideo.reveal();');
+    const center = await evaluate('return {x:Math.floor(innerWidth/2),y:Math.floor(innerHeight/2)};');
+    win.webContents.sendInputEvent({type:'mouseMove', ...center});
+    await waitFor(() => evaluate("return document.body.classList.contains('video-idle') && getComputedStyle($('video-controls')).opacity === '0' && getComputedStyle($('ghost-close')).opacity === '0';"), 'fullscreen controls idle and fade completed');
+    assert.equal(await evaluate("return getComputedStyle($('video-controls')).opacity === '0' && $('video-controls').inert && getComputedStyle($('ghost-close')).opacity === '0' && getComputedStyle($('viewer-wrap')).cursor === 'none';"), true, 'Idle fullscreen contains only the video');
+    fs.writeFileSync(path.join(dataDir,'video-fullscreen-clean.png'), (await win.webContents.capturePage()).toPNG());
+    win.webContents.sendInputEvent({type:'mouseMove',x:center.x+5,y:center.y+5});
+    await waitFor(() => evaluate("return !document.body.classList.contains('video-idle');"), 'pointer reveals controls');
+    await evaluate("$('video-more').click();");
+    await delay(500);
+    assert.equal(await evaluate("return !document.body.classList.contains('video-idle') && !$('video-menu').hidden;"), true, 'Open menus keep controls available');
+    fs.writeFileSync(path.join(dataDir,'video-playback-menu.png'), (await win.webContents.capturePage()).toPNG());
+    await evaluate("document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));");
+    assert.equal(win.isFullScreen(), true, 'First Escape closes the playback menu');
+    assert.equal(await evaluate("return $('video-menu').hidden;"), true);
+    await waitFor(() => evaluate("return document.body.classList.contains('video-idle');"), 'controls hide again');
+    await evaluate("document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'m',bubbles:true}));");
+    assert.equal(await evaluate("return document.body.classList.contains('video-idle');"), false, 'Keyboard reveals controls');
+    await evaluate("document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'Tab',bubbles:true})); $('video-play').focus();");
+    await delay(500);
+    assert.equal(await evaluate("return !document.body.classList.contains('video-idle') && document.activeElement === $('video-play');"), true, 'Keyboard focus keeps playback controls available');
+    await evaluate("$('video-seek').dispatchEvent(new Event('pointerdown',{bubbles:true}));");
+    await delay(500);
+    assert.equal(await evaluate("return document.body.classList.contains('video-idle');"), false, 'Seeking gestures keep playback controls available');
+    await evaluate("window.dispatchEvent(new Event('pointerup')); $('video-play').blur();");
+    await evaluate('window.CVVideo.element.pause(); window.CVVideo.element.loop=false;');
+    await delay(500);
+    assert.equal(await evaluate("return document.body.classList.contains('video-idle');"), false, 'Paused controls remain available');
+    fs.writeFileSync(path.join(dataDir,'video-fullscreen-controls.png'), (await win.webContents.capturePage()).toPNG());
+    await evaluate("document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));");
+    await waitFor(() => !win.isFullScreen(), 'Escape leaves native fullscreen');
+    await waitFor(() => evaluate("return !state.isGhost && getComputedStyle($('topbar')).opacity === '1';"), 'normal window restored');
+    await evaluate('state.settings.app.hudAutoHideDelay=2000;');
+    console.log('PASS native fullscreen, complete frame, controls/cursor idle hide, pointer/keyboard reveal, menus and Escape');
     await open('long.mp4'); await loaded();
     assert.ok(await evaluate('return window.CVVideo.element.duration>=599;'));
     await evaluate('window.CVVideo.element.currentTime=590;');
@@ -105,19 +146,28 @@ app.whenReady().then(async () => {
     await waitFor(() => evaluate('return mainImg.complete && mainImg.naturalWidth === 80 && !state.transitioning;'), 'image after video');
     assert.equal(await evaluate('return window.CVVideo.element.hasAttribute("src");'), false);
     assert.equal(await evaluate("return $('btn-rot-l').disabled;"), false);
+    assert.equal(await evaluate("return getComputedStyle($('kbd-hint')).display !== 'none' && !document.body.classList.contains('video-idle') && !$('ghost-close').inert;"), true, 'Image chrome and fullscreen exit are restored after video');
     await evaluate('rotate(90); discardPendingChanges();');
     assert.equal(await evaluate('return state.hasChanges;'),false);
     console.log('PASS image editing restored and inactive video decoder released');
 
-    await open('unsupported-audio.mp4'); await loaded();
-    await evaluate('window.CVVideo.element.muted=true; await window.CVVideo.toggle();');
-    await waitFor(() => evaluate("return !$('video-audio-note').hidden;"), 'unsupported audio notice');
+    for (const name of ['silent.mp4', 'unsupported-audio.mp4']) {
+      await open(name); await loaded();
+      await evaluate('window.CVVideo.element.muted=true; await window.CVVideo.toggle();');
+      await waitFor(() => evaluate('return window.CVVideo.element.currentTime > .8;'), name + ' playback without audio');
+      assert.equal(await evaluate("return $('video-audio-note').hidden && $('video-menu').hidden;"), true, 'Silent or unsupported audio never raises an automatic notice');
+      await evaluate("window.CVVideo.element.pause(); $('video-more').click(); $('video-audio-info').click();");
+      assert.equal(await evaluate("return !$('video-audio-note').hidden && $('video-audio-note').textContent.includes('puede ser silencioso');"), true, 'Audio information appears only when requested');
+      await evaluate("state.settings.app.language='en'; updateLanguage('en');");
+      assert.ok(await evaluate("return $('video-audio-note').textContent.includes('may be silent');"));
+      await evaluate("state.settings.app.language='es'; updateLanguage('es'); window.CVVideo.closeMenu();");
+    }
     await open('damaged.mp4');
     await waitFor(() => evaluate('return document.body.classList.contains("image-error") && !state.transitioning;'), 'incompatible video banner');
     assert.ok(await evaluate("return $('error-banner-sub').textContent.includes('códec');"));
     await evaluate("state.settings.app.language='en'; updateLanguage('en'); setImageError(state.images[state.current]);");
     assert.ok(await evaluate("return $('error-banner-sub').textContent.includes('codec');"));
-    console.log('PASS unsupported audio warning and bilingual invalid-video message');
+    console.log('PASS quiet silent/unsupported audio, requested bilingual audio information and invalid-video message');
 
     await open(path.basename(file)); await loaded();
     await evaluate("window.CVVideo.element.currentTime=6;");

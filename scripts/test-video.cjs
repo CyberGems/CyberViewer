@@ -22,6 +22,7 @@ sample(path.basename(base), ['-f','lavfi','-i','testsrc2=size=320x180:rate=24','
 for (const ext of ['mov', 'mkv', 'm4v']) sample('compatible.' + ext, ['-i',base,'-c','copy']);
 sample('compatible.webm', ['-i',base,'-c:v','libvpx-vp9','-deadline','realtime','-cpu-used','8','-c:a','libopus']);
 sample('unsupported-audio.mp4', ['-i',base,'-c:v','copy','-c:a','ac3']);
+sample('silent.mp4', ['-i',base,'-c:v','copy','-an']);
 sample('long.mp4', ['-stream_loop','-1','-i',base,'-t','600','-c','copy','-movflags','+faststart']);
 sample('1080p.mp4', ['-f','lavfi','-i','testsrc2=size=1920x1080:rate=24','-t','3','-an','-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p','-movflags','+faststart']);
 fs.writeFileSync(path.join(dataDir, 'damaged.mp4'), 'Not a video');

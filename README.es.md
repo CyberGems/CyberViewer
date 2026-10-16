@@ -63,9 +63,11 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 ### ▶️ Reproducción de video
 - Abre MP4, M4V, WebM, MOV y MKV desde el selector, arrastrando archivos, navegando por carpetas o mediante pestañas. La compatibilidad depende de los códecs de video y audio del archivo y de los decodificadores del equipo.
 - Reproduce/pausa, busca una posición, ajusta el volumen, silencia y repite. Los videos se abren pausados; pulsa **Espacio** para reproducir/pausar, **Izquierda/Derecha** para saltar 5 segundos o **M** para silenciar. **Arriba/Abajo** y **A/D** siguen navegando entre archivos.
+- Los controles compactos se superponen al video y se ocultan durante la reproducción tras un periodo de inactividad. El menú **…** reúne repetir, propiedades, abrir e información de audio. Las barras de edición de imágenes se ocultan al ver videos.
+- Usa el botón de pantalla completa o **Ctrl+F** para entrar en pantalla completa nativa con el fotograma completo ajustado a la pantalla. Solo queda el video cuando se ocultan los controles y el cursor; mover el ratón o pulsar una tecla revela los controles. **Esc** vuelve a la ventana (o cierra primero el menú de reproducción).
 - Un solo reproductor activo mantiene ligeras las pestañas inactivas. La posición se conserva al cambiar de pestaña y, si activas la restauración de sesión, al reiniciar.
 - Las miniaturas de video son fotogramas estáticos. La edición, la copia de imágenes, el fondo de escritorio y la impresión/exportación quedan deshabilitados para videos. Las presentaciones siguen mostrando imágenes y omiten videos.
-- Los códecs de video no compatibles muestran un error. Si no se detecta audio reproducible, un aviso explica que el video puede ser silencioso o usar un códec de audio no compatible. HEVC y el audio multicanal no tienen compatibilidad universal; no se incluye un transcodificador ni se necesita un reproductor externo.
+- Los códecs de video no compatibles muestran un error. Los videos silenciosos se reproducen sin avisos automáticos de audio; puedes consultar la información de audio en el menú del reproductor. HEVC y el audio multicanal no tienen compatibilidad universal; no se incluye un transcodificador ni se necesita un reproductor externo.
 
 ### ✏️ Edición
 - **Rotar:** 90° a la izquierda (`Q`) o a la derecha (`E`) con flujo de guardar/descartar

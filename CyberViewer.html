@@ -298,18 +298,47 @@
       </div>
 
       <div id="video-controls" role="group" data-i18n-aria="video_controls" hidden>
-        <div class="video-timeline">
-          <input id="video-seek" type="range" min="0" max="1" step="0.1" value="0" data-i18n-aria="video_seek" disabled>
-          <output id="video-time">0:00 / 0:00</output>
-        </div>
-        <div class="video-actions">
-          <button type="button" id="video-play" aria-keyshortcuts="Space"><span id="video-play-icon" aria-hidden="true">▶</span><span id="video-play-label">Reproducir</span></button>
-          <button type="button" id="video-mute" aria-pressed="false" aria-keyshortcuts="M"><span id="video-mute-label">Silenciar</span></button>
-          <input id="video-volume" type="range" min="0" max="1" step="0.05" value="1" data-i18n-aria="video_volume">
-          <button type="button" id="video-loop" aria-pressed="false" data-i18n="video_loop">Repetir</button>
-          <span class="video-seek-hint" data-i18n="video_seek_hint">← → Saltar 5 s</span>
-        </div>
-        <p id="video-audio-note" role="status" hidden></p>
+        <div id="video-heading"></div>
+        <div class="video-transport">
+          <div class="video-timeline">
+            <input id="video-seek" type="range" min="0" max="1" step="0.1" value="0" data-i18n-aria="video_seek" disabled>
+          </div>
+          <div class="video-actions">
+            <button type="button" id="video-play" class="tooltip-right" aria-keyshortcuts="Space">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path class="video-icon-play" d="m9 5 11 7-11 7Z"/><path class="video-icon-pause" d="M8 5h3v14H8zM15 5h3v14h-3z"/></svg>
+              <span id="video-play-label" class="video-sr-only">Reproducir</span>
+            </button>
+            <button type="button" id="video-back" class="tooltip-right">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4-4 4 4 4M4 8h9a7 7 0 1 1-6 11"/><text x="10" y="17">5</text></svg>
+            </button>
+            <button type="button" id="video-forward">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 4 4 4-4 4m4-4h-9a7 7 0 1 0 6 11"/><text x="10" y="17">5</text></svg>
+            </button>
+            <output id="video-time">0:00 / 0:00</output>
+            <div class="video-action-spacer"></div>
+            <div class="video-sound">
+              <button type="button" id="video-mute" aria-pressed="false" aria-keyshortcuts="M">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4Z"/><path class="video-icon-sound" d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/><path class="video-icon-muted" d="m16 9 5 6m0-6-5 6"/></svg>
+                <span id="video-mute-label" class="video-sr-only">Silenciar</span>
+              </button>
+              <input id="video-volume" type="range" min="0" max="1" step="0.05" value="1" data-i18n-aria="video_volume">
+            </div>
+            <button type="button" id="video-fullscreen" class="tooltip-align-right" aria-keyshortcuts="Control+f">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path class="video-icon-expand" d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/><path class="video-icon-collapse" d="M3 8h5V3m13 5h-5V3M8 21v-5H3m13 5v-5h5"/></svg>
+            </button>
+            <button type="button" id="video-more" class="tooltip-align-right" aria-expanded="false" aria-controls="video-menu">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+            </button>
+          </div>
+          <div id="video-menu" role="group" data-i18n-aria="video_more" hidden>
+            <button type="button" id="video-open"><span data-i18n="menu_open">Abrir archivo...</span><kbd>Ctrl+O</kbd></button>
+            <button type="button" id="video-properties"><span data-i18n="menu_props">Propiedades</span><kbd>Ctrl+I</kbd></button>
+            <div class="video-menu-divider"></div>
+            <button type="button" id="video-loop" aria-pressed="false"><span data-i18n="video_loop">Repetir</span><span class="video-loop-check" aria-hidden="true">✓</span></button>
+            <button type="button" id="video-audio-info" aria-expanded="false" aria-controls="video-audio-note" data-i18n="video_audio_info">Información de audio</button>
+            <p id="video-audio-note" role="status" hidden></p>
+          </div>
+          </div>
       </div>
 
       <!-- Loading spinner: kept outside #canvas-layer so it ignores the image

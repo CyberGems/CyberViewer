@@ -4773,7 +4773,7 @@ $('btn-confirm-resize').addEventListener('click', async () => {
 // ── ZOOM & PAN ──
 /** Usable viewer size (excludes docked toolbar strip in window mode). */
 function viewerFitSize() {
-  const pad = 24;
+  const pad = window.CVVideo.active() ? 0 : 24;
   // Prefer live canvas-layer box (CSS already insets bottom for docked chrome)
   const layer = $('canvas-layer');
   if (layer && layer.clientWidth > 40 && layer.clientHeight > 40) {
@@ -5535,6 +5535,7 @@ function clearImageError() {
 // ── MOUSE / TOUCH ──
 viewerWrap.addEventListener('wheel', e => {
   if (e.target.closest('#video-controls')) return;
+  if (window.CVVideo.active() && state.isGhost) { e.preventDefault(); return; }
   if (state.images.length === 0 || state.isCropping) return;
   e.preventDefault();
   const delta = -e.deltaY;
@@ -5543,6 +5544,7 @@ viewerWrap.addEventListener('wheel', e => {
 
 viewerWrap.addEventListener('mousedown', e => {
   if (e.target.closest('#video-controls')) return;
+  if (window.CVVideo.active() && state.isGhost) return;
   if (e.target.closest('#kbd-hint') || e.target.closest('#topbar') || e.target.closest('#sidebar')) return;
   if (e.button !== 0 || state.images.length === 0 || state.isCropping) return;
   state.dragging = true;
@@ -5616,6 +5618,7 @@ viewerWrap.addEventListener('dblclick', e => {
 let lastPinchDist = 0;
 viewerWrap.addEventListener('touchstart', e => {
   if (e.target.closest('#video-controls')) return;
+  if (window.CVVideo.active() && state.isGhost) return;
   if (e.target.closest('#kbd-hint') || e.target.closest('#topbar') || e.target.closest('#sidebar')) return;
   if (e.touches.length === 2) {
     lastPinchDist = Math.hypot(
@@ -5633,6 +5636,7 @@ viewerWrap.addEventListener('touchstart', e => {
 
 viewerWrap.addEventListener('touchmove', e => {
   if (e.target.closest('#video-controls')) return;
+  if (window.CVVideo.active() && state.isGhost) { e.preventDefault(); return; }
   e.preventDefault();
   if (e.touches.length === 2) {
     const dist = Math.hypot(
@@ -5674,6 +5678,7 @@ document.addEventListener('keydown', e => {
   if (window.CVWorkspace.busy && e.key !== 'F4') { e.preventDefault(); return; }
   // Escape always closes overlays, even when an input has focus
   if (e.key === 'Escape' || e.key === 'Esc') {
+    if (window.CVVideo.closeMenu(true)) { e.preventDefault(); return; }
     if (closeShortcutsPopover()) {
       e.preventDefault();
       return;
@@ -9391,7 +9396,6 @@ const elementsToHide = [
   { el: $('ghost-close'), hideClass: 'hud-hidden-fade', ghostOnly: true },
   { el: $('zoom-hud'), hideClass: 'hud-hidden-fade', ghostOnly: true },
   { el: $('slideshow-hud'), hideClass: 'hud-hidden-fade', ghostOnly: false },
-  { el: $('video-controls'), hideClass: 'hud-hidden-fade', ghostOnly: true },
   { el: $('viewer-filename'), hideClass: 'hud-hidden-fade', ghostOnly: false },
   { el: $('nav-container'), hideClass: 'hud-hidden-fade', ghostOnly: false }
 ];
@@ -9415,6 +9419,7 @@ function hideActionBarOnNavigate() {
 
 function resetHudTimer() {
   clearTimeout(hudTimer);
+  if (window.CVVideo.active()) { window.CVVideo.reveal(); return; }
 
   // During crop, keep chrome out of the way — never re-reveal filename/HUD
   if (state.isCropping) {

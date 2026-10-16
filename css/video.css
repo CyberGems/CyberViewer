@@ -1,56 +1,121 @@
+/* Video shares the viewport, but has its own compact, overlay controls. */
 #main-video {
   flex-shrink: 0;
   max-width: none;
   max-height: none;
   visibility: hidden;
   background: #000;
-  box-shadow: 0 0 40px rgba(0, 0, 0, .65);
   pointer-events: none;
 }
 #main-video.loaded { visibility: visible; }
-#main-video[hidden], #main-img[hidden], #video-controls[hidden], #video-audio-note[hidden] { display: none !important; }
-body.video-active:not(.ghost-mode) #canvas-layer { bottom: calc(var(--dock-h, 60px) + 112px); }
-body.video-active.ghost-mode #canvas-layer { bottom: 164px; }
+#main-video[hidden], #main-img[hidden], #video-controls[hidden], #video-menu[hidden],
+#video-audio-note[hidden] { display: none !important; }
+body.video-active #kbd-hint, body.video-active #toolbar-handle,
+body.video-active #statusbar, body.video-active #viewer-filename,
+body.video-active #nav-container, body.video-active #zoom-hud { display: none !important; }
+body.video-active #viewer-wrap { margin-bottom: 0 !important; background: #000; cursor: default; --dock-h: 0px; }
+body.video-active #viewer-wrap::before { display: none; }
+body.video-active #canvas-layer { bottom: 0 !important; }
+body.video-active #spinner { bottom: 0 !important; }
+/* Fullscreen always contains the complete frame, regardless of window zoom. */
+body.video-active.ghost-mode #canvas-layer { transform: none !important; }
+body.video-active.ghost-mode #main-video { width: 100% !important; height: 100% !important; object-fit: contain; }
+
 #video-controls {
   position: absolute;
+  inset: 0;
   z-index: 12;
-  left: 50%;
-  bottom: calc(var(--dock-h, 60px) + 12px);
-  transform: translateX(-50%);
-  width: min(680px, calc(100% - 96px));
-  box-sizing: border-box;
-  padding: 12px 16px;
-  border: 1px solid var(--cyber-border);
-  border-radius: 10px;
-  background: rgba(12, 17, 24, .96);
-  color: var(--cyber-text, #c8d8e8);
-  box-shadow: 0 8px 32px #0006;
+  pointer-events: none;
+  color: #f2f5fa;
   font: 12px var(--font-ui);
   transition: opacity 180ms ease;
 }
-body.ghost-mode #video-controls { bottom: 84px; }
-#video-controls.hud-hidden-fade:not(:hover):not(:focus-within) { opacity: 0; pointer-events: none; }
-.video-timeline, .video-actions { display: flex; align-items: center; gap: 12px; }
-.video-timeline { margin-bottom: 10px; }
-#video-seek { flex: 1; min-width: 40px; }
-#video-time { font-variant-numeric: tabular-nums; white-space: nowrap; }
-#video-controls input[type="range"] { accent-color: var(--cyber-accent); cursor: pointer; height: 16px; padding: 0; }
-#video-volume { width: 80px; min-width: 40px; }
-#video-controls button {
-  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  min-height: 30px; padding: 4px 10px; border: 1px solid transparent;
-  border-radius: 5px; background: transparent; color: inherit; font: inherit; cursor: pointer;
+#video-heading {
+  display: none;
+  position: absolute;
+  inset: 0 0 auto;
+  padding: 25px 84px 48px 28px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  text-shadow: 0 1px 4px #000;
+  background: linear-gradient(#0009, transparent);
 }
-#video-controls button:hover, #video-controls button.active { background: rgba(var(--cyber-accent-rgb), .12); color: var(--cyber-accent); }
-#video-controls button:focus-visible, #video-controls input:focus-visible { outline: 2px solid var(--cyber-accent); outline-offset: 3px; }
-#video-play { color: var(--cyber-accent) !important; }
-.video-seek-hint { margin-left: auto; opacity: .65; white-space: nowrap; font-size: 11px; }
-#video-audio-note { margin: 8px 0 0; font-size: 11px; color: #e8bf75; }
+body.ghost-mode #video-heading { display: block; }
+.video-transport {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 48px 26px 15px;
+  background: linear-gradient(transparent, #0009 45%, #050a12e8);
+  pointer-events: auto;
+}
+.video-timeline, .video-actions, .video-sound { display: flex; align-items: center; }
+.video-timeline { margin: 0 5px 6px; }
+.video-actions { gap: 6px; min-height: 38px; }
+.video-sound { gap: 2px; margin-right: 12px; }
+.video-action-spacer { flex: 1; }
+#video-time { margin-left: 10px; font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#video-controls input[type="range"] {
+  appearance: none; background: transparent; cursor: pointer;
+  height: 22px; padding: 0; margin: 0;
+}
+#video-seek { flex: 1; min-width: 40px; --video-progress: 0%; }
+#video-volume { width: 76px; --video-progress: 100%; }
+#video-controls input[type="range"]::-webkit-slider-runnable-track {
+  height: 3px; border-radius: 4px;
+  background: linear-gradient(to right, var(--cyber-accent) var(--video-progress), #ffffff50 var(--video-progress));
+}
+#video-controls input[type="range"]::-webkit-slider-thumb {
+  appearance: none; width: 11px; height: 11px; margin-top: -4px;
+  background: #f5fbff; border: 2px solid var(--cyber-accent); border-radius: 50%;
+  box-shadow: 0 1px 5px #0006;
+}
+#video-controls button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  width: 34px; height: 34px; padding: 7px;
+  border: 0; border-radius: 6px; background: transparent; color: inherit;
+  font: inherit; cursor: pointer;
+}
+#video-controls button:hover { background: #ffffff16; }
+#video-controls button:focus-visible, #video-controls input:focus-visible,
+body.video-active #ghost-close:focus-visible { outline: 2px solid var(--cyber-accent); outline-offset: 3px; }
+#video-controls button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+#video-controls button svg text { fill: currentColor; stroke: none; font: 10px var(--font-ui); }
+#video-play { margin-right: 6px; }
+#video-play svg { fill: currentColor !important; stroke: none !important; }
+.video-icon-pause, .video-icon-muted, .video-icon-collapse { display: none; }
+.video-playing .video-icon-play, .video-muted .video-icon-sound,
+body.ghost-mode .video-icon-expand { display: none; }
+.video-playing .video-icon-pause, .video-muted .video-icon-muted,
+body.ghost-mode .video-icon-collapse { display: initial; }
+.video-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+#video-menu {
+  position: absolute; right: 26px; bottom: 91px;
+  width: 245px; max-width: calc(100% - 32px); padding: 6px;
+  border: 1px solid #ffffff1c; border-radius: 10px;
+  background: #111923f5; box-shadow: 0 8px 40px #0008;
+  backdrop-filter: blur(18px);
+}
+#video-menu button { width: 100%; height: auto; min-height: 36px; padding: 8px 10px; justify-content: flex-start; text-align: left; }
+#video-menu kbd { margin-left: auto; font: 10px var(--font-ui); color: #a9b6c6; }
+.video-menu-divider { margin: 5px 6px; border-top: 1px solid #ffffff16; }
+.video-loop-check { margin-left: auto; visibility: hidden; color: var(--cyber-accent); }
+#video-loop.active .video-loop-check { visibility: visible; }
+#video-audio-note { margin: 2px 10px 10px; line-height: 1.5; color: #b6c5d7; font-size: 11px; }
+body.video-active #ghost-close { border: 0; border-radius: 50%; background: #0004; box-shadow: none; color: #fff; }
+body.video-idle #video-controls, body.video-idle #ghost-close { opacity: 0 !important; pointer-events: none !important; }
+body.video-idle #video-controls * { pointer-events: none !important; }
+body.video-idle #viewer-wrap, body.video-idle #canvas-layer { cursor: none; }
 body.image-error #video-controls { display: none; }
 .video-shortcuts { display: none; }
 body.video-active .video-shortcuts { display: block; }
-@media (max-width: 800px) {
-  #video-controls { width: calc(100% - 48px); padding: 10px; }
-  .video-actions { gap: 5px; }
-  .video-seek-hint { display: none; }
+@media (max-width: 600px) {
+  .video-transport { padding: 40px 12px 10px; }
+  .video-actions { gap: 1px; }
+  #video-time { margin-left: 4px; font-size: 11px; }
+  .video-sound { margin-right: 4px; }
+  #video-volume { width: 48px; }
+  #video-menu { right: 12px; bottom: 84px; }
 }
+@media (prefers-reduced-motion: reduce) { #video-controls { transition: none; } }

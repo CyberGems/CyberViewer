@@ -1,5 +1,6 @@
 /* global state, I18N, $, spinner, mainImg, setCyberTooltip,
-   displayImage, setImageError, clearImageError, showToast */
+   displayImage, setImageError, clearImageError, showToast,
+   toggleFullscreen, openImageDialog, openPropertiesForCurrent */
 'use strict';
 
 // A single decoder is shared by all tabs. Inactive tabs retain only their time
@@ -11,6 +12,9 @@ window.CVVideo = (() => {
   let timeout = null;
   let generation = 0;
   let lastSavedSecond = -1;
+  let idleTimer = null;
+  let interacting = false;
+  let keyboardFocus = false;
   const text = key => (I18N[state.settings.app.language || 'en'] || I18N.en)[key];
   const active = () => window.CVFormats.isVideo(state.images[state.current]);
   const imageActions = new Set(['save', 'save-as', 'export-pdf', 'print', 'copy',
@@ -41,8 +45,10 @@ window.CVVideo = (() => {
 
   function sync() {
     const playing = !!owner && !element.paused && !element.ended;
+    $('video-controls').classList.toggle('video-playing', playing);
+    $('video-controls').classList.toggle('video-muted', element.muted || element.volume === 0);
     $('video-play-label').textContent = text(playing ? 'video_pause' : 'video_play');
-    $('video-play-icon').textContent = playing ? 'Ⅱ' : '▶';
+    setCyberTooltip($('video-play'), text(playing ? 'video_pause_shortcut' : 'video_play_shortcut'));
     $('video-mute-label').textContent = text(element.muted ? 'video_unmute' : 'video_mute');
     $('video-mute').setAttribute('aria-pressed', String(element.muted));
     $('video-loop').setAttribute('aria-pressed', String(element.loop));
@@ -54,8 +60,10 @@ window.CVVideo = (() => {
     seek.disabled = !duration;
     seek.max = String(duration || 1);
     seek.value = String(current);
+    seek.style.setProperty('--video-progress', `${duration ? current / duration * 100 : 0}%`);
     seek.setAttribute('aria-valuetext', $('video-time').textContent);
     $('video-volume').value = String(element.volume);
+    $('video-volume').style.setProperty('--video-progress', `${element.muted ? 0 : element.volume * 100}%`);
     if (owner?.loaded && !element.seeking && state.images[state.current] === owner) {
       state.videoTime = current;
       owner.videoTime = current;
@@ -64,9 +72,55 @@ window.CVVideo = (() => {
     }
     const played = element.played;
     const hasPlayed = played.length > 0 && played.end(played.length - 1) - played.start(played.length - 1) > 0.5;
-    const noAudio = owner && hasPlayed && element.webkitAudioDecodedByteCount === 0;
-    $('video-audio-note').hidden = !noAudio;
-    if (noAudio) $('video-audio-note').textContent = text('video_no_audio');
+    // Decoded-byte counts cannot distinguish a silent file from an unsupported
+    // audio codec. Keep this neutral diagnostic behind an explicit user action.
+    const audioKey = element.webkitAudioDecodedByteCount > 0 ? 'video_audio_available'
+      : hasPlayed ? 'video_no_audio' : 'video_audio_pending';
+    $('video-audio-note').textContent = text(audioKey);
+  }
+
+  function setMenu(open) {
+    $('video-menu').hidden = !open;
+    $('video-more').setAttribute('aria-expanded', String(open));
+    if (!open) {
+      $('video-audio-note').hidden = true;
+      $('video-audio-info').setAttribute('aria-expanded', 'false');
+    }
+    reveal();
+  }
+  function closeMenu(restoreFocus = false) {
+    if ($('video-menu').hidden) return false;
+    setMenu(false);
+    if (restoreFocus) $('video-more').focus();
+    return true;
+  }
+  function reveal() {
+    clearTimeout(idleTimer);
+    document.body.classList.remove('video-idle');
+    const controls = $('video-controls');
+    controls.inert = false;
+    $('ghost-close').inert = false;
+    if (!active()) return;
+    if (!state.isGhost) $('topbar').classList.remove('hud-hidden-top');
+    controls.classList.remove('hud-hidden-fade');
+    $('ghost-close').classList.remove('hud-hidden-fade');
+    const fsKey = state.isGhost ? 'video_exit_fullscreen' : 'video_enter_fullscreen';
+    if ($('video-fullscreen').dataset.fullscreenLabel !== fsKey) {
+      $('video-fullscreen').dataset.fullscreenLabel = fsKey;
+      $('video-fullscreen').setAttribute('aria-label', text(state.isGhost ? 'ghost_close_title' : 'menu_fullscreen'));
+      setCyberTooltip($('video-fullscreen'), text(fsKey));
+    }
+    if (!owner?.loaded || element.paused || element.ended) return;
+    const delay = state.settings.app.hudAutoHideDelay ?? 2000;
+    idleTimer = setTimeout(() => {
+      if (!active() || element.paused || element.ended || interacting || !$('video-menu').hidden) return;
+      if (document.querySelector('.modal-overlay.active, #main-menu.open') || !$('shortcuts-popover').hidden) return;
+      if (document.querySelector('.video-transport:hover, #ghost-close:hover')) return;
+      if (keyboardFocus && (controls.contains(document.activeElement) || document.activeElement === $('ghost-close'))) return;
+      document.body.classList.add('video-idle');
+      controls.inert = true;
+      $('ghost-close').inert = true;
+    }, delay);
   }
 
   function unload() {
@@ -77,6 +131,13 @@ window.CVVideo = (() => {
     if (cleanup) cleanup();
     cleanup = null;
     owner = null;
+    clearTimeout(idleTimer);
+    interacting = false;
+    closeMenu();
+    document.body.classList.remove('video-idle');
+    $('video-controls').inert = false;
+    $('ghost-close').inert = false;
+    keyboardFocus = false;
     element.pause();
     element.removeAttribute('src');
     element.load();
@@ -123,8 +184,9 @@ window.CVVideo = (() => {
       clearImageError();
       $('video-controls').hidden = false;
       displayImage(url, image.w, image.h, null);
+      $('video-heading').textContent = image.file.name;
       element.pause();
-      syncTools(); sync();
+      syncTools(); sync(); reveal();
       onReady();
     };
     const metadata = () => {
@@ -148,7 +210,7 @@ window.CVVideo = (() => {
 
   async function toggle() {
     if (!owner || !owner.loaded || document.body.classList.contains('image-error')) return;
-    $('video-controls').classList.remove('hud-hidden-fade');
+    reveal();
     if (!element.paused) { element.pause(); return; }
     if (element.ended) element.currentTime = 0;
     try { await element.play(); }
@@ -157,28 +219,60 @@ window.CVVideo = (() => {
     }
   }
   function seekBy(seconds) {
-    $('video-controls').classList.remove('hud-hidden-fade');
+    reveal();
     if (owner && Number.isFinite(element.duration)) element.currentTime = Math.max(0, Math.min(element.duration, element.currentTime + seconds));
   }
   function localize() {
     for (const [id, key] of [['video-controls', 'video_controls'], ['video-seek', 'video_seek'], ['video-volume', 'video_volume']]) $(id).setAttribute('aria-label', text(key));
-    setCyberTooltip($('video-play'), text('video_play_shortcut'));
     setCyberTooltip($('video-mute'), text('video_mute_shortcut'));
+    for (const [id, key] of [['video-back', 'video_back'], ['video-forward', 'video_forward'], ['video-more', 'video_more']]) {
+      $(id).setAttribute('aria-label', text(key));
+      setCyberTooltip($(id), text(key));
+    }
+    delete $('video-fullscreen').dataset.fullscreenLabel;
     sync();
     syncTools();
+    reveal();
     if (active() && document.body.classList.contains('image-error')) setImageError(state.images[state.current]);
   }
   function initialize() {
-    $('video-controls').addEventListener('focusin', () => $('video-controls').classList.remove('hud-hidden-fade'));
+    const controls = $('video-controls');
+    controls.addEventListener('focusin', reveal);
+    controls.addEventListener('focusout', () => {
+      // Making idle controls inert releases mouse focus. That automatic blur
+      // must not immediately reveal the controls we just hid.
+      if (!document.body.classList.contains('video-idle')) reveal();
+    });
+    controls.addEventListener('pointerdown', () => { interacting = true; keyboardFocus = false; reveal(); });
+    window.addEventListener('pointerup', () => { if (interacting) { interacting = false; reveal(); } });
+    window.addEventListener('pointercancel', () => { interacting = false; reveal(); });
+    controls.querySelector('.video-transport').addEventListener('mouseleave', reveal);
+    window.addEventListener('keydown', event => { if (event.key === 'Tab') keyboardFocus = true; if (active()) reveal(); }, true);
+    window.addEventListener('pointerdown', event => {
+      keyboardFocus = false;
+      if (!event.target.closest('#video-menu, #video-more')) closeMenu();
+    }, true);
     $('video-play').addEventListener('click', () => void toggle());
+    $('video-back').addEventListener('click', () => seekBy(-5));
+    $('video-forward').addEventListener('click', () => seekBy(5));
     $('video-mute').addEventListener('click', () => { element.muted = !element.muted; });
     $('video-loop').addEventListener('click', () => { element.loop = !element.loop; sync(); });
+    $('video-fullscreen').addEventListener('click', () => { toggleFullscreen(); reveal(); });
+    $('video-more').addEventListener('click', () => setMenu($('video-menu').hidden));
+    $('video-open').addEventListener('click', () => { closeMenu(); void openImageDialog(); });
+    $('video-properties').addEventListener('click', () => { closeMenu(); openPropertiesForCurrent(); });
+    $('video-audio-info').addEventListener('click', () => {
+      $('video-audio-note').hidden = !$('video-audio-note').hidden;
+      $('video-audio-info').setAttribute('aria-expanded', String(!$('video-audio-note').hidden));
+      sync();
+    });
     $('video-seek').addEventListener('input', event => {
       if (owner && Number.isFinite(element.duration)) element.currentTime = Math.max(0, Math.min(element.duration, Number(event.target.value)));
     });
     $('video-volume').addEventListener('input', event => { element.volume = Number(event.target.value); element.muted = element.volume === 0; });
     ['timeupdate', 'play', 'pause', 'ended', 'volumechange', 'durationchange', 'seeked'].forEach(event => element.addEventListener(event, sync));
+    ['play', 'pause', 'ended'].forEach(event => element.addEventListener(event, reveal));
     localize();
   }
-  return { element, active, load, unload, toggle, seekBy, sync, syncTools, localize, initialize, imageActions };
+  return { element, active, load, unload, toggle, seekBy, sync, syncTools, localize, initialize, imageActions, reveal, closeMenu };
 })();
