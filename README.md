@@ -24,7 +24,7 @@
 
 ## What is CyberViewer?
 
-CyberViewer is a fast, lightweight image viewer for Windows that covers everyday viewing and editing without the weight of a full graphics suite. Open large images quickly, browse complete folders through a thumbnail sidebar, zoom and pan smoothly, run slideshows, and manage recent files. Essential tools for rotation, cropping, resizing, flipping, and color adjustment are built in, alongside wallpaper controls and Windows Explorer integration. The interface stays focused, dark, and highly customizable. Built with **Electron 35** and **vanilla JavaScript**.
+CyberViewer is a fast, lightweight image and video viewer for Windows that covers everyday viewing and editing without the weight of a full graphics suite. Open large images quickly, browse complete folders through a thumbnail sidebar, zoom and pan smoothly, run slideshows, and manage recent files. Essential tools for rotation, cropping, resizing, flipping, and color adjustment are built in, alongside wallpaper controls and Windows Explorer integration. The interface stays focused, dark, and highly customizable. Built with **Electron 35** and **vanilla JavaScript**.
 
 *Free and open source (GPLv3): no ads, no tracking, and no data collection. Just enjoy it.*
 
@@ -59,6 +59,13 @@ Most image viewers are either bloated with features you never use or so barebone
 - **Fullscreen immersive mode:** ghost UI auto-hides for distraction-free viewing
 - **Drag and drop:** drop images or folders directly onto the window
 - **Clipboard paste:** paste images from the clipboard (`Ctrl+V`)
+
+### ▶️ Video playback
+- Open MP4, M4V, WebM, MOV, and MKV through the file picker, drag and drop, folder navigation, or tabs. Support depends on the video and audio codecs inside each file and the computer's decoder capabilities.
+- Play/pause, seek, adjust volume, mute, and loop. Videos open paused; press **Space** to play/pause, **Left/Right** to skip 5 seconds, or **M** to mute. **Up/Down** and **A/D** still navigate files.
+- One active player keeps inactive tabs lightweight. Playback position survives tab changes and, when session restore is enabled, restarts.
+- Video thumbnails are static frames. Image editing, image copying, wallpaper, and print/export actions are disabled for videos. Slideshows continue to show images and skip videos.
+- Unsupported video codecs show an error. When no playable audio is detected, a notice explains that the video may be silent or use an unsupported audio codec. HEVC and multichannel audio are not universally supported; there is no bundled transcoder or external player dependency.
 
 ### ✏️ Editing
 - **Rotate:** left 90° (`Q`) or right 90° (`E`) with save/discard workflow
@@ -190,6 +197,8 @@ npm start
 ```powershell
 npm test
 npm run lint
+npm run test:workspace # isolated image/tab regression tests
+npm run test:video     # isolated video tests; requires FFmpeg on PATH (development only)
 npm run i18n:sync       # regenerate i18n/ui.js from i18n/ui.json
 ```
 
@@ -219,7 +228,7 @@ npm run build:portable   # portable only
 
 | Key | Action |
 |---|---|
-| `Ctrl+O` | Open image |
+| `Ctrl+O` | Open images or videos |
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
 | `Ctrl+W` | Close tab |
 | `Ctrl+Shift+T` | Reopen closed tab |
@@ -232,8 +241,9 @@ npm run build:portable   # portable only
 | `Ctrl+D` | Toggle favorite |
 | `Ctrl+,` | Open settings |
 | `Ctrl+I` | Properties |
-| `← → ↑ ↓` / `A` `D` | Navigate images |
-| `Space` | Next image (or play/pause slideshow) |
+| `← → ↑ ↓` / `A` `D` | Navigate files; in video, `← →` seek 5 seconds |
+| `Space` | Next image, play/pause video, or play/pause slideshow |
+| `M` | Mute/unmute video |
 | `Q` / `E` | Rotate left / right 90° |
 | `C` | Crop |
 | `R` | Resize |
@@ -254,8 +264,9 @@ npm run build:portable   # portable only
 
 - `webSecurity` enabled with Content-Security-Policy
 - Local images served through `cvlocal://` protocol (streamed) with path allowlist
-- Allowlist expansion only accepts **existing image files**
-- Folder scans only run for neighbors of an existing image file
+- Allowlist expansion only accepts **existing supported image or video files**
+- Folder scans only run for neighbors of an existing supported media file
+- Media streams support byte ranges for seeking without reading a complete video into RAM
 - Renderer runs with `nodeIntegration: false` and `contextIsolation: true`
 - DevTools IPC disabled in packaged builds
 

@@ -4,11 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' blob: data: cvlocal:; connect-src 'self' blob: cvlocal:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' blob: data: cvlocal:; media-src 'self' blob: cvlocal:; connect-src 'self' blob: cvlocal:">
 <title>CyberViewer</title>
 <style>html,body{background:#080a0e;color:#c8d8e8;margin:0;height:100%;overflow:hidden}</style>
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/tabs.css">
+<link rel="stylesheet" href="css/video.css">
 </head>
 <body class="statusbar-visible" data-alpha-bg="checker-dark" data-image-outline="off">
 <div id="topbar" style="position:fixed;top:0;left:0;width:100%;height:48px;z-index:999999;display:flex;align-items:center;background:var(--cyber-panel);">
@@ -43,7 +44,7 @@
           <div><dt><kbd>Ctrl</kbd><kbd>Tab</kbd></dt><dd data-i18n="tabs_cycle">Cambiar de pestaña</dd></div>
           <div><dt><kbd>Ctrl</kbd><kbd>W</kbd></dt><dd data-i18n="tabs_close">Cerrar pestaña</dd></div>
           <div><dt><kbd>Ctrl</kbd><kbd>⇧</kbd><kbd>T</kbd></dt><dd data-i18n="tabs_reopen">Reabrir pestaña cerrada</dd></div>
-          <div><dt><kbd>←</kbd><kbd>→</kbd></dt><dd data-i18n="navigate_hint">NAVEGAR</dd></div>
+          <div><dt><kbd>←</kbd><kbd>→</kbd></dt><dd id="shortcuts-navigation-label" data-i18n="navigate_hint">NAVEGAR</dd></div>
           <div><dt><kbd data-i18n="key_scroll">Rueda</kbd></dt><dd data-i18n="zoom_hint">ZOOM</dd></div>
           <div><dt><kbd data-i18n="key_drag">Arrastrar</kbd></dt><dd data-i18n="pan_hint">MOVER</dd></div>
           <div><dt><kbd data-i18n="key_enter">Intro</kbd></dt><dd data-i18n="fullscreen">PANTALLA</dd></div>
@@ -59,6 +60,10 @@
       </div>
       <div class="shortcuts-col">
         <div class="shortcuts-col-heading" data-i18n="shortcuts_sec_edit">EDICIÓN Y ACCIONES</div>
+        <dl class="shortcuts-list video-shortcuts">
+          <div><dt><kbd data-i18n="key_space">Espacio</kbd></dt><dd data-i18n="video_toggle_keys">REPRODUCIR / PAUSAR</dd></div>
+          <div><dt><kbd>M</kbd></dt><dd data-i18n="video_mute_keys">SILENCIAR / ACTIVAR SONIDO</dd></div>
+        </dl>
         <dl class="shortcuts-list">
           <div><dt><kbd>Q</kbd><kbd>E</kbd></dt><dd data-i18n="shortcuts_rotate">ROTAR 90°</dd></div>
           <div><dt><kbd>H</kbd></dt><dd data-i18n="shortcuts_flip">VOLTEAR</dd></div>
@@ -289,6 +294,22 @@
       <div id="viewer-filename" class="hud-hidden-fade"></div>
       <div id="canvas-layer">
         <img id="main-img" data-i18n-alt="main_img_alt" alt="Imagen principal">
+        <video id="main-video" preload="metadata" playsinline hidden></video>
+      </div>
+
+      <div id="video-controls" role="group" data-i18n-aria="video_controls" hidden>
+        <div class="video-timeline">
+          <input id="video-seek" type="range" min="0" max="1" step="0.1" value="0" data-i18n-aria="video_seek" disabled>
+          <output id="video-time">0:00 / 0:00</output>
+        </div>
+        <div class="video-actions">
+          <button type="button" id="video-play" aria-keyshortcuts="Space"><span id="video-play-icon" aria-hidden="true">▶</span><span id="video-play-label">Reproducir</span></button>
+          <button type="button" id="video-mute" aria-pressed="false" aria-keyshortcuts="M"><span id="video-mute-label">Silenciar</span></button>
+          <input id="video-volume" type="range" min="0" max="1" step="0.05" value="1" data-i18n-aria="video_volume">
+          <button type="button" id="video-loop" aria-pressed="false" data-i18n="video_loop">Repetir</button>
+          <span class="video-seek-hint" data-i18n="video_seek_hint">← → Saltar 5 s</span>
+        </div>
+        <p id="video-audio-note" role="status" hidden></p>
       </div>
 
       <!-- Loading spinner: kept outside #canvas-layer so it ignores the image
@@ -491,7 +512,7 @@
 </div>
 
 <!-- FILE INPUT -->
-<input type="file" id="file-input" accept="image/*,.ico,.avif" multiple style="display:none">
+<input type="file" id="file-input" accept="image/*,.ico,.avif,.mp4,.m4v,.webm,.mov,.mkv" multiple style="display:none">
 <button id="ghost-close" class="tooltip-left cyber-tooltip" data-i18n-title="ghost_close_title" data-tooltip="Salir de Pantalla Completa" title="Salir de Pantalla Completa">&#10005;</button>
 
 <!-- MODAL: CONFIRM -->
@@ -1459,8 +1480,10 @@
 
 <script src="i18n/ui.js"></script>
 <script src="js/media-helpers.js"></script>
+<script src="js/media-types.js"></script>
 <script src="js/tab-model.js"></script>
 <script src="js/workspace.js"></script>
+<script src="js/video-player.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

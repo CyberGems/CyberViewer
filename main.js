@@ -9,13 +9,13 @@ const fs = require('fs');
 const os = require('os');
 const crypto = require('crypto');
 const { pathToFileURL } = require('url');
-const { Readable } = require('stream');
 const { execFile, spawn } = require('child_process');
 
 const {
-  cleanFsPath, toMediaUrl, createPathAllowlist, IMAGE_EXTS, mimeForPath,
-  isExistingImageFile
+  cleanFsPath, toMediaUrl, createPathAllowlist, MEDIA_EXTS,
+  isExistingMediaFile, isVideoPath
 } = require('./lib/paths');
+const { createMediaResponse } = require('./lib/media-protocol');
 const { clearThumbCache, evictThumbCache } = require('./lib/thumb-cache');
 const { clampWindowBounds, MIN_W, MIN_H } = require('./lib/window-bounds');
 const { initUpdater, setAutoCheckEnabled, isPortableBuild } = require('./lib/updater');
@@ -232,9 +232,9 @@ function saveSettings(data) {
 function getFilePathFromArgs(args) {
   for (let arg of args) {
     arg = arg.replace(/^"(.*)"$/, '$1');
-    if (arg.match(/\.(jpg|jpeg|png|gif|webp|bmp|tiff|tif|ico|avif)$/i)) {
+    if (MEDIA_EXTS.has(path.extname(arg).toLowerCase())) {
       try {
-        if (fs.existsSync(arg)) {
+        if (isExistingMediaFile(arg)) {
           const resolved = path.resolve(arg);
           pathAllowlist.allow(resolved);
           return resolved;
@@ -253,34 +253,7 @@ function resolveAllowedPath(rawPath) {
 function registerMediaProtocol() {
   protocol.handle('cvlocal', async (request) => {
     try {
-      // Prefer ?p= absolute path — avoids Windows drive letters becoming URL hosts.
-      const abs = cleanFsPath(request.url);
-      if (!pathAllowlist.isAllowed(abs)) {
-        console.warn('cvlocal forbidden:', abs);
-        return new Response('Forbidden', { status: 403 });
-      }
-      let st;
-      try {
-        st = await fs.promises.stat(abs);
-      } catch (_) {
-        return new Response('Not Found', { status: 404 });
-      }
-      if (!st.isFile()) {
-        return new Response('Not Found', { status: 404 });
-      }
-
-      // Stream file bytes — avoids loading multi-MB images fully into RAM.
-      const nodeStream = fs.createReadStream(abs);
-      const webStream = Readable.toWeb(nodeStream);
-      const isThumb = abs.toLowerCase().includes(`${path.sep}thumb_cache${path.sep}`) ||
-        abs.toLowerCase().includes('/thumb_cache/');
-      return new Response(webStream, {
-        headers: {
-          'Content-Type': mimeForPath(abs),
-          'Content-Length': String(st.size),
-          'Cache-Control': isThumb ? 'private, max-age=86400' : 'no-cache, must-revalidate'
-        }
-      });
+      return await createMediaResponse(request, pathAllowlist);
     } catch (e) {
       console.error('cvlocal protocol error:', e.message);
       return new Response('Bad Request', { status: 400 });
@@ -1145,15 +1118,15 @@ ipcMain.handle('open-file-dialog', async () => {
     title: tMenu('dialog_open_title', lang),
     filters: [
       {
-        name: tMenu('dialog_open_filter_images', lang),
-        extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'ico', 'avif']
+        name: tMenu('dialog_open_filter_media', lang),
+        extensions: [...MEDIA_EXTS].map(ext => ext.slice(1))
       },
       { name: tMenu('dialog_open_filter_all', lang), extensions: ['*'] }
     ],
     properties: ['openFile', 'multiSelections']
   });
   if (result.canceled || !result.filePaths.length) return null;
-  for (const filePath of result.filePaths) pathAllowlist.allowImageFile(filePath);
+  for (const filePath of result.filePaths) pathAllowlist.allowMediaFile(filePath);
   return result.filePaths;
 });
 
@@ -1176,7 +1149,7 @@ async function resolveFirstImageInDir(dirPath) {
     const files = await fs.promises.readdir(dir);
     const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
     const imageNames = files
-      .filter((f) => IMAGE_EXTS.has(path.extname(f).toLowerCase()))
+      .filter((f) => MEDIA_EXTS.has(path.extname(f).toLowerCase()))
       .sort((a, b) => collator.compare(a, b));
 
     if (!imageNames.length) {
@@ -1188,7 +1161,7 @@ async function resolveFirstImageInDir(dirPath) {
       try {
         const fst = await fs.promises.stat(fullPath);
         if (!fst.isFile()) continue;
-        const allowed = pathAllowlist.allowImageFile(fullPath);
+        const allowed = pathAllowlist.allowMediaFile(fullPath);
         if (!allowed) continue;
         return { ok: true, path: allowed, dir, count: imageNames.length };
       } catch (_) { /* skip */ }
@@ -1699,7 +1672,7 @@ ipcMain.handle('to-media-url', (event, filePath) => {
   }
 });
 
-/** Register only existing image files (widens allowlist to their parent dirs). */
+/** Register existing supported media files (widens allowlist to their parent dirs). */
 ipcMain.handle('register-paths', (event, paths) => {
   try {
     if (!Array.isArray(paths)) return { success: false, registered: [] };
@@ -1708,7 +1681,7 @@ ipcMain.handle('register-paths', (event, paths) => {
     for (let i = 0; i < paths.length && registered.length < max; i++) {
       const p = paths[i];
       if (!p) continue;
-      const abs = pathAllowlist.allowImageFile(p);
+      const abs = pathAllowlist.allowMediaFile(p);
       if (abs) registered.push(abs);
     }
     return { success: true, registered, count: registered.length };
@@ -1735,8 +1708,8 @@ ipcMain.handle('get-default-save-dir', () => {
 ipcMain.handle('scan-folder', async (event, filePath) => {
   try {
     const absFile = cleanFsPath(filePath);
-    // Only scan neighbors of an existing image file (prevents arbitrary directory reads).
-    if (!isExistingImageFile(absFile)) {
+    // Only scan neighbors of an existing supported media file.
+    if (!isExistingMediaFile(absFile)) {
       return [];
     }
     pathAllowlist.allow(absFile);
@@ -1748,7 +1721,7 @@ ipcMain.handle('scan-folder', async (event, filePath) => {
     const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 
     const imageDirents = dirents
-      .filter((d) => (d.isFile() || d.isSymbolicLink()) && IMAGE_EXTS.has(path.extname(d.name).toLowerCase()))
+      .filter((d) => (d.isFile() || d.isSymbolicLink()) && MEDIA_EXTS.has(path.extname(d.name).toLowerCase()))
       .sort((a, b) => collator.compare(a.name, b.name));
 
     // Stat in parallel for sizes — the old serial await-per-file loop serialized N
@@ -1890,6 +1863,20 @@ async function renderBrowserImageThumb(abs, cacheFile) {
   }
 }
 
+async function renderVideoThumb(abs, cacheFile) {
+  const frameWin = new BrowserWindow({
+    width: 160, height: 100, show: false,
+    webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, backgroundThrottling: false }
+  });
+  try {
+    await frameWin.loadFile(path.join(__dirname, 'assets', 'video-thumbnail.html'));
+    const dataUrl = await frameWin.webContents.executeJavaScript(`window.renderVideoThumbnail(${JSON.stringify(toMediaUrl(abs))})`);
+    if (!dataUrl || !dataUrl.startsWith('data:image/jpeg;base64,')) return false;
+    await fs.promises.writeFile(cacheFile, Buffer.from(dataUrl.split(',')[1], 'base64'));
+    return true;
+  } finally { if (!frameWin.isDestroyed()) frameWin.destroy(); }
+}
+
 ipcMain.handle('get-thumbnail', async (event, filePath, opts) => {
   try {
     const abs = resolveAllowedPath(filePath);
@@ -1899,7 +1886,8 @@ ipcMain.handle('get-thumbnail', async (event, filePath, opts) => {
     const ext = path.extname(abs).toLowerCase();
     const isGif = ext === '.gif';
     const isAvif = ext === '.avif';
-    const thumbVersion = isGif ? 'gif-frame-v2' : isAvif ? 'avif-browser-v1' : 'still-v1';
+    const isVideo = isVideoPath(abs);
+    const thumbVersion = isVideo ? 'video-frame-v1' : isGif ? 'gif-frame-v2' : isAvif ? 'avif-browser-v1' : 'still-v1';
     const hash = crypto.createHash('md5').update(normalizedPath + stats.mtimeMs + thumbVersion).digest('hex');
     const cacheFile = path.join(thumbCachePath, `${hash}.jpg`);
 
@@ -1913,7 +1901,9 @@ ipcMain.handle('get-thumbnail', async (event, filePath, opts) => {
       if (fs.existsSync(cacheFile)) {
         return toMediaUrl(cacheFile);
       }
-      if ((isGif || isAvif) && await renderBrowserImageThumb(abs, cacheFile)) {
+      if (isVideo) {
+        if (!await renderVideoThumb(abs, cacheFile)) return null;
+      } else if ((isGif || isAvif) && await renderBrowserImageThumb(abs, cacheFile)) {
         // Browser-decoded formats use a static thumbnail so animated sources
         // do not keep repainting the sidebar. Chromium also provides the AVIF
         // decoder that nativeImage does not guarantee across platforms.
@@ -1948,6 +1938,7 @@ ipcMain.handle('save-image', async (event, { filePath, rotation, buffer, createC
     if (!filePath) return { success: false, error: 'Ruta no proporcionada' };
 
     const cleanPath = resolveAllowedPath(filePath);
+    if (isVideoPath(cleanPath)) return { success: false, error: tMenu('video_edit_unsupported', getUiLang()) };
     let targetPath = cleanPath;
 
     if (createCopy) {
@@ -2277,7 +2268,7 @@ ipcMain.handle('validate-paths', (event, paths) => {
     if (!Array.isArray(paths)) return [];
     return paths.filter((p) => {
       try {
-        return isExistingImageFile(p);
+        return isExistingMediaFile(p);
       } catch (_) {
         return false;
       }
@@ -2329,7 +2320,7 @@ ipcMain.handle('register-context-menu', async (event, enable, lang) => {
       exePath = path.join(app.getAppPath(), 'dist', 'win-unpacked', 'CyberViewer.exe');
     }
 
-    const extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.tif', '.ico', '.avif'];
+    const extensions = [...MEDIA_EXTS];
     const progIds = ['BMP Image', 'GIF Image', 'JPEG Image', 'PNG Image', 'WebP Image', 'TIFF Image', 'icofile'];
 
     if (enable) {

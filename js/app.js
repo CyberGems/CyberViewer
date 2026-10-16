@@ -201,6 +201,7 @@ const state = {
   currentRotation: 0,
   visualRotation: 0,
   hasChanges: false,
+  videoTime: 0,
   isCropping: false,
   isGhost: false,
   zoomTimer: null,
@@ -259,6 +260,7 @@ const RECENT_CTX_MAX = 10;
 
 // UI strings: i18n/ui.js → window.CV_I18N (source: i18n/ui.json)
 const I18N = (typeof window !== 'undefined' && window.CV_I18N) ? window.CV_I18N : { en: {}, es: {} };
+window.CVVideo.initialize();
 const TRAY_PIN_REMINDER_KEY = 'cyberviewer_tray_pin_reminder_dismissed';
 let pendingTrayPinReminder = false;
 const TITLEBAR_HELP_URLS = Object.freeze({
@@ -563,6 +565,7 @@ function renderTrayPinDescription(lang = 'en') {
 }
 
 function updateLanguage(lang = 'en') {
+  window.CVVideo.localize();
   document.documentElement.lang = lang;
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.dataset.i18n;
@@ -697,6 +700,7 @@ function closeImage() {
 }
 
 function clearViewer() {
+  window.CVVideo.unload();
   if (typeof stopSlideshow === 'function') stopSlideshow({ silent: true });
   state.scanInProgress = false;
   if (state.resolveMainImage) state.resolveMainImage();
@@ -771,15 +775,10 @@ function loadFiles(files, initialIdx = 0, internal = false) {
       syncFavoritesToggleButtonState();
     }
   }
-  const allowedExts = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'ico', 'avif']);
-  const imgs = Array.from(files).filter(f => {
-    if (f.type && f.type.startsWith('image/')) return true;
-    const ext = (f.name && f.name.split('.').pop() || '').toLowerCase();
-    return allowedExts.has(ext);
-  });
+  const imgs = Array.from(files).filter(window.CVFormats.isSupportedFile);
 
   if (!imgs.length) {
-    console.warn('No se encontraron imágenes válidas.');
+    console.warn('No supported media files were found.');
     return;
   }
 
@@ -1467,6 +1466,11 @@ function buildSidebar() {
       gifBadge.className = 'thumb-gif-badge';
       gifBadge.textContent = 'GIF';
     }
+    if (window.CVFormats.isVideo(im)) {
+      gifBadge = document.createElement('span');
+      gifBadge.className = 'thumb-gif-badge';
+      gifBadge.textContent = '▶ ' + (im.file.name.split('.').pop() || '').toUpperCase();
+    }
 
     const idx = document.createElement('span');
     idx.className = 'thumb-idx';
@@ -1523,6 +1527,7 @@ window.addEventListener('contextmenu', (e) => {
 
   if (e.target.closest('.thumb-item')) return;
   if (e.target.closest('#kbd-hint')) return; // Evitar menú en HUD
+  if (e.target.closest('#video-controls')) return;
   if (e.target.closest('#topbar')) return;    // Evitar menú en barra de título
   if (e.target.closest('#sidebar')) return;   // Evitar menú en barra lateral
 
@@ -1534,7 +1539,7 @@ window.addEventListener('contextmenu', (e) => {
 
   const isInsideViewer = e.target.closest('#viewer-wrap');
   if (isInsideViewer && state.images.length > 0) {
-    const rect = mainImg.getBoundingClientRect();
+    const rect = (window.CVVideo.active() ? window.CVVideo.element : mainImg).getBoundingClientRect();
     const onImage = (
       e.clientX >= rect.left &&
       e.clientX <= rect.right &&
@@ -1831,6 +1836,22 @@ function buildMenuTemplate(type, data) {
   const isFav = hasImages && state.settings.app.favorites && state.images[state.currentIdx]?.file?.path && state.settings.app.favorites.includes(state.images[state.currentIdx].file.path);
 
   if (type === 'tab') return window.CVWorkspace.contextMenu(data.id);
+
+  if ((type === 'image' || type === 'thumb') && window.CVFormats.isVideo(data.path || state.images[data.index ?? state.current])) {
+    const filePath = data.path || state.images[state.current]?.file.path;
+    return [
+      { type: 'header', icon: 'play', label: getTxt('video_label'), subtitle: fileNameFromPath(filePath || '') },
+      ...(type === 'image' ? [{ label: getTxt(window.CVVideo.element.paused ? 'video_play' : 'video_pause'),
+        shortcut: 'Space', action: () => void window.CVVideo.toggle() }] : []),
+      { label: getTxt('tabs_open_new'), action: () => openImagePath(filePath) },
+      { label: getTxt('menu_show'), action: () => window.electronAPI.showItemInFolder(filePath) },
+      { label: getTxt('menu_copy_path'), action: () => navigator.clipboard.writeText(filePath) },
+      { label: getTxt('menu_props'), action: async () => { await openImagePath(filePath); await state.mainImageReady; showPropertiesPanel(filePath); } },
+      { label: getTxt((state.settings.app.favorites || []).includes(filePath) ? 'favorite_remove' : 'favorite_add'), action: () => toggleFavoritePath(filePath) },
+      { type: 'separator' },
+      { label: getTxt('menu_trash'), danger: true, action: () => executeAction({ action: 'request-delete', index: data.index ?? state.current, path: filePath }) }
+    ];
+  }
 
   if (type === 'thumb') {
     const hiddenCount = state.images.filter(im => im.hidden).length;
@@ -2259,7 +2280,7 @@ function buildMenuTemplate(type, data) {
           {
             label: getTxt('menu_slideshow_start'),
             shortcut: 'S',
-            enabled: hasImages,
+            enabled: hasImages && !window.CVVideo.active(),
             action: () => startSlideshow()
           },
           { type: 'separator' },
@@ -2267,12 +2288,12 @@ function buildMenuTemplate(type, data) {
             label: getTxt('menu_slideshow_loop'),
             type: 'checkbox',
             checked: state.settings.app.slideshowLoop !== false,
-            enabled: hasImages,
+            enabled: hasImages && !window.CVVideo.active(),
             action: () => toggleSlideshowLoop()
           },
           {
             label: getTxt('menu_slideshow_interval'),
-            enabled: hasImages,
+            enabled: hasImages && !window.CVVideo.active(),
             action: () => cycleSlideshowInterval()
           }
         ]
@@ -2501,6 +2522,7 @@ function buildOpenFileContextItems(t) {
 }
 
 async function showSaveAsDialog(filePath) {
+  if (window.CVFormats.isVideo(filePath || state.images[state.current])) return;
   return window.CVWorkspace.dialog(async () => {
     if (!isElectron) return;
     const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
@@ -2571,8 +2593,8 @@ function executeAction(data) {
         showCyberConfirm({
           title: lang === 'es' ? 'Mover a la papelera' : 'Move to Trash',
           message: lang === 'es' 
-            ? '¿Estás seguro de que quieres mover esta imagen a la papelera de reciclaje?' 
-            : 'Are you sure you want to move this image to the Recycle Bin?',
+            ? '¿Estás seguro de que quieres mover este archivo a la papelera de reciclaje?'
+            : 'Are you sure you want to move this file to the Recycle Bin?',
           detail: name,
           danger: true,
           onConfirm: async () => {
@@ -2701,6 +2723,7 @@ async function saveWorkspaceImage(data) {
 }
 
 async function saveAsPath(targetPath) {
+  if (window.CVVideo.active()) return;
   return window.CVWorkspace.edit(async () => {
     if (state.current === -1) return;
     const im = state.images[state.current];
@@ -2917,7 +2940,7 @@ function getSidebarThumbUrl(i) {
   const im = state.images[i];
   if (!im) return '';
   if (im.thumbUrl) return im.thumbUrl;
-  if (isGifImage(im)) return '';
+  if (isGifImage(im) || window.CVFormats.isVideo(im)) return '';
   return getUrl(i);
 }
 
@@ -3026,7 +3049,7 @@ function getUrl(i) {
     im.url = mediaUrl(im.file.path);
   } else if (im.file) {
     im.url = URL.createObjectURL(im.file);
-    im.thumbUrl = im.url;
+    if (!window.CVFormats.isVideo(im)) im.thumbUrl = im.url;
   }
   return im.url;
 }
@@ -3067,6 +3090,7 @@ function showImage(idx, direction, isInitial = false) {
   if (idx < 0 || idx >= state.images.length) return;
   if (state.transitioning && direction !== null) return;
   if (!window.CVWorkspace.beforeShow(state.images[idx])) return;
+  window.CVVideo.unload();
   if (state.resolveMainImage) state.resolveMainImage();
   const seq = state.openSeq;
   const image = state.images[idx];
@@ -3130,6 +3154,15 @@ function showImage(idx, direction, isInitial = false) {
     
     // Update the permanent window title and the fullscreen-only banner.
     syncFilenameDisplays(im);
+
+    if (window.CVFormats.isVideo(im)) {
+      state.currentRotation = 0; state.visualRotation = 0; state.hasChanges = false;
+      window.CVVideo.load(im, url, markMainReady);
+      updateHUDStates();
+      return;
+    }
+    mainImg.hidden = false;
+    window.CVVideo.syncTools();
 
     if (im.loaded) {
       if (areAnimatedGifsEnabled() || !isGifImage(im)) {
@@ -3217,6 +3250,7 @@ function showImage(idx, direction, isInitial = false) {
 }
 
 function displayImage(url, w, h, direction) {
+  const target = window.CVVideo.active() ? window.CVVideo.element : mainImg;
   const restoredView = window.CVWorkspace.restoreView(w, h);
   // On navigation, return to the user's selected view mode (Fit / 1:1) when the
   // "reset to selected" preference is on; otherwise keep the live zoom ('custom').
@@ -3224,11 +3258,11 @@ function displayImage(url, w, h, direction) {
     state.viewMode = state.selectedViewMode;
   }
   spinner.classList.remove('active');
-  mainImg.src = url;
-  mainImg.classList.remove('slide-in-left', 'slide-in-right', 'slide-out-left', 'slide-out-right');
+  if (target === mainImg) mainImg.src = url;
+  target.classList.remove('slide-in-left', 'slide-in-right', 'slide-out-left', 'slide-out-right');
 
-  mainImg.style.width  = w + 'px';
-  mainImg.style.height = h + 'px';
+  target.style.width  = w + 'px';
+  target.style.height = h + 'px';
 
   if (restoredView) {
     // Each tab restores its own viewport, independently of folder navigation preferences.
@@ -3261,8 +3295,8 @@ function displayImage(url, w, h, direction) {
       state.transitioning = false;
     }, { once: true });
   } else {
-    mainImg.style.opacity = ''; // Limpiar opacidad inline
-    mainImg.classList.add('loaded');
+    target.style.opacity = ''; // Limpiar opacidad inline
+    target.classList.add('loaded');
     state.transitioning = false;
   }
 }
@@ -3272,7 +3306,7 @@ function preloadAdjacent(idx) {
   const seq = state.openSeq;
   for (let d = 1; d <= PRELOAD_RANGE; d++) {
     [idx + d, idx - d].forEach(i => {
-      if (i >= 0 && i < state.images.length && !state.images[i].loaded) {
+      if (i >= 0 && i < state.images.length && !state.images[i].loaded && !window.CVFormats.isVideo(state.images[i])) {
         const url = getUrl(i);
         if (state.preloadCache.has(url)) return;
 
@@ -3309,6 +3343,7 @@ function preloadAdjacent(idx) {
 }
 // ── IMAGE ROTATION & SAVE ──
 function rotate(deg) {
+  if (window.CVVideo.active()) return;
   if (window.CVWorkspace.busy) return;
   if (state.current === -1) return;
   
@@ -3333,6 +3368,7 @@ function rotate(deg) {
 
 // ── IMAGE FLIP (permanent copy) ──
 async function flipImage(axis) {
+  if (window.CVVideo.active()) return;
   return window.CVWorkspace.edit(async () => {
     // 'h' = horizontal mirror (X), 'v' = vertical mirror (Y)
     if (!checkImageLoaded()) return;
@@ -3483,6 +3519,7 @@ function exitCropMode() {
 }
 
 function startCrop() {
+  if (window.CVVideo.active()) return;
   discardPendingRotationSilently();
   if (state.current === -1) return;
   if (!mainImg.complete || mainImg.naturalWidth === 0) {
@@ -3837,6 +3874,7 @@ $('btn-crop-confirm').onclick = async () => {
 };
 
 async function saveCurrent() {
+  if (window.CVVideo.active()) return;
   return window.CVWorkspace.edit(async () => {
     if (state.current === -1) return;
     const im = state.images[state.current];
@@ -3936,6 +3974,7 @@ const resizeState = {
 };
 
 function openResizeModal() {
+  if (window.CVVideo.active()) return;
   try {
     const idx = state.current;
     const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
@@ -4391,6 +4430,7 @@ function scheduleAdjustPreview() {
 }
 
 function openAdjustModal() {
+  if (window.CVVideo.active()) return;
   try {
     const idx = state.current;
     const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
@@ -4757,8 +4797,9 @@ function fitToWindow(w, h) {
   state.zoom = scale;
   state.panX = 0;
   state.panY = 0;
-  mainImg.style.width  = w + 'px';
-  mainImg.style.height = h + 'px';
+  const target = window.CVVideo.active() ? window.CVVideo.element : mainImg;
+  target.style.width  = w + 'px';
+  target.style.height = h + 'px';
   applyTransform(false);
 }
 
@@ -5081,7 +5122,7 @@ function slideshowAdvance(dir, opts = {}) {
     }
     idx = candidate;
     const im = state.images[idx];
-    if (im && !im.hidden) {
+    if (im && !im.hidden && !window.CVFormats.isVideo(im)) {
       state.viewMode = 'fit';
       showImage(idx, dir > 0 ? 'left' : 'right');
       if (state.slideshowPlaying) scheduleSlideshowTick();
@@ -5096,6 +5137,7 @@ function slideshowAdvance(dir, opts = {}) {
 }
 
 function startSlideshow(opts = {}) {
+  if (window.CVVideo.active()) return;
   if (!checkImageLoaded()) return;
   if (visibleImageCount() <= 0) return;
 
@@ -5467,7 +5509,7 @@ function setImageError(im) {
   $('btn-relocate-tab').hidden = !isElectron;
   if (sub) {
     const name = (im && im.file && im.file.name) ? im.file.name : '';
-    const tpl = im?.unavailable || im?.missingDraft ? t.tabs_missing : t.error_image_sub;
+    const tpl = im?.unavailable || im?.missingDraft ? t.tabs_missing : window.CVFormats.isVideo(im) ? t.video_error : t.error_image_sub;
     if (name && tpl) sub.textContent = tpl.replace('{name}', name);
     else sub.textContent = (lang === 'es'
       ? 'No se pudo cargar la imagen. El archivo está dañado, no es una imagen o el formato no es compatible.'
@@ -5492,6 +5534,7 @@ function clearImageError() {
 
 // ── MOUSE / TOUCH ──
 viewerWrap.addEventListener('wheel', e => {
+  if (e.target.closest('#video-controls')) return;
   if (state.images.length === 0 || state.isCropping) return;
   e.preventDefault();
   const delta = -e.deltaY;
@@ -5499,6 +5542,7 @@ viewerWrap.addEventListener('wheel', e => {
 }, { passive: false });
 
 viewerWrap.addEventListener('mousedown', e => {
+  if (e.target.closest('#video-controls')) return;
   if (e.target.closest('#kbd-hint') || e.target.closest('#topbar') || e.target.closest('#sidebar')) return;
   if (e.button !== 0 || state.images.length === 0 || state.isCropping) return;
   state.dragging = true;
@@ -5524,6 +5568,7 @@ window.addEventListener('mouseup', () => {
 
 // Double click action (configurable: fullscreen / toggle zoom (fit<->1:1) / fit / original / none)
 viewerWrap.addEventListener('dblclick', e => {
+  if (e.target.closest('#video-controls')) return;
   if (e.target.closest('#kbd-hint') || e.target.closest('#topbar') || e.target.closest('#sidebar') || e.target.closest('#nav-container')) return;
   // The drop-zone buttons already handle their own clicks; don't open the dialog twice on double-click.
   if (e.target.closest('#btn-drop-open') || e.target.closest('#btn-drop-paste')) return;
@@ -5570,6 +5615,7 @@ viewerWrap.addEventListener('dblclick', e => {
 // Touch pinch
 let lastPinchDist = 0;
 viewerWrap.addEventListener('touchstart', e => {
+  if (e.target.closest('#video-controls')) return;
   if (e.target.closest('#kbd-hint') || e.target.closest('#topbar') || e.target.closest('#sidebar')) return;
   if (e.touches.length === 2) {
     lastPinchDist = Math.hypot(
@@ -5586,6 +5632,7 @@ viewerWrap.addEventListener('touchstart', e => {
 });
 
 viewerWrap.addEventListener('touchmove', e => {
+  if (e.target.closest('#video-controls')) return;
   e.preventDefault();
   if (e.touches.length === 2) {
     const dist = Math.hypot(
@@ -5761,6 +5808,15 @@ document.addEventListener('keydown', e => {
   const pendingRotation = state.currentRotation !== 0 && state.hasChanges;
   const isCtrl = e.ctrlKey || e.metaKey;
 
+  if (window.CVVideo.active() && !isCtrl && !e.altKey && !document.querySelector('.modal-overlay.active') && !$('main-menu').classList.contains('open')) {
+    const key = e.key.toLowerCase();
+    // Focused playback buttons keep their native Enter/Space activation.
+    if ((key === ' ' || key === 'enter') && e.target.closest('#video-controls button')) return;
+    if (key === ' ') { e.preventDefault(); if (!e.repeat) void window.CVVideo.toggle(); return; }
+    if (key === 'arrowleft' || key === 'arrowright') { e.preventDefault(); window.CVVideo.seekBy(key === 'arrowleft' ? -5 : 5); return; }
+    if (key === 'm') { e.preventDefault(); if (!e.repeat) window.CVVideo.element.muted = !window.CVVideo.element.muted; return; }
+  }
+
   if (pendingRotation) {
     const key = e.key.toLowerCase();
     if (key === 'enter') {
@@ -5924,8 +5980,8 @@ async function trashCurrentImage() {
   showCyberConfirm({
     title: lang === 'es' ? 'Mover a la papelera' : 'Move to Trash',
     message: lang === 'es' 
-      ? '¿Estás seguro de que quieres mover esta imagen a la papelera de reciclaje?' 
-      : 'Are you sure you want to move this image to the Recycle Bin?',
+      ? '¿Estás seguro de que quieres mover este archivo a la papelera de reciclaje?'
+      : 'Are you sure you want to move this file to the Recycle Bin?',
     detail: im.file ? im.file.name : (im.url || ''),
     danger: true,
     onConfirm: async () => {
@@ -5971,6 +6027,7 @@ function canvasForCurrentImage() {
 }
 
 async function copyToClipboard() {
+  if (window.CVVideo.active()) return;
   const idx = state.currentIdx;
   if (idx === -1) return;
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
@@ -6676,6 +6733,7 @@ function scheduleInitialTrayPinReminder() {
 }
 
 function openModal(id) {
+  if (window.CVVideo.active()) window.CVVideo.element.pause();
   const el = $(id);
   if (!el) return;
   el.classList.add('active');
@@ -6961,6 +7019,7 @@ async function doPrint() {
 }
 
 function openPrintExportModal() {
+  if (window.CVVideo.active()) return;
   if (!isElectron) return;
   if (!checkImageLoaded()) return;
   // Close any other modal so the print/export one is the sole focus (mirrors
@@ -8263,6 +8322,7 @@ function updateHUDStates() {
   document.body.classList.toggle('crop-mode', !!state.isCropping);
 
   updateSaveButton();
+  window.CVVideo.syncTools();
 }
 
 $('btn-center').addEventListener('click', () => {
@@ -9017,6 +9077,7 @@ $('btn-config').addEventListener('click', openConfig);
     const hasImg = state.current !== -1 && state.images && state.images.length > 0;
     panel.querySelectorAll('[data-needs-image]').forEach(el => el.classList.toggle('disabled', !hasImg));
     const im = hasImg ? state.images[state.current] : null;
+    window.CVVideo.syncTools();
     const favs = (state.settings && state.settings.app && state.settings.app.favorites) || [];
     const isFav = !!(im && im.file && im.file.path && favs.includes(im.file.path));
     const addFav = panel.querySelector('[data-action="favorite-add"]');
@@ -9330,6 +9391,7 @@ const elementsToHide = [
   { el: $('ghost-close'), hideClass: 'hud-hidden-fade', ghostOnly: true },
   { el: $('zoom-hud'), hideClass: 'hud-hidden-fade', ghostOnly: true },
   { el: $('slideshow-hud'), hideClass: 'hud-hidden-fade', ghostOnly: false },
+  { el: $('video-controls'), hideClass: 'hud-hidden-fade', ghostOnly: true },
   { el: $('viewer-filename'), hideClass: 'hud-hidden-fade', ghostOnly: false },
   { el: $('nav-container'), hideClass: 'hud-hidden-fade', ghostOnly: false }
 ];
@@ -9789,6 +9851,7 @@ async function setWallpaperFromMemory(im, style, lang) {
 }
 
 async function setAsWallpaper(targetPath, style = 'fill') {
+  if (window.CVFormats.isVideo(targetPath || state.images[state.current])) return;
   const im = state.current >= 0 ? state.images[state.current] : null;
   const p = targetPath || (im ? imageDiskPath(im) : null);
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
@@ -9908,8 +9971,9 @@ async function showPropertiesPanel(rawPath) {
 
   const preview = $('props-preview');
   if (preview) {
-    if (mainImg && mainImg.src) {
-      preview.src = mainImg.src;
+    const previewUrl = window.CVVideo.active() ? im.thumbUrl : mainImg.getAttribute('src');
+    if (previewUrl) {
+      preview.src = previewUrl;
       preview.style.display = '';
     } else {
       preview.removeAttribute('src');

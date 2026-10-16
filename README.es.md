@@ -24,7 +24,7 @@
 
 ## ¿Qué es CyberViewer?
 
-CyberViewer es un visor de imágenes rápido y ligero para Windows que cubre la visualización y edición del día a día sin el peso de una suite gráfica completa. Abre imágenes grandes rápidamente, recorre carpetas completas mediante una barra lateral de miniaturas, haz zoom y desplázate con fluidez, ejecuta presentaciones y gestiona archivos recientes. Las herramientas esenciales de rotación, recorte, redimensionado, volteo y ajuste de color están integradas, junto con controles de fondo de escritorio e integración con el Explorador de Windows. La interfaz se mantiene enfocada, oscura y altamente personalizable. Construido con **Electron 35** y **JavaScript vanilla**.
+CyberViewer es un visor de imágenes y videos rápido y ligero para Windows que cubre la visualización y edición del día a día sin el peso de una suite gráfica completa. Abre imágenes grandes rápidamente, recorre carpetas completas mediante una barra lateral de miniaturas, haz zoom y desplázate con fluidez, ejecuta presentaciones y gestiona archivos recientes. Las herramientas esenciales de rotación, recorte, redimensionado, volteo y ajuste de color están integradas, junto con controles de fondo de escritorio e integración con el Explorador de Windows. La interfaz se mantiene enfocada, oscura y altamente personalizable. Construido con **Electron 35** y **JavaScript vanilla**.
 
 *Gratuito y de código abierto (GPLv3): sin anuncios, sin rastreo y sin recogida de datos. Solo disfrútalo.*
 
@@ -59,6 +59,13 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 - **Modo de pantalla completa inmersivo:** la interfaz fantasma se oculta sola para una visualización sin distracciones
 - **Arrastrar y soltar:** suelta imágenes o carpetas directamente sobre la ventana
 - **Pegado del portapapeles:** pega imágenes desde el portapapeles (`Ctrl+V`)
+
+### ▶️ Reproducción de video
+- Abre MP4, M4V, WebM, MOV y MKV desde el selector, arrastrando archivos, navegando por carpetas o mediante pestañas. La compatibilidad depende de los códecs de video y audio del archivo y de los decodificadores del equipo.
+- Reproduce/pausa, busca una posición, ajusta el volumen, silencia y repite. Los videos se abren pausados; pulsa **Espacio** para reproducir/pausar, **Izquierda/Derecha** para saltar 5 segundos o **M** para silenciar. **Arriba/Abajo** y **A/D** siguen navegando entre archivos.
+- Un solo reproductor activo mantiene ligeras las pestañas inactivas. La posición se conserva al cambiar de pestaña y, si activas la restauración de sesión, al reiniciar.
+- Las miniaturas de video son fotogramas estáticos. La edición, la copia de imágenes, el fondo de escritorio y la impresión/exportación quedan deshabilitados para videos. Las presentaciones siguen mostrando imágenes y omiten videos.
+- Los códecs de video no compatibles muestran un error. Si no se detecta audio reproducible, un aviso explica que el video puede ser silencioso o usar un códec de audio no compatible. HEVC y el audio multicanal no tienen compatibilidad universal; no se incluye un transcodificador ni se necesita un reproductor externo.
 
 ### ✏️ Edición
 - **Rotar:** 90° a la izquierda (`Q`) o a la derecha (`E`) con flujo de guardar/descartar
@@ -188,6 +195,8 @@ npm start
 ```powershell
 npm test
 npm run lint
+npm run test:workspace # regresión de imágenes y pestañas con perfil aislado
+npm run test:video     # pruebas de video aisladas; requiere FFmpeg en PATH (solo desarrollo)
 npm run i18n:sync       # regenera i18n/ui.js desde i18n/ui.json
 ```
 
@@ -216,7 +225,7 @@ npm run build:portable   # solo portable
 
 | Tecla | Acción |
 |---|---|
-| `Ctrl+O` | Abrir imagen |
+| `Ctrl+O` | Abrir imágenes o videos |
 | `Ctrl+Tab` / `Ctrl+Mayús+Tab` | Pestaña siguiente / anterior |
 | `Ctrl+W` | Cerrar pestaña |
 | `Ctrl+Mayús+T` | Reabrir pestaña cerrada |
@@ -229,8 +238,9 @@ npm run build:portable   # solo portable
 | `Ctrl+D` | Alternar favorito |
 | `Ctrl+,` | Abrir la configuración |
 | `Ctrl+I` | Propiedades |
-| `← → ↑ ↓` / `A` `D` | Navegar por las imágenes |
-| `Espacio` | Siguiente imagen (o iniciar/pausar presentación) |
+| `← → ↑ ↓` / `A` `D` | Navegar entre archivos; en video, `← →` saltan 5 segundos |
+| `Espacio` | Siguiente imagen, reproducir/pausar video o iniciar/pausar presentación |
+| `M` | Silenciar/activar sonido del video |
 | `Q` / `E` | Rotar 90° a la izquierda / derecha |
 | `C` | Recortar |
 | `R` | Redimensionar |
@@ -251,8 +261,9 @@ npm run build:portable   # solo portable
 
 - `webSecurity` activado con Content-Security-Policy
 - Imágenes locales servidas mediante el protocolo `cvlocal://` (en streaming) con lista de permitidos de rutas
-- La expansión de la lista de permitidos solo acepta **archivos de imagen existentes**
-- Los escaneos de carpeta solo se ejecutan sobre vecinos de un archivo de imagen existente
+- La expansión de la lista de permitidos solo acepta **archivos existentes de imagen o video con extensión admitida**
+- Los escaneos de carpeta solo se ejecutan sobre vecinos de un archivo multimedia existente con extensión admitida
+- El streaming admite rangos de bytes para buscar posiciones sin cargar el video completo en RAM
 - El renderer se ejecuta con `nodeIntegration: false` y `contextIsolation: true`
 - DevTools IPC desactivado en las builds empaquetadas
 

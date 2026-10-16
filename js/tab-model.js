@@ -12,7 +12,7 @@
   }
   function defaultView() {
     return { viewMode: 'fit', selectedViewMode: 'fit', zoom: 1, panX: 0, panY: 0,
-      currentRotation: 0, visualRotation: 0, hasChanges: false };
+      currentRotation: 0, visualRotation: 0, hasChanges: false, videoTime: 0 };
   }
   function cleanView(value = {}) {
     const result = defaultView();
@@ -28,6 +28,7 @@
     }
     result.visualRotation = result.currentRotation;
     result.hasChanges = result.currentRotation !== 0;
+    if (Number.isFinite(value.videoTime)) result.videoTime = Math.max(0, Math.min(1e9, value.videoTime));
     return result;
   }
   class TabModel {

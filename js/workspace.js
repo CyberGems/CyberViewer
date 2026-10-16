@@ -143,8 +143,7 @@ window.CVWorkspace = (() => {
     return true;
   }
   async function openFiles(files, initialIdx = 0, options = {}) {
-    const accepted = Array.from(files).filter(file => file.type?.startsWith('image/') ||
-      /\.(jpg|jpeg|png|gif|webp|bmp|tiff|tif|ico|avif)$/i.test(file.name || ''));
+    const accepted = Array.from(files).filter(window.CVFormats.isSupportedFile);
     if (!accepted.length) return false;
     capture();
     let target;
@@ -504,6 +503,7 @@ window.CVWorkspace = (() => {
     if (busy || state.isCropping || isEditing()) { pendingSuspend = true; return; }
     pendingSuspend = false;
     capture();
+    window.CVVideo.unload();
     stopSlideshow({ silent: true });
     state.openSeq++; state.scanInProgress = false;
     clearPreloads();
