@@ -1177,7 +1177,16 @@ ipcMain.handle('open-folder-path', async (event, dirPath) => {
   return resolveFirstImageInDir(dirPath);
 });
 
-ipcMain.handle('get-settings', () => loadSettings());
+ipcMain.handle('get-settings', () => {
+  const settings = loadSettings();
+  // Manual launch (opened from the icon/shortcut without a file argument) always
+  // starts with the sidebar closed, ignoring the state persisted from the previous
+  // session. Instances launched to open an image keep their own startup behavior.
+  if (!instanceHasInitialFile && settings.app) {
+    settings.app.sidebarOpen = false;
+  }
+  return settings;
+});
 ipcMain.handle('get-version', () => app.getVersion());
 ipcMain.handle('open-data-folder', async () => {
   try {
