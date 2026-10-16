@@ -117,9 +117,12 @@ describe('About modal redesign (CyberFeeds pattern)', () => {
     // old off-pattern footer icons are gone
     assert.doesNotMatch(tpl, /\$\{iconHtml\('globe'\)\}/);
     assert.doesNotMatch(tpl, /\$\{iconHtml\('circle-dot'\)\}/);
-    // gem + bug exist in the icon catalog
-    assert.match(appJs, /'gem': '<path d="M6 3h12l4 6-10 13L2 9z"\/>/);
-    assert.match(appJs, /'bug': '<rect x="7" y="8" width="10" height="11" rx="5"\/>/);
+    // gem + bug exist in the icon catalog (exact lucide paths, same as CyberFeeds)
+    assert.match(appJs, /'gem': '<path d="M6 3h12l4 6-10 13L2 9Z"\/><path d="M11 3 8 9l4 13 4-13-3-6"\/><path d="M2 9h20"\/>'/);
+    assert.match(appJs, /'bug': '<path d="m8 2 1\.88 1\.88"\/>/);
+    // github uses the lucide path too (was a hand-made approximation)
+    assert.match(appJs, /'github': '<path d="M15 22v-4a4\.8 4\.8 0 0 0-1-3\.5c3 0 6-2 6-5\.5/);
+    assert.doesNotMatch(appJs, /'github': '<path d="M15 22v-4a4\.8 4\.8 0 0 0-1-3\.5c3 0 6-1\.5 6-6/);
   });
 
   it('styles the modal like CyberFeeds: transparent overlay, gradient card, switch', () => {
@@ -215,6 +218,16 @@ describe('About modal redesign (CyberFeeds pattern)', () => {
     assert.match(css, /\.about-action-ghost,\s*\.about-action-ghost:hover\s*\{\s*border-color: transparent;\s*background: transparent;\s*color: var\(--cyber-muted\);/);
     // primary: solid accent fill with dark label
     assert.match(css, /\.about-action-primary,\s*\.about-action-primary:hover\s*\{\s*border-color: var\(--cyber-accent\);\s*background: var\(--cyber-accent\);\s*color: #08111c;/);
+  });
+
+  it('renders the logo plain: no halo, no pulsing glow (CyberFeeds style)', () => {
+    // halo ::before + pulse animations were removed: the glow read as a hard
+    // cut against the card top. CyberFeeds shows a plain <img>.
+    assert.doesNotMatch(css, /\.about-logo-wrap::before/);
+    assert.doesNotMatch(css, /about-logo-halo/);
+    assert.doesNotMatch(css, /about-logo-glow/);
+    assert.doesNotMatch(css, /\.about-logo\s*\{[\s\S]*?filter: drop-shadow/);
+    assert.match(css, /\.about-logo\s*\{[\s\S]*?width: 76px;\s*height: 76px;/);
   });
 
   it('uses CyberFeeds sentence-case labels for update actions in both languages', () => {
