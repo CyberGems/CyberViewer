@@ -49,6 +49,8 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 ## ✨ Funciones principales
 
 ### 🖼️ Visualización
+- **Pestañas de imágenes:** abre varios archivos a la vez, reordena pestañas, busca por nombre o ruta y reabre las cerradas. Cada pestaña conserva su zoom, desplazamiento y rotación pendiente. La navegación por carpeta permanece en la pestaña actual; usa el menú contextual de una miniatura o el clic central para abrir otra pestaña. Si hay cambios sin guardar, la pestaña se conserva al navegar a otra imagen.
+- **Restauración opcional de sesión:** activa **Configuración → General → Restaurar sesión anterior** para recuperar el orden, la pestaña activa, las vistas, las rotaciones pendientes y las imágenes pegadas al reiniciar. Los archivos ausentes conservan su pestaña y se pueden localizar de nuevo. La sesión se almacena localmente, separada de los respaldos de configuración; desactivar la opción elimina la sesión guardada.
 - **Apertura ultrarrápida:** protocolo de streaming propio que carga imágenes sin agotar la RAM
 - **Formatos admitidos:** JPG, JPEG, PNG, GIF, WebP, BMP, TIFF, TIF, ICO y AVIF
 - **Navegación de carpetas:** barra lateral de miniaturas con carga diferida, cola de prioridad e indicador de progreso de escaneo
@@ -87,7 +89,7 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 - **Atajo global:** atajo configurable para mostrar u ocultar, predeterminado `Alt+Shift+V`
 - **Menú contextual del Explorador:** haz clic derecho en imágenes admitidas para abrirlas en CyberViewer
 - **Asociaciones de archivo:** establece CyberViewer como visor predeterminado de JPG, PNG, GIF, WebP, BMP, TIFF, ICO o AVIF
-- **Múltiples instancias:** modo opcional para usuarios avanzados
+- **Una sola instancia residente:** las aperturas desde el Explorador y los nuevos inicios envían las imágenes a pestañas de la ventana existente
 - **Actualización automática:** actualizador integrado de GitHub Releases con instalación silenciosa
 - **Copia de seguridad de la configuración:** exporta o importa la configuración y los favoritos como JSON
 
@@ -215,6 +217,9 @@ npm run build:portable   # solo portable
 | Tecla | Acción |
 |---|---|
 | `Ctrl+O` | Abrir imagen |
+| `Ctrl+Tab` / `Ctrl+Mayús+Tab` | Pestaña siguiente / anterior |
+| `Ctrl+W` | Cerrar pestaña |
+| `Ctrl+Mayús+T` | Reabrir pestaña cerrada |
 | `Ctrl+Mayús+O` | Abrir la carpeta que la contiene |
 | `Ctrl+Mayús+F` | Abrir carpeta |
 | `Ctrl+S` | Guardar como |

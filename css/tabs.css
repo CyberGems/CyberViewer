@@ -1,0 +1,102 @@
+/* A compact document strip below the draggable title bar. */
+#image-tabs {
+  position: fixed;
+  inset: 48px 0 auto;
+  height: 38px;
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  padding: 3px 8px 0;
+  background: var(--cyber-panel);
+  border-bottom: 1px solid var(--cyber-border);
+  z-index: 999998;
+  -webkit-app-region: no-drag;
+}
+#image-tabs[hidden], #tab-switcher[hidden] { display: none; }
+body.has-image-tabs:not(.ghost-mode) #app #main { top: 86px !important; }
+body.ghost-mode #image-tabs, body.ghost-mode #tab-switcher { display: none; }
+#image-tab-list {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  gap: 3px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--cyber-accent-rgb), .35) transparent;
+}
+.image-tab-shell {
+  flex: 0 0 182px;
+  max-width: 230px;
+  min-width: 110px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  background: rgba(255, 255, 255, .025);
+}
+.image-tab-shell:hover { background: rgba(255, 255, 255, .055); }
+.image-tab-shell.active {
+  background: rgba(var(--cyber-accent-rgb), .085);
+  border-color: rgba(var(--cyber-accent-rgb), .25);
+  box-shadow: inset 0 2px 0 var(--cyber-accent);
+}
+.image-tab, .image-tab-close, .tab-bar-button, .tab-switcher-item {
+  color: var(--cyber-text);
+  font-family: var(--font-ui);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.image-tab {
+  min-width: 0;
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 5px 0 11px;
+  text-align: left;
+  font-size: 12px;
+}
+.image-tab-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The shared tooltip card is portaled outside the scrolling strip. */
+.image-tab.cyber-tooltip::before, .image-tab.cyber-tooltip::after { display: none !important; }
+.image-tab-dirty { display: none; width: 6px; height: 6px; border-radius: 50%; background: var(--cyber-accent); flex-shrink: 0; }
+.dirty .image-tab-dirty { display: block; }
+.image-tab-close { font-size: 18px; width: 26px; height: 25px; margin-right: 3px; border-radius: 4px; flex-shrink: 0; opacity: .6; }
+.image-tab-close:hover { color: var(--cyber-accent2); background: rgba(255,255,255,.08); opacity: 1; }
+.tab-bar-button { min-width: 32px; display: flex; align-items: center; justify-content: center; gap: 5px; border-radius: 4px; font-size: 19px; padding: 0 7px; }
+#image-tabs-count { font-size: 11px; color: var(--cyber-accent); font-variant-numeric: tabular-nums; }
+.tab-bar-button:hover { background: rgba(var(--cyber-accent-rgb), .1); }
+.image-tab:focus-visible, .image-tab-close:focus-visible, .tab-bar-button:focus-visible, .tab-switcher-item:focus-visible {
+  outline: 1px solid var(--cyber-accent); outline-offset: -2px;
+}
+.tab-drop-target { border-left: 2px solid var(--cyber-accent); }
+#tab-switcher {
+  position: fixed;
+  top: 92px;
+  right: 10px;
+  width: min(440px, calc(100vw - 20px));
+  padding: 10px;
+  border: 1px solid rgba(var(--cyber-accent-rgb), .3);
+  border-radius: 8px;
+  background: var(--cyber-panel);
+  box-shadow: 0 14px 40px rgba(0,0,0,.6);
+  z-index: 1000000;
+}
+#tab-search {
+  width: 100%; padding: 9px 11px; color: var(--cyber-text); font-family: var(--font-ui);
+  background: var(--cyber-black); border: 1px solid var(--cyber-border); border-radius: 4px;
+  user-select: text;
+}
+#tab-search:focus { outline: 1px solid var(--cyber-accent); }
+#tab-switcher-list { max-height: min(420px, calc(100vh - 165px)); overflow-y: auto; margin-top: 7px; }
+.tab-switcher-item { display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 9px; text-align: left; border-radius: 4px; }
+.tab-switcher-item:hover, .tab-switcher-item.active { background: rgba(var(--cyber-accent-rgb), .08); }
+.tab-switcher-item span, .tab-switcher-item small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab-switcher-item small { color: var(--cyber-muted); font-size: 11px; }
+.tab-switcher-empty { font-size: 12px; color: var(--cyber-text); padding: 15px 9px; }
+.workspace-busy #kbd-hint, .workspace-busy #sidebar { cursor: progress; }

@@ -30,17 +30,17 @@ describe('first-close dialog (minimize to tray vs quit)', () => {
   });
 
   it('asks on the first close and remembers the choice afterwards (main.js)', () => {
-    // The close event asks only before a choice exists and only for resident
-    // instances (ephemeral file-arg windows keep closing directly).
-    assert.match(mainJs, /if \(!isEphemeral && !s\.closeChoiceMade && !s\.closeToTray\) \{/);
+    // The single resident process asks only before a choice exists.
+    assert.match(mainJs, /if \(!s\.closeChoiceMade && !s\.closeToTray\) \{/);
     assert.match(mainJs, /event\.preventDefault\(\);[\s\S]*?win\.focus\(\);[\s\S]*?webContents\.send\('confirm-first-close'\)/);
     // Known choice: tray hides, otherwise the window closes (persistWindowState)
-    assert.match(mainJs, /if \(!isEphemeral && s\.closeToTray\) \{\s*event\.preventDefault\(\);\s*hideToTray\(\);/);
+    assert.match(mainJs, /if \(s\.closeToTray\) \{\s*event\.preventDefault\(\);\s*hideToTray\(\);/);
 
-    // The tray icon is resident: created at startup for non-ephemeral instances
+    // The tray icon is resident: created at startup for the single instance
     // regardless of closeToTray, and never destroyed by a settings save
-    assert.match(mainJs, /function shouldShowTrayIcon\(\) \{\s*return !\(allowMultipleInstances && instanceHasInitialFile\);/);
-    assert.match(mainJs, /if \(shouldShowTrayIcon\(\)\) createTray\(\);/);
+    assert.match(mainJs, /const gotTheLock = app\.requestSingleInstanceLock\(\);/);
+    assert.match(mainJs, /initUpdater\(settings\.app,[\s\S]*?createTray\(\);/);
+    assert.doesNotMatch(mainJs, /isEphemeral|let allowMultipleInstances/);
     assert.doesNotMatch(mainJs, /tray\.destroy\(\)/);
 
     // first-close-choice persists the remembered choice and acts immediately

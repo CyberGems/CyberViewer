@@ -21,6 +21,7 @@ const { clampWindowBounds, MIN_W, MIN_H } = require('./lib/window-bounds');
 const { initUpdater, setAutoCheckEnabled, isPortableBuild } = require('./lib/updater');
 const { buildBackup, parseBackup } = require('./lib/settings-backup');
 const autoBackup = require('./lib/auto-backup');
+const { SessionStore } = require('./lib/session-store');
 const {
   TRAY_HELP_URLS, buildTrayHelpModel, taskbarSettingsLaunch
 } = require('./lib/tray-help');
@@ -41,6 +42,7 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 const settingsPath = path.join(app.getPath('userData'), 'settings.json');
+const sessionStore = new SessionStore(app.getPath('userData'));
 const menuI18n = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'i18n', 'menu.json'), 'utf8')
 );
@@ -157,7 +159,8 @@ function loadSettings() {
         if (data.app.slideshowIntervalMs === undefined) data.app.slideshowIntervalMs = 3000;
         if (data.app.slideshowLoop === undefined) data.app.slideshowLoop = true;
         if (data.app.slideshowEnterFullscreen === undefined) data.app.slideshowEnterFullscreen = true;
-        if (data.app.allowMultipleInstances === undefined) data.app.allowMultipleInstances = false;
+        delete data.app.allowMultipleInstances;
+        if (data.app.restoreSession === undefined) data.app.restoreSession = false;
         if (data.app.showFileName === undefined) data.app.showFileName = true;
         if (data.app.animateGifs === undefined) data.app.animateGifs = true;
         if (data.app.closeChoiceMade === undefined) data.app.closeChoiceMade = false;
@@ -204,7 +207,7 @@ function loadSettings() {
       slideshowIntervalMs: 3000,
       slideshowLoop: true,
       slideshowEnterFullscreen: true,
-      allowMultipleInstances: false,
+      restoreSession: false,
       showFileName: true,
       animateGifs: true,
       dblClickAction: 'fullscreen',
@@ -289,19 +292,18 @@ let win;
 let tray = null;
 let isQuitting = false;
 
-// Resolved once at launch from persisted settings + launch args (see lock section).
-let allowMultipleInstances = false;
-const initialFilePath = getFilePathFromArgs(process.argv);
+const initialFilePaths = process.argv.map(arg => getFilePathFromArgs([arg])).filter(Boolean);
+const initialFilePath = initialFilePaths[0] || null;
 const instanceHasInitialFile = !!initialFilePath;
-// The tray icon is resident: every non-ephemeral launch keeps it visible while
-// the app runs (CyberNotes pattern), independent of closeToTray — that setting
-// only decides what closing the window does (hide to tray vs quit). Keeping the
-// icon out of closeToTray's lifecycle avoids the icon vanishing when the window
-// is deployed and prevents any settings save from destroying it.
-// Instances opened with an image file are ephemeral windows under multi-instance:
-// they get no tray icon and closing them quits that process (no duplicates).
-function shouldShowTrayIcon() {
-  return !(allowMultipleInstances && instanceHasInitialFile);
+let workspaceReady = false;
+let workspaceCloseApproved = false;
+const pendingOpenPaths = [...initialFilePaths];
+// One resident process owns all tabs, the tray, and the session file.
+function forwardOpenPaths(paths) {
+  pendingOpenPaths.push(...paths);
+  if (!workspaceReady || !win || win.isDestroyed()) return;
+  const unique = [...new Set(pendingOpenPaths.splice(0))];
+  if (unique.length) win.webContents.send('open-file', unique);
 }
 
 function resolveStartupBounds(settings) {
@@ -510,10 +512,8 @@ function createWindow() {
   win.on('close', (event) => {
     if (!isQuitting) {
       const s = loadSettings().app;
-      // First close: ask what to do (CyberNotes pattern) unless the user already
-      // made a choice (dialog or Settings). Ephemeral file-arg instances never tray.
-      const isEphemeral = allowMultipleInstances && instanceHasInitialFile;
-      if (!isEphemeral && !s.closeChoiceMade && !s.closeToTray) {
+      // Ask once unless the user already chose a closing behavior.
+      if (!s.closeChoiceMade && !s.closeToTray) {
         event.preventDefault();
         // Make sure the window is visible so the dialog can be read
         if (win.isMinimized()) win.restore();
@@ -522,13 +522,21 @@ function createWindow() {
         try { win.webContents.send('confirm-first-close'); } catch (_) { /* ignore */ }
         return false;
       }
-      if (!isEphemeral && s.closeToTray) {
+      if (s.closeToTray) {
         event.preventDefault();
         hideToTray();
         return false;
       }
     }
     persistWindowState();
+  });
+  // Electron cancels a close when the renderer's beforeunload handler requests
+  // confirmation. Only its explicit acknowledgement may retry the close.
+  win.webContents.on('will-prevent-unload', () => {
+    isQuitting = false;
+    if (win.isMinimized()) win.restore();
+    if (!win.isVisible()) win.show();
+    win.focus();
   });
 
   win.on('show', () => {
@@ -604,13 +612,11 @@ function createWindow() {
 function hideToTray() {
   if (!win || win.isDestroyed()) return;
   persistWindowState();
-  // Optionally unload the open image when hiding to the tray, so reopening
-  // the window (manually or via Explorer) shows a clean state with no trace
-  // of the previous image — it stays only in the Recents history.
+  // Release decoded pixels while preserving tabs and pending rotations.
   try {
     const s = (loadSettings().app) || {};
     if (s.closeImageOnTray !== false && win.webContents && !win.webContents.isDestroyed()) {
-      win.webContents.send('menu-action', { action: 'close-image' });
+      win.webContents.send('suspend-workspace');
     }
   } catch (_) { /* ignore */ }
   if (win.isVisible()) win.hide();
@@ -1042,6 +1048,43 @@ ipcMain.on('win-maximize', () => {
   else win.maximize();
 });
 ipcMain.on('win-close', () => win.close());
+ipcMain.on('workspace-ready', event => {
+  if (!win || event.sender !== win.webContents) return;
+  workspaceReady = true;
+  forwardOpenPaths([]);
+});
+ipcMain.on('workspace-close-ready', event => {
+  if (!win || event.sender !== win.webContents || workspaceCloseApproved) return;
+  workspaceCloseApproved = true;
+  isQuitting = true;
+  app.quit();
+});
+ipcMain.handle('session:load', () => {
+  if (!loadSettings().app.restoreSession) return { ok: true, session: { version: 1, activeId: null, tabs: [] } };
+  const result = sessionStore.read();
+  result.session.tabs = result.session.tabs.map(tab => {
+    // Inactive paths are validated only when activated. An offline network
+    // folder must not stall restoration of every other tab.
+    const draftPath = tab.draftId ? sessionStore.draftPath(tab.draftId) : null;
+    if (draftPath) pathAllowlist.allow(draftPath);
+    return { ...tab, draftPath };
+  });
+  return result;
+});
+ipcMain.handle('session:save', (_event, snapshot) => {
+  if (!loadSettings().app.restoreSession) return { ok: false, error: 'SESSION_DISABLED' };
+  try { sessionStore.write(snapshot); return { ok: true }; }
+  catch (error) { console.error('Unable to save session:', error); return { ok: false, error: error.message }; }
+});
+ipcMain.handle('session:save-draft', (_event, base64) => {
+  if (!loadSettings().app.restoreSession) return { ok: false, error: 'SESSION_DISABLED' };
+  try { return { ok: true, id: sessionStore.saveDraft(base64) }; }
+  catch (error) { return { ok: false, error: error.message }; }
+});
+ipcMain.handle('session:clear', () => {
+  try { sessionStore.clear(); return { ok: true }; }
+  catch (error) { return { ok: false, error: error.message }; }
+});
 
 // ── First-close choice (CyberNotes pattern) ──
 // The renderer asks after the window's close event was intercepted. "remember"
@@ -1107,12 +1150,11 @@ ipcMain.handle('open-file-dialog', async () => {
       },
       { name: tMenu('dialog_open_filter_all', lang), extensions: ['*'] }
     ],
-    properties: ['openFile']
+    properties: ['openFile', 'multiSelections']
   });
   if (result.canceled || !result.filePaths.length) return null;
-  const filePath = result.filePaths[0];
-  pathAllowlist.allow(filePath);
-  return filePath;
+  for (const filePath of result.filePaths) pathAllowlist.allowImageFile(filePath);
+  return result.filePaths;
 });
 
 /**
@@ -2356,7 +2398,7 @@ ipcMain.on('save-settings', (event, newSettings) => {
     });
   }
 
-  if (shouldShowTrayIcon() && !tray) {
+  if (!tray) {
     createTray();
   } else if (tray) {
     // The icon is resident: never destroy it here. Recreating the Tray resets
@@ -2629,21 +2671,19 @@ ipcMain.on('show-context-menu', (event, props) => {
   }
 });
 
-allowMultipleInstances = loadSettings().app.allowMultipleInstances === true;
-const gotTheLock = allowMultipleInstances || app.requestSingleInstanceLock();
+const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
   app.quit();
 } else {
   app.on('second-instance', (event, commandLine) => {
+    forwardOpenPaths(commandLine.map(arg => getFilePathFromArgs([arg])).filter(Boolean));
     if (win) {
       diagWindow('second-instance');
       if (win.isMinimized()) win.restore();
       win.show();
       win.focus();
       setTimeout(nudgeCompositorFrame, 200);
-      const filePath = getFilePathFromArgs(commandLine);
-      if (filePath) win.webContents.send('open-file', filePath);
     }
   });
 
@@ -2664,15 +2704,9 @@ if (!gotTheLock) {
     initUpdater(settings.app, {
       beforeQuitInstall: () => { isQuitting = true; }
     });
-    if (shouldShowTrayIcon()) createTray();
+    createTray();
     applyToggleHotkey(settings.app && settings.app.toggleHotkey);
     initAutoBackup();
-
-    if (initialFilePath) {
-      win.webContents.once('did-finish-load', () => {
-        win.webContents.send('open-file', initialFilePath);
-      });
-    }
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

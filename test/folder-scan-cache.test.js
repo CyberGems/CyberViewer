@@ -97,7 +97,9 @@ describe('folder scan cache and sidebar pause/resume', () => {
     assert.match(appJs, /if \(doneCount < totalCount\) \{\s*startBackgroundScan\(\);\s*\} else \{\s*cachedFolder\.completed = true;\s*updateThumbProgress\(totalCount, totalCount\);\s*\}/);
   });
 
-  it('resets scanner progress and increments sequence on clipboard paste', () => {
-    assert.match(appJs, /function insertPastedImage\(blob, mime = 'image\/png'\) \{[\s\S]*?state\.openSeq\+\+;[\s\S]*?state\.scanInProgress = false;[\s\S]*?updateThumbProgress\(1, 1\);/);
+  it('opens clipboard images through the workspace lifecycle instead of replacing other tabs', () => {
+    assert.match(appJs, /function insertPastedImage\(blob, mime = 'image\/png'\) \{[\s\S]*?new File\([\s\S]*?return window\.CVWorkspace\.openFiles\(\[file\]\);/);
+    const workspace = fs.readFileSync(path.join(root, 'js', 'workspace.js'), 'utf8');
+    assert.match(workspace, /capture\(\);[\s\S]*?clearViewer\(\);[\s\S]*?loadFiles\(\[tab\.image\.file\], 0, true\);/);
   });
 });

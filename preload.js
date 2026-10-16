@@ -1,6 +1,6 @@
 'use strict';
 
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   minimize: () => ipcRenderer.send('win-minimize'),
@@ -36,6 +36,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   showContextMenu: (props) => ipcRenderer.send('show-context-menu', props),
   openDevTools: () => ipcRenderer.send('win-devtools'),
   onOpenFile: (cb) => ipcRenderer.on('open-file', (e, path) => cb(path)),
+  pathForFile: (file) => webUtils.getPathForFile(file),
+  workspaceReady: () => ipcRenderer.send('workspace-ready'),
+  finishWorkspaceClose: () => ipcRenderer.send('workspace-close-ready'),
+  onSuspendWorkspace: (cb) => ipcRenderer.on('suspend-workspace', () => cb()),
+  loadSession: () => ipcRenderer.invoke('session:load'),
+  saveSession: (snapshot) => ipcRenderer.invoke('session:save', snapshot),
+  saveSessionDraft: (base64) => ipcRenderer.invoke('session:save-draft', base64),
+  clearSession: () => ipcRenderer.invoke('session:clear'),
   onWindowBlur: (cb) => ipcRenderer.on('window-blur', () => cb()),
   onWindowRestore: (cb) => ipcRenderer.on('window-restore', () => cb()),
   onConfirmFirstClose: (cb) => ipcRenderer.on('confirm-first-close', () => cb()),

@@ -48,7 +48,7 @@ describe('sidebar startup preference (manual vs external open)', () => {
     const onOpenFile = appJs.indexOf('window.electronAPI.onOpenFile(');
     assert.ok(onOpenFile >= 0);
     const code = appJs.slice(onOpenFile, appJs.indexOf('});', onOpenFile) + 3);
-    assert.match(code, /if \(filePath\) await openImagePath\(filePath\);/);
+    assert.match(code, /if \(paths\.length\) await window\.CVWorkspace\.openFiles\(/);
     assert.doesNotMatch(code, /openSidebar/);
   });
 

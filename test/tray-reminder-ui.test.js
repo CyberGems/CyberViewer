@@ -22,7 +22,7 @@ describe('tray reminder presentation', () => {
   it('schedules the first automatic reminder when the app starts with tray enabled', () => {
     assert.match(appJs, /function scheduleInitialTrayPinReminder\(\)/);
     assert.match(appJs, /if \(!isCloseToTrayEnabled\(\) \|\| isTrayPinReminderDismissed\(\)\) return;/);
-    assert.match(appJs, /applySettings\(\);\s*scheduleInitialTrayPinReminder\(\);/);
+    assert.match(appJs, /applySettings\(\);\s*await window\.CVWorkspace\.restore\(\);\s*scheduleInitialTrayPinReminder\(\);/);
     assert.match(appJs, /else maybeShowPendingTrayPinReminder\(\);/);
   });
 });

@@ -1,5 +1,6 @@
 
 // ── Media / format helpers (from js/media-helpers.js) ──
+/* exported clearViewer, mergeNeighbors, ttBind */
 const CVMedia = (typeof window !== 'undefined' && window.CVMedia) ? window.CVMedia : {};
 const mediaUrl = CVMedia.mediaUrl || function () { return ''; };
 const canvasExport = CVMedia.canvasExport || function (c, p) { return { buffer: '', filePath: p }; };
@@ -149,7 +150,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) ttHid
 
 const ZOOM_MIN = 0.05;
 const ZOOM_MAX = 20;
-const PRELOAD_RANGE = 2;
+const PRELOAD_RANGE = 1;
 /** Idle window after zoom/pan/nav before folder thumb scanning resumes. */
 const SCAN_PAUSE_GRACE_MS = 3000;
 
@@ -239,7 +240,7 @@ const state = {
       slideshowIntervalMs: 3000,
       slideshowLoop: true,
       slideshowEnterFullscreen: true,
-      allowMultipleInstances: false,
+      restoreSession: false,
       showFileName: true,
       navZoomMode: 'reset'
     } 
@@ -627,6 +628,8 @@ function updateLanguage(lang = 'en') {
   if (typeof window.__cvSyncTitleBarUpdateButton === 'function') {
     window.__cvSyncTitleBarUpdateButton();
   }
+  window.CVWorkspace.render();
+  if (document.body.classList.contains('image-error')) setImageError(state.images[state.current]);
 }
 
 /** Keep the window title and fullscreen banner in sync with the active image. */
@@ -689,16 +692,26 @@ function closeShortcutsPopover() {
 }
 
 function closeImage() {
+  const tab = window.CVWorkspace.model.active;
+  if (tab) window.CVWorkspace.closeTabs([tab.id]);
+}
+
+function clearViewer() {
   if (typeof stopSlideshow === 'function') stopSlideshow({ silent: true });
   state.scanInProgress = false;
-  state.images.forEach(im => {
-    if (im.url && String(im.url).startsWith('blob:')) URL.revokeObjectURL(im.url);
-  });
-  state.preloadCache.clear();
+  if (state.resolveMainImage) state.resolveMainImage();
+  mainImg.onload = null;
+  mainImg.onerror = null;
+  state.images.forEach(im => window.CVWorkspace.release(im));
+  window.CVWorkspace.clearPreloads();
   thumbLoadInflight.clear();
   state.mainImageReady = Promise.resolve();
   state.mainImageReadyIdx = -1;
   state.images = [];
+  state.transitioning = false;
+  state.nonFavImages = [];
+  state.nonFavCurrent = -1;
+  state.showingFavs = false;
   syncCurrentIndex(-1);
   state.viewMode = 'fit';
   state.selectedViewMode = 'fit';
@@ -741,7 +754,15 @@ function closeImage() {
 }
 
 // ── FILE HANDLING ──
-function loadFiles(files, initialIdx = 0) {
+function loadFiles(files, initialIdx = 0, internal = false) {
+  if (!internal) {
+    const entries = Array.from(files).map(file => {
+      const filePath = file.path || (isElectron && window.electronAPI.pathForFile ? window.electronAPI.pathForFile(file) : '');
+      return filePath ? { name: file.name, path: filePath, size: file.size, type: file.type } : file;
+    });
+    return window.CVWorkspace.openFiles(entries, initialIdx);
+  }
+  const loadSeq = state.openSeq;
   // Cancelar cualquier scan previo antes de reemplazar datos
   state.scanInProgress = false;
   if (state.showingFavs) {
@@ -763,15 +784,15 @@ function loadFiles(files, initialIdx = 0) {
   }
 
   // Revoke old blob URLs; drop preload entries for the previous folder
-  state.images.forEach(im => {
-    if (im.url && String(im.url).startsWith('blob:')) URL.revokeObjectURL(im.url);
-  });
-  state.preloadCache.clear();
+  state.images.forEach(im => window.CVWorkspace.release(im));
+  window.CVWorkspace.clearPreloads();
   thumbLoadInflight.clear();
   const firstPath = imgs[0] && imgs[0].path;
   const dir = firstPath ? folderDirFromPath(firstPath).toLowerCase() : '';
   const cachedFolder = dir ? folderScanCache.get(dir) : null;
   state.images = imgs.map(f => {
+    const document = window.CVWorkspace.model.active?.image;
+    if (document?.file === f) return document;
     const p = f && f.path ? f.path.toLowerCase() : '';
     const cachedThumb = cachedFolder && p ? cachedFolder.thumbs.get(p) : null;
     return {
@@ -801,7 +822,7 @@ function loadFiles(files, initialIdx = 0) {
     updateThumbProgress(doneCount, totalCount);
     const ready = state.mainImageReady || Promise.resolve();
     ready.then(() => {
-      if (state.currentIdx === initialIdx || state.current === initialIdx) {
+      if (loadSeq === state.openSeq && (state.currentIdx === initialIdx || state.current === initialIdx)) {
         if (state.sidebarOpen && doneCount < totalCount) {
           startBackgroundScan();
         } else if (totalCount > 0 && doneCount >= totalCount) {
@@ -1049,24 +1070,7 @@ async function openImagePath(filePath, opts = {}) {
   const addRecent = opts.addRecent !== false;
   if (addRecent) pushRecentFile(filePath);
   if (opts.openSidebar) ensureSidebarOpen();
-
-  // Browser opens File objects via the file input; a string filePath only arrives
-  // from Electron (open-file / dialog / recent / folder). Guard defensively.
-  if (!isElectron) return true;
-
-  // Show the opened image immediately: its parent directory was already allowlisted
-  // by the main process on open-file, so cvlocal serves it without waiting on the
-  // folder scan. Siblings are merged in afterwards WITHOUT re-showing the main image.
-  const seq = ++state.openSeq;
-  const provName = fileNameFromPath(filePath);
-  loadFiles([{ name: provName, path: filePath, size: 0, type: '' }], 0);
-
-  try {
-    const neighbors = await window.electronAPI.scanFolder(filePath);
-    if (seq !== state.openSeq) return true;   // superseded by a newer open
-    mergeNeighbors(neighbors, filePath, seq);
-  } catch (_) { /* provisional image is already displayed */ }
-  return true;
+  return window.CVWorkspace.openPath(filePath, opts);
 }
 
 /**
@@ -1087,8 +1091,10 @@ async function openImageDialog() {
     if (fileInput) fileInput.click();
     return;
   }
-  const filePath = await window.electronAPI.openFile();
-  if (filePath) await openImagePath(filePath);
+  const result = await window.electronAPI.openFile();
+  const paths = Array.isArray(result) ? result : result ? [result] : [];
+  for (const filePath of paths) pushRecentFile(filePath);
+  if (paths.length) await window.CVWorkspace.openFiles(paths.map(filePath => ({ name: fileNameFromPath(filePath), path: filePath, size: 0 })));
 }
 
 async function openFolderDialog() {
@@ -1288,6 +1294,8 @@ async function startBackgroundScan() {
         im.thumbFailed = true;
       }
 
+      if (seq !== state.openSeq || state.images[idx] !== im) { completedAll = false; break; }
+
       // Throttle radar HUD updates (~8/s) to cut layout thrash on large folders
       const currentDone = getFolderThumbStats().done;
       const now = performance.now();
@@ -1482,6 +1490,9 @@ function buildSidebar() {
       if (state.transitioning) return;
       const dir = i > state.currentIdx ? 'left' : 'right';
       showImage(i, dir);
+    });
+    item.addEventListener('auxclick', event => {
+      if (event.button === 1) { event.preventDefault(); openImagePath(im.file.path); }
     });
 
     item.addEventListener('mouseenter', () => refreshSidebarGifAnimation(i));
@@ -1819,6 +1830,8 @@ function buildMenuTemplate(type, data) {
   const hasImages = state.images.length > 0;
   const isFav = hasImages && state.settings.app.favorites && state.images[state.currentIdx]?.file?.path && state.settings.app.favorites.includes(state.images[state.currentIdx].file.path);
 
+  if (type === 'tab') return window.CVWorkspace.contextMenu(data.id);
+
   if (type === 'thumb') {
     const hiddenCount = state.images.filter(im => im.hidden).length;
     const isFavThumb = !!(state.settings.app.favorites && data.path && state.settings.app.favorites.includes(data.path));
@@ -1835,6 +1848,11 @@ function buildMenuTemplate(type, data) {
         subtitleFilename: thumbName,
         subTitleAttr: data.path || '',
         variant: 'thumb'
+      },
+      {
+        label: getTxt('tabs_open_new'),
+        icon: 'image',
+        action: () => openImagePath(data.path)
       },
       {
         label: getTxt('menu_file'),
@@ -2483,27 +2501,29 @@ function buildOpenFileContextItems(t) {
 }
 
 async function showSaveAsDialog(filePath) {
-  if (!isElectron) return;
-  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
-  const im = state.images[state.current];
-  const sourcePath = filePath || imageDiskPath(im);
-  const sourceName = sourcePath ? sourcePath.split(/[\\/]/).pop() : ((im && im.file && im.file.name) || 'image');
-  const baseName = sourceName.replace(/\.[^.]+$/, '') || 'image';
-  const defaultName = `${baseName}_copy.png`;
-  const t = I18N[lang] || I18N.en || {};
+  return window.CVWorkspace.dialog(async () => {
+    if (!isElectron) return;
+    const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+    const im = state.images[state.current];
+    const sourcePath = filePath || imageDiskPath(im);
+    const sourceName = sourcePath ? sourcePath.split(/[\\/]/).pop() : ((im && im.file && im.file.name) || 'image');
+    const baseName = sourceName.replace(/\.[^.]+$/, '') || 'image';
+    const defaultName = `${baseName}_copy.png`;
+    const t = I18N[lang] || I18N.en || {};
 
-  const result = await window.electronAPI.showSaveDialog({
-    title: lang === 'es' ? 'Guardar como' : 'Save As',
-    defaultPath: defaultName,
-    filters: [
-      { name: t.dialog_filter_png || (lang === 'es' ? 'PNG' : 'PNG'), extensions: ['png'] },
-      { name: t.dialog_filter_jpeg || (lang === 'es' ? 'JPEG' : 'JPEG'), extensions: ['jpg', 'jpeg'] },
-      { name: t.dialog_save_filter_all || (lang === 'es' ? 'Todos los archivos' : 'All Files'), extensions: ['*'] }
-    ]
+    const result = await window.electronAPI.showSaveDialog({
+      title: lang === 'es' ? 'Guardar como' : 'Save As',
+      defaultPath: defaultName,
+      filters: [
+        { name: t.dialog_filter_png || 'PNG', extensions: ['png'] },
+        { name: t.dialog_filter_jpeg || 'JPEG', extensions: ['jpg', 'jpeg'] },
+        { name: t.dialog_save_filter_all || (lang === 'es' ? 'Todos los archivos' : 'All Files'), extensions: ['*'] }
+      ]
+    });
+    if (result && !result.canceled && result.filePath) {
+      await saveAsPath(/\.[^\\/]+$/.test(result.filePath) ? result.filePath : result.filePath + '.png');
+    }
   });
-  if (result && !result.canceled && result.filePath) {
-    await saveAsPath(/\.[^\\/]+$/.test(result.filePath) ? result.filePath : result.filePath + '.png');
-  }
 }
 
 function executeAction(data) {
@@ -2516,7 +2536,7 @@ function executeAction(data) {
         
         const visible = state.images.filter(im => !im.hidden);
         if (visible.length === 0) {
-          window.location.reload();
+          closeImage();
         } else {
           // Buscar siguiente visible
           let next = data.index;
@@ -2546,6 +2566,7 @@ function executeAction(data) {
       break;
     case 'request-delete':
       if (data.index !== undefined && data.path) {
+        const image = state.images[data.index];
         const name = data.path.split(/[\\/]/).pop();
         showCyberConfirm({
           title: lang === 'es' ? 'Mover a la papelera' : 'Move to Trash',
@@ -2558,7 +2579,7 @@ function executeAction(data) {
             try {
               const result = await window.electronAPI.moveToTrash(data.path);
               if (result && result.success) {
-                handleFileDeleted(data.index);
+                handleFileDeleted(image);
               }
             } catch (err) {
               console.error('Error al mover a la papelera:', err);
@@ -2651,6 +2672,9 @@ function executeAction(data) {
     case 'close-image':
       closeImage();
       break;
+    case 'reopen-tab':
+      window.CVWorkspace.reopen();
+      break;
     case 'set-wallpaper':
       setAsWallpaper(data.path, data.style || 'fill');
       break;
@@ -2668,87 +2692,82 @@ function executeAction(data) {
     });
   }
 
-async function saveAsPath(targetPath) {
-  if (state.current === -1) return;
-  const im = state.images[state.current];
-  if (!mainImg.complete || mainImg.naturalWidth === 0) {
-    const lang = state.settings.app.language || 'en';
-    showToast(I18N[lang].toast_image_not_ready, 'error');
-    return;
+async function saveWorkspaceImage(data) {
+  const target = window.CVWorkspace.model.findPath(data.filePath);
+  if (!data.createCopy && target && target !== window.CVWorkspace.model.active && target.view.hasChanges) {
+    return { success: false, error: I18N[state.settings.app.language || 'en'].tabs_save_conflict };
   }
+  return window.electronAPI.saveImage(data);
+}
 
-  const lang = state.settings.app.language || 'en';
-  showToast(lang === 'es' ? 'GUARDANDO COPIA...' : 'SAVING COPY...', 'info');
-
-  try {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-
-    const iw = mainImg.naturalWidth;
-    const ih = mainImg.naturalHeight;
-    const rotation = state.currentRotation;
-
-    if (rotation === 90 || rotation === 270) {
-      canvas.width = ih;
-      canvas.height = iw;
-    } else {
-      canvas.width = iw;
-      canvas.height = ih;
+async function saveAsPath(targetPath) {
+  return window.CVWorkspace.edit(async () => {
+    if (state.current === -1) return;
+    const im = state.images[state.current];
+    if (!mainImg.complete || mainImg.naturalWidth === 0) {
+      const lang = state.settings.app.language || 'en';
+      showToast(I18N[lang].toast_image_not_ready, 'error');
+      return;
     }
 
-    const rad = rotation * Math.PI / 180;
-    ctx.translate(canvas.width / 2, canvas.height / 2);
-    ctx.rotate(rad);
-    ctx.drawImage(mainImg, -iw / 2, -ih / 2);
+    const lang = state.settings.app.language || 'en';
+    showToast(lang === 'es' ? 'GUARDANDO COPIA...' : 'SAVING COPY...', 'info');
 
-    const exported = canvasExport(canvas, targetPath);
-    const result = await window.electronAPI.saveImage({
-      filePath: exported.filePath,
-      buffer: exported.buffer
-    });
+    try {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
 
-    if (result.success) {
-      const currentPath = imageDiskPath(im);
-      const savedPath = result.filePath || exported.filePath;
-      if (window.electronAPI.registerPaths) {
-        await window.electronAPI.registerPaths([savedPath]);
+      const iw = mainImg.naturalWidth;
+      const ih = mainImg.naturalHeight;
+      const rotation = state.currentRotation;
+
+      if (rotation === 90 || rotation === 270) {
+        canvas.width = ih;
+        canvas.height = iw;
+      } else {
+        canvas.width = iw;
+        canvas.height = ih;
       }
 
-      if (currentPath) {
-        const currentDir = currentPath.substring(0, Math.max(currentPath.lastIndexOf('\\'), currentPath.lastIndexOf('/')));
-        const targetDir = savedPath.substring(0, Math.max(savedPath.lastIndexOf('\\'), savedPath.lastIndexOf('/')));
+      const rad = rotation * Math.PI / 180;
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(rad);
+      ctx.drawImage(mainImg, -iw / 2, -ih / 2);
 
-        if (currentDir && targetDir && currentDir.toLowerCase() === targetDir.toLowerCase() &&
-            currentPath.toLowerCase() !== savedPath.toLowerCase()) {
-          const newImg = {
-            file: {
-              name: savedPath.split(/[\\/]/).pop(),
-              path: savedPath,
-              size: 0
-            }
-          };
-          state.images.splice(state.current + 1, 0, newImg);
-          buildSidebar();
-          showImage(state.current + 1, null);
+      const exported = canvasExport(canvas, targetPath);
+      const result = await saveWorkspaceImage({
+        filePath: exported.filePath,
+        buffer: exported.buffer
+      });
+
+      if (result.success) {
+        const currentPath = imageDiskPath(im);
+        const savedPath = result.filePath || exported.filePath;
+        if (window.electronAPI.registerPaths) {
+          await window.electronAPI.registerPaths([savedPath]);
+        }
+
+        if (currentPath && window.CVTabs.pathKey(currentPath) !== window.CVTabs.pathKey(savedPath)) {
+          await openImagePath(savedPath, { afterEdit: true });
           showToast(lang === 'es' ? 'COPIA GUARDADA' : 'COPY SAVED', 'success');
           return;
         }
+
+        bindImageToDiskPath(im, savedPath);
+
+        state.currentRotation = 0; state.visualRotation = 0;
+        state.hasChanges = false;
+        buildSidebar();
+        showImage(state.current, null, true);
+        showToast(lang === 'es' ? 'IMAGEN GUARDADA' : 'IMAGE SAVED', 'success');
+      } else {
+        showToast(result.error || 'ERROR', 'error');
       }
-
-      bindImageToDiskPath(im, savedPath);
-
-      state.currentRotation = 0; state.visualRotation = 0;
-      state.hasChanges = false;
-      buildSidebar();
-      showImage(state.current, null, true);
-      showToast(lang === 'es' ? 'IMAGEN GUARDADA' : 'IMAGE SAVED', 'success');
-    } else {
-      showToast(result.error || 'ERROR', 'error');
+    } catch (e) {
+      console.error('Error in saveAsPath:', e);
+      showToast('ERROR: ' + (e.message || 'Unknown'), 'error');
     }
-  } catch (e) {
-    console.error('Error in saveAsPath:', e);
-    showToast('ERROR: ' + (e.message || 'Unknown'), 'error');
-  }
+  });
 }
 
 /**
@@ -2763,6 +2782,9 @@ async function loadThumb(i, imgEl, opts) {
   if (!state.sidebarOpen || !imgEl) return;
   const im = state.images[i];
   if (!im) return;
+  const seq = state.openSeq;
+  const isLive = () => seq === state.openSeq && state.images[i] === im && imgEl.isConnected;
+  const key = im.file?.path || im.url || im;
 
   const isCurrent = i === state.currentIdx || i === state.current;
   const priority = !!(opts && opts.priority) || isCurrent;
@@ -2771,6 +2793,7 @@ async function loadThumb(i, imgEl, opts) {
   if (!priority && state.mainImageReady && state.mainImageReadyIdx !== i) {
     try { await state.mainImageReady; } catch (_) { /* ignore */ }
   }
+  if (!isLive()) return;
 
   // Reuse cached thumb URL — avoids duplicate IPC when background scan already warmed the cache
   if (im.thumbUrl) {
@@ -2779,9 +2802,9 @@ async function loadThumb(i, imgEl, opts) {
   }
 
   // Coalesce concurrent requests for the same index
-  if (thumbLoadInflight.has(i)) {
-    try { await thumbLoadInflight.get(i); } catch (_) { /* ignore */ }
-    if (im.thumbUrl) {
+  if (thumbLoadInflight.has(key)) {
+    try { await thumbLoadInflight.get(key); } catch (_) { /* ignore */ }
+    if (isLive() && im.thumbUrl) {
       setSidebarThumbSrc(i, imgEl);
     }
     return;
@@ -2800,12 +2823,13 @@ async function loadThumb(i, imgEl, opts) {
     }
   })();
 
-  thumbLoadInflight.set(i, work);
+  thumbLoadInflight.set(key, work);
   try {
     await work;
   } finally {
-    thumbLoadInflight.delete(i);
+    if (thumbLoadInflight.get(key) === work) thumbLoadInflight.delete(key);
   }
+  if (!isLive()) return;
 
   if (im.thumbUrl) {
     setSidebarThumbSrc(i, imgEl);
@@ -2994,6 +3018,7 @@ function updateThumbProgress(p, t, _paused = false) {
 function getUrl(i) {
   const im = state.images[i];
   if (!im) return '';
+  if (im.missingDraft) return 'data:image/png;base64,';
   if (im.url) return im.url;
 
   if (im.file && im.file.path) {
@@ -3001,6 +3026,7 @@ function getUrl(i) {
     im.url = mediaUrl(im.file.path);
   } else if (im.file) {
     im.url = URL.createObjectURL(im.file);
+    im.thumbUrl = im.url;
   }
   return im.url;
 }
@@ -3040,6 +3066,12 @@ else window.addEventListener('load', stabilizeUI, { once: true });
 function showImage(idx, direction, isInitial = false) {
   if (idx < 0 || idx >= state.images.length) return;
   if (state.transitioning && direction !== null) return;
+  if (!window.CVWorkspace.beforeShow(state.images[idx])) return;
+  if (state.resolveMainImage) state.resolveMainImage();
+  const seq = state.openSeq;
+  const image = state.images[idx];
+  const loadToken = state.imageSeq = (state.imageSeq || 0) + 1;
+  const isLive = () => seq === state.openSeq && state.imageSeq === loadToken && state.images.includes(image);
 
   clearImageError();
   state.transitioning = true;
@@ -3054,24 +3086,29 @@ function showImage(idx, direction, isInitial = false) {
       resolveMainReady();
       resolveMainReady = null;
     }
+    if (state.resolveMainImage === markMainReady) state.resolveMainImage = null;
   };
+  state.resolveMainImage = markMainReady;
 
   const doLoad = () => {
+    if (!isLive()) { markMainReady(); return; }
+    idx = state.images.indexOf(image);
     syncCurrentIndex(idx);
     updateSidebarActive();
     updateCounter();
     updateFileStats();
     updateFavButtonState();
 
-    // Reset rotation al cambiar
-    state.currentRotation = 0; state.visualRotation = 0;
-    state.hasChanges = false;
+    const restoredView = window.CVWorkspace.viewFor(image);
+    state.currentRotation = restoredView?.currentRotation || 0;
+    state.visualRotation = restoredView?.visualRotation || 0;
+    state.hasChanges = !!restoredView?.hasChanges;
     // Exit any leftover crop mode (e.g. new image opened from the OS while a
     // previous crop was unconfirmed - common with close-to-tray + file association).
     exitCropMode();
     updateSaveButton();
 
-    mainImg.style.transform = `rotate(0deg)`; // Limpiar rotación visual
+    mainImg.style.transform = `rotate(${state.visualRotation}deg)`;
 
     spinner.classList.add('active');
     mainImg.classList.remove('loaded', 'slide-in-left', 'slide-in-right', 'slide-out-left', 'slide-out-right');
@@ -3100,7 +3137,7 @@ function showImage(idx, direction, isInitial = false) {
         markMainReady();
       } else {
         freezeGifFrame(im, url).then((staticUrl) => {
-          if (state.images[state.current] !== im) {
+          if (!isLive() || state.images[state.current] !== im) {
             markMainReady();
             return;
           }
@@ -3113,7 +3150,7 @@ function showImage(idx, direction, isInitial = false) {
       // Decode directly on mainImg instead of a throwaway Image(). displayImage()
       // reassigning the same URL is a no-op once loaded, so this is one fetch + decode
       // (the previous temp Image() forced a redundant second fetch + decode).
-      const isCurrentImage = () => state.images[state.current] === im;
+      const isCurrentImage = () => isLive() && state.images[state.current] === im;
       const onMainLoad = () => {
         if (!isCurrentImage()) {
           if (mainImg.onload === onMainLoad) mainImg.onload = null;
@@ -3127,7 +3164,7 @@ function showImage(idx, direction, isInitial = false) {
         if (mainImg.onload === onMainLoad) mainImg.onload = null;
         clearImageError();
         freezeGifFrame(im, url).then((staticUrl) => {
-          if (state.images[state.current] !== im) {
+          if (!isLive() || state.images[state.current] !== im) {
             markMainReady();
             return;
           }
@@ -3160,7 +3197,7 @@ function showImage(idx, direction, isInitial = false) {
     // Preload adjacent only after main has a chance to start (and prefers short range)
     setTimeout(() => {
       // Delay adjacent full-res preload slightly more on initial open
-      preloadAdjacent(idx);
+      if (isLive()) preloadAdjacent(state.images.indexOf(image));
     }, isInitial ? 200 : 80);
   };
 
@@ -3180,9 +3217,10 @@ function showImage(idx, direction, isInitial = false) {
 }
 
 function displayImage(url, w, h, direction) {
+  const restoredView = window.CVWorkspace.restoreView(w, h);
   // On navigation, return to the user's selected view mode (Fit / 1:1) when the
   // "reset to selected" preference is on; otherwise keep the live zoom ('custom').
-  if (state.settings && state.settings.app && state.settings.app.navZoomMode !== 'keep' && state.selectedViewMode) {
+  if (!restoredView && state.settings && state.settings.app && state.settings.app.navZoomMode !== 'keep' && state.selectedViewMode) {
     state.viewMode = state.selectedViewMode;
   }
   spinner.classList.remove('active');
@@ -3192,7 +3230,9 @@ function displayImage(url, w, h, direction) {
   mainImg.style.width  = w + 'px';
   mainImg.style.height = h + 'px';
 
-  if (state.viewMode === 'original') {
+  if (restoredView) {
+    // Each tab restores its own viewport, independently of folder navigation preferences.
+  } else if (state.viewMode === 'original') {
     state.zoom = getOriginalZoom();
     state.panX = 0;
     state.panY = 0;
@@ -3229,6 +3269,7 @@ function displayImage(url, w, h, direction) {
 
 // ── PRELOAD ──
 function preloadAdjacent(idx) {
+  const seq = state.openSeq;
   for (let d = 1; d <= PRELOAD_RANGE; d++) {
     [idx + d, idx - d].forEach(i => {
       if (i >= 0 && i < state.images.length && !state.images[i].loaded) {
@@ -3236,6 +3277,8 @@ function preloadAdjacent(idx) {
         if (state.preloadCache.has(url)) return;
 
         const tmp = new Image();
+        const im = state.images[i];
+        tmp._cvImage = im;
         
         // Mantener el tamaño de la caché bajo control (ej. máximo 15 imágenes precargadas)
         if (state.preloadCache.size > 15) {
@@ -3246,9 +3289,18 @@ function preloadAdjacent(idx) {
         state.preloadCache.set(url, tmp);
 
         tmp.onload = () => {
-          state.images[i].loaded = true;
-          state.images[i].w = tmp.naturalWidth;
-          state.images[i].h = tmp.naturalHeight;
+          if (seq !== state.openSeq || state.images[i] !== im) return;
+          im.loaded = true;
+          im.w = tmp.naturalWidth;
+          im.h = tmp.naturalHeight;
+          let decodedBytes = [...state.preloadCache.values()].reduce((bytes, entry) => bytes + entry.naturalWidth * entry.naturalHeight * 4, 0);
+          for (const [key, entry] of state.preloadCache) {
+            if (decodedBytes <= 96 * 1024 * 1024) break;
+            decodedBytes -= entry.naturalWidth * entry.naturalHeight * 4;
+            state.preloadCache.delete(key);
+            if (entry._cvImage) entry._cvImage.loaded = false;
+            entry.onload = null; entry.onerror = null; entry.removeAttribute('src');
+          }
         };
         tmp.src = url;
       }
@@ -3257,6 +3309,7 @@ function preloadAdjacent(idx) {
 }
 // ── IMAGE ROTATION & SAVE ──
 function rotate(deg) {
+  if (window.CVWorkspace.busy) return;
   if (state.current === -1) return;
   
   // Seguridad: Si estamos recortando, cancelar recorte antes de rotar
@@ -3273,82 +3326,75 @@ function rotate(deg) {
   
   mainImg.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
   mainImg.style.transform = `rotate(${state.visualRotation}deg)`;
-  state.hasChanges = true;
+  state.hasChanges = state.currentRotation !== 0;
   updateSaveButton();
   updateHUDStates();
 }
 
 // ── IMAGE FLIP (permanent copy) ──
 async function flipImage(axis) {
-  // 'h' = horizontal mirror (X), 'v' = vertical mirror (Y)
-  if (!checkImageLoaded()) return;
-  const idx = state.current;
-  if (idx === undefined || idx === -1) return;
-  const im = state.images[idx];
-  if (!im || !mainImg || !mainImg.naturalWidth) return;
+  return window.CVWorkspace.edit(async () => {
+    // 'h' = horizontal mirror (X), 'v' = vertical mirror (Y)
+    if (!checkImageLoaded()) return;
+    const idx = state.current;
+    if (idx === undefined || idx === -1) return;
+    const im = state.images[idx];
+    if (!im || !mainImg || !mainImg.naturalWidth) return;
 
-  // Cancel any pending (unconfirmed) rotation — flip always applies to the original
-  if (state.currentRotation !== 0 || state.hasChanges) {
-    state.currentRotation = 0; state.visualRotation = 0;
-    state.hasChanges = false;
-    mainImg.style.transition = 'none';
-    mainImg.style.transform = 'none';
-    updateSaveButton();
-    updateHUDStates();
-  }
+    // Cancel any pending (unconfirmed) rotation — flip always applies to the original
+    if (state.currentRotation !== 0 || state.hasChanges) {
+      state.currentRotation = 0; state.visualRotation = 0;
+      state.hasChanges = false;
+      mainImg.style.transition = 'none';
+      mainImg.style.transform = 'none';
+      updateSaveButton();
+      updateHUDStates();
+    }
 
-  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
-  const i18nLang = I18N[lang] || I18N.en || {};
+    const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+    const i18nLang = I18N[lang] || I18N.en || {};
 
-  let fpath = imageDiskPath(im);
-  if (!fpath) {
-    fpath = await ensureImageDiskPath(im);
-    if (!fpath) return;
-  }
+    let fpath = imageDiskPath(im);
+    if (!fpath) {
+      fpath = await ensureImageDiskPath(im);
+      if (!fpath) return;
+    }
 
-  showToast(i18nLang.toast_flipping || 'FLIPPING IMAGE...', 'info');
+    showToast(i18nLang.toast_flipping || 'FLIPPING IMAGE...', 'info');
 
-  const iw = mainImg.naturalWidth;
-  const ih = mainImg.naturalHeight;
-  const canvas = document.createElement('canvas');
-  canvas.width = iw;
-  canvas.height = ih;
-  const ctx = canvas.getContext('2d');
+    const iw = mainImg.naturalWidth;
+    const ih = mainImg.naturalHeight;
+    const canvas = document.createElement('canvas');
+    canvas.width = iw;
+    canvas.height = ih;
+    const ctx = canvas.getContext('2d');
 
-  ctx.save();
-  ctx.translate(iw / 2, ih / 2);
-  if (axis === 'h') ctx.scale(-1, 1);
-  else ctx.scale(1, -1);
-  ctx.drawImage(mainImg, -iw / 2, -ih / 2);
-  ctx.restore();
+    ctx.save();
+    ctx.translate(iw / 2, ih / 2);
+    if (axis === 'h') ctx.scale(-1, 1);
+    else ctx.scale(1, -1);
+    ctx.drawImage(mainImg, -iw / 2, -ih / 2);
+    ctx.restore();
 
-  const exported = canvasExport(canvas, fpath);
-  const result = await window.electronAPI.saveImage({
-    filePath: exported.filePath,
-    buffer: exported.buffer,
-    createCopy: true,
-    copySuffix: '_flipped'
+    const exported = canvasExport(canvas, fpath);
+    const result = await saveWorkspaceImage({
+      filePath: exported.filePath,
+      buffer: exported.buffer,
+      createCopy: true,
+      copySuffix: '_flipped'
+    });
+
+    if (result.success) {
+      const successKey = axis === 'h' ? 'toast_flip_h_success' : 'toast_flip_v_success';
+      const fallback = axis === 'h'
+        ? 'IMAGE FLIPPED HORIZONTALLY (COPY CREATED)'
+        : 'IMAGE FLIPPED VERTICALLY (COPY CREATED)';
+      showToast(i18nLang[successKey] || fallback, 'success');
+      await openImagePath(result.filePath, { afterEdit: true });
+    } else {
+      showToast(lang === 'es' ? 'ERROR AL VOLTEAR' : 'ERROR FLIPPING IMAGE', 'error');
+    }
   });
-
-  if (result.success) {
-    const successKey = axis === 'h' ? 'toast_flip_h_success' : 'toast_flip_v_success';
-    const fallback = axis === 'h'
-      ? 'IMAGE FLIPPED HORIZONTALLY (COPY CREATED)'
-      : 'IMAGE FLIPPED VERTICALLY (COPY CREATED)';
-    showToast(i18nLang[successKey] || fallback, 'success');
-    const newImg = {
-      file: {
-        name: result.filePath.split(/[\\/]/).pop(),
-        path: result.filePath,
-        size: 0
-      }
-    };
-    state.images.splice(idx + 1, 0, newImg);
-    buildSidebar();
-    showImage(idx + 1, null);
-  } else {
-    showToast(lang === 'es' ? 'ERROR AL VOLTEAR' : 'ERROR FLIPPING IMAGE', 'error');
-  }
 }
 
 /**
@@ -3356,6 +3402,9 @@ async function flipImage(axis) {
  * Clipboard paste is a different flow (save-as / path), so it must not open this chip.
  */
 function updateSaveButton() {
+  window.CVWorkspace.capture();
+  window.CVWorkspace.render();
+  window.CVWorkspace.changed();
   const bar = $('pending-actions');
   const cluster = $('edit-cluster');
   if (!bar) return;
@@ -3420,6 +3469,7 @@ const cropState = {
 function exitCropMode() {
   if (!state.isCropping && !cropState.active) return;
   cropState.active = false;
+  cropState.sequence = (cropState.sequence || 0) + 1;
   state.isCropping = false;
   const overlay = $('crop-overlay');
   if (overlay) overlay.classList.remove('active');
@@ -3473,7 +3523,11 @@ function startCrop() {
   showToast(I18N[state.settings.app.language || 'en'].toast_focusing_workspace, 'info', 700);
   
   // Wait for transform, then calibrate crop overlay to the visible image
-  setTimeout(() => { calibrateAndShowCrop(); }, 260);
+  const cropSeq = cropState.sequence = (cropState.sequence || 0) + 1;
+  const cropImage = state.images[state.current];
+  setTimeout(() => {
+    if (state.isCropping && cropState.sequence === cropSeq && state.images[state.current] === cropImage) calibrateAndShowCrop();
+  }, 260);
 }
 
 function calibrateAndShowCrop() {
@@ -3672,199 +3726,101 @@ window.addEventListener('mouseup', () => {
 });
 
 $('btn-crop-confirm').onclick = async () => {
-  showToast(I18N[state.settings.app.language || 'en'].toast_saving_crop, 'info');
-  
-  // 1. Extraer el ratio de escala respecto a los píxeles originales
-  const isVert = state.currentRotation === 90 || state.currentRotation === 270;
-  const origW = isVert ? mainImg.naturalHeight : mainImg.naturalWidth;
-  const origH = isVert ? mainImg.naturalWidth : mainImg.naturalHeight;
-  
-  const scale = origW / cropState.imgRealRect.w;
-  
-  // 2. Renderizar imagen completa con rotación
-  const fullCanvas = document.createElement('canvas');
-  fullCanvas.width = origW;
-  fullCanvas.height = origH;
-  const fctx = fullCanvas.getContext('2d');
-  
-  fctx.translate(fullCanvas.width/2, fullCanvas.height/2);
-  fctx.rotate(state.currentRotation * Math.PI / 180);
-  fctx.drawImage(mainImg, -mainImg.naturalWidth/2, -mainImg.naturalHeight/2);
-  
-  // 3. Recorte preciso sobre el canvas rotado
-  // Usamos Math.round para evitar sangrado de píxeles
-  const relX = Math.round((cropState.x - cropState.imgRealRect.x) * scale);
-  const relY = Math.round((cropState.y - cropState.imgRealRect.y) * scale);
-  const finalW = Math.round(cropState.w * scale);
-  const finalH = Math.round(cropState.h * scale);
-  
-  // Validar dimensiones mínimas
-  if (finalW < 1 || finalH < 1) {
-    showToast(I18N[state.settings.app.language || 'en'].toast_invalid_crop, 'error');
-    return;
-  }
+  return window.CVWorkspace.edit(async () => {
+    showToast(I18N[state.settings.app.language || 'en'].toast_saving_crop, 'info');
 
-  const cropCanvas = document.createElement('canvas');
-  cropCanvas.width = finalW;
-  cropCanvas.height = finalH;
-  const cctx = cropCanvas.getContext('2d');
-  
-  cctx.drawImage(fullCanvas, relX, relY, finalW, finalH, 0, 0, finalW, finalH);
-  
-  const im = state.images[state.current];
-  const idx = state.current;
-  let fpath = imageDiskPath(im);
-  const isPasted = !fpath;
-  if (!fpath) {
-    // Pasted image: build a disk path under the OS Pictures folder (no dialog)
-    // so save-image mirrors disk behaviour (suffix + dedup when createCopy is on).
-    fpath = await resolvePastedImagePath(im);
-    if (!fpath) return;
-  }
-  const createCopy = !!($('cfg-crop-copy') && $('cfg-crop-copy').checked);
-  const exported = canvasExport(cropCanvas, fpath);
-  const result = await window.electronAPI.saveImage({
-    filePath: exported.filePath,
-    buffer: exported.buffer,
-    createCopy,
-    copySuffix: '_cropped'
-  });
+    // 1. Extraer el ratio de escala respecto a los píxeles originales
+    const isVert = state.currentRotation === 90 || state.currentRotation === 270;
+    const origW = isVert ? mainImg.naturalHeight : mainImg.naturalWidth;
+    const origH = isVert ? mainImg.naturalWidth : mainImg.naturalHeight;
 
-  if (result.success) {
-    showToast(I18N[state.settings.app.language || 'en'].toast_crop_saved, 'success');
-    exitCropMode();
+    const scale = origW / cropState.imgRealRect.w;
 
-    const savedPath = result.filePath || exported.filePath;
+    // 2. Renderizar imagen completa con rotación
+    const fullCanvas = document.createElement('canvas');
+    fullCanvas.width = origW;
+    fullCanvas.height = origH;
+    const fctx = fullCanvas.getContext('2d');
 
-    if (createCopy) {
-      const newImg = {
-        file: {
-          name: savedPath.split(/[\\/]/).pop(),
-          path: savedPath,
-          size: 0
-        }
-      };
-      state.images.splice(idx + 1, 0, newImg);
-      if (window.electronAPI.registerPaths) {
-        await window.electronAPI.registerPaths([savedPath]);
-      }
-      buildSidebar();
-      showImage(idx + 1, null);
-      updateHUDStates();
+    fctx.translate(fullCanvas.width/2, fullCanvas.height/2);
+    fctx.rotate(state.currentRotation * Math.PI / 180);
+    fctx.drawImage(mainImg, -mainImg.naturalWidth/2, -mainImg.naturalHeight/2);
+
+    // 3. Recorte preciso sobre el canvas rotado
+    // Usamos Math.round para evitar sangrado de píxeles
+    const relX = Math.round((cropState.x - cropState.imgRealRect.x) * scale);
+    const relY = Math.round((cropState.y - cropState.imgRealRect.y) * scale);
+    const finalW = Math.round(cropState.w * scale);
+    const finalH = Math.round(cropState.h * scale);
+
+    // Validar dimensiones mínimas
+    if (finalW < 1 || finalH < 1) {
+      showToast(I18N[state.settings.app.language || 'en'].toast_invalid_crop, 'error');
       return;
     }
 
-    if (isPasted) {
-      bindImageToDiskPath(im, savedPath, { revokeBlob: true });
-      buildSidebar();
-    } else {
-      if (im.file) im.file.path = savedPath;
-      im.path = savedPath;
+    const cropCanvas = document.createElement('canvas');
+    cropCanvas.width = finalW;
+    cropCanvas.height = finalH;
+    const cctx = cropCanvas.getContext('2d');
+
+    cctx.drawImage(fullCanvas, relX, relY, finalW, finalH, 0, 0, finalW, finalH);
+
+    const im = state.images[state.current];
+    let fpath = imageDiskPath(im);
+    const isPasted = !fpath;
+    if (!fpath) {
+      // Pasted image: build a disk path under the OS Pictures folder (no dialog)
+      // so save-image mirrors disk behaviour (suffix + dedup when createCopy is on).
+      fpath = await resolvePastedImagePath(im);
+      if (!fpath) return;
     }
-    
-    // Recargar con cache-buster
-    mainImg.src = mediaUrl(savedPath, Date.now());
-    
-    // Esperar a que la imagen cargue para actualizar HUD y dimensiones en el estado
-    mainImg.onload = () => {
-      // RESETEAR TRANSFORMACIONES SOLO CUANDO LA IMAGEN ESTÁ LISTA
-      state.currentRotation = 0; state.visualRotation = 0;
-      state.panX = 0;
-      state.panY = 0;
-      mainImg.style.transition = 'none';
-      mainImg.style.transform = 'none';
-
-      im.w = mainImg.naturalWidth;
-      im.h = mainImg.naturalHeight;
-      state.hasChanges = false;
-      updateSaveButton();
-      updateHUDStates();
-      updateFileStats();
-      // Auto-fit de la nueva imagen con dimensiones reales
-      fitToWindow(im.w, im.h);
-      
-      // Restaurar transición suave después de un frame
-      requestAnimationFrame(() => {
-        mainImg.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-      });
-
-      mainImg.onload = null; // Limpiar listener
-    };
-  } else {
-    showToast('ERROR: ' + result.error, 'error');
-  }
-};
-
-async function saveCurrent() {
-  if (state.current === -1) return;
-  const im = state.images[state.current];
-  const needsSave = state.hasChanges || !imageDiskPath(im);
-  if (!needsSave) return;
-
-  let fpath = imageDiskPath(im);
-  if (!fpath) {
-    // Pasted images do not have a disk path yet. Use the automatic Pictures
-    // path so committing a rotation never opens a Save As dialog.
-    fpath = await resolvePastedImagePath(im);
-    if (!fpath) return;
-  }
-  if (!mainImg.complete || mainImg.naturalWidth === 0) {
-    showToast(I18N[state.settings.app.language || 'en'].toast_image_not_ready, 'error');
-    return;
-  }
-
-  showToast(I18N[state.settings.app.language || 'en'].toast_saving_changes, 'info');
-
-  try {
-    // ── Renderizar imagen rotada en canvas ──
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-
-    const iw = mainImg.naturalWidth;
-    const ih = mainImg.naturalHeight;
-    const rotation = state.currentRotation;
-
-    if (rotation === 90 || rotation === 270) {
-      canvas.width = ih;
-      canvas.height = iw;
-    } else {
-      canvas.width = iw;
-      canvas.height = ih;
-    }
-
-    const rad = rotation * Math.PI / 180;
-    ctx.translate(canvas.width / 2, canvas.height / 2);
-    ctx.rotate(rad);
-    ctx.drawImage(mainImg, -iw / 2, -ih / 2);
-
-    // Exportar como PNG base64 (sin pérdida, preserva transparencia)
-    const dataUrl = canvas.toDataURL('image/png');
-    const base64Data = dataUrl.substring(dataUrl.indexOf(',') + 1);
-
-    const result = await window.electronAPI.saveImage({
-      filePath: fpath,
-      buffer: base64Data
+    const createCopy = !!($('cfg-crop-copy') && $('cfg-crop-copy').checked);
+    const exported = canvasExport(cropCanvas, fpath);
+    const result = await saveWorkspaceImage({
+      filePath: exported.filePath,
+      buffer: exported.buffer,
+      createCopy,
+      copySuffix: '_cropped'
     });
 
     if (result.success) {
-      bindImageToDiskPath(im, result.filePath || fpath);
-      if (window.electronAPI.registerPaths) {
-        await window.electronAPI.registerPaths([result.filePath || fpath]);
+      showToast(I18N[state.settings.app.language || 'en'].toast_crop_saved, 'success');
+      exitCropMode();
+
+      const savedPath = result.filePath || exported.filePath;
+
+      if (createCopy) {
+        await openImagePath(savedPath, { afterEdit: true });
+        return;
       }
 
-      // Escuchar el load de la nueva imagen para actualizar dimensiones en el estado
+      if (isPasted) {
+        bindImageToDiskPath(im, savedPath, { revokeBlob: true });
+        buildSidebar();
+      } else {
+        bindImageToDiskPath(im, savedPath);
+      }
+
+      // Recargar con cache-buster
+      mainImg.src = mediaUrl(savedPath, Date.now());
+
+      // Esperar a que la imagen cargue para actualizar HUD y dimensiones en el estado
       mainImg.onload = () => {
         // RESETEAR TRANSFORMACIONES SOLO CUANDO LA IMAGEN ESTÁ LISTA
         state.currentRotation = 0; state.visualRotation = 0;
-        state.hasChanges = false;
+        state.panX = 0;
+        state.panY = 0;
         mainImg.style.transition = 'none';
         mainImg.style.transform = 'none';
 
         im.w = mainImg.naturalWidth;
         im.h = mainImg.naturalHeight;
+        state.hasChanges = false;
         updateSaveButton();
         updateHUDStates();
         updateFileStats();
+        // Auto-fit de la nueva imagen con dimensiones reales
         fitToWindow(im.w, im.h);
 
         // Restaurar transición suave después de un frame
@@ -3872,18 +3828,105 @@ async function saveCurrent() {
           mainImg.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
         });
 
-        mainImg.onload = null;
+        mainImg.onload = null; // Limpiar listener
       };
-
-      mainImg.src = mediaUrl(imageDiskPath(im), Date.now());
-      showToast(I18N[state.settings.app.language || 'en'].toast_changes_saved, 'success');
     } else {
-      showToast(result.error || 'ERROR', 'error');
+      showToast('ERROR: ' + result.error, 'error');
     }
-  } catch (e) {
-    console.error('Error en saveCurrent:', e);
-    showToast('ERROR: ' + (e.message || 'Unknown'), 'error');
-  }
+  });
+};
+
+async function saveCurrent() {
+  return window.CVWorkspace.edit(async () => {
+    if (state.current === -1) return;
+    const im = state.images[state.current];
+    const needsSave = state.hasChanges || !imageDiskPath(im);
+    if (!needsSave) return;
+
+    let fpath = imageDiskPath(im);
+    if (!fpath) {
+      // Pasted images do not have a disk path yet. Use the automatic Pictures
+      // path so committing a rotation never opens a Save As dialog.
+      fpath = await resolvePastedImagePath(im);
+      if (!fpath) return;
+    }
+    if (!mainImg.complete || mainImg.naturalWidth === 0) {
+      showToast(I18N[state.settings.app.language || 'en'].toast_image_not_ready, 'error');
+      return;
+    }
+
+    showToast(I18N[state.settings.app.language || 'en'].toast_saving_changes, 'info');
+
+    try {
+      // ── Renderizar imagen rotada en canvas ──
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      const iw = mainImg.naturalWidth;
+      const ih = mainImg.naturalHeight;
+      const rotation = state.currentRotation;
+
+      if (rotation === 90 || rotation === 270) {
+        canvas.width = ih;
+        canvas.height = iw;
+      } else {
+        canvas.width = iw;
+        canvas.height = ih;
+      }
+
+      const rad = rotation * Math.PI / 180;
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(rad);
+      ctx.drawImage(mainImg, -iw / 2, -ih / 2);
+
+      // Exportar como PNG base64 (sin pérdida, preserva transparencia)
+      const dataUrl = canvas.toDataURL('image/png');
+      const base64Data = dataUrl.substring(dataUrl.indexOf(',') + 1);
+
+      const result = await saveWorkspaceImage({
+        filePath: fpath,
+        buffer: base64Data
+      });
+
+      if (result.success) {
+        bindImageToDiskPath(im, result.filePath || fpath);
+        if (window.electronAPI.registerPaths) {
+          await window.electronAPI.registerPaths([result.filePath || fpath]);
+        }
+
+        // Escuchar el load de la nueva imagen para actualizar dimensiones en el estado
+        mainImg.onload = () => {
+          // RESETEAR TRANSFORMACIONES SOLO CUANDO LA IMAGEN ESTÁ LISTA
+          state.currentRotation = 0; state.visualRotation = 0;
+          state.hasChanges = false;
+          mainImg.style.transition = 'none';
+          mainImg.style.transform = 'none';
+
+          im.w = mainImg.naturalWidth;
+          im.h = mainImg.naturalHeight;
+          updateSaveButton();
+          updateHUDStates();
+          updateFileStats();
+          fitToWindow(im.w, im.h);
+
+          // Restaurar transición suave después de un frame
+          requestAnimationFrame(() => {
+            mainImg.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+          });
+
+          mainImg.onload = null;
+        };
+
+        mainImg.src = mediaUrl(imageDiskPath(im), Date.now());
+        showToast(I18N[state.settings.app.language || 'en'].toast_changes_saved, 'success');
+      } else {
+        showToast(result.error || 'ERROR', 'error');
+      }
+    } catch (e) {
+      console.error('Error en saveCurrent:', e);
+      showToast('ERROR: ' + (e.message || 'Unknown'), 'error');
+    }
+  });
 }
 // ── RESIZE MODAL LOGIC ──
 const resizeState = {
@@ -4465,74 +4508,197 @@ if ($('btn-adjust')) {
 
 if ($('btn-confirm-adjust')) {
   $('btn-confirm-adjust').addEventListener('click', async () => {
+    return window.CVWorkspace.edit(async () => {
+      try {
+        const idx = state.current;
+        if (idx === undefined || idx === -1) return;
+        const im = state.images[idx];
+        if (!im || !mainImg || !mainImg.naturalWidth) return;
+
+        const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+        const i18nLang = I18N[lang] || I18N.en || {};
+        const filters = readAdjustControls();
+        Object.assign(adjustState, filters);
+
+        if (isIdentityAdjust(filters)) {
+          showToast(i18nLang.toast_adjust_none || 'NO CHANGES TO APPLY', 'info');
+          return;
+        }
+
+        const isPasted = !imageDiskPath(im);
+        const createCopy = !!( $('cfg-adjust-copy') && $('cfg-adjust-copy').checked );
+
+        let fpath = imageDiskPath(im);
+        if (!fpath) {
+          // Pasted (clipboard) images have no disk path: build one under the OS
+          // Pictures folder (no dialog) so save-image works like disk images — it
+          // adds the copy suffix (_adjusted) and dedups when createCopy is on, or
+          // writes in place otherwise.
+          fpath = await resolvePastedImagePath(im);
+          if (!fpath) return;
+        }
+        showToast(i18nLang.toast_adjusting || 'APPLYING ADJUSTMENTS...', 'info');
+
+        const iw = mainImg.naturalWidth;
+        const ih = mainImg.naturalHeight;
+        const rotation = state.currentRotation || 0;
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        if (rotation === 90 || rotation === 270) {
+          canvas.width = ih;
+          canvas.height = iw;
+        } else {
+          canvas.width = iw;
+          canvas.height = ih;
+        }
+
+        // Bake pending rotation first, then apply color filters (full-res blurScale = 1)
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        if (rotation) ctx.rotate((rotation * Math.PI) / 180);
+        ctx.filter = buildCssFilter(filters, { blurScale: 1 });
+        ctx.drawImage(mainImg, -iw / 2, -ih / 2);
+        ctx.restore();
+
+        const exported = canvasExport(canvas, fpath);
+        // Disk + pasted images both honor createCopy: save-image writes
+        // name_adjusted.ext next to the original/pasted path (dedup) when on, or
+        // overwrites in place when off. No dialog either way.
+        const result = await saveWorkspaceImage({
+          filePath: exported.filePath,
+          buffer: exported.buffer,
+          createCopy: createCopy,
+          copySuffix: '_adjusted'
+        });
+        if (result.success) {
+          showToast(i18nLang.toast_adjust_success || 'ADJUSTMENTS APPLIED', 'success');
+          closeModal('modal-adjust');
+
+          const reloadAfterSave = (savedPath) => {
+            mainImg.src = mediaUrl(savedPath, Date.now());
+            mainImg.onload = () => {
+              state.currentRotation = 0; state.visualRotation = 0;
+              state.panX = 0;
+              state.panY = 0;
+              mainImg.style.transition = 'none';
+              mainImg.style.transform = 'none';
+
+              im.w = mainImg.naturalWidth;
+              im.h = mainImg.naturalHeight;
+              state.hasChanges = false;
+              updateSaveButton();
+              updateHUDStates();
+              updateFileStats();
+              fitToWindow(im.w, im.h);
+
+              requestAnimationFrame(() => {
+                mainImg.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+              });
+              mainImg.onload = null;
+            };
+          };
+
+          if (createCopy) {
+            await openImagePath(result.filePath, { afterEdit: true });
+          } else if (isPasted) {
+            // Pasted image now lives on disk as the modified output file the user just
+            // picked: bind it as a real disk image, reload, and refresh the sidebar so
+            // the filename + thumbnail reflect the saved file (drops the stale blob).
+            const savedPath = result.filePath || exported.filePath;
+            bindImageToDiskPath(im, savedPath, { revokeBlob: true });
+            reloadAfterSave(savedPath);
+            buildSidebar();
+          } else {
+            const savedPath = result.filePath || exported.filePath;
+            bindImageToDiskPath(im, savedPath);
+            reloadAfterSave(savedPath);
+          }
+        } else {
+          showToast((i18nLang.toast_adjust_error || 'ERROR') + ': ' + (result.error || ''), 'error');
+        }
+      } catch (e) {
+        console.error('Error confirming adjust:', e);
+        showToast('ERROR: ' + e.message, 'error');
+      }
+    });
+  });
+}
+
+$('btn-confirm-resize').addEventListener('click', async () => {
+  return window.CVWorkspace.edit(async () => {
     try {
       const idx = state.current;
       if (idx === undefined || idx === -1) return;
       const im = state.images[idx];
-      if (!im || !mainImg || !mainImg.naturalWidth) return;
-
+      if (!im) return;
       const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
       const i18nLang = I18N[lang] || I18N.en || {};
-      const filters = readAdjustControls();
-      Object.assign(adjustState, filters);
-
-      if (isIdentityAdjust(filters)) {
-        showToast(i18nLang.toast_adjust_none || 'NO CHANGES TO APPLY', 'info');
-        return;
-      }
-
-      const isPasted = !imageDiskPath(im);
-      const createCopy = !!( $('cfg-adjust-copy') && $('cfg-adjust-copy').checked );
 
       let fpath = imageDiskPath(im);
+      const isPasted = !fpath;
       if (!fpath) {
-        // Pasted (clipboard) images have no disk path: build one under the OS
-        // Pictures folder (no dialog) so save-image works like disk images — it
-        // adds the copy suffix (_adjusted) and dedups when createCopy is on, or
-        // writes in place otherwise.
+        // Pasted image: build a disk path under the OS Pictures folder (no dialog)
+        // so save-image mirrors disk behaviour (suffix + dedup when createCopy is on).
         fpath = await resolvePastedImagePath(im);
         if (!fpath) return;
       }
-      showToast(i18nLang.toast_adjusting || 'APPLYING ADJUSTMENTS...', 'info');
+      const targetW = parseInt($('resize-width').value) || 0;
+      const targetH = parseInt($('resize-height').value) || 0;
 
-      const iw = mainImg.naturalWidth;
-      const ih = mainImg.naturalHeight;
-      const rotation = state.currentRotation || 0;
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-
-      if (rotation === 90 || rotation === 270) {
-        canvas.width = ih;
-        canvas.height = iw;
-      } else {
-        canvas.width = iw;
-        canvas.height = ih;
+      if (targetW < 1 || targetH < 1) {
+        showToast(i18nLang.toast_invalid_crop || 'Dimensiones inválidas', 'error');
+        return;
       }
 
-      // Bake pending rotation first, then apply color filters (full-res blurScale = 1)
-      ctx.save();
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      if (rotation) ctx.rotate((rotation * Math.PI) / 180);
-      ctx.filter = buildCssFilter(filters, { blurScale: 1 });
-      ctx.drawImage(mainImg, -iw / 2, -ih / 2);
-      ctx.restore();
+      showToast(lang === 'es' ? 'REDIMENSIONANDO IMAGEN...' : 'RESIZING IMAGE...', 'info');
+
+      // Realizar redimensión en un canvas offscreen
+      const canvas = document.createElement('canvas');
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext('2d');
+
+      const algo = resizeState.currentAlgo;
+      if (algo === 'nearest') {
+        ctx.imageSmoothingEnabled = false;
+      } else if (algo === 'bilinear') {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'medium';
+      } else { // bicubic
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+      }
+
+      // Dibujar la imagen en las nuevas dimensiones
+      ctx.drawImage(mainImg, 0, 0, targetW, targetH);
 
       const exported = canvasExport(canvas, fpath);
-      // Disk + pasted images both honor createCopy: save-image writes
-      // name_adjusted.ext next to the original/pasted path (dedup) when on, or
-      // overwrites in place when off. No dialog either way.
-      const result = await window.electronAPI.saveImage({
+      const createCopy = $('cfg-resize-copy').checked;
+
+      const result = await saveWorkspaceImage({
         filePath: exported.filePath,
         buffer: exported.buffer,
-        createCopy: createCopy,
-        copySuffix: '_adjusted'
+        createCopy: createCopy
       });
-      if (result.success) {
-        showToast(i18nLang.toast_adjust_success || 'ADJUSTMENTS APPLIED', 'success');
-        closeModal('modal-adjust');
 
-        const reloadAfterSave = (savedPath) => {
+      if (result.success) {
+        showToast(i18nLang.toast_resize_success || 'IMAGEN REDIMENSIONADA', 'success');
+        closeModal('modal-resize');
+
+        if (createCopy) {
+          await openImagePath(result.filePath, { afterEdit: true });
+        } else {
+          const savedPath = result.filePath || exported.filePath;
+          if (isPasted) {
+            bindImageToDiskPath(im, savedPath, { revokeBlob: true });
+            buildSidebar();
+          } else {
+            bindImageToDiskPath(im, savedPath);
+          }
+          // Recargar imagen con cache-buster
           mainImg.src = mediaUrl(savedPath, Date.now());
+
           mainImg.onload = () => {
             state.currentRotation = 0; state.visualRotation = 0;
             state.panX = 0;
@@ -4553,158 +4719,15 @@ if ($('btn-confirm-adjust')) {
             });
             mainImg.onload = null;
           };
-        };
-
-        if (!isPasted && createCopy) {
-          const newImg = {
-            file: {
-              name: result.filePath.split(/[\\/]/).pop(),
-              path: result.filePath,
-              size: 0
-            }
-          };
-          state.images.splice(idx + 1, 0, newImg);
-          buildSidebar();
-          showImage(idx + 1, null);
-        } else if (isPasted) {
-          // Pasted image now lives on disk as the modified output file the user just
-          // picked: bind it as a real disk image, reload, and refresh the sidebar so
-          // the filename + thumbnail reflect the saved file (drops the stale blob).
-          const savedPath = result.filePath || exported.filePath;
-          bindImageToDiskPath(im, savedPath, { revokeBlob: true });
-          reloadAfterSave(savedPath);
-          buildSidebar();
-        } else {
-          const savedPath = result.filePath || exported.filePath;
-          if (im.file) im.file.path = savedPath;
-          im.path = savedPath;
-          reloadAfterSave(savedPath);
         }
       } else {
-        showToast((i18nLang.toast_adjust_error || 'ERROR') + ': ' + (result.error || ''), 'error');
+        showToast('ERROR: ' + result.error, 'error');
       }
     } catch (e) {
-      console.error('Error confirming adjust:', e);
+      console.error('Error confirming resize:', e);
       showToast('ERROR: ' + e.message, 'error');
     }
   });
-}
-
-$('btn-confirm-resize').addEventListener('click', async () => {
-  try {
-    const idx = state.current;
-    if (idx === undefined || idx === -1) return;
-    const im = state.images[idx];
-    if (!im) return;
-    const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
-    const i18nLang = I18N[lang] || I18N.en || {};
-
-    let fpath = imageDiskPath(im);
-    const isPasted = !fpath;
-    if (!fpath) {
-      // Pasted image: build a disk path under the OS Pictures folder (no dialog)
-      // so save-image mirrors disk behaviour (suffix + dedup when createCopy is on).
-      fpath = await resolvePastedImagePath(im);
-      if (!fpath) return;
-    }    
-    const targetW = parseInt($('resize-width').value) || 0;
-    const targetH = parseInt($('resize-height').value) || 0;
-    
-    if (targetW < 1 || targetH < 1) {
-      showToast(i18nLang.toast_invalid_crop || 'Dimensiones inválidas', 'error');
-      return;
-    }
-    
-    showToast(lang === 'es' ? 'REDIMENSIONANDO IMAGEN...' : 'RESIZING IMAGE...', 'info');
-    
-    // Realizar redimensión en un canvas offscreen
-    const canvas = document.createElement('canvas');
-    canvas.width = targetW;
-    canvas.height = targetH;
-    const ctx = canvas.getContext('2d');
-    
-    const algo = resizeState.currentAlgo;
-    if (algo === 'nearest') {
-      ctx.imageSmoothingEnabled = false;
-    } else if (algo === 'bilinear') {
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'medium';
-    } else { // bicubic
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-    }
-    
-    // Dibujar la imagen en las nuevas dimensiones
-    ctx.drawImage(mainImg, 0, 0, targetW, targetH);
-    
-    const exported = canvasExport(canvas, fpath);
-    const createCopy = $('cfg-resize-copy').checked;
-    
-    const result = await window.electronAPI.saveImage({
-      filePath: exported.filePath,
-      buffer: exported.buffer,
-      createCopy: createCopy
-    });
-    
-    if (result.success) {
-      showToast(i18nLang.toast_resize_success || 'IMAGEN REDIMENSIONADA', 'success');
-      closeModal('modal-resize');
-      
-      if (createCopy) {
-        // Generar objeto de nueva imagen
-        const newImg = {
-          file: {
-            name: result.filePath.split(/[\\/]/).pop(),
-            path: result.filePath,
-            size: 0
-          }
-        };
-        // Insertarla justo después de la actual
-        state.images.splice(idx + 1, 0, newImg);
-        
-        // Reconstruir la barra y mostrar la nueva imagen
-        buildSidebar();
-        showImage(idx + 1, null);
-      } else {
-        const savedPath = result.filePath || exported.filePath;
-        if (isPasted) {
-          bindImageToDiskPath(im, savedPath, { revokeBlob: true });
-          buildSidebar();
-        } else {
-          if (im.file) im.file.path = savedPath;
-          im.path = savedPath;
-        }
-        // Recargar imagen con cache-buster
-        mainImg.src = mediaUrl(savedPath, Date.now());
-        
-        mainImg.onload = () => {
-          state.currentRotation = 0; state.visualRotation = 0;
-          state.panX = 0;
-          state.panY = 0;
-          mainImg.style.transition = 'none';
-          mainImg.style.transform = 'none';
-          
-          im.w = mainImg.naturalWidth;
-          im.h = mainImg.naturalHeight;
-          state.hasChanges = false;
-          updateSaveButton();
-          updateHUDStates();
-          updateFileStats();
-          fitToWindow(im.w, im.h);
-          
-          requestAnimationFrame(() => {
-            mainImg.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-          });
-          mainImg.onload = null;
-        };
-      }
-    } else {
-      showToast('ERROR: ' + result.error, 'error');
-    }
-  } catch (e) {
-    console.error('Error confirming resize:', e);
-    showToast('ERROR: ' + e.message, 'error');
-  }
 });
 
 // ── ZOOM & PAN ──
@@ -4740,6 +4763,8 @@ function fitToWindow(w, h) {
 }
 
 function applyTransform(animate, opts = {}) {
+  window.CVWorkspace.capture();
+  window.CVWorkspace.changed();
   const t = `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom})`;
   canvasL.style.transition = animate ? 'transform 200ms cubic-bezier(.25,.46,.45,.94)' : 'none';
   canvasL.style.transform = t;
@@ -5439,9 +5464,10 @@ function setImageError(im) {
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
   const t = I18N[lang] || I18N.en || {};
   const sub = $('error-banner-sub');
+  $('btn-relocate-tab').hidden = !isElectron;
   if (sub) {
     const name = (im && im.file && im.file.name) ? im.file.name : '';
-    const tpl = t.error_image_sub;
+    const tpl = im?.unavailable || im?.missingDraft ? t.tabs_missing : t.error_image_sub;
     if (name && tpl) sub.textContent = tpl.replace('{name}', name);
     else sub.textContent = (lang === 'es'
       ? 'No se pudo cargar la imagen. El archivo está dañado, no es una imagen o el formato no es compatible.'
@@ -5456,6 +5482,7 @@ function setImageError(im) {
 }
 
 function clearImageError() {
+  $('btn-relocate-tab').hidden = true;
   document.body.classList.remove('image-error');
   applyImageErrorToolbars(false);
   const banner = $('error-banner');
@@ -5597,6 +5624,7 @@ viewerWrap.addEventListener('touchend', e => {
 
 // ── KEYBOARD ──
 document.addEventListener('keydown', e => {
+  if (window.CVWorkspace.busy && e.key !== 'F4') { e.preventDefault(); return; }
   // Escape always closes overlays, even when an input has focus
   if (e.key === 'Escape' || e.key === 'Esc') {
     if (closeShortcutsPopover()) {
@@ -5873,50 +5901,17 @@ document.addEventListener('keydown', e => {
 });
 
 function handleFileDeleted(index) {
-  if (index < 0 || index >= state.images.length) return;
-  const im = state.images[index];
-
-  if (im.file && im.file.path) {
-    const p = im.file.path;
-    const favs = state.settings.app.favorites || [];
-    const newFavs = favs.filter(x => x !== p);
-    if (newFavs.length !== favs.length) {
-      state.settings.app.favorites = newFavs;
-      if (isElectron) {
-        window.electronAPI.saveSettings(state.settings.app);
-      }
-    }
-    
-    if (state.showingFavs) {
-      const nidx = state.nonFavImages.findIndex(x => x.file && x.file.path === p);
-      if (nidx !== -1) {
-        state.nonFavImages.splice(nidx, 1);
-        if (state.nonFavCurrent >= state.nonFavImages.length) {
-          state.nonFavCurrent = state.nonFavImages.length - 1;
-        }
-      }
-    }
+  const image = typeof index === 'number' ? state.images[index] : index;
+  if (!image) return;
+  const filePath = image.file?.path;
+  if (filePath) {
+    state.settings.app.favorites = (state.settings.app.favorites || []).filter(item =>
+      window.CVTabs.pathKey(item) !== window.CVTabs.pathKey(filePath));
+    if (isElectron) window.electronAPI.saveSettings(state.settings.app);
   }
-
-  if (im.url) URL.revokeObjectURL(im.url);
-  state.images.splice(index, 1);
-  
-  if (state.images.length === 0) {
-    syncCurrentIndex(-1);
-    mainImg.classList.remove('loaded');
-    mainImg.src = '';
-    dropZone.style.display = 'flex';
-    sidebar.innerHTML = '';
-    syncFilenameDisplays();
-  } else {
-    const nextIdx = Math.min(index, state.images.length - 1);
-    syncCurrentIndex(nextIdx);
-    buildSidebar();
-    showImage(nextIdx, null);
-  }
+  window.CVWorkspace.fileDeleted(image);
   updateCounter();
-  const { done: delDone, total: delTotal } = getFolderThumbStats();
-  updateThumbProgress(delDone, delTotal, !state.sidebarOpen);
+  updateFileStats();
 }
 
 async function trashCurrentImage() {
@@ -5938,13 +5933,13 @@ async function trashCurrentImage() {
         try {
           const result = await window.electronAPI.moveToTrash(im.file.path);
           if (result && result.success) {
-            handleFileDeleted(idx);
+            handleFileDeleted(im);
           }
         } catch (err) {
           console.error('Error al mover a la papelera:', err);
         }
       } else {
-        handleFileDeleted(idx);
+        handleFileDeleted(im);
       }
     }
   });
@@ -6024,6 +6019,10 @@ function bindImageToDiskPath(im, diskPath, { revokeBlob = true } = {}) {
   if (revokeBlob) {
     im.loaded = false;
   }
+  im.url = mediaUrl(diskPath, Date.now());
+  im.thumbUrl = null;
+  delete im.staticUrl;
+  window.CVWorkspace.imageBound(im);
 }
 
 async function promptSavePathForImage(im) {
@@ -6071,44 +6070,8 @@ async function ensureImageDiskPath(im) {
 }
 
 function insertPastedImage(blob, mime = 'image/png') {
-  const name = clipboardDefaultName();
-  const file = new File([blob], name, { type: mime || 'image/png' });
-  const url = URL.createObjectURL(file);
-  const im = {
-    file: { name, path: null, size: blob.size || file.size || 0 },
-    url,
-    w: 0,
-    h: 0,
-    loaded: false,
-    size: blob.size || file.size || 0,
-    fromClipboard: true
-  };
-
-  dropZone.style.display = 'none';
-
-  // Revoke previously un-saved paste blob URLs to prevent memory leaks
-  if (Array.isArray(state.images)) {
-    state.images.forEach(prev => {
-      if (prev && prev.fromClipboard && prev.url && String(prev.url).startsWith('blob:')) {
-        try { URL.revokeObjectURL(prev.url); } catch (_) { /* ignore */ }
-      }
-    });
-  }
-
-  // Clear previous folder image list and isolate the pasted image session
-  state.openSeq++;
-  state.scanInProgress = false;
-  im.thumbUrl = url;
-  state.images = [im];
-  state.current = 0;
-  state.currentIdx = 0;
-  state.showingFavs = false;
-  buildSidebar();
-  showImage(0, null, true);
-
-  updateThumbProgress(1, 1);
-  updateSaveButton();
-  syncEmptyState();
+  const file = new File([blob], clipboardDefaultName(), { type: mime || 'image/png' });
+  return window.CVWorkspace.openFiles([file]);
 }
 
 async function pasteFromClipboard() {
@@ -7078,7 +7041,7 @@ const CONFIG_CONTROL_ICON_BY_ID = {
   'cfg-clear-recent-images': 'image',
   'cfg-autostart': 'play',
   'cfg-contextmenu': 'settings',
-  'cfg-multiple': 'copy',
+  'cfg-restore-session': 'restore',
   'cfg-hotkey': 'keyboard',
   'cfg-export-settings': 'save',
   'cfg-autobackup-enabled': 'save',
@@ -7151,7 +7114,7 @@ function openConfig() {
   if ($('cfg-tray-recent-images')) $('cfg-tray-recent-images').checked = s.trayRecentImages !== false;
   $('cfg-autostart').checked = s.autoStart;
   $('cfg-contextmenu').checked = s.contextMenuEnabled || false;
-  $('cfg-multiple').checked = s.allowMultipleInstances === true;
+  $('cfg-restore-session').checked = s.restoreSession === true;
   if ($('cfg-animated-gifs')) $('cfg-animated-gifs').checked = s.animateGifs !== false;
   $('cfg-show-filename').checked = s.showFileName !== false;
   $('cfg-lang').value = s.language || 'en';
@@ -7260,7 +7223,7 @@ function collectConfigSettings() {
     language: $('cfg-lang').value,
     accentColor: accentColor,
     contextMenuEnabled: $('cfg-contextmenu').checked,
-    allowMultipleInstances: $('cfg-multiple').checked,
+    restoreSession: $('cfg-restore-session').checked,
     animateGifs: !!($('cfg-animated-gifs') && $('cfg-animated-gifs').checked),
     showFileName: $('cfg-show-filename').checked,
     toggleHotkey: $('cfg-hotkey') ? ($('cfg-hotkey').value.trim() || 'disabled') : 'disabled',
@@ -7312,7 +7275,7 @@ function getFactoryAppSettings() {
     slideshowIntervalMs: 3000,
     slideshowLoop: true,
     slideshowEnterFullscreen: true,
-    allowMultipleInstances: false,
+    restoreSession: false,
     showFileName: true,
     animateGifs: true,
     dblClickAction: 'fullscreen',
@@ -7338,6 +7301,7 @@ function resetFactorySettings() {
   state.settings.app = defaults;
   applySettings();
   if (isElectron) window.electronAPI.saveSettings(state.settings.app);
+  window.CVWorkspace.settingsChanged();
   setConfigAutosaveState(true);
   openConfig();
   showToast(I18N.en.toast_factory_reset || 'FACTORY SETTINGS RESTORED', 'success', 1200);
@@ -7368,6 +7332,7 @@ function saveConfigSettings({ toast = false, silent = false } = {}) {
   }
   applySettings();
   if (isElectron) window.electronAPI.saveSettings(state.settings.app);
+  window.CVWorkspace.settingsChanged();
   if (!silent) setConfigAutosaveState(true);
   if (pendingTrayPinReminder) setTimeout(maybeShowPendingTrayPinReminder, 0);
 
@@ -7476,6 +7441,7 @@ async function applyImportedBackup(payload) {
   state.settings.app = next;
   applySettings();
   if (isElectron) window.electronAPI.saveSettings(state.settings.app);
+  window.CVWorkspace.settingsChanged();
   setConfigAutosaveState(true);
   openConfig();
   setActiveConfigTab('system');
@@ -8162,6 +8128,7 @@ if (isElectron) {
   // so the highlight clears (or re-applies) per the real cursor position.
   if (typeof window.electronAPI.onWindowRestore === 'function') {
     window.electronAPI.onWindowRestore(() => {
+      window.CVWorkspace.resume();
       document.body.classList.add('hover-reset');
       requestAnimationFrame(() => requestAnimationFrame(() => {
         document.body.classList.remove('hover-reset');
@@ -8171,7 +8138,9 @@ if (isElectron) {
 
   window.electronAPI.onOpenFile(async (filePath) => {
     hideInterfaceMenus();
-    if (filePath) await openImagePath(filePath);
+    const paths = Array.isArray(filePath) ? filePath : filePath ? [filePath] : [];
+    for (const item of paths) pushRecentFile(item);
+    if (paths.length) await window.CVWorkspace.openFiles(paths.map(item => ({ path: item, name: fileNameFromPath(item), size: 0 })));
   });
 
   window.electronAPI.onOpenSettings(() => {
@@ -8190,7 +8159,7 @@ if (isElectron) {
   }
 
   // Load settings from Electron
-  window.electronAPI.getSettings().then(s => {
+  window.electronAPI.getSettings().then(async s => {
     if (s && s.app) {
       state.settings.app = { ...state.settings.app, ...s.app };
       if (state.settings.app.checkUpdatesOnStartup === undefined) {
@@ -8205,6 +8174,7 @@ if (isElectron) {
         state.settings.app.recentFolders = [];
       }
       applySettings();
+      await window.CVWorkspace.restore();
       scheduleInitialTrayPinReminder();
       // Startup update check is owned by main (electron-updater); badge + 1× toast
       if (window.electronAPI.onUpdateStatus) {
@@ -8222,10 +8192,11 @@ if (isElectron) {
         }).catch(() => {});
       }
     }
-  }).catch(err => console.error('Error cargando settings:', err));
+  }).catch(err => { console.error('Error cargando settings:', err); window.CVWorkspace.restore(); });
 } else {
   // Modo browser
   applySettings();
+  window.CVWorkspace.restore();
 }
 
 // ── HUD SYNC ──
@@ -9178,6 +9149,7 @@ $('btn-config').addEventListener('click', openConfig);
       case 'clear-recent-folders': clearRecentFolders(); break;
       case 'paste-image':    pasteFromClipboard(); break;
       case 'close-image':    closeImage(); break;
+      case 'reopen-tab':     window.CVWorkspace.reopen(); break;
       case 'show-folder':    $('btn-show-folder').click(); break;
       case 'save':           saveCurrent(); break;
       case 'save-as':        showSaveAsDialog(); break;
@@ -9677,120 +9649,21 @@ function syncFavoritesToggleButtonState(lang) {
 }
 
 async function toggleFavoritesView() {
-  const btn = $('btn-toggle-favs');
-  if (!btn) return;
-  dismissToasts();
-  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
-  
-  if (!state.showingFavs) {
-    const favs = state.settings.app.favorites || [];
-    if (favs.length === 0) {
-      showToast(lang === 'es' ? 'No hay favoritos guardados' : 'No favorites saved', 'info');
-      return;
-    }
-    
-    if (isElectron) {
-      const validFavs = await window.electronAPI.validatePaths(favs);
-      if (validFavs.length !== favs.length) {
-        state.settings.app.favorites = validFavs;
-        window.electronAPI.saveSettings(state.settings.app);
-      }
-      
-      if (validFavs.length === 0) {
-        showToast(lang === 'es' ? 'No hay favoritos guardados en disco' : 'No favorites found on disk', 'info');
-        return;
-      }
-
-      // validate-paths does not expand the allowlist — register before loading
-      if (window.electronAPI.registerPaths) {
-        await window.electronAPI.registerPaths(validFavs);
-      }
-      
-      state.nonFavImages = [...state.images];
-      state.nonFavCurrent = state.current;
-      
-      const mapped = validFavs.map(p => {
-        const name = p.split(/[\\/]/).pop();
-        return {
-          file: { name, path: p, size: 0, type: '' },
-          url: null,
-          loaded: false,
-          w: 0,
-          h: 0
-        };
-      });
-      
-      state.showingFavs = true;
-      syncFavoritesToggleButtonState(lang);
-      
-      state.images = mapped;
-      state.openSeq++;
-      const favStats1 = getFolderThumbStats();
-      updateThumbProgress(favStats1.done, favStats1.total, !state.sidebarOpen);
-      if (state.sidebarOpen && favStats1.done < favStats1.total) startBackgroundScan();
-      buildSidebar();
-      dropZone.style.display = 'none';
-      showImage(0, null, true);
-      showToast(lang === 'es' ? 'VISTA DE FAVORITOS ACTIVA' : 'FAVORITES VIEW ACTIVE', 'success');
-    } else {
-      state.nonFavImages = [...state.images];
-      state.nonFavCurrent = state.current;
-      
-      const mapped = favs.map(p => {
-        const name = p.split(/[\\/]/).pop();
-        return {
-          file: { name, path: p, size: 0, type: '' },
-          url: p,
-          loaded: false,
-          w: 0,
-          h: 0
-        };
-      });
-      
-      state.showingFavs = true;
-      syncFavoritesToggleButtonState(lang);
-      
-      state.images = mapped;
-      state.openSeq++;
-      const favStats2 = getFolderThumbStats();
-      updateThumbProgress(favStats2.done, favStats2.total, !state.sidebarOpen);
-      if (state.sidebarOpen && favStats2.done < favStats2.total) startBackgroundScan();
-      buildSidebar();
-      dropZone.style.display = 'none';
-      showImage(0, null, true);
-      showToast(lang === 'es' ? 'VISTA DE FAVORITOS ACTIVA' : 'FAVORITES VIEW ACTIVE', 'success');
-    }
-  } else {
-    state.showingFavs = false;
-    syncFavoritesToggleButtonState(lang);
-    
-    state.images = [...state.nonFavImages];
-    state.openSeq++;
-    const fullStats = getFolderThumbStats();
-    updateThumbProgress(fullStats.done, fullStats.total, !state.sidebarOpen);
-    if (state.sidebarOpen && fullStats.done < fullStats.total) startBackgroundScan();
-    buildSidebar();
-    if (state.nonFavCurrent !== -1 && state.nonFavCurrent < state.images.length) {
-      showImage(state.nonFavCurrent, null, true);
-    } else if (state.images.length > 0) {
-      showImage(0, null, true);
-    } else {
-      syncCurrentIndex(-1);
-      state.transitioning = false;
-      mainImg.onload = null;
-      mainImg.onerror = null;
-      clearImageError();
-      mainImg.classList.remove('loaded');
-      mainImg.src = '';
-      dropZone.style.display = 'flex';
-      $('sidebar-inner').innerHTML = '';
-      syncFilenameDisplays();
-      updateCounter();
-    }
-    if (state.nonFavImages.length > 0) {
-      showToast(lang === 'es' ? 'GALERÍA COMPLETA RESTAURADA' : 'FULL GALLERY RESTORED', 'info');
-    }
+  if (window.CVWorkspace.isEditing()) return;
+  const active = window.CVWorkspace.model.active;
+  if (state.showingFavs && active) {
+    await window.CVWorkspace.activate(active.id, { force: true, source: 'folder' });
+    return;
   }
+  const lang = state.settings.app.language || 'en';
+  const favorites = state.settings.app.favorites || [];
+  const valid = isElectron ? await window.electronAPI.validatePaths(favorites) : favorites;
+  if (!valid.length) {
+    showToast(lang === 'es' ? 'No hay favoritos guardados en disco' : 'No favorites found on disk', 'info');
+    return;
+  }
+  if (isElectron) await window.electronAPI.registerPaths(valid);
+  await openImagePath(valid[0], { source: 'favorites' });
 }
 
 $('btn-fav').addEventListener('click', toggleFavorite);
@@ -10186,6 +10059,7 @@ wireFooterPropsHit('footer-size');
 wireFooterPropsHit('footer-weight');
 
 // ── INIT ──
+window.CVWorkspace.initialize();
 syncEmptyState();
 updateCounter();
 resetHudTimer();

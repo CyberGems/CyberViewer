@@ -49,6 +49,8 @@ Most image viewers are either bloated with features you never use or so barebone
 ## ✨ Key Features
 
 ### 🖼️ Viewing
+- **Image tabs:** open multiple files together, reorder tabs, search by name or path, and reopen closed tabs. Each tab keeps its zoom, pan, and pending rotation. Folder navigation stays in the current tab; use the thumbnail context menu or middle-click to open another tab. A tab with unsaved changes stays open when navigating to another image.
+- **Optional session restore:** enable **Configuration → General → Restore previous session** to recover tab order, the active image, views, pending rotations, and pasted images after restarting. Missing files stay in their tabs and can be located again. Session data stays local and separate from settings backups; disabling the option removes the saved session.
 - **Lightning-fast open:** custom streaming protocol loads images without hogging RAM
 - **Supported formats:** JPG, JPEG, PNG, GIF, WebP, BMP, TIFF, TIF, ICO, and AVIF
 - **Folder browsing:** thumbnail sidebar with lazy loading, priority queue, and scan progress indicator
@@ -87,7 +89,7 @@ Most image viewers are either bloated with features you never use or so barebone
 - **Global hotkey:** configurable show/hide shortcut, default `Alt+Shift+V`
 - **Explorer context menu:** right-click supported images to open them in CyberViewer
 - **File associations:** set CyberViewer as the default viewer for JPG, PNG, GIF, WebP, BMP, TIFF, ICO, or AVIF
-- **Multiple instances:** optional mode for power users
+- **Single resident instance:** Explorer opens and additional launches send images to tabs in the existing window
 - **Auto-update:** built-in GitHub Releases updater with silent install
 - **Settings backup:** export or import configuration and favorites as JSON
 
@@ -218,6 +220,9 @@ npm run build:portable   # portable only
 | Key | Action |
 |---|---|
 | `Ctrl+O` | Open image |
+| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
+| `Ctrl+W` | Close tab |
+| `Ctrl+Shift+T` | Reopen closed tab |
 | `Ctrl+Shift+O` | Open containing folder |
 | `Ctrl+Shift+F` | Open folder |
 | `Ctrl+S` | Save As |
