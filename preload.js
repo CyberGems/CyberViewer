@@ -57,6 +57,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readClipboardImage: () => ipcRenderer.invoke('clipboard:read-image'),
   moveToTrash: (path) => ipcRenderer.invoke('move-to-trash', path),
   setWallpaper: (path, style) => ipcRenderer.invoke('set-wallpaper', path, style),
+  setWallpaperFromData: (data, ext, style) => ipcRenderer.invoke('set-wallpaper-data', data, ext, style),
   onOpenSettings: (cb) => ipcRenderer.on('open-settings', () => cb()),
   onRecentFilesCleared: (cb) => ipcRenderer.on('recent-files-cleared', () => cb()),
   showItemInFolder: (path) => ipcRenderer.send('show-item-in-folder', path),

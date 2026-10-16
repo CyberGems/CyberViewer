@@ -2173,6 +2173,37 @@ Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue
 
 ipcMain.handle('set-wallpaper', (event, filePath, style) => setDesktopWallpaper(filePath, style));
 
+// Set the wallpaper from in-memory image bytes (e.g. an image pasted from the
+// clipboard or dropped from a browser, which has no file on disk): the bytes
+// are materialized to the wallpaper cache in userData and applied from there,
+// reusing setDesktopWallpaper (which converts unsupported formats to PNG).
+const WALLPAPER_CACHE_EXTS = ['png', 'jpg', 'jpeg', 'bmp', 'webp', 'gif'];
+const WALLPAPER_DATA_MAX_BYTES = 32 * 1024 * 1024;
+ipcMain.handle('set-wallpaper-data', (event, dataBase64, ext, style) => {
+  const cleanExt = String(ext || '').toLowerCase().replace(/^\./, '');
+  if (!WALLPAPER_CACHE_EXTS.includes(cleanExt)) {
+    return { success: false, error: 'Unsupported image format' };
+  }
+  if (typeof dataBase64 !== 'string' || !dataBase64) {
+    return { success: false, error: 'Invalid image data' };
+  }
+  // base64 inflates by ~4/3; reject oversized payloads before decoding
+  if (Math.floor((dataBase64.length * 3) / 4) > WALLPAPER_DATA_MAX_BYTES) {
+    return { success: false, error: 'Image too large' };
+  }
+  try {
+    const buffer = Buffer.from(dataBase64, 'base64');
+    if (!buffer.length) return { success: false, error: 'Invalid image data' };
+    const cachePath = path.join(app.getPath('userData'), `wallpaper_cache.${cleanExt}`);
+    fs.writeFileSync(cachePath, buffer);
+    pathAllowlist.allow(cachePath);
+    return setDesktopWallpaper(cachePath, style);
+  } catch (err) {
+    console.error('Error materializing wallpaper image:', err);
+    return { success: false, error: err instanceof Error ? err.message : String(err) };
+  }
+});
+
 ipcMain.handle('get-file-info', (event, filePath) => {
   try {
     const stats = fs.statSync(resolveAllowedPath(filePath));

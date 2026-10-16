@@ -1867,8 +1867,6 @@ function buildMenuTemplate(type, data) {
         label: getTxt('menu_set_wallpaper'),
         isSub: true,
         icon: 'monitor',
-        enabled: !!data.path,
-        visible: !!data.path,
         items: [
           {
             label: getTxt('wallpaper_style_fill'),
@@ -9751,10 +9749,67 @@ function openPropertiesForCurrent() {
   showPropertiesPanel(fpath);
 }
 
+// Clipboard/dropped mime → file extension accepted by the wallpaper cache.
+const WALLPAPER_MIME_EXTS = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/jpg': 'jpg',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+  'image/bmp': 'bmp'
+};
+
+function arrayBufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+/**
+ * Set an in-memory image (pasted from the clipboard or dropped from a browser,
+ * i.e. no file on disk) as wallpaper: the bytes are sent to the main process,
+ * which materializes them to the wallpaper cache and applies them.
+ * @returns {Promise<boolean>} true when the flow was handled (success or a
+ *   shown error), false when it could not run (no usable in-memory image).
+ */
+async function setWallpaperFromMemory(im, style, lang) {
+  if (!im || !im.url || !isElectron || !window.electronAPI || !window.electronAPI.setWallpaperFromData) {
+    return false;
+  }
+  try {
+    const res = await fetch(im.url);
+    if (!res.ok) return false;
+    const mime = (res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase()
+      || (im.file && im.file.type) || '';
+    const ext = WALLPAPER_MIME_EXTS[mime];
+    if (!ext) return false;
+    const buf = await res.arrayBuffer();
+    if (!buf.byteLength) return false;
+    const r = await window.electronAPI.setWallpaperFromData(arrayBufferToBase64(buf), ext, style);
+    if (r && r.success) {
+      showToast(lang === 'es' ? 'FONDO DE PANTALLA ESTABLECIDO' : 'WALLPAPER SET', 'success');
+      return true;
+    }
+    showToast((r && r.error) || (lang === 'es' ? 'ERROR AL CAMBIAR FONDO' : 'FAILED TO SET WALLPAPER'), 'danger');
+    return true;
+  } catch (err) {
+    console.error('Error setting wallpaper from memory:', err);
+    return false;
+  }
+}
+
 async function setAsWallpaper(targetPath, style = 'fill') {
-  const p = targetPath || (state.current >= 0 && state.images[state.current] ? imageDiskPath(state.images[state.current]) : null);
+  const im = state.current >= 0 ? state.images[state.current] : null;
+  const p = targetPath || (im ? imageDiskPath(im) : null);
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
   if (!p) {
+    // No file on disk (image pasted from the clipboard or dropped from a
+    // browser): materialize the in-memory image instead of asking to load one.
+    if (await setWallpaperFromMemory(im, style, lang)) return;
     showToast(lang === 'es' ? 'CARGA UNA IMAGEN PRIMERO' : 'LOAD AN IMAGE FIRST', 'warn');
     return;
   }
