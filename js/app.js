@@ -8601,88 +8601,131 @@ $('btn-go-end').addEventListener('click', (e) => {
       : { canUpdate: false, portable: false };
 
     const verLabel = version ? `v${version}` : 'v—';
+    const versionLabel = (t.about_version_label || 'VERSION {version}')
+      .replace('{version}', version || '—');
+
+    // Suite strip: 4 random sibling apps (icons are local copies, offline-safe)
+    const suitePool = [
+      { slug: 'cyberclock', key: 'about_suite_clock' },
+      { slug: 'cyberlauncher', key: 'about_suite_launcher' },
+      { slug: 'cybermanager', key: 'about_suite_manager' },
+      { slug: 'cybernotes', key: 'about_suite_notes' },
+      { slug: 'cyberpaste', key: 'about_suite_paste' },
+      { slug: 'cybersnap', key: 'about_suite_snap' },
+      { slug: 'cybertray', key: 'about_suite_tray' },
+      { slug: 'cyberwall', key: 'about_suite_wall' }
+    ];
+    const suitePicks = [];
+    const pool = suitePool.slice();
+    while (suitePicks.length < 4 && pool.length > 0) {
+      const pick = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+      if (pick) suitePicks.push(pick);
+    }
+    const suiteHtml = suitePicks.map(app => {
+      const pitch = t[app.key] || app.slug;
+      return `<a class="about-suite-app cyber-tooltip" href="https://cybergems.org/apps/${app.slug}/" target="_blank" rel="noopener noreferrer" data-tooltip="${pitch}" aria-label="${pitch}"><img src="assets/suite/${app.slug}.png" alt="" width="26" height="26" draggable="false"></a>`;
+    }).join('');
+
     overlay.innerHTML = `
-      <div class="modal-box about-modal" role="dialog" aria-modal="true" aria-labelledby="about-dialog-title">
-        <div class="modal-header">
-          <div class="modal-title" id="about-dialog-title"><span class="modal-header-icon" data-modal-icon="info" aria-hidden="true"></span><span>${t.about_title}</span></div>
+      <div class="modal-box about-modal" role="dialog" aria-modal="true" aria-label="${t.about_title}">
+        <div class="about-glass" aria-hidden="true">
+          <span class="about-glow about-glow-accent"></span>
+          <span class="about-glow about-glow-violet"></span>
+          <span class="about-hairline"></span>
+        </div>
+        <div class="modal-header about-modal-header">
+          <div class="about-header-spacer"></div>
           <button class="win-btn modal-close-btn" id="about-close-btn" aria-label="${t.close || 'Close'}">&#10005;</button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body about-modal-body">
           <div class="about-hero">
             <div class="about-logo-wrap">
               <img src="assets/icon.ico" class="about-logo" alt="" width="76" height="76" draggable="false">
             </div>
-            <div class="about-brand">
-              <span class="about-brand-cyber" style="color:#E6E6E6">Cyber</span><span class="about-brand-viewer">Viewer</span>
-            </div>
-            <span class="about-version">${verLabel}</span>
-            <p class="about-desc">
-              ${t.about_copyright || t.about_desc}
-              <span class="about-tagline">${t.about_tagline || ''}</span>
-            </p>
+            <h1 class="about-brand">
+              <span class="about-brand-cyber">Cyber</span><span class="about-brand-viewer">Viewer</span>
+            </h1>
+            <div class="about-version-label">${versionLabel}</div>
+            <p class="about-desc">${t.about_tagline || ''}</p>
             <div class="about-formats">
               ${t.about_formats_list || t.about_formats}
               <span class="about-formats-tech">${t.about_formats_tech || ''}</span>
             </div>
           </div>
 
-          <div class="about-update-section">
-            <div class="about-update-heading">${t.about_updates_heading || t.menu_updates || 'Updates'}</div>
-            <div class="about-startup-row">
-              <span class="about-startup-label">${t.about_check_on_startup}</span>
-              <label class="switch">
-                <input type="checkbox" id="about-startup-update-toggle" ${state.settings.app.checkUpdatesOnStartup !== false ? 'checked' : ''}>
-                <span class="slider"></span>
-              </label>
+          <div class="about-section">
+            <div class="about-section-title">
+              <span class="about-section-rule"></span>
+              <span>${t.about_updates_heading || t.menu_updates || 'Updates'}</span>
+              <span class="about-section-rule"></span>
             </div>
-            <div id="about-update-banner" class="about-update-banner" aria-live="polite"></div>
-            <div id="about-update-details" class="about-update-details" style="display:none">
-              <div class="about-update-version-card">
-                <span class="about-update-version-label">${t.about_current_version || 'Current'}</span>
-                <span class="about-update-version-value">${verLabel}</span>
+            <div class="about-maintenance">
+              <div id="about-update-banner" class="about-update-banner" aria-live="polite"></div>
+              <div class="about-update-actions">
+                <button type="button" id="about-btn-update" class="top-btn about-action-btn about-action-accent">
+                  ${t.about_check_updates}
+                </button>
+                <button type="button" id="about-btn-download" class="top-btn active about-action-btn" style="display:none">
+                  ${t.about_download_btn}
+                </button>
+                <button type="button" id="about-btn-install" class="top-btn active about-action-btn" style="display:none">
+                  ${t.about_install_btn}
+                </button>
               </div>
-              <div class="about-update-version-card latest">
-                <span class="about-update-version-label">${t.about_latest_version || 'Latest'}</span>
-                <span id="about-latest-version" class="about-update-version-value">—</span>
+              <div id="about-update-progress" class="about-update-progress" style="display:none">
+                <div class="about-update-track"><div id="about-update-bar" class="about-update-bar"></div></div>
               </div>
-            </div>
-            <div id="about-update-progress" class="about-update-progress" style="display:none">
-              <div class="about-update-track"><div id="about-update-bar" class="about-update-bar"></div></div>
-            </div>
-            <div class="about-update-actions">
-              <button type="button" id="about-btn-update" class="top-btn about-action-btn about-action-accent">
-                ${t.about_check_updates}
+              <div class="about-auto-update-row">
+                <button type="button" class="about-auto-update" id="about-auto-update-toggle" role="switch" aria-checked="${state.settings.app.checkUpdatesOnStartup !== false ? 'true' : 'false'}" aria-label="${t.about_check_on_startup}">
+                  <span class="custom-switch ${state.settings.app.checkUpdatesOnStartup !== false ? 'active' : ''}" aria-hidden="true"></span>
+                  <span class="about-auto-update-label">${t.about_check_on_startup}</span>
+                </button>
+              </div>
+              <div id="about-update-details" class="about-update-details" style="display:none">
+                <div class="about-update-version-card">
+                  <span class="about-update-version-label">${t.about_current_version || 'Current'}</span>
+                  <span class="about-update-version-value">${verLabel}</span>
+                </div>
+                <div class="about-update-version-card latest">
+                  <span class="about-update-version-label">${t.about_latest_version || 'Latest'}</span>
+                  <span id="about-latest-version" class="about-update-version-value">—</span>
+                </div>
+              </div>
+              <div id="about-update-status" class="about-update-status" aria-live="polite"></div>
+              <div id="about-release-notes" class="about-release-notes" style="display:none">
+                <div class="about-release-notes-heading">${t.about_release_notes || "What's new"}</div>
+                <div id="about-release-notes-body" class="about-release-notes-body"></div>
+              </div>
+              <button type="button" id="about-btn-release" class="top-btn about-release-btn" style="display:none">
+                ${t.about_view_release || 'View release page'}
               </button>
-              <button type="button" id="about-btn-download" class="top-btn active about-action-btn" style="display:none">
-                ${t.about_download_btn}
-              </button>
-              <button type="button" id="about-btn-install" class="top-btn active about-action-btn" style="display:none">
-                ${t.about_install_btn}
-              </button>
+              ${!updateInfo.canUpdate && updateInfo.portable ? `<div class="about-update-hint">${t.about_portable_hint}</div>` : ''}
             </div>
-            <div id="about-update-status" class="about-update-status" aria-live="polite"></div>
-            <div id="about-release-notes" class="about-release-notes" style="display:none">
-              <div class="about-release-notes-heading">${t.about_release_notes || "What's new"}</div>
-              <div id="about-release-notes-body" class="about-release-notes-body"></div>
+          </div>
+
+          <div class="about-section">
+            <div class="about-section-title">
+              <span class="about-section-rule"></span>
+              <span>${t.about_suite_title || 'More from CyberGems'}</span>
+              <span class="about-section-rule"></span>
             </div>
-            <button type="button" id="about-btn-release" class="top-btn about-release-btn" style="display:none">
-              ${t.about_view_release || 'View release page'}
-            </button>
-            ${!updateInfo.canUpdate && updateInfo.portable ? `<div class="about-update-hint">${t.about_portable_hint}</div>` : ''}
+            <div class="about-suite">
+              ${suiteHtml}
+            </div>
+            <div class="about-suite-more-row">
+              <a class="about-suite-more" href="https://cybergems.org/#apps" target="_blank" rel="noopener noreferrer">${t.about_suite_more || 'View all →'}</a>
+            </div>
           </div>
         </div>
         <div class="modal-footer about-modal-footer">
-          <span class="about-footer-copyright">
-            © 2026
-            <a
-              class="about-footer-brand cyber-tooltip"
-              href="https://cybergems.org"
-              target="_blank"
-              rel="noopener noreferrer"
-              data-tooltip="${t.about_website_tooltip}"
-              aria-label="${t.about_website_tooltip}"
-            >CyberGems</a>
-          </span>
+          <a
+            class="about-footer-brand"
+            href="https://cybergems.org"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-tooltip="${t.about_website_tooltip}"
+            aria-label="${t.about_website_tooltip}"
+          >&#169; CyberGems &#8226; 2026</a>
           <div class="about-footer-links">
             <a
               class="about-footer-icon cyber-tooltip"
@@ -8736,16 +8779,24 @@ $('btn-go-end').addEventListener('click', (e) => {
         </div>
       </div>
     `;
-    decorateModalHeaderIcons();
     overlay.querySelector('#about-close-btn').addEventListener('click', closeAbout);
-    
-    const toggle = overlay.querySelector('#about-startup-update-toggle');
-    toggle.addEventListener('change', () => {
-      state.settings.app.checkUpdatesOnStartup = toggle.checked;
-      if (isElectron) {
-        window.electronAPI.saveSettings(state.settings.app);
-      }
-    });
+
+    const autoToggle = overlay.querySelector('#about-auto-update-toggle');
+    if (autoToggle) {
+      const syncAutoToggle = () => {
+        const on = state.settings.app.checkUpdatesOnStartup !== false;
+        autoToggle.setAttribute('aria-checked', on ? 'true' : 'false');
+        const sw = autoToggle.querySelector('.custom-switch');
+        if (sw) sw.classList.toggle('active', on);
+      };
+      autoToggle.addEventListener('click', () => {
+        state.settings.app.checkUpdatesOnStartup = !(state.settings.app.checkUpdatesOnStartup !== false);
+        syncAutoToggle();
+        if (isElectron) {
+          window.electronAPI.saveSettings(state.settings.app);
+        }
+      });
+    }
 
     overlay.querySelector('#about-btn-update').addEventListener('click', () => {
       window.checkUpdatesGlobal(true);

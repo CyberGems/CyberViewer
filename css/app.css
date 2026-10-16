@@ -6239,15 +6239,72 @@
   }
 
 /* ── About modal ── */
+/* Lighter, more transparent backdrop than the other modals (CyberFeeds pattern) */
+#about-overlay {
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+}
 .about-modal {
-  max-width: 380px;
-  width: min(380px, calc(100vw - 48px));
+  max-width: 440px;
+  width: min(440px, calc(100vw - 48px));
   /* Prefer fitting the dialog without an inner scrollbar on typical window sizes */
-  max-height: min(92vh, 720px);
+  max-height: min(90vh, 640px);
+  background: linear-gradient(160deg, var(--cyber-panel), var(--cyber-panel-dark));
+  border: 1px solid rgba(var(--cyber-accent-rgb), 0.28);
+  border-radius: 14px;
+}
+/* Glass decor: soft glows behind the content + top hairline, no hit targets */
+.about-glass {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.about-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+}
+.about-glow-accent {
+  top: -80px;
+  left: -70px;
+  width: 210px;
+  height: 210px;
+  background: var(--cyber-accent);
+  opacity: 0.13;
+}
+.about-glow-violet {
+  top: -50px;
+  right: -80px;
+  width: 180px;
+  height: 180px;
+  background: #7c3aed;
+  opacity: 0.11;
+}
+.about-hairline {
+  position: absolute;
+  top: 0;
+  left: 8%;
+  right: 8%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+}
+.about-modal .modal-header,
+.about-modal .modal-body,
+.about-modal .modal-footer {
+  position: relative;
+  z-index: 1;
 }
 .about-modal .modal-header {
   flex-shrink: 0;
-  padding: 14px 20px;
+  padding: 16px 16px 0;
+  border-bottom: none;
+  justify-content: flex-end;
+}
+.about-header-spacer {
+  flex: 1;
 }
 .about-modal .modal-footer {
   flex-shrink: 0;
@@ -6259,12 +6316,6 @@
   color: var(--cyber-muted);
   border-top: 1px solid var(--cyber-border);
   background: rgba(0, 0, 0, 0.12);
-}
-.about-footer-copyright {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: 600;
 }
 .about-footer-brand {
   display: inline-flex;
@@ -6329,7 +6380,7 @@
 }
 .about-modal .modal-body {
   text-align: center;
-  padding: 28px 24px 14px;
+  padding: 0 28px 12px;
   /* Hide scrollbar chrome; content is sized to fit. Scroll still works if needed. */
   overflow-x: visible;
   overflow-y: auto;
@@ -6423,45 +6474,38 @@
   }
 }
 .about-brand {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 26px;
+  font-weight: 800;
   font-family: var(--font-digits);
-  letter-spacing: 0.5px;
-  margin: 0 0 6px;
+  letter-spacing: -0.02em;
+  margin: 0 0 4px;
   display: flex;
   align-items: baseline;
   justify-content: center;
   gap: 0;
   line-height: 1.1;
 }
-.about-brand-cyber { color: var(--cyber-accent3); }
-.about-brand-viewer { color: #02CEFD; }
-.about-version {
-  display: inline-block;
-  margin: 0 0 12px;
-  padding: 2px 10px;
+.about-brand-cyber { color: var(--cyber-menu-text); }
+.about-brand-viewer { color: var(--cyber-accent); }
+.about-version-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin: 0 0 14px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   font-family: var(--font-ui);
-  color: var(--cyber-accent);
-  letter-spacing: 1px;
-  border: 1px solid rgba(var(--cyber-accent-rgb), 0.28);
-  border-radius: 999px;
-  background: rgba(var(--cyber-accent-rgb), 0.06);
+  color: var(--cyber-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 .about-desc {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--cyber-text);
-  line-height: 1.5;
+  line-height: 1.55;
   text-align: center;
-  margin: 0;
-}
-.about-tagline {
-  display: block;
-  margin-top: 4px;
-  font-size: 11px;
-  color: var(--cyber-muted);
-  font-weight: 400;
+  margin: 0 0 24px;
 }
 .about-formats {
   margin: 12px 0 0;
@@ -6481,38 +6525,151 @@
   opacity: 0.85;
 }
 
-/* Updates */
-.about-update-section {
+/* Sectioned layout (CyberFeeds pattern): divider-lined titles + bordered boxes */
+.about-section {
   margin-top: 16px;
-  border-top: 1px solid var(--cyber-border);
-  padding-top: 14px;
   text-align: left;
 }
-.about-update-heading {
-  font-size: 10px;
-  font-family: var(--font-ui);
-  font-weight: 600;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  color: var(--cyber-muted);
-  margin: 0 0 10px;
-}
-.about-startup-row {
+.about-section-title {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 11px;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cyber-accent);
 }
-.about-startup-label {
+.about-section-rule {
+  height: 1px;
+  flex: 1;
+  background: rgba(var(--cyber-accent-rgb), 0.22);
+}
+.about-maintenance {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(17, 22, 32, 0.7);
+  border: 1px solid var(--cyber-border);
+  border-radius: 10px;
+  padding: 12px;
+}
+.about-auto-update-row {
+  display: flex;
+  justify-content: center;
+  padding: 2px 0 0;
+}
+.about-auto-update {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.about-auto-update:focus-visible {
+  outline: 2px solid var(--cyber-accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.about-auto-update-label {
   font-size: 12px;
   color: var(--cyber-text);
   font-family: var(--font-ui);
-  line-height: 1.35;
-  text-transform: none;
-  letter-spacing: 0;
-  flex: 1;
-  min-width: 0;
+}
+/* Switch (CyberFeeds custom-switch) */
+.custom-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 44px;
+  min-width: 44px;
+  flex-shrink: 0;
+  height: 24px;
+  background: #5e6672;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.25);
+  user-select: none;
+}
+.custom-switch::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #12161e;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  transition: left 0.2s ease, background-color 0.2s ease;
+}
+.custom-switch.active {
+  background: var(--cyber-accent);
+  box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.35);
+}
+.custom-switch.active::after {
+  left: 23px;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.2 8.35 6.45 11.45 12.8 4.7' fill='none' stroke='%2312161e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 12px 12px;
+}
+
+/* Suite strip (MÁS DE CYBERGEMS) */
+.about-suite {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.about-suite-app {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  color: var(--cyber-muted);
+  text-decoration: none;
+  transition: background var(--transition), opacity var(--transition);
+}
+.about-suite-app img {
+  opacity: 0.55;
+  transition: opacity var(--transition);
+}
+.about-suite-app:hover {
+  background: rgba(var(--cyber-accent-rgb), 0.08);
+}
+.about-suite-app:hover img {
+  opacity: 1;
+}
+.about-suite-more-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+.about-suite-more {
+  padding: 3px 10px;
+  font-size: 11px;
+  font-family: var(--font-ui);
+  color: var(--cyber-muted);
+  text-decoration: none;
+  border-radius: 6px;
+  transition: color var(--transition);
+}
+.about-suite-more:hover {
+  color: var(--cyber-accent);
 }
 .about-update-actions {
   display: flex;
@@ -6522,12 +6679,16 @@
 }
 .about-action-btn {
   width: 100%;
-  padding: 7px 12px;
-  font-size: 11px;
+  padding: 9px 10px;
+  font-size: 12px;
+  gap: 6px;
   letter-spacing: 0.6px;
   cursor: pointer;
   justify-content: center;
   text-align: center;
+  white-space: normal;
+  line-height: 1.25;
+  min-height: 38px;
 }
 .about-action-accent {
   border-color: var(--cyber-accent);
@@ -6538,7 +6699,7 @@
   color: var(--cyber-muted);
 }
 .about-update-status {
-  margin-top: 8px;
+  margin-top: 0;
   min-height: 0;
   font-size: 11px;
   font-family: var(--font-ui);
@@ -6550,7 +6711,7 @@
   display: none;
 }
 .about-update-hint {
-  margin-top: 8px;
+  margin-top: 0;
   font-size: 10px;
   line-height: 1.4;
   color: var(--cyber-muted);
@@ -6560,7 +6721,7 @@
 
 .about-update-banner {
   display: none;
-  margin-bottom: 12px;
+  margin-bottom: 0;
   padding: 8px 10px;
   border: 1px solid rgba(var(--cyber-accent2-rgb), 0.45);
   background: rgba(var(--cyber-accent2-rgb), 0.1);
@@ -6582,7 +6743,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 0;
 }
 .about-update-version-card {
   display: flex;
@@ -6622,8 +6783,8 @@
   color: var(--cyber-accent);
 }
 .about-release-notes {
-  margin-top: 10px;
-  margin-bottom: 10px;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 .about-release-notes-heading {
   margin-bottom: 6px;
@@ -6658,7 +6819,7 @@
   margin: 2px 0 6px;
 }
 .about-release-btn {
-  margin-top: 7px;
+  margin-top: 0;
   border-color: rgba(var(--cyber-accent-rgb), 0.24);
   color: var(--cyber-muted);
 }
@@ -6667,7 +6828,7 @@
   color: var(--cyber-text);
 }
 
-.about-update-progress { width: 100%; margin-bottom: 10px; }
+.about-update-progress { width: 100%; margin-bottom: 0; }
 .about-update-track {
   width: 100%;
   height: 4px;

@@ -269,7 +269,8 @@ describe('title bar Help menu', () => {
     assert.match(appJs, /titlebarUpdateBtn\.addEventListener\('click',\s*\(e\)\s*=>\s*\{[\s\S]*?openAbout\(\);/);
   });
 
-  it('places About modal update action buttons directly above the changelog peek', () => {
+  it('orders About modal update controls: banner, actions, progress, cards, status, notes', () => {
+    const bannerIdx = appJs.indexOf('id="about-update-banner"');
     const detailsIdx = appJs.indexOf('id="about-update-details"');
     const progressIdx = appJs.indexOf('id="about-update-progress"');
     const actionsIdx = appJs.indexOf('class="about-update-actions"');
@@ -277,12 +278,14 @@ describe('title bar Help menu', () => {
     const notesIdx = appJs.indexOf('id="about-release-notes"');
     const releaseBtnIdx = appJs.indexOf('id="about-btn-release"');
 
-    assert.ok(detailsIdx > 0, 'about-update-details must be present');
-    assert.ok(progressIdx > detailsIdx, 'progress must follow details');
-    assert.ok(actionsIdx > progressIdx, 'action buttons must follow progress');
-    assert.ok(statusIdx > actionsIdx, 'status text must follow actions');
-    assert.ok(notesIdx > statusIdx, 'release notes must be below action buttons so user does not need to scroll');
+    assert.ok(bannerIdx > 0, 'about-update-banner must be present');
+    assert.ok(actionsIdx > bannerIdx, 'action buttons must follow the banner');
+    assert.ok(progressIdx > actionsIdx, 'progress must follow action buttons');
+    assert.ok(detailsIdx > progressIdx, 'version cards must follow progress');
+    assert.ok(statusIdx > detailsIdx, 'status text must follow version cards');
+    assert.ok(notesIdx > statusIdx, 'release notes must be below the status text');
     assert.ok(releaseBtnIdx > notesIdx, 'view release page button must follow notes');
-    assert.match(css, /\.about-release-notes\s*\{[\s\S]*?margin-top:\s*10px;[\s\S]*?margin-bottom:\s*10px;/);
+    // Maintenance box is a flex column with gap; children carry no outer margins
+    assert.match(css, /\.about-release-notes\s*\{[\s\S]*?margin-top:\s*0;[\s\S]*?margin-bottom:\s*0;/);
   });
 });
