@@ -969,10 +969,14 @@ function persistAppSettings() {
   }
 }
 
-/** Open sidebar if closed so folder thumbs + scan are visible. */
+/**
+ * Open sidebar if closed so folder thumbs + scan are visible.
+ * Session-only: expands the sidebar for the current window without persisting it,
+ * so automatic folder opens never become the user's startup preference.
+ */
 function ensureSidebarOpen() {
   if (!state.sidebarOpen && typeof setSidebarOpen === 'function') {
-    setSidebarOpen(true);
+    setSidebarOpen(true, { persist: false });
   }
 }
 
@@ -6317,7 +6321,15 @@ function syncSidebarHandleTooltip() {
   handle.classList.add('tooltip-right');
 }
 
-function setSidebarOpen(open) {
+/**
+ * @param {boolean} open
+ * @param {{ persist?: boolean }} [opts] When `persist` is false the change is
+ *   session-only and does not overwrite the user's persisted startup preference.
+ *   Automatic flows (e.g. opening a folder) use it so expanding the sidebar for
+ *   the current session never counts as the user's own choice for next launches.
+ */
+function setSidebarOpen(open, opts = {}) {
+  const persist = opts.persist !== false;
   document.body.classList.remove('sidebar-handle-hover');
 
   state.sidebarOpen = !!open;
@@ -6336,7 +6348,7 @@ function setSidebarOpen(open) {
   if (arrow) arrow.textContent = state.sidebarOpen ? '◂' : '▸';
   syncSidebarHandleTooltip();
 
-  if (state.settings && state.settings.app) {
+  if (persist && state.settings && state.settings.app) {
     state.settings.app.sidebarOpen = state.sidebarOpen;
     if (isElectron) {
       window.electronAPI.saveSettings(state.settings.app);
@@ -8808,7 +8820,7 @@ $('btn-config').addEventListener('click', openConfig);
           const wasShowing = state.showingFavs;
           await toggleFavoritesView();
           // entering favorites view shows the full list in the sidebar — expand it if collapsed
-          if (!wasShowing && state.showingFavs && !state.sidebarOpen) $('sidebar-handle').click();
+          if (!wasShowing && state.showingFavs && !state.sidebarOpen) ensureSidebarOpen();
         })();
         break;
       case 'preferences':    $('btn-config').click(); break;
