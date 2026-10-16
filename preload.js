@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   getSettings: () => ipcRenderer.invoke('get-settings'),
   getVersion: () => ipcRenderer.invoke('get-version'),
+  getDiagnostics: () => ipcRenderer.invoke('get-diagnostics'),
   openDataFolder: () => ipcRenderer.invoke('open-data-folder'),
   clearThumbnailCache: () => ipcRenderer.invoke('clear-thumbnail-cache'),
   openTaskbarSettings: () => ipcRenderer.invoke('open-taskbar-settings'),

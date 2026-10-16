@@ -6,6 +6,7 @@ const {
 } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const crypto = require('crypto');
 const { pathToFileURL } = require('url');
 const { Readable } = require('stream');
@@ -17,7 +18,7 @@ const {
 } = require('./lib/paths');
 const { clearThumbCache, evictThumbCache } = require('./lib/thumb-cache');
 const { clampWindowBounds, MIN_W, MIN_H } = require('./lib/window-bounds');
-const { initUpdater, setAutoCheckEnabled } = require('./lib/updater');
+const { initUpdater, setAutoCheckEnabled, isPortableBuild } = require('./lib/updater');
 const { buildBackup, parseBackup } = require('./lib/settings-backup');
 const autoBackup = require('./lib/auto-backup');
 const {
@@ -1192,6 +1193,18 @@ ipcMain.handle('get-settings', () => {
   return settings;
 });
 ipcMain.handle('get-version', () => app.getVersion());
+// Diagnostics snapshot for the About modal's copy button (CyberFeeds pattern)
+ipcMain.handle('get-diagnostics', () => ({
+  app: app.getVersion(),
+  electron: process.versions.electron,
+  chrome: process.versions.chrome,
+  node: process.versions.node,
+  platform: process.platform,
+  arch: process.arch,
+  osRelease: os.release(),
+  osType: os.type(),
+  portable: isPortableBuild()
+}));
 ipcMain.handle('open-data-folder', async () => {
   try {
     const dataPath = app.getPath('userData');

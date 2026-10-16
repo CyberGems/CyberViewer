@@ -6390,6 +6390,10 @@
   fill: currentColor;
   stroke: currentColor;
 }
+/* Diagnostics copy button: green flash while "copied" (CyberFeeds is-copied) */
+.about-diagnostics-btn.about-diagnostics-copied {
+  color: var(--cyber-accent3);
+}
 .about-modal .modal-body {
   text-align: center;
   padding: 0 28px 12px;

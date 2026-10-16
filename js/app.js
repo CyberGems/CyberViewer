@@ -377,6 +377,8 @@ const MENU_ICONS = {
   'check-circle': '<circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/>',
   'gem': '<path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/>',
   'bug': '<path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/>',
+  'clipboard-copy': '<path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M16 4h2a2 2 0 0 1 2 2v4"/><path d="M21 14H11"/><path d="m15 10-4 4 4 4"/>',
+  'check': '<path d="M20 6 9 17l-5-5"/>',
   'tag': '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z"/><circle cx="7" cy="7" r="1"/>'
 }
 
@@ -8766,6 +8768,13 @@ $('btn-go-end').addEventListener('click', (e) => {
               data-tooltip="${t.about_issues_tooltip}"
               aria-label="${t.about_issues_tooltip}"
             >${iconHtml('bug')}</a>
+            ${isElectron ? `<button
+              type="button"
+              class="about-footer-icon about-diagnostics-btn cyber-tooltip"
+              id="about-btn-diagnostics"
+              data-tooltip="${t.about_copy_diagnostics}"
+              aria-label="${t.about_copy_diagnostics}"
+            >${iconHtml('clipboard-copy')}</button>` : ''}
             <a
               class="about-footer-icon cyber-tooltip tooltip-align-right"
               href="https://github.com/CyberGems/CyberViewer/releases"
@@ -8830,6 +8839,52 @@ $('btn-go-end').addEventListener('click', (e) => {
         window.open(url, '_blank', 'noopener,noreferrer');
       }
     });
+
+    // Copy diagnostic info (CyberFeeds pattern): snapshot versions + OS to
+    // clipboard, then flash a check + "copied" tooltip for 1.8s
+    const diagBtn = overlay.querySelector('#about-btn-diagnostics');
+    if (diagBtn) {
+      let diagCopiedTimer = null;
+      diagBtn.addEventListener('click', async () => {
+        if (!isElectron || !window.electronAPI.getDiagnostics) return;
+        let d;
+        try {
+          d = await window.electronAPI.getDiagnostics();
+        } catch (e) {
+          return;
+        }
+        if (!d) return;
+        const td = tAbout();
+        const platformLabel = d.platform === 'win32' ? 'Windows'
+          : d.platform === 'darwin' ? 'macOS'
+            : d.platform === 'linux' ? 'Linux' : d.platform;
+        const lines = [
+          `CyberViewer ${d.app}${d.portable ? ' (Portable)' : ''}`,
+          `Electron: ${d.electron}`,
+          `Chrome: ${d.chrome}`,
+          `Node: ${d.node}`,
+          `OS: ${platformLabel} ${d.osRelease} (${d.arch})`,
+          `Portable: ${d.portable ? 'Yes' : 'No'}`,
+          `Locale: ${state.settings.app.language || 'en'}`
+        ];
+        try {
+          await navigator.clipboard.writeText(lines.join('\n'));
+        } catch (e) {
+          return;
+        }
+        diagBtn.innerHTML = iconHtml('check');
+        diagBtn.setAttribute('data-tooltip', td.about_diagnostics_copied);
+        diagBtn.setAttribute('aria-label', td.about_diagnostics_copied);
+        diagBtn.classList.add('about-diagnostics-copied');
+        if (diagCopiedTimer) clearTimeout(diagCopiedTimer);
+        diagCopiedTimer = setTimeout(() => {
+          diagBtn.innerHTML = iconHtml('clipboard-copy');
+          diagBtn.setAttribute('data-tooltip', td.about_copy_diagnostics);
+          diagBtn.setAttribute('aria-label', td.about_copy_diagnostics);
+          diagBtn.classList.remove('about-diagnostics-copied');
+        }, 1800);
+      });
+    }
 
     if (unsubUpdateStatus) unsubUpdateStatus();
     if (window.electronAPI.onUpdateStatus) {

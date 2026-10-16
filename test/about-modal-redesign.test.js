@@ -7,6 +7,8 @@ const root = path.join(__dirname, '..');
 const appJs = fs.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
 const css = fs.readFileSync(path.join(root, 'css', 'app.css'), 'utf8');
 const uiI18n = JSON.parse(fs.readFileSync(path.join(root, 'i18n', 'ui.json'), 'utf8'));
+const mainJs = fs.readFileSync(path.join(root, 'main.js'), 'utf8');
+const preloadJs = fs.readFileSync(path.join(root, 'preload.js'), 'utf8');
 
 const SUITE_SLUGS = [
   'cyberclock', 'cyberlauncher', 'cybermanager', 'cybernotes',
@@ -237,5 +239,37 @@ describe('About modal redesign (CyberFeeds pattern)', () => {
     assert.equal(uiI18n.es.about_install_btn, 'Reiniciar y actualizar');
     assert.equal(uiI18n.en.about_download_btn, 'Download update');
     assert.equal(uiI18n.es.about_download_btn, 'Descargar actualización');
+  });
+
+  it('offers the diagnostics copy button between issues and releases', () => {
+    const start = appJs.indexOf('overlay.innerHTML = `');
+    const end = appJs.indexOf('overlay.querySelector(\'#about-close-btn\')', start);
+    const tpl = appJs.slice(start, end);
+    // button right of the bug icon, electron-only (browser preview omits it)
+    assert.match(tpl, /\$\{iconHtml\('bug'\)\}<\/a>\s*\$\{isElectron \? `<button\s*type="button"\s*class="about-footer-icon about-diagnostics-btn cyber-tooltip"\s*id="about-btn-diagnostics"/);
+    assert.match(tpl, /data-tooltip="\$\{t\.about_copy_diagnostics\}"/);
+    assert.match(tpl, /\$\{iconHtml\('clipboard-copy'\)\}<\/button>` : ''\}/);
+    // click handler builds the diagnostic snapshot and flashes a check
+    assert.match(appJs, /const diagBtn = overlay\.querySelector\('#about-btn-diagnostics'\);/);
+    assert.match(appJs, /`CyberViewer \$\{d\.app\}\$\{d\.portable \? ' \(Portable\)' : ''\}`/);
+    assert.match(appJs, /navigator\.clipboard\.writeText\(lines\.join\('\\n'\)\)/);
+    assert.match(appJs, /diagBtn\.innerHTML = iconHtml\('check'\);/);
+    assert.match(appJs, /1800\);/);
+    // icons + i18n keys
+    assert.match(appJs, /'clipboard-copy': '<path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"\/>/);
+    assert.match(appJs, /'check': '<path d="M20 6 9 17l-5-5"\/>'/);
+    assert.equal(uiI18n.en.about_copy_diagnostics, 'Copy diagnostic info');
+    assert.equal(uiI18n.es.about_copy_diagnostics, 'Copiar info de diagnóstico');
+    assert.equal(uiI18n.en.about_diagnostics_copied, 'Diagnostic info copied');
+    assert.equal(uiI18n.es.about_diagnostics_copied, 'Info de diagnóstico copiada');
+    // main-process handler + preload bridge
+    assert.match(mainJs, /ipcMain\.handle\('get-diagnostics', \(\) => \(\{\s*app: app\.getVersion\(\),/);
+    assert.match(mainJs, /electron: process\.versions\.electron,/);
+    assert.match(mainJs, /osRelease: os\.release\(\),/);
+    assert.match(mainJs, /portable: isPortableBuild\(\)/);
+    assert.match(mainJs, /const os = require\('os'\);/);
+    assert.match(preloadJs, /getDiagnostics: \(\) => ipcRenderer\.invoke\('get-diagnostics'\),/);
+    // green flash while copied
+    assert.match(css, /\.about-diagnostics-btn\.about-diagnostics-copied\s*\{\s*color: var\(--cyber-accent3\);/);
   });
 });
