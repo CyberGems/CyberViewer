@@ -62,8 +62,9 @@ describe('auto-backup pure logic', () => {
       lastBackupTime: 0
     });
 
+    // On by default when the block is missing (fresh install), like the sibling apps
     assert.deepEqual(autoBackup.pickAutoBackupSettings(null), {
-      enabled: false,
+      enabled: true,
       frequency: 'daily',
       maxBackups: 5,
       customPath: '',

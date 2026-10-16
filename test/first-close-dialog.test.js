@@ -35,7 +35,13 @@ describe('first-close dialog (minimize to tray vs quit)', () => {
     assert.match(mainJs, /if \(!isEphemeral && !s\.closeChoiceMade && !s\.closeToTray\) \{/);
     assert.match(mainJs, /event\.preventDefault\(\);[\s\S]*?win\.focus\(\);[\s\S]*?webContents\.send\('confirm-first-close'\)/);
     // Known choice: tray hides, otherwise the window closes (persistWindowState)
-    assert.match(mainJs, /if \(wantsTray\(\)\) \{\s*event\.preventDefault\(\);\s*hideToTray\(\);/);
+    assert.match(mainJs, /if \(!isEphemeral && s\.closeToTray\) \{\s*event\.preventDefault\(\);\s*hideToTray\(\);/);
+
+    // The tray icon is resident: created at startup for non-ephemeral instances
+    // regardless of closeToTray, and never destroyed by a settings save
+    assert.match(mainJs, /function shouldShowTrayIcon\(\) \{\s*return !\(allowMultipleInstances && instanceHasInitialFile\);/);
+    assert.match(mainJs, /if \(shouldShowTrayIcon\(\)\) createTray\(\);/);
+    assert.doesNotMatch(mainJs, /tray\.destroy\(\)/);
 
     // first-close-choice persists the remembered choice and acts immediately
     assert.match(mainJs, /if \(remember\) \{[\s\S]*?closeChoiceMade: true,[\s\S]*?closeToTray: action === 'tray'/);

@@ -292,12 +292,15 @@ let isQuitting = false;
 let allowMultipleInstances = false;
 const initialFilePath = getFilePathFromArgs(process.argv);
 const instanceHasInitialFile = !!initialFilePath;
-// Tray/close-to-tray are reserved for the "resident" launch (no file arg).
+// The tray icon is resident: every non-ephemeral launch keeps it visible while
+// the app runs (CyberNotes pattern), independent of closeToTray — that setting
+// only decides what closing the window does (hide to tray vs quit). Keeping the
+// icon out of closeToTray's lifecycle avoids the icon vanishing when the window
+// is deployed and prevents any settings save from destroying it.
 // Instances opened with an image file are ephemeral windows under multi-instance:
 // they get no tray icon and closing them quits that process (no duplicates).
-function wantsTray() {
-  const s = loadSettings().app;
-  return !!s.closeToTray && !(allowMultipleInstances && instanceHasInitialFile);
+function shouldShowTrayIcon() {
+  return !(allowMultipleInstances && instanceHasInitialFile);
 }
 
 function resolveStartupBounds(settings) {
@@ -518,7 +521,7 @@ function createWindow() {
         try { win.webContents.send('confirm-first-close'); } catch (_) { /* ignore */ }
         return false;
       }
-      if (wantsTray()) {
+      if (!isEphemeral && s.closeToTray) {
         event.preventDefault();
         hideToTray();
         return false;
@@ -2309,27 +2312,12 @@ ipcMain.on('save-settings', (event, newSettings) => {
     });
   }
 
-  const trayAllowed = !(allowMultipleInstances && instanceHasInitialFile);
-  if (newSettings.closeToTray && trayAllowed && !tray) {
+  if (shouldShowTrayIcon() && !tray) {
     createTray();
-  } else if (!newSettings.closeToTray && tray) {
-    if (trayClickTimer) {
-      clearTimeout(trayClickTimer);
-      trayClickTimer = null;
-    }
-    if (trayContextMenuCloseFallback) {
-      clearTimeout(trayContextMenuCloseFallback);
-      trayContextMenuCloseFallback = null;
-    }
-    trayContextMenuOpen = false;
-    trayContextMenuRebuildPending = false;
-    pendingTrayAction = null;
-    tray.destroy();
-    tray = null;
   } else if (tray) {
-    // Refresh the context menu in place. Do NOT destroy() + createTray() here:
-    // recreating the Tray resets Windows per-icon "always show" pinning, sending the
-    // icon back to the overflow area. updateTrayMenu() updates labels (e.g. on language
+    // The icon is resident: never destroy it here. Recreating the Tray resets
+    // Windows per-icon "always show" pinning, sending the icon back to the
+    // overflow area. updateTrayMenu() refreshes labels (e.g. on language
     // change) without changing the icon identity.
     updateTrayMenu();
   }
@@ -2632,7 +2620,7 @@ if (!gotTheLock) {
     initUpdater(settings.app, {
       beforeQuitInstall: () => { isQuitting = true; }
     });
-    if (wantsTray()) createTray();
+    if (shouldShowTrayIcon()) createTray();
     applyToggleHotkey(settings.app && settings.app.toggleHotkey);
     initAutoBackup();
 
