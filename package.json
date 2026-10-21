@@ -161,11 +161,15 @@
       "shortcutName": "CyberViewer",
       "artifactName": "${productName}-Setup-${version}.${ext}",
       "runAfterFinish": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/installerSidebar.bmp",
+      "installerHeaderIcon": "assets/icon.ico",
       "installerLanguages": [
-        "en_US",
-        "es_ES"
+        "en",
+        "es"
       ],
-      "warningsAsErrors": false,
       "include": "build/installer.nsh"
     },
     "portable": {
