@@ -1,0 +1,13 @@
+{
+  "destinations": [
+    "assets/suite"
+  ],
+  "catalogs": [
+    {
+      "path": "js/app.js",
+      "pattern": "\\bslug\\s*:\\s*['\"](cyber[a-z0-9-]+)['\"]",
+      "start": "const suitePool = [",
+      "end": "];"
+    }
+  ]
+}
