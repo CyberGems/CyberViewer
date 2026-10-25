@@ -41,7 +41,7 @@ jobs:
       - name: Unit Tests
         run: npm test
 
-      # Build only â€” never let electron-builder publish on tag (avoids double-upload + API flakes).
+      # Build only — never let electron-builder publish on tag (avoids double-upload + API flakes).
       - name: Compile and Package Electron App
         run: npm run build
         env:
@@ -57,7 +57,7 @@ jobs:
             dist/latest.yml
           if-no-files-found: error
 
-      # Prefer gh CLI with retries over a single softprops call â€” GitHub has been
+      # Prefer gh CLI with retries over a single softprops call — GitHub has been
       # returning intermittent 503s during release create/upload.
       - name: Create GitHub Release and Upload Assets
         if: startsWith(github.ref, 'refs/tags/')
