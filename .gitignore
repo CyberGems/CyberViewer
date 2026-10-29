@@ -22,3 +22,6 @@ CLAUDE.md
 
 ## GitHub Wiki (local copy — wiki lives on GitHub Wiki)
 docs/wiki/
+## Perch operator workspace (LOCAL ONLY)
+.perch/
+.workbuddy-ai/
