@@ -2329,9 +2329,14 @@
     /* Opaque enough that the tray does not show through the arrow where the
        two shapes overlap; a translucent color reads as a darker inner edge. */
     color: rgba(var(--cyber-accent-rgb), 0.72);
-    transition: color var(--transition);
+    transition: color var(--transition), transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     user-select: none;
-    pointer-events: none;
+    /* Clickable: opens the file dialog, like the button below it. */
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    -webkit-app-region: no-drag;
   }
   #drop-zone .drop-tile-icon {
     width: 64px;
@@ -2341,9 +2346,26 @@
   #app.drag-over #drop-zone .drop-action-tile {
     color: var(--cyber-accent);
   }
+  /* Subtle zoom-in on hover, and a small press feedback on click. */
+  #drop-zone .drop-action-tile:hover {
+    color: var(--cyber-accent);
+    transform: scale(1.06);
+  }
+  #drop-zone .drop-action-tile:active {
+    transform: scale(0.97);
+  }
+  #drop-zone .drop-action-tile:focus-visible {
+    outline: 2px solid rgba(var(--cyber-accent-rgb), 0.7);
+    outline-offset: 4px;
+    border-radius: 10px;
+  }
   @media (prefers-reduced-motion: reduce) {
     #drop-zone .drop-action-tile {
-      transition: none;
+      transition: color var(--transition);
+    }
+    #drop-zone .drop-action-tile:hover,
+    #drop-zone .drop-action-tile:active {
+      transform: none;
     }
   }
 

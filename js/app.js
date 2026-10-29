@@ -5602,7 +5602,7 @@ viewerWrap.addEventListener('dblclick', e => {
   if (e.target.closest('#video-controls')) return;
   if (e.target.closest('#kbd-hint') || e.target.closest('#topbar') || e.target.closest('#sidebar') || e.target.closest('#nav-container')) return;
   // The drop-zone buttons already handle their own clicks; don't open the dialog twice on double-click.
-  if (e.target.closest('#btn-drop-open') || e.target.closest('#btn-drop-paste')) return;
+  if (e.target.closest('#btn-drop-open') || e.target.closest('#btn-drop-paste') || e.target.closest('#btn-drop-icon')) return;
   const action = state.settings && state.settings.app ? normalizeDblClickAction(state.settings.app.dblClickAction) : 'fullscreen';
   if (action === 'none') return;
   // Empty canvas: double-click opens an image (Photoshop-style), independent of the action setting.
@@ -6266,6 +6266,8 @@ document.head.appendChild(style);
 // ── BUTTONS ──
 $('btn-open-hud').addEventListener('click', () => { openImageDialog(); });
 $('btn-drop-open').addEventListener('click', () => { openImageDialog(); });
+// The drop icon is the primary affordance on the welcome banner.
+if ($('btn-drop-icon')) $('btn-drop-icon').addEventListener('click', () => { openImageDialog(); });
 if ($('btn-error-open')) $('btn-error-open').addEventListener('click', () => { openImageDialog(); });
 const btnDropPaste = $('btn-drop-paste');
 if (btnDropPaste) {
