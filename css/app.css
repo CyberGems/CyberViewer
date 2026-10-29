@@ -2326,7 +2326,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(var(--cyber-accent-rgb), 0.48);
+    /* Opaque enough that the tray does not show through the arrow where the
+       two shapes overlap; a translucent color reads as a darker inner edge. */
+    color: rgba(var(--cyber-accent-rgb), 0.72);
     transition: color var(--transition);
     user-select: none;
     pointer-events: none;
