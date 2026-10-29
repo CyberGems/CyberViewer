@@ -17,7 +17,7 @@ const {
 } = require('./lib/paths');
 const { createMediaResponse } = require('./lib/media-protocol');
 const { clearThumbCache, evictThumbCache } = require('./lib/thumb-cache');
-const { clampWindowBounds, MIN_W, MIN_H } = require('./lib/window-bounds');
+const { clampWindowBounds, MIN_W, MIN_H, nextBoundsAttempt, boundsMatch } = require('./lib/window-bounds');
 const { initUpdater, setAutoCheckEnabled, isPortableBuild } = require('./lib/updater');
 const { buildBackup, parseBackup } = require('./lib/settings-backup');
 const autoBackup = require('./lib/auto-backup');
@@ -302,6 +302,29 @@ function resolveStartupBounds(settings) {
   return { ...clamped, inflated };
 }
 
+/**
+ * Applies bounds and corrects the mixed-DPI size inflation Windows produces
+ * when a window is placed on a display with a different scale factor than the
+ * one it was created on. A single setBounds can come back up to 20% larger,
+ * which pushes the window off-center and past the work area edge.
+ *
+ * Returns the bounds the window actually has afterwards.
+ */
+function applyBoundsExact(target, want, area, maxPasses = 4) {
+  if (!target || target.isDestroyed()) return want;
+  let request = { ...want };
+  try {
+    target.setBounds(request);
+    for (let pass = 0; pass < maxPasses; pass++) {
+      const got = target.getBounds();
+      if (boundsMatch(want, got)) break;
+      request = nextBoundsAttempt(want, got, area);
+      target.setBounds(request);
+    }
+  } catch (_) { /* ignore */ }
+  return target.isDestroyed() ? want : target.getBounds();
+}
+
 function persistWindowState() {
   if (!win || win.isDestroyed()) return;
   try {
@@ -417,14 +440,21 @@ function createWindow() {
     // Last-resort flash mitigation: show at opacity 0, settle layout, then fade in
     try { win.setOpacity(0); } catch (_) { /* ignore */ }
 
-    // Place on the resolved startup display (keeps last-used monitor)
+    // Place on the resolved startup display (keeps last-used monitor).
+    // Corrected against the real result: Windows inflates the size when the
+    // target display has a different scale factor than the one the window was
+    // created on, which would leave it off-center and too large.
     try {
-      win.setBounds({
-        x: startup.x,
-        y: startup.y,
-        width: startup.width,
-        height: startup.height
-      });
+      const startupArea =
+        (screen.getDisplayNearestPoint({
+          x: startup.x + Math.floor(startup.width / 2),
+          y: startup.y + Math.floor(startup.height / 2)
+        }) || {}).workArea;
+      applyBoundsExact(
+        win,
+        { x: startup.x, y: startup.y, width: startup.width, height: startup.height },
+        startupArea
+      );
     } catch (_) { /* ignore */ }
 
     win.show();
@@ -446,12 +476,16 @@ function createWindow() {
           });
         if (target && curDisp && target.id !== curDisp.id) {
           const wa = target.workArea || target.bounds;
-          win.setBounds({
-            x: wa.x + 48,
-            y: wa.y + 48,
-            width: Math.min(startup.width, Math.max(800, wa.width - 96)),
-            height: Math.min(startup.height, Math.max(500, wa.height - 96))
-          });
+          applyBoundsExact(
+            win,
+            {
+              x: wa.x + 48,
+              y: wa.y + 48,
+              width: Math.min(startup.width, Math.max(800, wa.width - 96)),
+              height: Math.min(startup.height, Math.max(500, wa.height - 96))
+            },
+            wa
+          );
         }
         if (!win.isMaximized()) win.maximize();
       } catch (_) { /* ignore */ }
@@ -554,12 +588,12 @@ function createWindow() {
           preferredDisplayId: loadSettings().app.preferredDisplayId
         });
         if (raw.width > clamped.width + 8 || raw.height > clamped.height + 8) {
-          win.setBounds({
-            x: clamped.x,
-            y: clamped.y,
-            width: clamped.width,
-            height: clamped.height
-          });
+          const area = (screen.getDisplayMatching(raw) || screen.getPrimaryDisplay()).workArea;
+          applyBoundsExact(
+            win,
+            { x: clamped.x, y: clamped.y, width: clamped.width, height: clamped.height },
+            area
+          );
         }
       } catch (_) { /* ignore */ }
       persistWindowState();
