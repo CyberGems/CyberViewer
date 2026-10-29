@@ -401,11 +401,10 @@
           <div class="drop-corner br"></div>
           <div class="drop-action-tile" aria-hidden="true">
             <svg class="drop-tile-icon" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-              <path d="M 12.5 33 A 23 11 0 1 0 51.5 33"
-                    stroke="currentColor" stroke-width="7.6" stroke-linecap="round" fill="none"/>
-              <path d="M 25.5 4.5 H 38.5 V 23 H 50 L 32 45.5 L 14 23 H 25.5 Z"
-                    fill="currentColor" stroke="currentColor" stroke-width="3.6"
-                    stroke-linejoin="round" stroke-linecap="round"/>
+              <path d="M 12.5 37 A 22 9.5 0 1 0 51.5 37"
+                    stroke="currentColor" stroke-width="6.6" stroke-linecap="round" fill="none"/>
+              <path d="M 25.5 5 H 38.5 V 22 H 50 L 32 38 L 14 22 H 25.5 Z"
+                    fill="currentColor"/>
             </svg>
           </div>
           <div class="drop-title" data-i18n="drop_title">Suelta una imagen para comenzar</div>
@@ -424,7 +423,12 @@
           <div class="drop-corner tr err-corner"></div>
           <div class="drop-corner bl err-corner"></div>
           <div class="drop-corner br err-corner"></div>
-          <img src="assets/icon.ico" class="drop-logo err-logo" alt="" width="72" height="72" draggable="false">
+          <svg class="drop-logo err-logo" viewBox="0 0 64 64" fill="none" width="72" height="72" aria-hidden="true">
+            <rect x="6" y="12" width="52" height="40" rx="7"
+                  stroke="currentColor" stroke-width="6" fill="none"/>
+            <path d="M 13 45 L 26 30 L 36 41 L 43 34 L 51 45 Z" fill="currentColor"/>
+            <path d="M 12 52 L 52 12" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+          </svg>
           <div class="drop-title err-title" data-i18n="error_image_title">IMAGEN NO VÁLIDA</div>
           <div class="drop-sub err-sub" id="error-banner-sub">No se pudo cargar la imagen.</div>
           <button class="drop-btn err-btn" id="btn-error-open" data-i18n="error_image_btn">Abrir otra imagen</button>

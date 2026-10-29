@@ -2499,8 +2499,9 @@
     border-color: var(--cyber-accent2) !important;
   }
   .err-logo {
-    filter: drop-shadow(0 0 14px rgba(var(--cyber-accent2-rgb), 0.45)) saturate(0) brightness(0) drop-shadow(0 0 10px rgba(var(--cyber-accent2-rgb), 0.55));
-    opacity: 0.9;
+    color: var(--cyber-accent2);
+    filter: drop-shadow(0 0 12px rgba(var(--cyber-accent2-rgb), 0.5));
+    opacity: 0.92;
   }
   .err-title {
     color: rgba(var(--cyber-accent2-rgb), 0.92);
