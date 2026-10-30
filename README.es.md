@@ -95,12 +95,12 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 - **Mover a la papelera** (`Supr`)
 - **Mostrar en la carpeta** o abrir la carpeta que la contiene
 - **Exportar a PDF** e **Imprimir** con controles de tamaño de página, orientación y márgenes
-- **Establecer como fondo de escritorio** con estilos Rellenar, Ajustar, Centrar o Extender
+- **Establecer como fondo de escritorio** con estilos Rellenar, Ajustar, Centrar o Extender, incluso directamente desde imágenes pegadas o soltadas
 - **Favoritos** con acciones dedicadas de añadir, quitar y ver
 - **Historial reciente** con hasta 10 archivos y 10 carpetas
 
 ### ⚙️ Integración con el sistema
-- **Bandeja del sistema:** menú emergente HTML personalizado con imágenes recientes, más comportamiento de minimizar o cerrar a la bandeja
+- **Bandeja del sistema:** menú emergente HTML personalizado con imágenes recientes, comportamiento de minimizar o cerrar a la bandeja y un diálogo de primer cierre que pregunta si quedarse en la bandeja o salir
 - **Inicio automático con Windows:** inicia minimizado al iniciar sesión
 - **Atajo global:** atajo configurable para mostrar u ocultar, predeterminado `Alt+Shift+V`
 - **Menú contextual del Explorador:** haz clic derecho en imágenes admitidas para abrirlas en CyberViewer
@@ -108,6 +108,7 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 - **Una sola instancia residente:** las aperturas desde el Explorador y los nuevos inicios envían las imágenes a pestañas de la ventana existente
 - **Actualización automática:** actualizador integrado de GitHub Releases con instalación silenciosa
 - **Copia de seguridad de la configuración:** exporta o importa la configuración y los favoritos como JSON
+- **Copias programadas:** guarda ajustes y favoritos automáticamente según una programación (al iniciar, cada hora, cada día, cada semana o cada mes; cada día por defecto), conserva la cantidad elegida de copias con purga automática y permite una carpeta personalizada. Restaura cualquier copia desde **Configuración → Respaldo y datos**: al restaurar se guarda antes una copia de seguridad del estado actual, y **Crear copia ahora** lanza una manual cuando quieras
 
 ### 🎨 Personalización
 - **Colores de acento:** Cian, Rosa, Verde, Naranja, Violeta, Azul, Rojo y Menta
@@ -173,6 +174,9 @@ CyberViewer/
 │   ├── thumb-cache.js   Caché y expulsión de miniaturas
 │   ├── window-bounds.js Límites de ventana y conciencia de DPI
 │   ├── updater.js       Integración con electron-updater
+│   ├── session-store.js Persistencia de la sesión de pestañas para restaurar
+│   ├── youtube-player.js Estado de la reproducción aislada de YouTube
+│   ├── auto-backup.js   Copias programadas con purga y restauración
 │   └── settings-backup.js Importación/exportación de configuración
 ├── i18n/
 │   ├── menu.json        Cadenas de menú, bandeja y diálogos (EN/ES)

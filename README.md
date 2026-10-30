@@ -95,12 +95,12 @@ Most image viewers are either bloated with features you never use or so barebone
 - **Move to trash** (`Delete`)
 - **Show in folder** or open the containing folder
 - **Export to PDF** and **Print** with page size, orientation, and margin controls
-- **Set as wallpaper** with Fill, Fit, Center, or Span styles
+- **Set as wallpaper** with Fill, Fit, Center, or Span styles, even directly from pasted or dropped images
 - **Favorites** with dedicated add, remove, and view actions
 - **Recent history** with up to 10 files and 10 folders
 
 ### ⚙️ System Integration
-- **System tray:** custom HTML popup menu with recent images, plus minimize/close-to-tray behavior
+- **System tray:** custom HTML popup menu with recent images, minimize/close-to-tray behavior, and a first-close dialog that asks whether to stay in the tray or quit
 - **Auto-start with Windows:** launch minimized on sign-in
 - **Global hotkey:** configurable show/hide shortcut, default `Alt+Shift+V`
 - **Explorer context menu:** right-click supported images to open them in CyberViewer
@@ -108,6 +108,7 @@ Most image viewers are either bloated with features you never use or so barebone
 - **Single resident instance:** Explorer opens and additional launches send images to tabs in the existing window
 - **Auto-update:** built-in GitHub Releases updater with silent install
 - **Settings backup:** export or import configuration and favorites as JSON
+- **Scheduled automatic backups:** save settings and favorites on a schedule (on startup, hourly, daily, weekly, or monthly; daily by default), keep a chosen number of backups with automatic pruning, and pick a custom folder. Restore any backup from **Configuration → Backup & Data**: restoring saves a safety backup of the current state first, and **Backup Now** triggers a run on demand
 
 ### 🎨 Customization
 - **Accent colors:** Cyan, Pink, Green, Orange, Violet, Blue, Red, and Mint
@@ -175,6 +176,9 @@ CyberViewer/
 │   ├── thumb-cache.js   Thumbnail caching/eviction
 │   ├── window-bounds.js Window bounds clamping/DPI awareness
 │   ├── updater.js       electron-updater integration
+│   ├── session-store.js Tab session persistence for restore
+│   ├── youtube-player.js Isolated YouTube playback state
+│   ├── auto-backup.js   Scheduled backups with pruning and restore
 │   └── settings-backup.js Import/export settings
 ├── i18n/
 │   ├── menu.json        Menu, tray, and dialog strings (EN/ES)
