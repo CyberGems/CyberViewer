@@ -645,7 +645,16 @@ window.CVWorkspace = (() => {
       capture();
       if (allowUnload || !isElectron) return;
       event.returnValue = false;
-      if (isEditing()) { showToast(text('tabs_finish_edit'), 'warning'); return; }
+      // Overlays that hold in-progress image work must not be dismissed by a
+      // quit; chrome-only ones (config, properties, reminders) hold nothing,
+      // so they are closed here instead of stalling the quit chain and
+      // pulling the hidden window back on screen.
+      if (busy || dialogDepth > 0 || state.isCropping ||
+        document.querySelector('#modal-adjust.active, #modal-resize.active, #modal-print-export.active, #modal-youtube.active')) {
+        showToast(text('tabs_finish_edit'), 'warning');
+        return;
+      }
+      document.querySelectorAll('.modal-overlay.active').forEach(overlay => overlay.classList.remove('active'));
       const finish = async () => {
         if (state.settings.app.restoreSession && !(await flush())) return;
         allowUnload = true;
