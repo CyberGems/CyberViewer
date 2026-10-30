@@ -8645,6 +8645,38 @@ $('btn-go-end').addEventListener('click', (e) => {
   window.__cvSyncUpdateBadge = syncTitleBarUpdateButton;
   window.__cvSyncTitleBarUpdateButton = syncTitleBarUpdateButton;
 
+  let aboutFormatsFlashTimer = null;
+
+  /**
+   * Swap the About formats box content for a transient update notice. The
+   * status line in the updates section sits below the fold at the default
+   * window size, so checking / up-to-date / error mirror here, where they are
+   * always visible. Empty text restores the badge rows.
+   */
+  function flashAboutUpdateNotice(text, tone) {
+    const box = overlay.querySelector('.about-formats');
+    if (!box) return;
+    const notice = box.querySelector('.about-formats-notice');
+    if (aboutFormatsFlashTimer) { clearTimeout(aboutFormatsFlashTimer); aboutFormatsFlashTimer = null; }
+    if (!text) {
+      box.classList.remove('is-noticing');
+      if (notice) notice.remove();
+      return;
+    }
+    box.classList.add('is-noticing');
+    if (notice) {
+      notice.textContent = text;
+      notice.dataset.tone = tone || 'info';
+    } else {
+      const el = document.createElement('div');
+      el.className = 'about-formats-notice';
+      el.textContent = text;
+      el.dataset.tone = tone || 'info';
+      box.prepend(el);
+    }
+    aboutFormatsFlashTimer = setTimeout(() => flashAboutUpdateNotice(''), 4000);
+  }
+
   function renderUpdateStatusText(el) {
     if (!el) return;
     const t = tAbout();
@@ -8653,9 +8685,7 @@ $('btn-go-end').addEventListener('click', (e) => {
     // Banner already covers available/downloaded
     if (s.state === 'available' || s.state === 'downloaded') {
       el.textContent = '';
-      return;
-    }
-    if (s.state === 'checking') {
+    } else if (s.state === 'checking') {
       el.textContent = t.about_checking;
     } else if (s.state === 'not-available') {
       el.textContent = t.about_up_to_date;
@@ -8665,12 +8695,52 @@ $('btn-go-end').addEventListener('click', (e) => {
         .replace('{percent}', String(s.percent || 0));
       el.style.color = 'var(--cyber-accent-ink)';
     } else if (s.state === 'error') {
-      el.textContent = `${t.about_update_err}${s.message ? ' (' + s.message + ')' : ''}`;
+      // Skip the "(No se pudo buscar actualizaciones.)" echo when the upstream
+      // error text already equals the localized message.
+      const detail = s.message && s.message !== t.about_update_err ? ` (${s.message})` : '';
+      el.textContent = `${t.about_update_err}${detail}`;
       el.style.color = 'var(--cyber-accent2-ink)';
     } else {
       el.textContent = '';
     }
+
+    if (!overlay.classList.contains('active')) return;
+    if (s.state === 'checking') flashAboutUpdateNotice(t.about_checking, 'info');
+    else if (s.state === 'not-available') flashAboutUpdateNotice(t.about_up_to_date, 'ok');
+    else if (s.state === 'error') flashAboutUpdateNotice(el.textContent, 'error');
+    else flashAboutUpdateNotice('');
   }
+
+  // Dev console simulator, in the spirit of CyberNotes' update preview:
+  // __cvSimulateUpdate('available' | 'downloading' | 'downloaded' |
+  // 'not-available' | 'error' | 'reset'[, version]). Renders through the same
+  // pipeline as real statuses but never toasts, persists nothing and does not
+  // touch the real updater.
+  window.__cvSimulateUpdate = (state, version) => {
+    const simVersion = version || '9.9.9';
+    const states = {
+      available: { state: 'available', version: simVersion },
+      downloading: { state: 'downloading', percent: 42 },
+      downloaded: { state: 'downloaded', version: simVersion },
+      ready: { state: 'downloaded', version: simVersion },
+      'not-available': { state: 'not-available' },
+      uptodate: { state: 'not-available' },
+      error: { state: 'error', message: 'Simulated failure' },
+      reset: { state: 'idle' },
+      off: { state: 'idle' },
+      idle: { state: 'idle' }
+    };
+    const next = states[String(state || '').toLowerCase()];
+    if (!next) {
+      console.warn('[CyberViewer] __cvSimulateUpdate states: ' + Object.keys(states).join(', '));
+      return window.__cvUpdateStatus || null;
+    }
+    updateStatus = next;
+    window.__cvUpdateStatus = updateStatus;
+    syncUpdateActions(overlay);
+    syncTitleBarUpdateButton();
+    return next;
+  };
 
   function syncUpdateBanner(root) {
     if (!root) return;

@@ -6621,6 +6621,32 @@
   line-height: 1.5;
   white-space: nowrap;
 }
+/* Transient update notice: replaces the badge rows for a few seconds so the
+   check feedback is visible without scrolling. */
+.about-formats.is-noticing {
+  min-height: 93px;
+  justify-content: center;
+}
+.about-formats.is-noticing > :not(.about-formats-notice) {
+  display: none;
+}
+.about-formats-notice {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--cyber-accent-ink);
+  animation: about-notice-in 180ms ease;
+}
+.about-formats-notice[data-tone='ok'] {
+  color: var(--cyber-accent3-ink);
+}
+.about-formats-notice[data-tone='error'] {
+  color: var(--cyber-accent2-ink);
+}
+@keyframes about-notice-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 /* Sectioned layout (CyberFeeds pattern): divider-lined titles + bordered boxes */
 .about-section {
