@@ -183,7 +183,10 @@ describe('title bar Help menu', () => {
     assert.match(css, /\.menu-ico\s*\{\s*width:\s*15px;\s*height:\s*15px;/);
     assert.match(css, /\.titlebar-config-glyph\s*\{[\s\S]*?width:\s*15px;\s*height:\s*15px;/);
 
-    assert.match(css, /#topbar::after\s*\{[\s\S]*?box-shadow:\s*0 0 2px rgba\(var\(--cyber-accent-rgb\),\s*0\.35\);/);
+    // The titlebar separator is a crisp 1px hairline: solid accent, no edge
+    // fade and no glow, so it reads as a fine line on every theme.
+    assert.match(css, /#topbar::after\s*\{[^}]*background:\s*rgba\(var\(--cyber-accent-rgb\),\s*0\.45\);[^}]*\}/);
+    assert.doesNotMatch(css, /#topbar::after\s*\{[^}]*box-shadow:/);
     assert.match(css, /body:not\(\.window-maximized\)::after\s*\{[\s\S]*?box-shadow:\s*0 -1px 2px rgba\(var\(--cyber-accent-rgb\),\s*0\.15\);/);
   });
 

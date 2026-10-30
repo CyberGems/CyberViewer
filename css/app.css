@@ -158,8 +158,7 @@
     left: 0;
     width: 100%;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(var(--cyber-accent-rgb), 0.5), transparent);
-    box-shadow: 0 0 2px rgba(var(--cyber-accent-rgb), 0.35);
+    background: rgba(var(--cyber-accent-rgb), 0.45);
   }
 
   /* Fine line at the bottom of the window (only when restored / not maximized) */
@@ -2315,7 +2314,6 @@
   .drop-frame {
     border: 1px solid var(--cyber-border);
     padding: 44px 56px 40px;
-    border-radius: 8px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -2360,7 +2358,6 @@
 
   #drop-zone .drop-frame {
     padding: 32px 36px 28px;
-    border-radius: 12px;
     gap: 9px;
     max-width: min(520px, 92vw);
   }
