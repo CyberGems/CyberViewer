@@ -6572,6 +6572,9 @@
   margin: 0 0 8px;
 }
 .about-formats {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
   margin: 8px 0 0;
   padding: 8px 12px;
   font-size: 11px;
@@ -6584,7 +6587,6 @@
 }
 .about-formats-tech {
   display: block;
-  margin-top: 6px;
   font-size: 10px;
   opacity: 0.85;
 }
