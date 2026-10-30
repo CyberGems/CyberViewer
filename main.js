@@ -728,6 +728,10 @@ let trayContextMenuOpen = false;
 let trayContextMenuRebuildPending = false;
 let trayContextMenuCloseFallback = null;
 let pendingTrayAction = null;
+// After a tray context-menu action is selected, the next tray icon click is the
+// residual click that closed the menu. Ignore it so it does not toggle show/hide
+// over the action that just ran (e.g. Exit quitting while the window was hidden).
+let trayMenuJustActioned = false;
 
 function executePendingTrayAction() {
   const action = pendingTrayAction;
@@ -805,7 +809,9 @@ function onTrayContextMenuClosed() {
   // callback a short window to populate pendingTrayAction, as CyberLauncher
   // does for the same native menu lifecycle.
   setTimeout(() => {
+    const hadAction = !!pendingTrayAction;
     executePendingTrayAction();
+    trayMenuJustActioned = hadAction;
     if (trayContextMenuRebuildPending) {
       trayContextMenuRebuildPending = false;
       rebuildTrayContextMenu();
@@ -1011,12 +1017,22 @@ function createTray() {
         if (trayRightClickSeq !== clickSeq || Date.now() - lastTrayRightClickAt < 400) return;
         if (trayContextMenuOpen) return;
         if (!win || win.isDestroyed()) return;
+        // The click that closed a context-menu action must not toggle the window.
+        if (trayMenuJustActioned) {
+          trayMenuJustActioned = false;
+          return;
+        }
         if (isWindowShown()) hideToTray();
         else showFromTray();
       }, 120);
       return;
     }
     if (!win || win.isDestroyed()) return;
+    // The click that closed a context-menu action must not toggle the window.
+    if (trayMenuJustActioned) {
+      trayMenuJustActioned = false;
+      return;
+    }
     if (isWindowShown()) hideToTray();
     else showFromTray();
   });
