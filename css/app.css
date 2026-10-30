@@ -917,7 +917,6 @@
 
   .titlebar-update-btn:hover,
   .titlebar-update-btn:focus-visible {
-    border-color: var(--cyber-accent);
     background: rgba(var(--cyber-accent-rgb), 0.25);
     box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.45);
     outline: none;

@@ -258,8 +258,10 @@ describe('title bar Help menu', () => {
 
     // CSS CyberPaste square button: h-8 w-8 rounded-lg, cyan primary border and background
     assert.match(css, /\.titlebar-update-btn\s*\{[\s\S]*?height:\s*32px;[\s\S]*?width:\s*32px;[\s\S]*?border-radius:\s*8px;/);
-    assert.match(css, /\.titlebar-update-btn\s*\{[\s\S]*?border:\s*1px solid rgba\(var\(--cyber-accent-rgb\),\s*0\.5\);[\s\S]*?background:\s*rgba\(var\(--cyber-accent-rgb\),\s*0\.1\);/);
-    assert.match(css, /\.titlebar-update-btn:hover,\s*\.titlebar-update-btn:focus-visible\s*\{[\s\S]*?border-color:\s*var\(--cyber-accent\);/);
+    // Outline-free button: tinted background only, no border on any state
+    assert.match(css, /\.titlebar-update-btn\s*\{[^}]*background:\s*rgba\(var\(--cyber-accent-rgb\),\s*0\.1\);/);
+    assert.doesNotMatch(css, /\.titlebar-update-btn\s*\{[^}]*border:/);
+    assert.match(css, /\.titlebar-update-btn:hover,\s*\.titlebar-update-btn:focus-visible\s*\{[^}]*background:\s*rgba\(var\(--cyber-accent-rgb\),\s*0\.25\);/);
     assert.match(css, /\.titlebar-update-btn:active\s*\{[\s\S]*?transform:\s*scale\(0\.95\);/);
     // Soft, relaxed motion-safe pulse (3.5s ease-in-out), no badges, no per-state recolor
     assert.match(css, /@media \(prefers-reduced-motion: no-preference\)\s*\{\s*\.titlebar-update-btn\s*\{[^}]*?animation:\s*titlebar-update-pulse 3\.5s ease-in-out infinite;/);
