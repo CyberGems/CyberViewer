@@ -818,98 +818,65 @@
   #btn-menu.open { color: var(--cyber-accent); background: rgba(0,212,255,0.10); }
   /* Menu tooltip suppression while open is handled in ttSuppressedWhileOpen() */
 
-  /* ── TITLEBAR UPDATE BUTTON (CyberPaste style) ── */
+  /* ── TITLEBAR UPDATE BUTTON (CyberPaste pattern) ── */
   .titlebar-update-btn {
     display: inline-flex;
-    height: 28px;
-    width: auto;
+    height: 32px;
+    width: 32px;
     align-items: center;
+    justify-content: center;
     align-self: center;
     flex-shrink: 0;
-    overflow: hidden;
-    border-radius: 9999px;
+    border-radius: 8px;
     border: 1px solid rgba(var(--cyber-accent-rgb), 0.5);
     background: rgba(var(--cyber-accent-rgb), 0.1);
     color: var(--cyber-accent);
-    box-shadow: 0 0 8px rgba(var(--cyber-accent-rgb), 0.2);
+    box-shadow: 0 0 8px rgba(var(--cyber-accent-rgb), 0.25);
     padding: 0;
-    margin: 0 4px 0 0;
+    margin: 0 2px 0 0;
     cursor: pointer;
     -webkit-app-region: no-drag;
-    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+    transition: all 0.3s ease;
   }
 
   .titlebar-update-btn:hover,
   .titlebar-update-btn:focus-visible {
-    border-color: rgba(var(--cyber-accent-rgb), 0.85);
-    background: rgba(var(--cyber-accent-rgb), 0.2);
-    box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.38);
+    border-color: var(--cyber-accent);
+    background: rgba(var(--cyber-accent-rgb), 0.25);
+    box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.45);
     outline: none;
   }
 
-  .titlebar-update-btn.ready {
-    border-color: rgba(var(--cyber-accent3-rgb), 0.55);
-    background: rgba(var(--cyber-accent3-rgb), 0.12);
-    color: var(--cyber-accent3);
-    box-shadow: 0 0 8px rgba(var(--cyber-accent3-rgb), 0.25);
+  .titlebar-update-btn:focus-visible {
+    box-shadow: 0 0 0 1px var(--cyber-accent), 0 0 12px rgba(var(--cyber-accent-rgb), 0.45);
   }
 
-  .titlebar-update-btn.ready:hover,
-  .titlebar-update-btn.ready:focus-visible {
-    border-color: rgba(var(--cyber-accent3-rgb), 0.85);
-    background: rgba(var(--cyber-accent3-rgb), 0.24);
-    box-shadow: 0 0 12px rgba(var(--cyber-accent3-rgb), 0.42);
+  .titlebar-update-btn:active {
+    transform: scale(0.95);
+    background: rgba(var(--cyber-accent-rgb), 0.3);
   }
 
-  .titlebar-update-label-wrap {
-    display: grid;
-    grid-template-columns: 0fr;
-    align-items: center;
-    height: 28px;
-    overflow: hidden;
-    opacity: 0;
-    transition: grid-template-columns 200ms ease-out, opacity 200ms ease-out;
-  }
-
-  .titlebar-update-btn:hover .titlebar-update-label-wrap,
-  .titlebar-update-btn:focus-visible .titlebar-update-label-wrap {
-    grid-template-columns: 1fr;
-    opacity: 1;
-  }
-
-  .titlebar-update-label-inner {
-    display: flex;
-    height: 28px;
-    min-width: 0;
-    align-items: center;
-    overflow: hidden;
-  }
-
-  .titlebar-update-label {
-    white-space: nowrap;
-    padding-left: 10px;
-    padding-right: 2px;
-    font-family: var(--font-ui);
-    font-size: 11px;
-    font-weight: 600;
-    line-height: 1;
-    letter-spacing: 0.5px;
-    color: inherit;
-  }
-
-  .titlebar-update-icon {
-    display: flex;
-    width: 28px;
-    height: 28px;
-    flex-shrink: 0;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .titlebar-update-icon svg {
+  .titlebar-update-btn svg {
+    display: block;
     width: 14px;
     height: 14px;
-    color: inherit;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+
+  .titlebar-update-btn:hover svg {
+    transform: translateY(2px);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .titlebar-update-btn {
+      animation: titlebar-update-pulse 3.5s ease-in-out infinite;
+    }
+  }
+
+  @keyframes titlebar-update-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
   }
 
   .menu-panel {

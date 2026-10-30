@@ -8419,7 +8419,7 @@ $('btn-go-end').addEventListener('click', (e) => {
     return app.updateNotify;
   }
 
-  /** Expandable CyberPaste-style update button on the titlebar — visible while an update is pending. */
+  /** Square CyberPaste-style update button on the titlebar — visible while an update is pending. */
   function syncTitleBarUpdateButton() {
     const updateBtn = $('titlebar-update-btn');
     const oldBadge = $('update-menu-badge');
@@ -8429,13 +8429,14 @@ $('btn-go-end').addEventListener('click', (e) => {
 
     if (!updateBtn) return;
 
+    // Permanently hidden while automatic update checks are disabled.
+    const autoCheckOff = state.settings.app.checkUpdatesOnStartup === false;
     const s = updateStatus;
-    const pending = !!(s && (s.state === 'available' || s.state === 'downloaded'));
+    const pending = !!(s && (s.state === 'available' || s.state === 'downloaded')) && !autoCheckOff;
     const t = tAbout();
     const ver = (s && s.version) ? String(s.version) : '';
 
     updateBtn.style.display = pending ? 'inline-flex' : 'none';
-    updateBtn.classList.toggle('ready', !!(s && s.state === 'downloaded'));
 
     if (pending) {
       const tip = s.state === 'downloaded'
@@ -8884,6 +8885,10 @@ $('btn-go-end').addEventListener('click', (e) => {
         syncAutoToggle();
         if (isElectron) {
           window.electronAPI.saveSettings(state.settings.app);
+        }
+        // The titlebar update button is permanently hidden while auto-check is off.
+        if (typeof window.__cvSyncTitleBarUpdateButton === 'function') {
+          window.__cvSyncTitleBarUpdateButton();
         }
       });
     }

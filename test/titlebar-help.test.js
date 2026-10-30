@@ -242,30 +242,39 @@ describe('title bar Help menu', () => {
     assert.match(html, /id="btn-menu"[^>]*data-i18n-tt="menu"[^>]*data-tooltip-kbd="Alt\+M"/);
   });
 
-  it('provides CyberPaste-style expandable titlebar update button and removes obsolete burger badge', () => {
-    // Titlebar markup placement
+  it('provides CyberPaste-style square titlebar update button and removes obsolete burger badge', () => {
+    // Titlebar markup placement: icon-only square button preceding the shortcuts button
     const updateBtnIdx = html.indexOf('id="titlebar-update-btn"');
     const shortcutsIdx = html.indexOf('id="btn-shortcuts"');
     assert.ok(updateBtnIdx > 0, 'titlebar-update-btn must be present in CyberViewer.html');
     assert.ok(shortcutsIdx > updateBtnIdx, 'titlebar-update-btn must precede shortcuts button');
-    assert.match(html, /id="titlebar-update-btn"[\s\S]*?class="titlebar-update-label" data-i18n="titlebar_update_btn">Actualizar<\/span>/);
-    assert.match(html, /class="titlebar-update-icon"[\s\S]*?<line x1="12" y1="5" x2="12" y2="19"[\s\S]*?<polyline points="19 12 12 19 5 12"/);
+    const updateBtn = html.match(/id="titlebar-update-btn"[\s\S]*?<\/button>/);
+    assert.ok(updateBtn, 'titlebar-update-btn markup should be present');
+    assert.match(updateBtn[0], /<svg viewBox="0 0 24 24"[\s\S]*?<line x1="12" y1="5" x2="12" y2="19"[\s\S]*?<polyline points="19 12 12 19 5 12"/);
+    assert.doesNotMatch(updateBtn[0], /titlebar-update-label|titlebar-update-icon/);
 
-    // CSS CyberPaste pill, neon styling, and hover expansion
-    assert.match(css, /\.titlebar-update-btn\s*\{[\s\S]*?border-radius:\s*9999px;[\s\S]*?border:\s*1px solid rgba\(var\(--cyber-accent-rgb\),\s*0\.5\);/);
-    assert.match(css, /\.titlebar-update-btn\.ready\s*\{[\s\S]*?color:\s*var\(--cyber-accent3\);/);
-    assert.match(css, /\.titlebar-update-label-wrap\s*\{[\s\S]*?grid-template-columns:\s*0fr;[\s\S]*?opacity:\s*0;/);
-    assert.match(css, /\.titlebar-update-btn:hover \.titlebar-update-label-wrap[\s\S]*?grid-template-columns:\s*1fr;[\s\S]*?opacity:\s*1;/);
+    // CSS CyberPaste square button: h-8 w-8 rounded-lg, cyan primary border and background
+    assert.match(css, /\.titlebar-update-btn\s*\{[\s\S]*?height:\s*32px;[\s\S]*?width:\s*32px;[\s\S]*?border-radius:\s*8px;/);
+    assert.match(css, /\.titlebar-update-btn\s*\{[\s\S]*?border:\s*1px solid rgba\(var\(--cyber-accent-rgb\),\s*0\.5\);[\s\S]*?background:\s*rgba\(var\(--cyber-accent-rgb\),\s*0\.1\);/);
+    assert.match(css, /\.titlebar-update-btn:hover,\s*\.titlebar-update-btn:focus-visible\s*\{[\s\S]*?border-color:\s*var\(--cyber-accent\);/);
+    assert.match(css, /\.titlebar-update-btn:active\s*\{[\s\S]*?transform:\s*scale\(0\.95\);/);
+    // Soft, relaxed motion-safe pulse (3.5s ease-in-out), no badges, no per-state recolor
+    assert.match(css, /@media \(prefers-reduced-motion: no-preference\)\s*\{\s*\.titlebar-update-btn\s*\{[^}]*?animation:\s*titlebar-update-pulse 3\.5s ease-in-out infinite;/);
+    assert.match(css, /@keyframes titlebar-update-pulse\s*\{\s*0%,\s*100%\s*\{\s*opacity:\s*1;\s*\}\s*50%\s*\{\s*opacity:\s*0\.5;\s*\}\s*\}/);
+    assert.doesNotMatch(css, /\.titlebar-update-btn\.ready\s*\{/);
+    assert.doesNotMatch(css, /\.titlebar-update-label-wrap\s*\{/);
     assert.doesNotMatch(css, /\.update-menu-badge\s*\{/);
 
-    // Bilingual i18n
-    assert.equal(ui.en.titlebar_update_btn, 'Update');
-    assert.equal(ui.es.titlebar_update_btn, 'Actualizar');
+    // Icon-only button: the standalone label key is gone from both locales
+    assert.equal(ui.en.titlebar_update_btn, undefined);
+    assert.equal(ui.es.titlebar_update_btn, undefined);
 
-    // JS updater controller and click binding
+    // JS updater controller: permanently hidden while auto-check updates is disabled
     assert.match(appJs, /function syncTitleBarUpdateButton\(\)/);
+    assert.match(appJs, /const autoCheckOff = state\.settings\.app\.checkUpdatesOnStartup === false;/);
+    assert.match(appJs, /const pending = !!\(s && \(s\.state === 'available' \|\| s\.state === 'downloaded'\)\) && !autoCheckOff;/);
     assert.match(appJs, /updateBtn\.style\.display\s*=\s*pending \? 'inline-flex' : 'none';/);
-    assert.match(appJs, /updateBtn\.classList\.toggle\('ready',\s*!!\(s && s\.state === 'downloaded'\)\);/);
+    assert.doesNotMatch(appJs, /updateBtn\.classList\.toggle\('ready'/);
     assert.match(appJs, /titlebarUpdateBtn\.addEventListener\('click',\s*\(e\)\s*=>\s*\{[\s\S]*?openAbout\(\);/);
   });
 
