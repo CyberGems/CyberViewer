@@ -50,8 +50,10 @@
   }
 
   // The neon accents have almost no contrast as text on a light surface, so the
-  // light theme draws accent *text* with a darkened ink. Fills and borders keep
-  // the vivid accent.
+  // light theme draws accent *text* with a per-accent ink tuned for pale
+  // surfaces, and hover fills with a slightly darker bright. Fills, borders and
+  // the swatch chip keep the vivid accent. Unknown accents fall back to the old
+  // uniform darken.
   function darken(hex, factor) {
     const c = hexToRgb(hex);
     const ch = (v) => Math.max(0, Math.min(255, Math.round(v * factor)));
@@ -60,14 +62,42 @@
       .join('');
   }
 
+  // Light-theme tones per accent swatch (the data-color values in
+  // CyberViewer.html). Hues reuse the semantic colours already tuned in the
+  // light theme block of app.css (accent2/3, danger, star, brand-accent).
+  const LIGHT_ACCENT_INK = {
+    '#00d4ff': '#0284c7',
+    '#ff2d78': '#c01a58',
+    '#a8ff3e': '#467f00',
+    '#ffae00': '#b45309',
+    '#b967ff': '#7c3aed',
+    '#4d8dff': '#1d4ed8',
+    '#ff5c6c': '#c81e1e',
+    '#45e0c0': '#0f766e'
+  };
+  const LIGHT_ACCENT_BRIGHT = {
+    '#00d4ff': '#0596c4',
+    '#ff2d78': '#d6336c',
+    '#a8ff3e': '#4f8f00',
+    '#ffae00': '#d97706',
+    '#b967ff': '#8b5cf6',
+    '#4d8dff': '#2563eb',
+    '#ff5c6c': '#dc2626',
+    '#45e0c0': '#0d9488'
+  };
+
   const root = document.documentElement;
   root.setAttribute('data-theme', theme);
 
   root.style.setProperty('--cyber-accent', theme === 'gray' ? GRAY_ACCENT : accent);
   root.style.setProperty('--cyber-accent-rgb', theme === 'gray' ? GRAY_ACCENT_RGB : rgbString(accent));
-  root.style.setProperty('--cyber-accent-ink', theme === 'gray'
-    ? GRAY_ACCENT_INK
-    : (theme === 'light' ? darken(accent, 0.62) : accent));
+  if (theme === 'light') {
+    const key = accent.toLowerCase();
+    root.style.setProperty('--cyber-accent-ink', LIGHT_ACCENT_INK[key] || darken(accent, 0.62));
+    root.style.setProperty('--cyber-accent-bright', LIGHT_ACCENT_BRIGHT[key] || darken(accent, 0.62));
+  } else {
+    root.style.setProperty('--cyber-accent-ink', theme === 'gray' ? GRAY_ACCENT_INK : accent);
+  }
 
   // Paint the frame in the theme's base colour before the stylesheets land.
   root.style.setProperty('--cyber-black', BASE[theme] || BASE.cyberviewer);

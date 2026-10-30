@@ -69,7 +69,7 @@ body.ghost-mode #image-tabs, body.ghost-mode #tab-switcher { display: none; }
 .image-tab-close { font-size: 18px; width: 26px; height: 25px; margin-right: 3px; border-radius: 4px; flex-shrink: 0; opacity: .6; }
 .image-tab-close:hover { color: var(--cyber-accent2); background: rgba(255,255,255,.08); opacity: 1; }
 .tab-bar-button { min-width: 32px; display: flex; align-items: center; justify-content: center; gap: 5px; border-radius: 4px; font-size: 19px; padding: 0 7px; }
-#image-tabs-count { font-size: 11px; color: var(--cyber-accent); font-variant-numeric: tabular-nums; }
+#image-tabs-count { font-size: 11px; color: var(--cyber-accent-ink); font-variant-numeric: tabular-nums; }
 .tab-bar-button:hover { background: rgba(var(--cyber-accent-rgb), .1); }
 .image-tab:focus-visible, .image-tab-close:focus-visible, .tab-bar-button:focus-visible, .tab-switcher-item:focus-visible {
   outline: 1px solid var(--cyber-accent); outline-offset: -2px;

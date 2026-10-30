@@ -6815,8 +6815,11 @@ function hexToRgbTriplet(hex) {
 function setConfigAccentPreview(hex) {
   const modal = $('modal-config');
   if (!modal || !hex) return;
+  const theme = document.documentElement.getAttribute('data-theme');
   modal.style.setProperty('--preview-accent', hex);
   modal.style.setProperty('--preview-accent-rgb', hexToRgbTriplet(hex));
+  // Accent-as-text inside the modal follows the theme's ink; fills stay vivid.
+  modal.style.setProperty('--preview-accent-ink', theme === 'light' ? lightAccentInk(hex) : hex);
 }
 
 const CV_THEMES = ['cyberviewer', 'gray', 'light'];
@@ -6829,7 +6832,7 @@ function normalizeAppearanceTheme(value) {
   return CV_THEMES.includes(value) ? value : 'cyberviewer';
 }
 
-/** Darken a hex colour by a factor; used for accent text on the light theme. */
+/** Darken a hex colour by a factor; fallback for accent text on the light theme. */
 function darkenHex(hex, factor) {
   const h = String(hex || '').replace('#', '');
   if (!/^[0-9a-fA-F]{6}$/.test(h)) return hex;
@@ -6838,6 +6841,41 @@ function darkenHex(hex, factor) {
   return '#' + channels
     .map((v) => Math.max(0, Math.min(255, Math.round(v * factor))).toString(16).padStart(2, '0'))
     .join('');
+}
+
+// Light-theme tones per accent swatch, mirrored from theme-boot.js. Hues reuse
+// the semantic colours already tuned in the light theme block of app.css
+// (accent2/3, danger, star, brand-accent). Unknown accents fall back to the old
+// uniform darken.
+const CV_LIGHT_ACCENT_INK = {
+  '#00d4ff': '#0284c7',
+  '#ff2d78': '#c01a58',
+  '#a8ff3e': '#467f00',
+  '#ffae00': '#b45309',
+  '#b967ff': '#7c3aed',
+  '#4d8dff': '#1d4ed8',
+  '#ff5c6c': '#c81e1e',
+  '#45e0c0': '#0f766e'
+};
+const CV_LIGHT_ACCENT_BRIGHT = {
+  '#00d4ff': '#0596c4',
+  '#ff2d78': '#d6336c',
+  '#a8ff3e': '#4f8f00',
+  '#ffae00': '#d97706',
+  '#b967ff': '#8b5cf6',
+  '#4d8dff': '#2563eb',
+  '#ff5c6c': '#dc2626',
+  '#45e0c0': '#0d9488'
+};
+
+function lightAccentInk(accent) {
+  const key = String(accent || '').toLowerCase();
+  return CV_LIGHT_ACCENT_INK[key] || darkenHex(accent, 0.62);
+}
+
+function lightAccentBright(accent) {
+  const key = String(accent || '').toLowerCase();
+  return CV_LIGHT_ACCENT_BRIGHT[key] || darkenHex(accent, 0.62);
 }
 
 /**
@@ -6853,11 +6891,25 @@ function applyAppearanceTheme(theme, accentColor) {
   root.setAttribute('data-theme', t);
   root.style.setProperty('--cyber-accent', t === 'gray' ? CV_GRAY_ACCENT : accent);
   root.style.setProperty('--cyber-accent-rgb', t === 'gray' ? CV_GRAY_ACCENT_RGB : hexToRgbTriplet(accent));
-  root.style.setProperty('--cyber-accent-ink', t === 'gray'
-    ? CV_GRAY_ACCENT_INK
-    : (t === 'light' ? darkenHex(accent, 0.62) : accent));
+  if (t === 'light') {
+    root.style.setProperty('--cyber-accent-ink', lightAccentInk(accent));
+    root.style.setProperty('--cyber-accent-bright', lightAccentBright(accent));
+  } else {
+    root.style.setProperty('--cyber-accent-ink', t === 'gray' ? CV_GRAY_ACCENT_INK : accent);
+    // Drop the inline override so the per-theme CSS bright applies again.
+    root.style.removeProperty('--cyber-accent-bright');
+  }
   root.style.setProperty('--cyber-black', CV_THEME_BASE[t]);
   root.style.setProperty('--cyber-color-scheme', t === 'light' ? 'light' : 'dark');
+
+  // Keep the modal-scoped accent preview coherent with the new theme's ink.
+  const previewModal = $('modal-config');
+  if (previewModal) {
+    const preview = previewModal.style.getPropertyValue('--preview-accent').trim();
+    if (preview) {
+      previewModal.style.setProperty('--preview-accent-ink', t === 'light' ? lightAccentInk(preview) : preview);
+    }
+  }
 
   const meta = document.querySelector('meta[name="color-scheme"]');
   if (meta) meta.setAttribute('content', t === 'light' ? 'light' : 'dark');
@@ -6877,6 +6929,7 @@ function clearConfigAccentPreview() {
   if (!modal) return;
   modal.style.removeProperty('--preview-accent');
   modal.style.removeProperty('--preview-accent-rgb');
+  modal.style.removeProperty('--preview-accent-ink');
 }
 
 // Wire modal dismiss controls (CSP blocks inline onclick)
@@ -8589,14 +8642,14 @@ $('btn-go-end').addEventListener('click', (e) => {
       el.textContent = t.about_checking;
     } else if (s.state === 'not-available') {
       el.textContent = t.about_up_to_date;
-      el.style.color = 'var(--cyber-accent3)';
+      el.style.color = 'var(--cyber-accent3-ink)';
     } else if (s.state === 'downloading') {
       el.textContent = (t.about_downloading || 'Downloading… {percent}%')
         .replace('{percent}', String(s.percent || 0));
-      el.style.color = 'var(--cyber-accent)';
+      el.style.color = 'var(--cyber-accent-ink)';
     } else if (s.state === 'error') {
       el.textContent = `${t.about_update_err}${s.message ? ' (' + s.message + ')' : ''}`;
-      el.style.color = 'var(--cyber-accent2)';
+      el.style.color = 'var(--cyber-accent2-ink)';
     } else {
       el.textContent = '';
     }
@@ -9909,27 +9962,27 @@ function showCyberConfirm({ title, message, detail, danger = true, onConfirm }) 
   if (danger) {
     box.style.borderColor = 'var(--cyber-accent2)';
     box.style.boxShadow = '0 0 25px rgba(255, 45, 120, 0.25)';
-    iconBox.style.color = 'var(--cyber-accent2)';
+    iconBox.style.color = 'var(--cyber-accent2-ink)';
     iconBox.style.borderColor = 'rgba(255, 45, 120, 0.3)';
     iconBox.style.background = 'rgba(255, 45, 120, 0.1)';
     iconBox.innerHTML = '&#128465;&#xFE0E;'; // Trash bin icon
     headerIcon.innerHTML = '&#128465;&#xFE0E;';
-    headerIcon.style.color = 'var(--cyber-accent2)';
-    
+    headerIcon.style.color = 'var(--cyber-accent2-ink)';
+
     okBtn.style.borderColor = 'var(--cyber-accent2)';
-    okBtn.style.color = 'var(--cyber-accent2)';
+    okBtn.style.color = 'var(--cyber-accent2-ink)';
   } else {
     box.style.borderColor = 'var(--cyber-accent)';
     box.style.boxShadow = '0 0 25px rgba(var(--cyber-accent-rgb), 0.25)';
-    iconBox.style.color = 'var(--cyber-accent)';
+    iconBox.style.color = 'var(--cyber-accent-ink)';
     iconBox.style.borderColor = 'rgba(var(--cyber-accent-rgb), 0.3)';
     iconBox.style.background = 'rgba(var(--cyber-accent-rgb), 0.1)';
     iconBox.innerHTML = '&#9888;&#xFE0E;'; // Warning sign
     headerIcon.innerHTML = '&#9888;&#xFE0E;';
-    headerIcon.style.color = 'var(--cyber-accent)';
-    
+    headerIcon.style.color = 'var(--cyber-accent-ink)';
+
     okBtn.style.borderColor = 'var(--cyber-accent)';
-    okBtn.style.color = 'var(--cyber-accent)';
+    okBtn.style.color = 'var(--cyber-accent-ink)';
   }
   
   const lang = state.settings.app.language || 'en';

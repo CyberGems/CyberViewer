@@ -4669,7 +4669,7 @@
     box-shadow: 0 0 8px var(--preview-accent);
   }
   #modal-config .cfg-select {
-    color: var(--preview-accent);
+    color: var(--preview-accent-ink, var(--cyber-accent-ink));
   }
   #modal-config .cfg-select:hover {
     border-color: rgba(var(--preview-accent-rgb), 0.5);
@@ -4838,7 +4838,7 @@
     justify-content: center;
     width: 28px;
     height: 28px;
-    color: var(--preview-accent);
+    color: var(--preview-accent-ink, var(--cyber-accent-ink));
     font-size: 26px;
     filter: drop-shadow(0 0 7px rgba(var(--preview-accent-rgb), 0.5));
     text-shadow: 0 0 8px rgba(var(--preview-accent-rgb), 0.55);
@@ -4884,7 +4884,7 @@
   }
 
   #modal-config .config-nav-btn.active {
-    color: var(--preview-accent);
+    color: var(--preview-accent-ink, var(--cyber-accent-ink));
     background: rgba(var(--preview-accent-rgb), 0.1);
     border-color: rgba(var(--preview-accent-rgb), 0.3);
     border-left-color: var(--preview-accent);
