@@ -699,6 +699,9 @@
     letter-spacing: 0.3px;
     font-family: var(--font-ui);
   }
+  .logo-text-cyber {
+    color: var(--cyber-menu-text);
+  }
   .logo-text-viewer {
     color: var(--cyber-brand-accent);
   }
@@ -7300,6 +7303,31 @@ html[data-theme='light'] #st-size,
 html[data-theme='light'] #img-counter,
 html[data-theme='light'] .status-percent {
   text-shadow: none;
+}
+
+/* The dark glass gradient turns to slate mush on a pale surface: menus swap it
+   for a white frost and the night shadow is scaled back. */
+html[data-theme='light'] .menu-panel,
+html[data-theme='light'] .menu-sub {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(248, 250, 253, 0.84)),
+    rgba(255, 255, 255, 0.82);
+  border-color: var(--cyber-border);
+  box-shadow:
+    0 4px 12px rgba(15, 23, 42, 0.08),
+    0 14px 34px rgba(15, 23, 42, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-theme='light'] .menu-panel,
+  html[data-theme='light'] .menu-sub {
+    background: var(--cyber-panel);
+  }
+}
+html[data-theme='light'] .shortcuts-popover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 253, 0.9));
+  border-color: var(--cyber-border);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
 }
 
 
