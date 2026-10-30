@@ -222,7 +222,7 @@
     "about_subtitle": "v1.13.0",
     "about_desc": "Copyright (C) 2026 By CyberGems<br><span style=\"color:var(--cyber-muted);font-size:11px\">Full-featured image viewer</span>",
     "about_copyright": "Copyright © 2026 CyberGems",
-    "about_tagline": "Full-featured image viewer for Windows",
+    "about_tagline": "Full-featured image and video viewer for Windows",
     "about_version_label": "VERSION {version}",
     "about_suite_title": "More from CyberGems",
     "about_suite_more": "View all →",
@@ -234,8 +234,6 @@
     "about_suite_snap": "CyberSnap: screenshots and annotations",
     "about_suite_tray": "CyberTray: system tray launcher",
     "about_suite_wall": "CyberWall: per-app firewall",
-    "about_formats": "Formats: JPG · PNG · GIF · WebP · BMP · ICO · AVIF<br>Videos: MP4 · WebM · MOV · MKV<br>Hardware accelerated",
-    "about_formats_list": "Images: JPG · PNG · GIF · WebP · BMP · ICO · AVIF<br>Videos: MP4 · WebM · MOV · MKV",
     "about_formats_tech": "Hardware accelerated",
     "about_updates_heading": "Updates",
     "about_dev_tools": "OPEN DEVTOOLS",
@@ -458,7 +456,7 @@
     "show_all_lbl": "ALL",
     "about_check_updates": "Check for updates",
     "about_check_on_startup": "Check for updates on startup",
-    "about_auto_updates_hint": "Checks silently when the app starts. Downloading and installing always ask first.",
+    "about_auto_updates_hint": "Checks silently at startup. Downloading and installing always ask.",
     "about_checking": "Checking updates...",
     "about_up_to_date": "CyberViewer is up to date.",
     "about_update_avail": "New version available!",
@@ -672,7 +670,9 @@
     "key_space": "Space",
     "video_seek_keys": "SEEK 5 S",
     "video_toggle_keys": "PLAY / PAUSE",
-    "video_mute_keys": "MUTE / UNMUTE"
+    "video_mute_keys": "MUTE / UNMUTE",
+    "about_formats_images": "Images",
+    "about_formats_videos": "Videos"
   },
   "es": {
     "tabs_label": "Pestañas de archivos abiertos",
@@ -897,7 +897,7 @@
     "about_subtitle": "v1.13.0",
     "about_desc": "Copyright (C) 2026 By CyberGems<br><span style=\"color:var(--cyber-muted);font-size:11px\">Visor de imágenes completo</span>",
     "about_copyright": "Copyright © 2026 CyberGems",
-    "about_tagline": "Visor de imágenes completo para Windows",
+    "about_tagline": "Visor de imágenes y videos para Windows",
     "about_version_label": "VERSIÓN {version}",
     "about_suite_title": "Más de CyberGems",
     "about_suite_more": "Ver todas →",
@@ -909,8 +909,6 @@
     "about_suite_snap": "CyberSnap: capturas y anotaciones",
     "about_suite_tray": "CyberTray: lanzador en bandeja",
     "about_suite_wall": "CyberWall: firewall por aplicación",
-    "about_formats": "Formatos: JPG · PNG · GIF · WebP · BMP · ICO · AVIF<br>Videos: MP4 · WebM · MOV · MKV<br>Aceleración por hardware",
-    "about_formats_list": "Imágenes: JPG · PNG · GIF · WebP · BMP · ICO · AVIF<br>Videos: MP4 · WebM · MOV · MKV",
     "about_formats_tech": "Aceleración por hardware",
     "about_updates_heading": "Actualizaciones",
     "about_dev_tools": "ABRIR CONSOLA",
@@ -1133,7 +1131,7 @@
     "show_all_lbl": "TODAS",
     "about_check_updates": "Buscar actualizaciones",
     "about_check_on_startup": "Buscar actualizaciones al iniciar",
-    "about_auto_updates_hint": "Comprueba en silencio al iniciar. Descargar e instalar siempre piden tu confirmación.",
+    "about_auto_updates_hint": "Comprueba en silencio al iniciar. Descargar e instalar preguntan.",
     "about_checking": "Buscando actualizaciones...",
     "about_up_to_date": "CyberViewer está actualizado.",
     "about_update_avail": "¡Nueva versión disponible!",
@@ -1347,6 +1345,8 @@
     "key_space": "Espacio",
     "video_seek_keys": "SALTAR 5 S",
     "video_toggle_keys": "REPRODUCIR / PAUSAR",
-    "video_mute_keys": "SILENCIAR / ACTIVAR SONIDO"
+    "video_mute_keys": "SILENCIAR / ACTIVAR SONIDO",
+    "about_formats_images": "Imágenes",
+    "about_formats_videos": "Videos"
   }
 }

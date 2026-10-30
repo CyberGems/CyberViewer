@@ -8845,6 +8845,12 @@ $('btn-go-end').addEventListener('click', (e) => {
     return res;
   };
 
+  // Curated About claims: formats the file filter accepts AND the Chromium
+  // renderer decodes natively. TIFF has no renderer decoder, so it stays out
+  // of the claims. Mirrors the welcome banner's image/video split.
+  const ABOUT_IMAGE_FORMATS = ['JPG', 'PNG', 'GIF', 'WebP', 'BMP', 'ICO', 'AVIF'];
+  const ABOUT_VIDEO_FORMATS = ['MP4', 'WebM', 'MOV', 'MKV'];
+
   async function openAbout() {
     const lang = state.settings.app.language || 'en';
     const t = I18N[lang] || I18N.en;
@@ -8901,7 +8907,14 @@ $('btn-go-end').addEventListener('click', (e) => {
             <div class="about-version-label">${versionLabel}</div>
             <p class="about-desc">${t.about_tagline || ''}</p>
             <div class="about-formats">
-              ${t.about_formats_list || t.about_formats}
+              <div class="about-formats-row">
+                <span class="about-formats-label">${t.about_formats_images || 'Images'}</span>
+                ${ABOUT_IMAGE_FORMATS.map((f) => `<kbd class="about-format-badge">${f}</kbd>`).join('')}
+              </div>
+              <div class="about-formats-row">
+                <span class="about-formats-label">${t.about_formats_videos || 'Videos'}</span>
+                ${ABOUT_VIDEO_FORMATS.map((f) => `<kbd class="about-format-badge">${f}</kbd>`).join('')}
+              </div>
               <span class="about-formats-tech">${t.about_formats_tech || ''}</span>
             </div>
           </div>
@@ -9044,6 +9057,19 @@ $('btn-go-end').addEventListener('click', (e) => {
       </div>
     `;
     overlay.querySelector('#about-close-btn').addEventListener('click', closeAbout);
+
+    // Edge fades: mask the scroll body near the top/bottom only while there
+    // is more content beyond that edge, so cut-off rows fade out instead.
+    const aboutBody = overlay.querySelector('.about-modal .modal-body');
+    if (aboutBody) {
+      const syncAboutFade = () => {
+        const max = aboutBody.scrollHeight - aboutBody.clientHeight;
+        aboutBody.classList.toggle('about-fade-top', aboutBody.scrollTop > 4);
+        aboutBody.classList.toggle('about-fade-bottom', max > 4 && aboutBody.scrollTop < max - 4);
+      };
+      aboutBody.addEventListener('scroll', syncAboutFade, { passive: true });
+      requestAnimationFrame(syncAboutFade);
+    }
 
     const autoToggle = overlay.querySelector('#about-auto-update-toggle');
     if (autoToggle) {

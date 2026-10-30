@@ -6473,6 +6473,20 @@
   overflow-x: visible;
   overflow-y: auto;
 }
+/* Edge fades: the scroll body masks its content near the top/bottom only
+   while there is more content beyond that edge (classes synced by JS). */
+.about-modal .modal-body.about-fade-top {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 28px);
+  mask-image: linear-gradient(to bottom, transparent, #000 28px);
+}
+.about-modal .modal-body.about-fade-bottom {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+}
+.about-modal .modal-body.about-fade-top.about-fade-bottom {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 28px, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 28px, #000 calc(100% - 28px), transparent);
+}
 .about-modal .modal-body::-webkit-scrollbar {
   width: 6px;
   display: block;
@@ -6570,9 +6584,40 @@
 }
 .about-formats-tech {
   display: block;
-  margin-top: 2px;
+  margin-top: 6px;
   font-size: 10px;
   opacity: 0.85;
+}
+.about-formats-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.about-formats-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyber-muted);
+  margin-right: 2px;
+}
+/* Format chips mirror the tooltip shortcut badge: mono, thin border, tint. */
+.about-format-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 6px;
+  border: 1px solid var(--cyber-border);
+  border-radius: 4px;
+  background: rgba(var(--cyber-tint-rgb), 0.04);
+  color: var(--cyber-muted);
+  font-family: var(--font-mono, monospace);
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
 }
 
 /* Sectioned layout (CyberFeeds pattern): divider-lined titles + bordered boxes */
