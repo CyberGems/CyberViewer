@@ -17,7 +17,7 @@ const {
 } = require('./lib/paths');
 const { createMediaResponse } = require('./lib/media-protocol');
 const { clearThumbCache, evictThumbCache } = require('./lib/thumb-cache');
-const { clampWindowBounds, MIN_W, MIN_H, nextBoundsAttempt, boundsMatch } = require('./lib/window-bounds');
+const { clampWindowBounds, MIN_W, MIN_H, nextBoundsAttempt, boundsMatch, provisionalBoundsForMaximize } = require('./lib/window-bounds');
 const { initUpdater, setAutoCheckEnabled, isPortableBuild } = require('./lib/updater');
 const { buildBackup, parseBackup } = require('./lib/settings-backup');
 const autoBackup = require('./lib/auto-backup');
@@ -494,17 +494,20 @@ function createWindow() {
     // Corrected against the real result: Windows inflates the size when the
     // target display has a different scale factor than the one the window was
     // created on, which would leave it off-center and too large.
+    const startupWant = {
+      x: startup.x,
+      y: startup.y,
+      width: startup.width,
+      height: startup.height
+    };
+    const startupArea =
+      (screen.getDisplayNearestPoint({
+        x: startup.x + Math.floor(startup.width / 2),
+        y: startup.y + Math.floor(startup.height / 2)
+      }) || {}).workArea;
+
     try {
-      const startupArea =
-        (screen.getDisplayNearestPoint({
-          x: startup.x + Math.floor(startup.width / 2),
-          y: startup.y + Math.floor(startup.height / 2)
-        }) || {}).workArea;
-      applyBoundsExact(
-        win,
-        { x: startup.x, y: startup.y, width: startup.width, height: startup.height },
-        startupArea
-      );
+      applyBoundsExact(win, startupWant, startupArea);
     } catch (_) { /* ignore */ }
 
     win.show();
@@ -526,19 +529,29 @@ function createWindow() {
           });
         if (target && curDisp && target.id !== curDisp.id) {
           const wa = target.workArea || target.bounds;
-          applyBoundsExact(
-            win,
-            {
-              x: wa.x + 48,
-              y: wa.y + 48,
-              width: Math.min(startup.width, Math.max(800, wa.width - 96)),
-              height: Math.min(startup.height, Math.max(500, wa.height - 96))
-            },
-            wa
-          );
+          applyBoundsExact(win, provisionalBoundsForMaximize(startup, wa), wa);
         }
         if (!win.isMaximized()) win.maximize();
       } catch (_) { /* ignore */ }
+    } else {
+      // The mixed-DPI rescale can be deferred until the window is actually
+      // shown: the pre-show correction then reads a stale hidden-window size,
+      // and the visible window ends up inflated and shifted, spilling onto the
+      // neighbouring monitor. Re-assert the startup bounds once the window is
+      // on screen; a no-op when the pre-show placement already stuck.
+      const reassertStartupBounds = () => {
+        try {
+          if (!win || win.isDestroyed()) return;
+          if (!boundsMatch(startupWant, win.getBounds())) {
+            const fixed = applyBoundsExact(win, startupWant, startupArea);
+            diagWindow('reveal-bounds-reassert', { fixed });
+          }
+        } catch (_) { /* ignore */ }
+      };
+      reassertStartupBounds();
+      // Second pass after the fade tick: the deferred rescale lands within the
+      // first frames after show(), never later.
+      setTimeout(reassertStartupBounds, 64);
     }
 
     const fadeIn = () => {

@@ -2,7 +2,7 @@
 
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
-const { MIN_W, MIN_H, clampWindowBounds, nextBoundsAttempt, boundsMatch } = require('../lib/window-bounds');
+const { MIN_W, MIN_H, clampWindowBounds, nextBoundsAttempt, boundsMatch, provisionalBoundsForMaximize } = require('../lib/window-bounds');
 
 function fakeDisplay(id, x, y, width, height, scaleFactor = 1) {
   return {
@@ -157,5 +157,33 @@ describe('boundsMatch', () => {
     const a = { x: 10, y: 20, width: 1153, height: 612 };
     const b = { x: 10, y: 20, width: 1384, height: 735 };
     assert.equal(boundsMatch(a, b), false);
+  });
+});
+
+describe('provisionalBoundsForMaximize', () => {
+  // 2560x1440 at 150% scaling: 1707x920 DIP work area.
+  const wa = { x: 0, y: 0, width: 1707, height: 920 };
+
+  it('keeps the startup size and 48px offset on a normal work area', () => {
+    const b = provisionalBoundsForMaximize({ width: 1280, height: 778 }, wa);
+    assert.deepEqual(b, { x: 48, y: 48, width: 1280, height: 778 });
+  });
+
+  it('caps the provisional window at the work area on small displays', () => {
+    const small = { x: 0, y: 0, width: 800, height: 520 };
+    const b = provisionalBoundsForMaximize({ width: 1280, height: 778 }, small);
+    assert.ok(b.width <= small.width);
+    assert.ok(b.height <= small.height);
+    assert.ok(b.x >= small.x);
+    assert.ok(b.y >= small.y);
+    assert.ok(b.x + b.width <= small.x + small.width);
+    assert.ok(b.y + b.height <= small.y + small.height);
+  });
+
+  it('caps the 48px offset so the window stays inside the work area', () => {
+    const tight = { x: -100, y: 50, width: 802, height: 510 };
+    const b = provisionalBoundsForMaximize({ width: 1280, height: 778 }, tight);
+    assert.equal(b.x + b.width, tight.x + tight.width);
+    assert.equal(b.y + b.height, tight.y + tight.height);
   });
 });
