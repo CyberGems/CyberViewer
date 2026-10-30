@@ -905,7 +905,6 @@
     align-self: center;
     flex-shrink: 0;
     border-radius: 8px;
-    border: 1px solid rgba(var(--cyber-accent-rgb), 0.5);
     background: rgba(var(--cyber-accent-rgb), 0.1);
     color: var(--cyber-accent-ink);
     box-shadow: 0 0 8px rgba(var(--cyber-accent-rgb), 0.25);
@@ -6579,6 +6578,9 @@
   display: flex;
   flex-direction: column;
   gap: 7px;
+  /* Stretch to the hero width: badges and the transient notice then share the
+     exact same box in both states. */
+  align-self: stretch;
   margin: 8px 0 0;
   padding: 8px 12px;
   font-size: 11px;
