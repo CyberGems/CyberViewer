@@ -8660,9 +8660,13 @@ $('btn-go-end').addEventListener('click', (e) => {
     if (aboutFormatsFlashTimer) { clearTimeout(aboutFormatsFlashTimer); aboutFormatsFlashTimer = null; }
     if (!text) {
       box.classList.remove('is-noticing');
+      box.style.height = '';
       if (notice) notice.remove();
       return;
     }
+    // Pin the box to its current rendered height so swapping the badge rows
+    // for the notice never shifts the modal layout.
+    box.style.height = `${box.offsetHeight}px`;
     box.classList.add('is-noticing');
     if (notice) {
       notice.textContent = text;

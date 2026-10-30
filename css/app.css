@@ -2111,6 +2111,10 @@
     background: var(--cyber-black);
     cursor: grab;
   }
+  /* The grab/pan cursor only makes sense with content to pan. */
+  body.empty-state #viewer-wrap {
+    cursor: default;
+  }
   body.statusbar-visible:not(.ghost-mode):not(.empty-state) #viewer-wrap {
     margin-bottom: 36px;
   }
@@ -6622,9 +6626,9 @@
   white-space: nowrap;
 }
 /* Transient update notice: replaces the badge rows for a few seconds so the
-   check feedback is visible without scrolling. */
+   check feedback is visible without scrolling. The box height is pinned by JS
+   so the swap never changes the modal layout. */
 .about-formats.is-noticing {
-  min-height: 93px;
   justify-content: center;
 }
 .about-formats.is-noticing > :not(.about-formats-notice) {
