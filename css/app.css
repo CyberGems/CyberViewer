@@ -4948,16 +4948,12 @@
     border-top: 1px solid var(--cyber-border);
   }
 
+  /* Status readout, not a button: no box, just the centered dot and label. */
   #modal-config .config-autosave-pill {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-height: 31px;
-    padding: 7px 9px;
-    border: 1px solid rgba(var(--preview-accent-rgb), 0.24);
-    border-radius: 4px;
-    background: rgba(var(--preview-accent-rgb), 0.06);
     color: var(--cyber-muted);
     font-family: var(--font-ui);
     font-size: 10px;
