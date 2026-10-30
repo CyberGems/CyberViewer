@@ -147,9 +147,51 @@ describe('updater helpers', () => {
         state: 'available',
         version: '1.2.3',
         releaseNotes: '## Highlights\n\n- Faster startup',
-        releaseUrl: 'https://github.com/CyberGems/CyberViewer/releases/tag/v1.2.3'
+        releaseUrl: 'https://github.com/CyberGems/CyberViewer/releases/tag/v1.2.3',
+        releaseBody: '## Highlights\n\n- Faster startup'
       });
       assert.deepEqual(ipcHandlers['update:get-status'](), status);
+    } finally {
+      restore();
+    }
+  });
+
+  it('keeps the raw release body from atom-style note arrays for the renderer', () => {
+    const { mod, listeners, restore } = loadUpdaterWithStubs({
+      PACKAGED: '1'
+    });
+    try {
+      mod.initUpdater({});
+      const body = '<h3>Novedades</h3><p>Notas listas para instalar</p>';
+      listeners['update-downloaded']({
+        version: '2.0.0',
+        releaseNotes: [
+          { version: '1.0.0', note: 'old' },
+          { version: '2.0.0', note: body }
+        ]
+      });
+
+      const status = mod.getLastUpdateStatus();
+      assert.equal(status.state, 'downloaded');
+      assert.equal(status.version, '2.0.0');
+      assert.equal(status.releaseNotes, '### Novedades\nNotas listas para instalar');
+      assert.equal(status.releaseBody, body);
+    } finally {
+      restore();
+    }
+  });
+
+  it('broadcasts no releaseBody when only a release name is available', () => {
+    const { mod, listeners, restore } = loadUpdaterWithStubs({
+      PACKAGED: '1'
+    });
+    try {
+      mod.initUpdater({});
+      listeners['update-available']({ version: '1.2.3', releaseName: 'CyberViewer v1.2.3' });
+
+      const status = mod.getLastUpdateStatus();
+      assert.equal(status.releaseNotes, 'CyberViewer v1.2.3');
+      assert.equal('releaseBody' in status, false);
     } finally {
       restore();
     }

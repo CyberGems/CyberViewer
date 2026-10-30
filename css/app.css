@@ -6826,6 +6826,9 @@
 .about-release-note-item {
   margin: 2px 0;
 }
+.about-release-note-item-nested {
+  margin-left: 12px;
+}
 .about-release-note-paragraph {
   margin: 2px 0 6px;
 }

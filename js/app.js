@@ -8553,10 +8553,32 @@ $('btn-go-end').addEventListener('click', (e) => {
     if (details) details.style.display = isRelease ? '' : 'none';
     if (releaseBtn) releaseBtn.style.display = isRelease ? '' : 'none';
     if (notes) notes.style.display = isRelease && updateStatus.releaseNotes ? '' : 'none';
-    renderReleaseNotes(notesBody, isRelease ? (updateStatus.releaseNotes || '') : '');
+    const lang = (state.settings.app && state.settings.app.language) || 'en';
+    const rawBody = isRelease ? (updateStatus.releaseBody || updateStatus.releaseNotes || '') : '';
+    const localizedBody = rawBody
+      ? window.CVReleaseNotes.extractLocalizedReleaseNotes(rawBody, lang)
+      : '';
+    renderReleaseNotes(notesBody, localizedBody);
 
     const latest = root.querySelector('#about-latest-version');
     if (latest) latest.textContent = isRelease && updateStatus.version ? `v${updateStatus.version}` : '—';
+  }
+
+  // Inline markdown for release notes: [text](url) renders as text and
+  // **bold** renders as a strong node. Everything else stays plain text.
+  function appendInlineNoteText(el, text) {
+    const plain = String(text).replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
+    const parts = plain.split(/(\*\*[^*]+\*\*)/g);
+    for (const part of parts) {
+      if (!part) continue;
+      if (part.length > 4 && part.startsWith('**') && part.endsWith('**')) {
+        const strong = document.createElement('strong');
+        strong.textContent = part.slice(2, -2);
+        el.appendChild(strong);
+      } else {
+        el.appendChild(document.createTextNode(part));
+      }
+    }
   }
 
   function renderReleaseNotes(el, body) {
@@ -8572,15 +8594,16 @@ $('btn-go-end').addEventListener('click', (e) => {
     };
 
     for (const line of lines) {
-      const heading = line.match(/^#{1,6}\s+(.*)$/);
-      const bullet = line.match(/^[-*]\s+(.*)$/);
+      const text = line.trim();
+      const heading = text.match(/^#{1,6}\s+(.*)$/);
+      const bullet = text.match(/^[-*]\s+(.*)$/);
       if (heading) {
         flushList();
         const title = heading[1].trim();
         if (title) {
           const node = document.createElement('div');
           node.className = 'about-release-note-heading';
-          node.textContent = title;
+          appendInlineNoteText(node, title);
           el.appendChild(node);
         }
       } else if (bullet) {
@@ -8589,16 +8612,18 @@ $('btn-go-end').addEventListener('click', (e) => {
           list.className = 'about-release-note-list';
         }
         const item = document.createElement('li');
-        item.className = 'about-release-note-item';
-        item.textContent = bullet[1].trim();
+        // One nesting level: indented bullets render with extra indentation.
+        if (/^[\t ]/.test(line)) item.className = 'about-release-note-item about-release-note-item-nested';
+        else item.className = 'about-release-note-item';
+        appendInlineNoteText(item, bullet[1].trim());
         list.appendChild(item);
-      } else if (!line.trim() || /^---+$/.test(line.trim())) {
+      } else if (!text || /^---+$/.test(text)) {
         flushList();
       } else {
         flushList();
         const paragraph = document.createElement('p');
         paragraph.className = 'about-release-note-paragraph';
-        paragraph.textContent = line.trim();
+        appendInlineNoteText(paragraph, text);
         el.appendChild(paragraph);
       }
     }
