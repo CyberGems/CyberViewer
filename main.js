@@ -1116,11 +1116,26 @@ ipcMain.on('workspace-ready', event => {
   workspaceReady = true;
   forwardOpenPaths([]);
 });
+// Retry the quit a few times. The renderer's beforeunload prevention can abort
+// the quit cycle that is in flight even after the renderer acknowledged the
+// close (workspace-close-ready). By the time it acknowledged, the renderer had
+// already allowed unload, so a fresh quit started once the prevention notice
+// was processed goes through cleanly.
+function scheduleQuitRetry(attempt = 0) {
+  if (!win || win.isDestroyed()) return;
+  app.quit();
+  if (attempt >= 5) return;
+  setTimeout(() => {
+    if (win && !win.isDestroyed()) scheduleQuitRetry(attempt + 1);
+  }, 250);
+}
+
 ipcMain.on('workspace-close-ready', event => {
   if (!win || event.sender !== win.webContents || workspaceCloseApproved) return;
   workspaceCloseApproved = true;
   isQuitting = true;
-  app.quit();
+  quitRequested = true;
+  scheduleQuitRetry();
 });
 ipcMain.handle('session:load', () => {
   if (!loadSettings().app.restoreSession) return { ok: true, session: { version: 1, activeId: null, tabs: [] } };

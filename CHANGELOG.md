@@ -7,7 +7,7 @@ Notable user-facing changes per release. Earlier versions are documented in the
 
 ### Fixed
 
-- Quitting from the tray menu while the window was hidden only restored the window on the first attempt. The late "close prevented" notice from the renderer's beforeunload could cancel the retried quit in flight; an explicit quit is no longer cancelled, and a watchdog restores normal close semantics if the renderer's close chain never completes.
+- Quitting from the tray menu while the window was hidden only restored the window on the first attempt. The renderer's beforeunload prevents the first close attempt, and its late prevention notice could abort the acknowledged quit in flight. Explicit quits are no longer cancelled, the acknowledged close retries the quit until it lands, and a watchdog restores normal close semantics if the renderer's close chain never completes.
 
 ### Added
 
