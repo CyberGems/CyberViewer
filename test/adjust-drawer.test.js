@@ -55,7 +55,7 @@ describe('Adjust drawer', () => {
 
   it('keeps the image clear outside the localized glass drawer', () => {
     assert.match(css, /#modal-adjust\s*\{[\s\S]*?background:\s*transparent;[\s\S]*?backdrop-filter:\s*none;/);
-    assert.match(css, /#modal-adjust \.adjust-drawer\s*\{[\s\S]*?rgba\(15, 22, 33, 0\.42\)[\s\S]*?backdrop-filter:\s*blur\(20px\) saturate\(150%\);/);
+    assert.match(css, /#modal-adjust \.adjust-drawer\s*\{[\s\S]*?rgba\(var\(--cyber-drawer-rgb\), 0\.42\)[\s\S]*?backdrop-filter:\s*blur\(20px\) saturate\(150%\);/);
     assert.match(html, /<img src="assets\/icon\.png" class="logo-img"/);
   });
 

@@ -111,6 +111,7 @@ Most image viewers are either bloated with features you never use or so barebone
 - **Scheduled automatic backups:** save settings and favorites on a schedule (on startup, hourly, daily, weekly, or monthly; daily by default), keep a chosen number of backups with automatic pruning, and pick a custom folder. Restore any backup from **Configuration → Backup & Data**: restoring saves a safety backup of the current state first, and **Backup Now** triggers a run on demand
 
 ### 🎨 Customization
+- **Themes:** CyberViewer (dark with accent), Gray (refined grayscale, no colour), and Light (light with accent)
 - **Accent colors:** Cyan, Pink, Green, Orange, Violet, Blue, Red, and Mint
 - **Background styles:** Checker-dark, Checker-light, or Solid
 - **Interface tweaks:** sidebar, toolbar, status bar, tooltips, shortcut guide, auto-hide delays, and double-click behavior

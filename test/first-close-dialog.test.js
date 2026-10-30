@@ -73,7 +73,7 @@ describe('first-close dialog (minimize to tray vs quit)', () => {
   it('styles the option cards and remember checkbox', () => {
     assert.match(css, /\.first-close-option \{[\s\S]*?border: 1px solid var\(--cyber-border\);[\s\S]*?cursor: pointer;[\s\S]*?\}/);
     assert.match(css, /\.first-close-option:hover \{[\s\S]*?border-color: var\(--cyber-accent\);/);
-    assert.match(css, /\.first-close-option\.is-danger \.first-close-option-icon \{[\s\S]*?color: var\(--cyber-accent2\);/);
+    assert.match(css, /\.first-close-option\.is-danger \.first-close-option-icon \{[\s\S]*?color: var\(--cyber-accent2-ink\);/);
     assert.match(css, /\.first-close-remember input:checked \+ \.first-close-checkmark \{[\s\S]*?background: var\(--cyber-accent\);/);
   });
 

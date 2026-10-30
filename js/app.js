@@ -222,6 +222,7 @@ const state = {
       trayRecentImages: true,
       autoStart: false, 
       accentColor: '#00d4ff',
+      appearanceTheme: 'cyberviewer',
       language: 'en',
       favorites: [],
       animateGifs: true,
@@ -6818,6 +6819,59 @@ function setConfigAccentPreview(hex) {
   modal.style.setProperty('--preview-accent-rgb', hexToRgbTriplet(hex));
 }
 
+const CV_THEMES = ['cyberviewer', 'gray', 'light'];
+const CV_THEME_BASE = { cyberviewer: '#080a0e', gray: '#0d0d0d', light: '#eef1f6' };
+const CV_GRAY_ACCENT = '#c9c9c9';
+const CV_GRAY_ACCENT_RGB = '201, 201, 201';
+const CV_GRAY_ACCENT_INK = '#dcdcdc';
+
+function normalizeAppearanceTheme(value) {
+  return CV_THEMES.includes(value) ? value : 'cyberviewer';
+}
+
+/** Darken a hex colour by a factor; used for accent text on the light theme. */
+function darkenHex(hex, factor) {
+  const h = String(hex || '').replace('#', '');
+  if (!/^[0-9a-fA-F]{6}$/.test(h)) return hex;
+  const channels = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+  if (channels.some((n) => Number.isNaN(n))) return hex;
+  return '#' + channels
+    .map((v) => Math.max(0, Math.min(255, Math.round(v * factor))).toString(16).padStart(2, '0'))
+    .join('');
+}
+
+/**
+ * Apply a theme and accent to the document. Mirrors theme-boot.js so the runtime
+ * path and the pre-paint path agree, including the localStorage mirror used to
+ * avoid a flash on the next load.
+ */
+function applyAppearanceTheme(theme, accentColor) {
+  const t = normalizeAppearanceTheme(theme);
+  const accent = /^#[0-9a-fA-F]{6}$/.test(accentColor || '') ? accentColor : '#00d4ff';
+  const root = document.documentElement;
+
+  root.setAttribute('data-theme', t);
+  root.style.setProperty('--cyber-accent', t === 'gray' ? CV_GRAY_ACCENT : accent);
+  root.style.setProperty('--cyber-accent-rgb', t === 'gray' ? CV_GRAY_ACCENT_RGB : hexToRgbTriplet(accent));
+  root.style.setProperty('--cyber-accent-ink', t === 'gray'
+    ? CV_GRAY_ACCENT_INK
+    : (t === 'light' ? darkenHex(accent, 0.62) : accent));
+  root.style.setProperty('--cyber-black', CV_THEME_BASE[t]);
+  root.style.setProperty('--cyber-color-scheme', t === 'light' ? 'light' : 'dark');
+
+  const meta = document.querySelector('meta[name="color-scheme"]');
+  if (meta) meta.setAttribute('content', t === 'light' ? 'light' : 'dark');
+
+  try {
+    window.localStorage.setItem('cv_theme', t);
+    window.localStorage.setItem('cv_accent', accent);
+  } catch (_) { /* storage may be unavailable in restricted contexts */ }
+
+  // The gray theme fixes its own accent, so the swatch row cannot change anything.
+  const accentRow = $('cfg-accent-row');
+  if (accentRow) accentRow.classList.toggle('is-theme-disabled', t === 'gray');
+}
+
 function clearConfigAccentPreview() {
   const modal = $('modal-config');
   if (!modal) return;
@@ -7271,6 +7325,17 @@ function openConfig() {
     opt.setAttribute('aria-pressed', isActive ? 'true' : 'false');
   });
   setConfigAccentPreview(accent);
+
+  // Theme cards + accent-row availability
+  const theme = normalizeAppearanceTheme(s.appearanceTheme);
+  document.querySelectorAll('#cfg-theme-group .theme-card').forEach(card => {
+    const isActive = card.dataset.themeOpt === theme;
+    card.classList.toggle('active', isActive);
+    card.setAttribute('aria-checked', isActive ? 'true' : 'false');
+  });
+  const accentRow = $('cfg-accent-row');
+  if (accentRow) accentRow.classList.toggle('is-theme-disabled', theme === 'gray');
+
   setConfigAutosaveState(true, { visible: false });
   setActiveConfigTab('general');
   syncConfigBrandVersion();
@@ -7313,6 +7378,7 @@ function setConfigAutosaveState(saved, { visible = true } = {}) {
 function collectConfigSettings() {
   const activeOpt = document.querySelector('#modal-config .color-opt.active');
   const accentColor = (activeOpt && activeOpt.dataset.color) || '#00d4ff';
+  const activeTheme = document.querySelector('#cfg-theme-group .theme-card.active');
   return {
     sidebarOpen: $('cfg-sidebar').checked,
     statusbarVisible: $('cfg-statusbar').checked,
@@ -7323,6 +7389,7 @@ function collectConfigSettings() {
     preferredDisplayId: $('cfg-monitor').value,
     language: $('cfg-lang').value,
     accentColor: accentColor,
+    appearanceTheme: activeTheme ? normalizeAppearanceTheme(activeTheme.dataset.themeOpt) : 'cyberviewer',
     contextMenuEnabled: $('cfg-contextmenu').checked,
     restoreSession: $('cfg-restore-session').checked,
     animateGifs: !!($('cfg-animated-gifs') && $('cfg-animated-gifs').checked),
@@ -7357,6 +7424,7 @@ function getFactoryAppSettings() {
     autoStart: false,
     startMinimized: false,
     accentColor: '#00d4ff',
+    appearanceTheme: 'cyberviewer',
     language: 'en',
     preferredDisplayId: 'auto',
     contextMenuEnabled: false,
@@ -7470,6 +7538,20 @@ document.querySelectorAll('#modal-config .color-opt').forEach(opt => {
     opt.classList.add('active');
     opt.setAttribute('aria-pressed', 'true');
     setConfigAccentPreview(opt.dataset.color);
+    scheduleConfigAutosave({ immediate: true });
+  });
+});
+
+// Theme cards: apply the palette immediately (live) and persist.
+document.querySelectorAll('#cfg-theme-group .theme-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('#cfg-theme-group .theme-card').forEach(c => {
+      c.classList.remove('active');
+      c.setAttribute('aria-checked', 'false');
+    });
+    card.classList.add('active');
+    card.setAttribute('aria-checked', 'true');
+    applyAppearanceTheme(card.dataset.themeOpt, state.settings && state.settings.app && state.settings.app.accentColor);
     scheduleConfigAutosave({ immediate: true });
   });
 });
@@ -8030,15 +8112,11 @@ if (clearRecentImagesBtn) {
 
 function applySettings() {
   const s = state.settings.app;
-  
-  // Accent color
-  document.documentElement.style.setProperty('--cyber-accent', s.accentColor);
-  // Convert hex to RGB for variables
-  const r = parseInt(s.accentColor.slice(1,3), 16);
-  const g = parseInt(s.accentColor.slice(3,5), 16);
-  const b = parseInt(s.accentColor.slice(5,7), 16);
-  document.documentElement.style.setProperty('--cyber-accent-rgb', `${r}, ${g}, ${b}`);
-  
+
+  // Appearance theme (CyberViewer / gray / light) + accent. The gray theme owns
+  // its own neutral accent, so the user accent is ignored there.
+  applyAppearanceTheme(s.appearanceTheme, s.accentColor);
+
   // Visibility
   state.sidebarOpen = !!s.sidebarOpen;
   if (s.preferredDisplayId) $('cfg-monitor').value = s.preferredDisplayId;

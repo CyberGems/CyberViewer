@@ -111,6 +111,7 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 - **Copias programadas:** guarda ajustes y favoritos automáticamente según una programación (al iniciar, cada hora, cada día, cada semana o cada mes; cada día por defecto), conserva la cantidad elegida de copias con purga automática y permite una carpeta personalizada. Restaura cualquier copia desde **Configuración → Respaldo y datos**: al restaurar se guarda antes una copia de seguridad del estado actual, y **Crear copia ahora** lanza una manual cuando quieras
 
 ### 🎨 Personalización
+- **Temas:** CyberViewer (oscuro con acento), Gris (escala de grises sobria, sin color) y Claro (interfaz clara con acento)
 - **Colores de acento:** Cian, Rosa, Verde, Naranja, Violeta, Azul, Rojo y Menta
 - **Estilos de fondo:** Cuadriculado oscuro, Cuadriculado claro o Sin cuadriculado
 - **Ajustes de interfaz:** barra lateral, barra de herramientas, barra de estado, tooltips, guía de atajos, retrasos de ocultación automática y comportamiento del doble clic

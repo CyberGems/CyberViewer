@@ -136,12 +136,12 @@ describe('About modal redesign (CyberFeeds pattern)', () => {
     assert.match(css, /\.about-modal\s*\{[\s\S]*?border: 1px solid rgba\(var\(--cyber-accent-rgb\), 0\.28\);/);
     assert.match(css, /\.about-modal\s*\{[\s\S]*?border-radius: 14px;/);
     // glass decor pieces (hairline only; corner glows removed by request)
-    assert.match(css, /\.about-hairline\s*\{[\s\S]*?linear-gradient\(90deg, transparent, rgba\(255, 255, 255, 0\.28\), transparent\)/);
+    assert.match(css, /\.about-hairline\s*\{[\s\S]*?linear-gradient\(90deg, transparent, rgba\(var\(--cyber-tint-rgb\), 0\.28\), transparent\)/);
     assert.doesNotMatch(css, /\.about-glow/);
     // close-only header: transparent so the gradient flows (no tonal seam)
     assert.match(css, /\.about-modal \.modal-header\s*\{[\s\S]*?background: transparent;/);
     // close hover: subtle ghost background, no clipped pink glow
-    assert.match(css, /\.about-modal \.modal-close-btn:hover\s*\{\s*color: var\(--cyber-text\) !important;\s*background: rgba\(255, 255, 255, 0\.07\) !important;\s*box-shadow: none !important;/);
+    assert.match(css, /\.about-modal \.modal-close-btn:hover\s*\{\s*color: var\(--cyber-text\) !important;\s*background: rgba\(var\(--cyber-tint-rgb\), 0\.07\) !important;\s*box-shadow: none !important;/);
     // close tooltip renders below + right-aligned (inside the modal)
     assert.match(css, /\.about-modal \.modal-close-btn\.cyber-tooltip::after\s*\{\s*bottom: auto !important;\s*top: calc\(100% \+ 8px\) !important;/);
     // slim visible scrollbar so overflow is discoverable
@@ -219,7 +219,7 @@ describe('About modal redesign (CyberFeeds pattern)', () => {
     // ghost: transparent, no border, muted
     assert.match(css, /\.about-action-ghost,\s*\.about-action-ghost:hover\s*\{\s*border-color: transparent;\s*background: transparent;\s*color: var\(--cyber-muted\);/);
     // primary: solid accent fill with dark label
-    assert.match(css, /\.about-action-primary,\s*\.about-action-primary:hover\s*\{\s*border-color: var\(--cyber-accent\);\s*background: var\(--cyber-accent\);\s*color: #08111c;/);
+    assert.match(css, /\.about-action-primary,\s*\.about-action-primary:hover\s*\{\s*border-color: var\(--cyber-accent\);\s*background: var\(--cyber-accent\);\s*color: var\(--cyber-on-accent-2\);/);
   });
 
   it('renders the logo plain: no halo, no pulsing glow (CyberFeeds style)', () => {
@@ -270,6 +270,6 @@ describe('About modal redesign (CyberFeeds pattern)', () => {
     assert.match(mainJs, /const os = require\('os'\);/);
     assert.match(preloadJs, /getDiagnostics: \(\) => ipcRenderer\.invoke\('get-diagnostics'\),/);
     // green flash while copied
-    assert.match(css, /\.about-diagnostics-btn\.about-diagnostics-copied\s*\{\s*color: var\(--cyber-accent3\);/);
+    assert.match(css, /\.about-diagnostics-btn\.about-diagnostics-copied\s*\{\s*color: var\(--cyber-accent3-ink\);/);
   });
 });

@@ -6,7 +6,8 @@
 <meta name="color-scheme" content="dark">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' blob: data: cvlocal:; media-src 'self' blob: cvlocal:; connect-src 'self' blob: cvlocal:">
 <title>CyberViewer</title>
-<style>html,body{background:#080a0e;color:#c8d8e8;margin:0;height:100%;overflow:hidden}</style>
+<style>html,body{background:#080a0e;background:var(--cyber-black,#080a0e);color:var(--cyber-text,#c8d8e8);margin:0;height:100%;overflow:hidden}</style>
+<script src="js/theme-boot.js"></script>
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/tabs.css">
 <link rel="stylesheet" href="css/video.css">
@@ -886,8 +887,28 @@
 
           <section class="config-tab-panel" id="config-tab-appearance" data-config-panel="appearance" role="tabpanel" hidden>
             <div class="config-section">
+              <label class="config-label" data-i18n="cfg_theme_section">Tema</label>
+              <div class="theme-grid" role="radiogroup" data-i18n-aria="cfg_theme_section" id="cfg-theme-group">
+                <button type="button" class="theme-card active" data-theme-opt="cyberviewer" role="radio" aria-checked="true">
+                  <span class="theme-preview theme-preview-cyberviewer" aria-hidden="true"><i></i><i></i><i></i></span>
+                  <span class="theme-card-name" data-i18n="cfg_theme_cyberviewer_name">CyberViewer</span>
+                  <span class="theme-card-desc" data-i18n="cfg_theme_cyberviewer_desc">Oscuro con acento de color.</span>
+                </button>
+                <button type="button" class="theme-card" data-theme-opt="gray" role="radio" aria-checked="false">
+                  <span class="theme-preview theme-preview-gray" aria-hidden="true"><i></i><i></i><i></i></span>
+                  <span class="theme-card-name" data-i18n="cfg_theme_gray_name">Gris</span>
+                  <span class="theme-card-desc" data-i18n="cfg_theme_gray_desc">Solo escala de grises, sin color.</span>
+                </button>
+                <button type="button" class="theme-card" data-theme-opt="light" role="radio" aria-checked="false">
+                  <span class="theme-preview theme-preview-light" aria-hidden="true"><i></i><i></i><i></i></span>
+                  <span class="theme-card-name" data-i18n="cfg_theme_light_name">Claro</span>
+                  <span class="theme-card-desc" data-i18n="cfg_theme_light_desc">Interfaz clara con acento de color.</span>
+                </button>
+              </div>
+            </div>
+            <div class="config-section">
               <label class="config-label" data-i18n="personalization">Personalización</label>
-              <div class="config-row">
+              <div class="config-row" id="cfg-accent-row">
                 <div class="config-info">
                   <div class="config-name" data-i18n="accent_color">Color de Acento</div>
                   <div class="config-desc" data-i18n="accent_desc">Define el color principal de la interfaz neon.</div>

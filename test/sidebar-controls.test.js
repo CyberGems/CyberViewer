@@ -25,14 +25,14 @@ describe('sidebar navigation controls', () => {
   });
 
   it('uses the quieter statusbar button treatment in the sidebar', () => {
-    assert.match(css, /#sidebar-controls \.kbd-btn\s*\{[\s\S]*?color:\s*color-mix\([\s\S]*?background:\s*rgba\(8, 10, 14, 0\.42\);[\s\S]*?border:\s*1px solid var\(--cyber-border\);[\s\S]*?border-radius:\s*6px;/);
-    assert.match(css, /#sidebar-controls \.kbd-btn:hover:not\(:disabled\):not\(\.is-disabled\)\s*\{[\s\S]*?color:\s*var\(--cyber-accent\);[\s\S]*?transform:\s*translateY\(-1px\);/);
+    assert.match(css, /#sidebar-controls \.kbd-btn\s*\{[\s\S]*?color:\s*color-mix\([\s\S]*?background:\s*rgba\(var\(--cyber-shell-deep-rgb\), 0\.42\);[\s\S]*?border:\s*1px solid var\(--cyber-border\);[\s\S]*?border-radius:\s*6px;/);
+    assert.match(css, /#sidebar-controls \.kbd-btn:hover:not\(:disabled\):not\(\.is-disabled\)\s*\{[\s\S]*?color:\s*var\(--cyber-accent-ink\);[\s\S]*?transform:\s*translateY\(-1px\);/);
     assert.match(css, /#sidebar-controls #btn-go-start\.cyber-tooltip::after/);
     assert.match(css, /#sidebar-controls #btn-center\.cyber-tooltip::after/);
   });
 
   it('keeps the center tooltip opaque and inside the available width', () => {
-    assert.match(css, /#sidebar-controls \.cyber-tooltip::after\s*\{[\s\S]*?background:\s*rgba\(8, 12, 18, 0\.98\) !important;/);
+    assert.match(css, /#sidebar-controls \.cyber-tooltip::after\s*\{[\s\S]*?background:\s*rgba\(var\(--cyber-shell-rgb\), 0\.98\) !important;/);
     assert.match(css, /#sidebar-controls #btn-center\.cyber-tooltip::after\s*\{[\s\S]*?width:\s*min\(220px, calc\(100vw - 24px\)\);[\s\S]*?text-align:\s*left;/);
   });
 });

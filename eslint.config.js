@@ -25,6 +25,7 @@ module.exports = [
         fetch: 'readonly',
         Response: 'readonly',
         URL: 'readonly',
+        URLSearchParams: 'readonly',
         window: 'readonly'
       }
     },

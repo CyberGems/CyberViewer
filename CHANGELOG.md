@@ -3,6 +3,17 @@
 Notable user-facing changes per release. Earlier versions are documented in the
 [GitHub Releases](https://github.com/CyberGems/CyberViewer/releases) page.
 
+## [Unreleased]
+
+### Added
+
+- Appearance themes: CyberViewer (default dark with the chosen accent), Gray (a sober grayscale palette that neutralises every chromatic accent), and Light (light surfaces that keep the accent, with darkened accent text for contrast). Pick one on the Appearance tab; the choice is saved, included in backups, and applied before the first frame so the window does not flash.
+
+### Changed
+
+- Interface colours now come from a shared token layer, so every theme repaints the chrome, menus, modals and canvas consistently instead of relying on hardcoded dark values.
+- The default CyberViewer theme keeps the previous palette and accent behaviour unchanged.
+
 ## [1.18.0] - 2026-10-29
 
 ### Added

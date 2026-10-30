@@ -186,6 +186,7 @@ function loadSettings() {
       startMinimized: false,
       autoStart: false,
       accentColor: '#00d4ff',
+      appearanceTheme: 'cyberviewer',
       sidebarOpen: false,
       statusbarVisible: true,
       preferredDisplayId: 'auto',
@@ -369,6 +370,12 @@ function persistWindowState() {
 function createWindow() {
   const settings = loadSettings();
   const startup = resolveStartupBounds(settings);
+  // Frame colour matches the saved appearance theme so the window does not flash
+  // dark before the renderer paints. Kept in sync with js/theme-boot.js.
+  const themeName = ['cyberviewer', 'gray', 'light'].includes(settings.app && settings.app.appearanceTheme)
+    ? settings.app.appearanceTheme
+    : 'cyberviewer';
+  const frameColor = themeName === 'light' ? '#eef1f6' : (themeName === 'gray' ? '#0d0d0d' : '#080a0e');
   diagWindow('window-creating', { startup: !!startup });
   // Prefer maximized when previously maximized, first-run, or saved size was DPI-inflated
   const startMaximized =
@@ -384,7 +391,7 @@ function createWindow() {
     minWidth: MIN_W,
     minHeight: MIN_H,
     title: 'CyberViewer',
-    backgroundColor: '#080a0e',
+    backgroundColor: frameColor,
     icon: path.join(__dirname, 'assets', 'icon.ico'),
     frame: false,
     titleBarStyle: 'hidden',
@@ -404,7 +411,7 @@ function createWindow() {
 
   youtubePlayer = new YouTubePlayer(win);
   try {
-    win.setBackgroundColor('#080a0e');
+    win.setBackgroundColor(frameColor);
   } catch (_) { /* ignore */ }
 
   // Debounce persistence — move/resize fire often and mixed-DPI getBounds is noisy
@@ -516,9 +523,16 @@ function createWindow() {
   });
 
   const htmlPath = path.join(__dirname, 'CyberViewer.html');
+  // theme-boot.js reads these to paint the first frame in the saved theme.
+  const bootParams = new URLSearchParams({
+    theme: themeName,
+    accent: (settings.app && /^#[0-9A-Fa-f]{6}$/.test(settings.app.accentColor || ''))
+      ? settings.app.accentColor
+      : '#00d4ff'
+  });
   const loadUrl = !app.isPackaged
-    ? pathToFileURL(htmlPath).href + '?v=' + Date.now()
-    : pathToFileURL(htmlPath).href;
+    ? pathToFileURL(htmlPath).href + '?v=' + Date.now() + '&' + bootParams.toString()
+    : pathToFileURL(htmlPath).href + '?' + bootParams.toString();
   win.loadURL(loadUrl);
 
   win.on('close', (event) => {
