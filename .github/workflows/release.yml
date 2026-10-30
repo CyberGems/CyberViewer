@@ -92,7 +92,7 @@ jobs:
               return 0
             fi
             gh release create "$TAG" \
-              --title "$TAG" \
+              --title "CyberViewer $TAG" \
               --generate-notes \
               --latest
           }
