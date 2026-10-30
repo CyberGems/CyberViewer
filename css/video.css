@@ -127,3 +127,29 @@ body.video-active .video-shortcuts { display: block; }
   #video-menu { right: 12px; bottom: 84px; }
 }
 @media (prefers-reduced-motion: reduce) { #video-controls { transition: none; } }
+
+/* Light theme: the menu panel gets the white frost, so the light text it
+   inherits from #video-controls and the hardcoded dark surfaces swap to
+   theme tokens. */
+html[data-theme='light'] #video-menu {
+  color: var(--cyber-menu-text);
+}
+html[data-theme='light'] #video-menu kbd {
+  color: var(--cyber-muted);
+}
+html[data-theme='light'] #video-menu .video-menu-switch {
+  background: rgba(var(--cyber-tint-rgb), 0.12);
+}
+html[data-theme='light'] #video-menu .video-menu-switch::before {
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+html[data-theme='light'] #video-autoplay[aria-checked="true"] .video-menu-switch {
+  background: var(--cyber-accent-bright);
+}
+html[data-theme='light'] #video-menu .video-menu-divider {
+  border-top-color: rgba(var(--cyber-tint-rgb), 0.12);
+}
+html[data-theme='light'] #video-audio-note {
+  color: var(--cyber-muted);
+}
