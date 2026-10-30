@@ -272,7 +272,10 @@ let isQuitting = false;
 // True between an explicit user quit request (tray Exit, first-close dialog)
 // and the moment the window actually closes.
 let quitRequested = false;
+// Set once the renderer acknowledged the close via 'workspace-close-ready'.
+let quitCloseReadyReceived = false;
 let quitWatchdog = null;
+let quitRevealTimer = null;
 
 function armQuitWatchdog() {
   if (quitWatchdog) clearTimeout(quitWatchdog);
@@ -285,6 +288,29 @@ function armQuitWatchdog() {
     isQuitting = false;
     quitRequested = false;
   }, 4000);
+}
+
+// The renderer prevented the close to run its chain (session flush, discard
+// confirmation). A healthy chain acknowledges within milliseconds and the
+// window must stay hidden; only if it needs the user (discard dialog) or
+// failed (flush error toast) does the window have to appear, so reveal it
+// after a short grace period instead of unconditionally.
+function armQuitReveal() {
+  if (quitRevealTimer) clearTimeout(quitRevealTimer);
+  quitRevealTimer = setTimeout(() => {
+    quitRevealTimer = null;
+    if (!win || win.isDestroyed()) return;
+    if (quitCloseReadyReceived) return;
+    
+    if (win.isMinimized()) win.restore();
+    if (!win.isVisible()) win.show();
+    win.focus();
+  }, 300);
+}
+
+function clearQuitTimers() {
+  if (quitWatchdog) { clearTimeout(quitWatchdog); quitWatchdog = null; }
+  if (quitRevealTimer) { clearTimeout(quitRevealTimer); quitRevealTimer = null; }
 }
 
 const initialFilePaths = process.argv.map(arg => getFilePathFromArgs([arg])).filter(Boolean);
@@ -571,15 +597,13 @@ function createWindow() {
         return false;
       }
     }
-    if (quitWatchdog) {
-      clearTimeout(quitWatchdog);
-      quitWatchdog = null;
-    }
+    clearQuitTimers();
     persistWindowState();
   });
   // Electron cancels a close when the renderer's beforeunload handler requests
   // confirmation. Only its explicit acknowledgement may retry the close.
   win.webContents.on('will-prevent-unload', () => {
+    
     if (win.isDestroyed()) return;
     if (quitRequested) {
       // The user explicitly asked to quit (tray Exit, first-close dialog). The
@@ -587,12 +611,12 @@ function createWindow() {
       // confirmation) and re-requests the quit via 'workspace-close-ready'. The
       // prevention notice can arrive after that retry already started, so
       // cancelling the quit here would kill it in flight and leave the app
-      // running with the window restored. Keep the quit alive; showing the
-      // window lets a discard dialog (when the renderer opens one) be answered.
-      if (win.isMinimized()) win.restore();
-      if (!win.isVisible()) win.show();
-      win.focus();
+      // running with the window restored. Keep the quit alive and keep the
+      // window hidden; a discard dialog (or a failed flush) reveals it via
+      // armQuitReveal, a healthy chain closes without ever showing anything.
+      if (quitCloseReadyReceived) return;
       armQuitWatchdog();
+      armQuitReveal();
       return;
     }
     isQuitting = false;
@@ -773,6 +797,7 @@ function executePendingTrayAction() {
   if (action === 'quit') {
     isQuitting = true;
     quitRequested = true;
+    quitCloseReadyReceived = false;
     app.quit();
     return;
   }
@@ -1133,6 +1158,8 @@ function scheduleQuitRetry(attempt = 0) {
 ipcMain.on('workspace-close-ready', event => {
   if (!win || event.sender !== win.webContents || workspaceCloseApproved) return;
   workspaceCloseApproved = true;
+  quitCloseReadyReceived = true;
+  if (quitRevealTimer) { clearTimeout(quitRevealTimer); quitRevealTimer = null; }
   isQuitting = true;
   quitRequested = true;
   scheduleQuitRetry();
@@ -1186,6 +1213,7 @@ ipcMain.handle('first-close-choice', (_e, action, remember) => {
   }
   isQuitting = true;
   quitRequested = true;
+  quitCloseReadyReceived = false;
   app.quit();
   return true;
 });

@@ -48,7 +48,7 @@ describe('first-close dialog (minimize to tray vs quit)', () => {
     assert.match(mainJs, /if \(action === 'tray'\) \{[\s\S]*?if \(!tray\) createTray\(\);[\s\S]*?hideToTray\(\);/);
     // Explicit quit marks the request so a late beforeunload prevention notice
     // cannot cancel the retried quit (tray Exit while hidden).
-    assert.match(mainJs, /isQuitting = true;\s*quitRequested = true;\s*app\.quit\(\);/);
+    assert.match(mainJs, /isQuitting = true;\s*quitRequested = true;\s*quitCloseReadyReceived = false;\s*app\.quit\(\);/);
   });
 
   it('exposes the bridge in preload.js', () => {
