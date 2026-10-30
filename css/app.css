@@ -6533,7 +6533,9 @@
   line-height: 1.1;
 }
 .about-brand-cyber { color: var(--cyber-menu-text); }
-.about-brand-viewer { color: var(--cyber-accent-ink); }
+/* Branding stays the theme's fixed brand accent, like the titlebar; it does
+   not follow the user accent. */
+.about-brand-viewer { color: var(--cyber-brand-accent); }
 .about-version-label {
   display: inline-flex;
   align-items: center;
