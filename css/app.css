@@ -6565,8 +6565,8 @@
   color: var(--cyber-muted);
   text-align: center;
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.22);
-  border: 1px solid rgba(var(--cyber-accent-rgb), 0.08);
+  background: rgba(var(--cyber-tint-rgb), 0.04);
+  border: 1px solid rgba(var(--cyber-border-soft-rgb), 0.6);
 }
 .about-formats-tech {
   display: block;
