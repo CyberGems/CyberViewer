@@ -147,9 +147,11 @@ describe('About modal redesign (CyberFeeds pattern)', () => {
     // slim visible scrollbar so overflow is discoverable
     assert.match(css, /\.about-modal \.modal-body::-webkit-scrollbar\s*\{\s*width: 6px;\s*display: block;/);
     assert.doesNotMatch(css, /scrollbar-width: none/);
-    // tight gap between tagline and formats box (flex margins don't collapse)
+    // tight gap between tagline and formats box (flex margins don't collapse);
+    // the box is a flex column so the badge rows keep an even gap
     assert.match(css, /\.about-desc\s*\{[\s\S]*?margin: 0 0 8px;/);
-    assert.match(css, /\.about-formats\s*\{\s*margin: 8px 0 0;/);
+    assert.match(css, /\.about-formats\s*\{[^}]*flex-direction: column;\s*gap: 7px;/);
+    assert.match(css, /\.about-formats\s*\{[^}]*margin: 8px 0 0;/);
     // uppercase version label
     assert.match(css, /\.about-version-label\s*\{[\s\S]*?text-transform: uppercase;\s*letter-spacing: 0\.1em;/);
     // section rules + bordered maintenance box + full-width buttons
