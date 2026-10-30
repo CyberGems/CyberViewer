@@ -5,6 +5,10 @@ Notable user-facing changes per release. Earlier versions are documented in the
 
 ## [Unreleased]
 
+### Fixed
+
+- Quitting from the tray menu while the window was hidden only restored the window on the first attempt. The late "close prevented" notice from the renderer's beforeunload could cancel the retried quit in flight; an explicit quit is no longer cancelled, and a watchdog restores normal close semantics if the renderer's close chain never completes.
+
 ### Added
 
 - Appearance themes: CyberViewer (default dark with the chosen accent), Gray (a sober grayscale palette that neutralises every chromatic accent), and Light (light surfaces that keep the accent, with darkened accent text for contrast). Pick one on the Appearance tab; the choice is saved, included in backups, and applied before the first frame so the window does not flash.

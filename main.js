@@ -269,6 +269,23 @@ let win;
 let youtubePlayer;
 let tray = null;
 let isQuitting = false;
+// True between an explicit user quit request (tray Exit, first-close dialog)
+// and the moment the window actually closes.
+let quitRequested = false;
+let quitWatchdog = null;
+
+function armQuitWatchdog() {
+  if (quitWatchdog) clearTimeout(quitWatchdog);
+  quitWatchdog = setTimeout(() => {
+    quitWatchdog = null;
+    if (!win || win.isDestroyed()) return;
+    // The renderer close chain did not complete (discard dialog dismissed,
+    // session flush failed). Fall back to normal close semantics so the app
+    // stays closable through the regular paths.
+    isQuitting = false;
+    quitRequested = false;
+  }, 4000);
+}
 
 const initialFilePaths = process.argv.map(arg => getFilePathFromArgs([arg])).filter(Boolean);
 const initialFilePath = initialFilePaths[0] || null;
@@ -554,11 +571,30 @@ function createWindow() {
         return false;
       }
     }
+    if (quitWatchdog) {
+      clearTimeout(quitWatchdog);
+      quitWatchdog = null;
+    }
     persistWindowState();
   });
   // Electron cancels a close when the renderer's beforeunload handler requests
   // confirmation. Only its explicit acknowledgement may retry the close.
   win.webContents.on('will-prevent-unload', () => {
+    if (win.isDestroyed()) return;
+    if (quitRequested) {
+      // The user explicitly asked to quit (tray Exit, first-close dialog). The
+      // renderer's beforeunload started its close chain (session flush, discard
+      // confirmation) and re-requests the quit via 'workspace-close-ready'. The
+      // prevention notice can arrive after that retry already started, so
+      // cancelling the quit here would kill it in flight and leave the app
+      // running with the window restored. Keep the quit alive; showing the
+      // window lets a discard dialog (when the renderer opens one) be answered.
+      if (win.isMinimized()) win.restore();
+      if (!win.isVisible()) win.show();
+      win.focus();
+      armQuitWatchdog();
+      return;
+    }
     isQuitting = false;
     if (win.isMinimized()) win.restore();
     if (!win.isVisible()) win.show();
@@ -728,10 +764,6 @@ let trayContextMenuOpen = false;
 let trayContextMenuRebuildPending = false;
 let trayContextMenuCloseFallback = null;
 let pendingTrayAction = null;
-// After a tray context-menu action is selected, the next tray icon click is the
-// residual click that closed the menu. Ignore it so it does not toggle show/hide
-// over the action that just ran (e.g. Exit quitting while the window was hidden).
-let trayMenuJustActioned = false;
 
 function executePendingTrayAction() {
   const action = pendingTrayAction;
@@ -740,6 +772,7 @@ function executePendingTrayAction() {
 
   if (action === 'quit') {
     isQuitting = true;
+    quitRequested = true;
     app.quit();
     return;
   }
@@ -809,9 +842,7 @@ function onTrayContextMenuClosed() {
   // callback a short window to populate pendingTrayAction, as CyberLauncher
   // does for the same native menu lifecycle.
   setTimeout(() => {
-    const hadAction = !!pendingTrayAction;
     executePendingTrayAction();
-    trayMenuJustActioned = hadAction;
     if (trayContextMenuRebuildPending) {
       trayContextMenuRebuildPending = false;
       rebuildTrayContextMenu();
@@ -1017,22 +1048,12 @@ function createTray() {
         if (trayRightClickSeq !== clickSeq || Date.now() - lastTrayRightClickAt < 400) return;
         if (trayContextMenuOpen) return;
         if (!win || win.isDestroyed()) return;
-        // The click that closed a context-menu action must not toggle the window.
-        if (trayMenuJustActioned) {
-          trayMenuJustActioned = false;
-          return;
-        }
         if (isWindowShown()) hideToTray();
         else showFromTray();
       }, 120);
       return;
     }
     if (!win || win.isDestroyed()) return;
-    // The click that closed a context-menu action must not toggle the window.
-    if (trayMenuJustActioned) {
-      trayMenuJustActioned = false;
-      return;
-    }
     if (isWindowShown()) hideToTray();
     else showFromTray();
   });
@@ -1149,6 +1170,7 @@ ipcMain.handle('first-close-choice', (_e, action, remember) => {
     return true;
   }
   isQuitting = true;
+  quitRequested = true;
   app.quit();
   return true;
 });
