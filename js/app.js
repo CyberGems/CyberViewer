@@ -6818,8 +6818,10 @@ function setConfigAccentPreview(hex) {
   const theme = document.documentElement.getAttribute('data-theme');
   modal.style.setProperty('--preview-accent', hex);
   modal.style.setProperty('--preview-accent-rgb', hexToRgbTriplet(hex));
-  // Accent-as-text inside the modal follows the theme's ink; fills stay vivid.
+  // Accent-as-text inside the modal follows the theme's ink; small fills and
+  // borders follow the theme's mid tone; large fills stay vivid.
   modal.style.setProperty('--preview-accent-ink', theme === 'light' ? lightAccentInk(hex) : hex);
+  modal.style.setProperty('--preview-accent-mid', theme === 'light' ? lightAccentBright(hex) : hex);
 }
 
 const CV_THEMES = ['cyberviewer', 'gray', 'light'];
@@ -6908,6 +6910,7 @@ function applyAppearanceTheme(theme, accentColor) {
     const preview = previewModal.style.getPropertyValue('--preview-accent').trim();
     if (preview) {
       previewModal.style.setProperty('--preview-accent-ink', t === 'light' ? lightAccentInk(preview) : preview);
+      previewModal.style.setProperty('--preview-accent-mid', t === 'light' ? lightAccentBright(preview) : preview);
     }
   }
 
@@ -6930,6 +6933,7 @@ function clearConfigAccentPreview() {
   modal.style.removeProperty('--preview-accent');
   modal.style.removeProperty('--preview-accent-rgb');
   modal.style.removeProperty('--preview-accent-ink');
+  modal.style.removeProperty('--preview-accent-mid');
 }
 
 // Wire modal dismiss controls (CSP blocks inline onclick)

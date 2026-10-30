@@ -4660,13 +4660,15 @@
   #modal-config {
     --preview-accent: var(--cyber-accent);
     --preview-accent-rgb: var(--cyber-accent-rgb);
+    /* JS sets a per-theme mid tone for small fills/borders; vivid by default. */
+    --preview-accent-mid: var(--cyber-accent);
   }
   #modal-config input:checked + .slider {
-    border-color: var(--preview-accent);
+    border-color: var(--preview-accent-mid);
   }
   #modal-config input:checked + .slider:before {
-    background: var(--preview-accent);
-    box-shadow: 0 0 8px var(--preview-accent);
+    background: var(--preview-accent-mid);
+    box-shadow: 0 0 8px var(--preview-accent-mid);
   }
   #modal-config .cfg-select {
     color: var(--preview-accent-ink, var(--cyber-accent-ink));
@@ -4887,7 +4889,7 @@
     color: var(--preview-accent-ink, var(--cyber-accent-ink));
     background: rgba(var(--preview-accent-rgb), 0.1);
     border-color: rgba(var(--preview-accent-rgb), 0.3);
-    border-left-color: var(--preview-accent);
+    border-left-color: var(--preview-accent-mid);
     box-shadow: inset 0 0 14px rgba(var(--preview-accent-rgb), 0.08);
     transform: none;
   }
@@ -4915,7 +4917,7 @@
 
   #modal-config .config-nav-btn.active .config-nav-icon,
   #modal-config .config-nav-btn.active .config-nav-svg {
-    color: var(--preview-accent);
+    color: var(--preview-accent-mid);
     opacity: 1;
     filter: drop-shadow(0 0 5px rgba(var(--preview-accent-rgb), 0.42));
   }
@@ -4962,12 +4964,12 @@
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: var(--preview-accent);
+    background: var(--preview-accent-mid);
     box-shadow: 0 0 8px rgba(var(--preview-accent-rgb), 0.7);
   }
 
   #modal-config #config-autosave-state.saving {
-    color: var(--preview-accent);
+    color: var(--preview-accent-mid);
   }
 
   #modal-config .config-nav-close {
@@ -5118,7 +5120,7 @@
     height: 15px;
     flex: 0 0 3px;
     border-radius: 2px;
-    background: var(--preview-accent);
+    background: var(--preview-accent-mid);
     box-shadow: 0 0 8px rgba(var(--preview-accent-rgb), 0.5);
   }
 
@@ -5168,7 +5170,7 @@
   }
 
   #modal-config .config-row:hover .config-control-icon {
-    color: var(--preview-accent);
+    color: var(--preview-accent-mid);
     border-color: rgba(var(--preview-accent-rgb), 0.38);
     background: rgba(var(--preview-accent-rgb), 0.09);
     box-shadow: 0 0 12px rgba(var(--preview-accent-rgb), 0.13);
@@ -7325,6 +7327,20 @@ html[data-theme='light'] .shortcuts-popover {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 253, 0.9));
   border-color: var(--cyber-border);
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+}
+
+/* Light neon accents read as washed fills on pale surfaces: the row hover bar
+   swaps its alpha wash for the solid mid tone, and the remaining accent glows
+   soften to a pastel halo. */
+html[data-theme='light'] #modal-config .config-row:hover {
+  box-shadow: inset 2px 0 0 var(--preview-accent-mid);
+}
+html[data-theme='light'] #modal-config input:checked + .slider:before {
+  box-shadow: 0 0 6px rgba(var(--preview-accent-rgb), 0.35);
+}
+html[data-theme='light'] #modal-config .config-nav-btn.active .config-nav-icon,
+html[data-theme='light'] #modal-config .config-nav-btn.active .config-nav-svg {
+  filter: none;
 }
 
 
