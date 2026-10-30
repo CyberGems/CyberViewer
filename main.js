@@ -153,7 +153,14 @@ function loadSettings() {
         if (data.app.hudAutoHideDelay === undefined) data.app.hudAutoHideDelay = 2000;
         if (data.app.disableTooltips === undefined) data.app.disableTooltips = false;
         if (data.app.showShortcutGuide === undefined) data.app.showShortcutGuide = true;
-        if (data.app.alphaBackground === undefined) data.app.alphaBackground = 'checker-dark';
+        // One-time migration: 'checker-dark' was the factory default rather
+        // than an explicit choice, so legacy installs move to the theme
+        // following auto mode. The marker keeps later explicit dark picks.
+        if (data.app.alphaBackground === 'checker-dark' && data.app.alphaBgMigrated !== true) {
+          data.app.alphaBackground = 'auto';
+          data.app.alphaBgMigrated = true;
+        }
+        if (data.app.alphaBackground === undefined) data.app.alphaBackground = 'auto';
         if (data.app.imageOutline === undefined) data.app.imageOutline = false;
         if (!Array.isArray(data.app.recentFiles)) data.app.recentFiles = [];
         if (!Array.isArray(data.app.recentFolders)) data.app.recentFolders = [];
@@ -203,7 +210,7 @@ function loadSettings() {
       hudAutoHideDelay: 2000,
       disableTooltips: false,
       showShortcutGuide: true,
-      alphaBackground: 'checker-dark',
+      alphaBackground: 'auto',
       imageOutline: false,
       recentFiles: [],
       recentFolders: [],

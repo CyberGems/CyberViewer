@@ -235,8 +235,8 @@ const state = {
       },
       // Bottom action bar (kbd-hint); collapsible like sidebar
       toolbarOpen: true,
-      // Transparency grid behind alpha pixels: checker-dark | checker-light | solid
-      alphaBackground: 'checker-dark',
+      // Transparency grid behind alpha pixels: auto | checker-dark | checker-light | solid
+      alphaBackground: 'auto',
       imageOutline: false,
       recentFiles: [],
       recentFolders: [],
@@ -6925,6 +6925,12 @@ function applyAppearanceTheme(theme, accentColor) {
   // The gray theme fixes its own accent, so the swatch row cannot change anything.
   const accentRow = $('cfg-accent-row');
   if (accentRow) accentRow.classList.toggle('is-theme-disabled', t === 'gray');
+
+  // The auto alpha background follows the active theme.
+  if (typeof state !== 'undefined' && state.settings && state.settings.app
+    && state.settings.app.alphaBackground === 'auto') {
+    applyAlphaBackground('auto');
+  }
 }
 
 function clearConfigAccentPreview() {
@@ -7458,6 +7464,7 @@ function collectConfigSettings() {
     disableTooltips: $('cfg-disable-tooltips').checked,
     hudAutoHideDelay: parseInt($('cfg-hud-delay').value, 10),
     alphaBackground: normalizeAlphaBackground($('cfg-alpha-bg') && $('cfg-alpha-bg').value),
+    alphaBgMigrated: !!(state.settings && state.settings.app && state.settings.app.alphaBgMigrated),
     imageOutline: !!($('cfg-image-outline') && $('cfg-image-outline').checked),
     dblClickAction: normalizeDblClickAction(($('cfg-dbl-click') && $('cfg-dbl-click').value) || 'fullscreen'),
     navZoomMode: normalizeNavZoomMode(($('cfg-nav-zoom-mode') && $('cfg-nav-zoom-mode').value) || 'reset'),
@@ -7496,7 +7503,7 @@ function getFactoryAppSettings() {
     hudAutoHideDelay: 2000,
     disableTooltips: false,
     showShortcutGuide: true,
-    alphaBackground: 'checker-dark',
+    alphaBackground: 'auto',
     imageOutline: false,
     slideshowIntervalMs: 3000,
     slideshowLoop: true,
@@ -8226,8 +8233,14 @@ function applySettings() {
 
 /** Normalize alpha background mode setting. */
 function normalizeAlphaBackground(value) {
-  if (value === 'checker-light' || value === 'solid' || value === 'checker-dark') return value;
-  return 'checker-dark';
+  if (value === 'auto' || value === 'checker-light' || value === 'solid' || value === 'checker-dark') return value;
+  return 'auto';
+}
+
+/** Resolve the auto alpha background mode against the active theme. */
+function resolveAlphaBackground(mode) {
+  if (mode !== 'auto') return mode;
+  return document.documentElement.getAttribute('data-theme') === 'light' ? 'checker-light' : 'checker-dark';
 }
 /** Normalize double-click action setting. */
 function normalizeDblClickAction(value) {
@@ -8243,7 +8256,7 @@ function normalizeNavZoomMode(value) {
 /** Apply body data attribute for CSS alpha grid. */
 function applyAlphaBackground(value) {
   const mode = normalizeAlphaBackground(value);
-  document.body.setAttribute('data-alpha-bg', mode);
+  document.body.setAttribute('data-alpha-bg', resolveAlphaBackground(mode));
   if (state.settings && state.settings.app) {
     state.settings.app.alphaBackground = mode;
   }
@@ -8258,14 +8271,14 @@ function applyImageOutline(value) {
   }
 }
 
-/** Toggle alpha grid on/off from the View menu (dark checker ↔ solid). */
+/** Toggle alpha grid on/off from the View menu (checker ↔ solid). */
 function toggleAlphaBackground() {
   const cur = normalizeAlphaBackground(
     state.settings && state.settings.app && state.settings.app.alphaBackground
   );
   // If light is selected, treat "off" as solid and "on" restore as light
   const next = cur === 'solid'
-    ? (state._lastAlphaBg && state._lastAlphaBg !== 'solid' ? state._lastAlphaBg : 'checker-dark')
+    ? (state._lastAlphaBg && state._lastAlphaBg !== 'solid' ? state._lastAlphaBg : 'auto')
     : (state._lastAlphaBg = cur, 'solid');
   applyAlphaBackground(next);
   if (isElectron) window.electronAPI.saveSettings(state.settings.app);
