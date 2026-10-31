@@ -218,9 +218,11 @@ describe('title bar Help menu', () => {
     assert.match(appJs, /if \(e\.key === 'F1'\) \{ e\.preventDefault\(\); \$\('btn-about'\)\.click\(\); return; \}/);
     assert.match(appJs, /if \(e\.key === '\?'\) \{ e\.preventDefault\(\); setShortcutsPopoverOpen\(\$\('shortcuts-popover'\)\.hidden\); return; \}/);
 
-    // Every titlebar control carries a hotkey badge for its tooltip card
+    // Every titlebar control carries a hotkey badge for its tooltip card.
+    // The update button has none: its Alt+U shortcut never existed, and F1
+    // opens the same About dialog the button opens.
     const badges = [
-      ['logo-trigger', 'F1'], ['titlebar-filename', 'Ctrl+I'], ['titlebar-update-btn', 'Alt+U'],
+      ['logo-trigger', 'F1'], ['titlebar-filename', 'Ctrl+I'],
       ['btn-shortcuts', '?'], ['btn-config', 'Ctrl+,'], ['btn-menu', 'Alt+M'],
       ['btn-about', 'F1'], ['win-min', 'Alt+N'], ['win-max', 'Alt+X'], ['win-close', 'Alt+F4']
     ];
@@ -258,10 +260,8 @@ describe('title bar Help menu', () => {
 
     // CSS CyberPaste square button: h-8 w-8 rounded-lg, cyan primary border and background
     assert.match(css, /\.titlebar-update-btn\s*\{[\s\S]*?height:\s*32px;[\s\S]*?width:\s*32px;[\s\S]*?border-radius:\s*8px;/);
-    // Outline-free button: tinted background only, no border on any state
-    assert.match(css, /\.titlebar-update-btn\s*\{[^}]*background:\s*rgba\(var\(--cyber-accent-rgb\),\s*0\.1\);/);
-    assert.doesNotMatch(css, /\.titlebar-update-btn\s*\{[^}]*border:/);
-    assert.match(css, /\.titlebar-update-btn:hover,\s*\.titlebar-update-btn:focus-visible\s*\{[^}]*background:\s*rgba\(var\(--cyber-accent-rgb\),\s*0\.25\);/);
+    assert.match(css, /\.titlebar-update-btn\s*\{[\s\S]*?border:\s*1px solid rgba\(var\(--cyber-accent-rgb\),\s*0\.5\);[\s\S]*?background:\s*rgba\(var\(--cyber-accent-rgb\),\s*0\.1\);/);
+    assert.match(css, /\.titlebar-update-btn:hover,\s*\.titlebar-update-btn:focus-visible\s*\{[\s\S]*?border-color:\s*var\(--cyber-accent\);/);
     assert.match(css, /\.titlebar-update-btn:active\s*\{[\s\S]*?transform:\s*scale\(0\.95\);/);
     // Soft, relaxed motion-safe pulse (3.5s ease-in-out), no badges, no per-state recolor
     assert.match(css, /@media \(prefers-reduced-motion: no-preference\)\s*\{\s*\.titlebar-update-btn\s*\{[^}]*?animation:\s*titlebar-update-pulse 3\.5s ease-in-out infinite;/);

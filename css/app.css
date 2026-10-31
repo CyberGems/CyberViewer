@@ -905,6 +905,7 @@
     align-self: center;
     flex-shrink: 0;
     border-radius: 8px;
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.5);
     background: rgba(var(--cyber-accent-rgb), 0.1);
     color: var(--cyber-accent-ink);
     box-shadow: 0 0 8px rgba(var(--cyber-accent-rgb), 0.25);
@@ -917,6 +918,7 @@
 
   .titlebar-update-btn:hover,
   .titlebar-update-btn:focus-visible {
+    border-color: var(--cyber-accent);
     background: rgba(var(--cyber-accent-rgb), 0.25);
     box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.45);
     outline: none;
