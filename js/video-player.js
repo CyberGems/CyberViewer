@@ -295,7 +295,7 @@ window.CVVideo = (() => {
   function currentRate() {
     let saved = null;
     try { saved = parseFloat(localStorage.getItem('cv_video_rate')); } catch (_) { /* storage unavailable */ }
-    return SPEEDS.includes(saved) ? saved : 1;
+    return Number.isFinite(saved) && saved >= 0.25 && saved <= 3 ? saved : 1;
   }
   function setSpeedVisual(rate) {
     const pct = (rate - 0.25) / 2.75 * 100;
@@ -314,6 +314,7 @@ window.CVVideo = (() => {
   function setPlaybackRate(rate) {
     if (!Number.isFinite(rate)) return;
     rate = Math.max(0.25, Math.min(3, rate));
+    rate = Number(rate.toFixed(2));
     try { localStorage.setItem('cv_video_rate', String(rate)); } catch (_) { /* storage unavailable */ }
     if (!window.CVYouTube.active()) element.playbackRate = rate;
     syncSpeedUi();
@@ -457,6 +458,7 @@ window.CVVideo = (() => {
     speedTrack.addEventListener('keydown', (event) => {
       if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
         event.preventDefault();
+        event.stopPropagation();
         setPlaybackRate(currentRate() + (event.key === 'ArrowRight' ? 0.05 : -0.05));
       }
     });
