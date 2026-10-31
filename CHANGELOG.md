@@ -3,6 +3,16 @@
 Notable user-facing changes per release. Earlier versions are documented in the
 [GitHub Releases](https://github.com/CyberGems/CyberViewer/releases) page.
 
+## [1.19.1] - 2026-10-30
+
+### Fixed
+
+- In-app update installs could fail with the NSIS error "Fallo al desinstalar archivos antiguos de la aplicación" when closing to the tray was enabled: the updater's quit was intercepted and hidden to the tray instead of exiting, leaving the old executable locked while the new installer ran. Every quit now lands on the first attempt, so updating from the About dialog completes cleanly.
+
+### Changed
+
+- Release builds now submit the installer and portable binaries to VirusTotal automatically, so the SHA256 report links in the release body resolve as soon as a release is published.
+
 ## [1.19.0] - 2026-10-30
 
 ### Added
