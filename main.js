@@ -359,8 +359,23 @@ function resolveStartupBounds(settings) {
     Number.isFinite(raw.height) &&
     (raw.width > clamped.width + 32 || raw.height > clamped.height + 32)
   );
+  // Companion of the window-persist diagnostic: what came in from settings,
+  // what we clamped it to, and on which display (scale + work area).
+  try {
+    const display = screen.getAllDisplays().find((d) => String(d.id) === String(clamped.displayId));
+    diagWindow('startup-bounds', {
+      raw: raw || null,
+      clamped: { x: clamped.x, y: clamped.y, width: clamped.width, height: clamped.height },
+      displayId: clamped.displayId,
+      scaleFactor: display && display.scaleFactor,
+      workArea: display && display.workArea,
+      maximized: settings.window && settings.window.maximized
+    });
+  } catch (_) { /* ignore */ }
   return { ...clamped, inflated };
 }
+
+let lastPersistDiagSig = '';
 
 /**
  * Applies bounds and corrects the mixed-DPI size inflation Windows produces
@@ -409,6 +424,27 @@ function persistWindowState() {
       preferredDisplayId: loadSettings().app.preferredDisplayId,
       savedDisplayId: liveDisplay && liveDisplay.id
     });
+    // Diagnose the reported "window reopens wider than the screen" cycle:
+    // log what was saved, against which display, so growth can be traced to
+    // either the save side or the restore side. Deduped per identical state.
+    try {
+      const sig = JSON.stringify([
+        clamped.x, clamped.y, clamped.width, clamped.height,
+        liveDisplay && liveDisplay.id, liveDisplay && liveDisplay.scaleFactor, isMax
+      ]);
+      if (sig !== lastPersistDiagSig) {
+        lastPersistDiagSig = sig;
+        diagWindow('window-persist', {
+          live,
+          raw,
+          saved: { x: clamped.x, y: clamped.y, width: clamped.width, height: clamped.height },
+          displayId: (liveDisplay && liveDisplay.id) || clamped.displayId,
+          scaleFactor: liveDisplay && liveDisplay.scaleFactor,
+          workArea: liveDisplay && liveDisplay.workArea,
+          maximized: isMax
+        });
+      }
+    } catch (_) { /* ignore */ }
     saveSettings({
       window: {
         maximized: isMax,

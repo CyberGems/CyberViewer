@@ -7665,7 +7665,7 @@ async function refreshFileAssociations() {
   ];
   container.innerHTML = groups.map((group) => {
     const chips = rows.filter((row) => row.group === group.key).map((row) => `
-      <span class="cfg-file-assoc-chip is-${row.status}" role="status" title="${assocEscape(statusLabel(row.status))}" aria-label="${assocEscape(`${row.ext}: ${statusLabel(row.status)}`)}">${assocEscape(row.ext)}</span>`).join('');
+      <span class="cfg-file-assoc-chip is-${row.status} cyber-tooltip" data-tooltip="${assocEscape(statusLabel(row.status))}" role="status" aria-label="${assocEscape(`${row.ext}: ${statusLabel(row.status)}`)}">${assocEscape(row.ext)}</span>`).join('');
     return `<div class="cfg-file-assoc-group">
       <span class="cfg-file-assoc-group-label">${assocEscape(group.label)}</span>
       ${chips}
