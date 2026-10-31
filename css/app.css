@@ -6891,24 +6891,39 @@
   opacity: 0.9;
 }
 
+/* Update banner: a green status pill (good news, and unmistakably not a
+   button), centered and with the suite's dotted-badge look. */
 .about-update-banner {
   display: none;
-  margin-bottom: 0;
-  padding: 8px 10px;
-  border: 1px solid rgba(var(--cyber-accent2-rgb), 0.45);
-  background: rgba(var(--cyber-accent2-rgb), 0.1);
-  color: var(--cyber-accent2-ink);
-  font-family: var(--font-ui);
-  font-size: 11px;
-  line-height: 1.4;
-  border-radius: 4px;
-  text-align: center;
-}
-.about-update-banner.visible { display: block; }
-.about-update-banner.ready {
-  border-color: rgba(var(--cyber-accent3-rgb), 0.45);
+  width: fit-content;
+  margin: 0 auto;
+  padding: 4px 12px;
+  border: 1px solid rgba(var(--cyber-accent3-rgb), 0.3);
   background: rgba(var(--cyber-accent3-rgb), 0.1);
   color: var(--cyber-accent3-ink);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+  border-radius: 999px;
+  text-align: center;
+}
+.about-update-banner.visible {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.about-update-banner::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cyber-accent3);
+  box-shadow: 0 0 6px rgba(var(--cyber-accent3-rgb), 0.7);
+  flex-shrink: 0;
+}
+.about-update-banner.ready {
+  background: rgba(var(--cyber-accent3-rgb), 0.16);
 }
 
 .about-update-details {

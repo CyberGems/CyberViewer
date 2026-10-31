@@ -8881,6 +8881,12 @@ $('btn-go-end').addEventListener('click', (e) => {
     if (bar) {
       bar.style.width = Math.max(0, Math.min(100, s === 'downloading' ? (updateStatus.percent || 0) : 0)) + '%';
     }
+    // The available/downloaded banner carries the news: hide the formats box
+    // so the update content sits higher in the hero.
+    const formatsBox = root.querySelector('.about-formats');
+    if (formatsBox) {
+      formatsBox.style.display = (s === 'available' || s === 'downloaded') ? 'none' : '';
+    }
     renderUpdateStatusText(statusEl);
     syncUpdateBanner(root);
     syncUpdateReleaseDetails(root);
