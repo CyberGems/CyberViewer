@@ -77,6 +77,7 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 
 ### 🖼️ Visualización
 - **Pestañas de imágenes:** abre varios archivos a la vez, reordena pestañas, busca por nombre o ruta y reabre las cerradas. Cada pestaña conserva su zoom, desplazamiento y rotación pendiente. La navegación por carpeta permanece en la pestaña actual; usa el menú contextual de una miniatura o el clic central para abrir otra pestaña. Si hay cambios sin guardar, la pestaña se conserva al navegar a otra imagen.
+- **Extras de la franja:** doble clic sobre la zona vacía para abrir archivos, clic derecho para el menú con reabrir cerradas y cerrar todas, flechas en los extremos cuando las pestañas desbordan, y el listador con búsqueda y cierre total.
 - **Restauración opcional de sesión:** activa **Configuración → General → Restaurar sesión anterior** para recuperar el orden, la pestaña activa, las vistas, las rotaciones pendientes y las imágenes pegadas al reiniciar. Los archivos ausentes conservan su pestaña y se pueden localizar de nuevo. La sesión se almacena localmente, separada de los respaldos de configuración; desactivar la opción elimina la sesión guardada.
 - **Apertura ultrarrápida:** protocolo de streaming propio que carga imágenes sin agotar la RAM
 - **Formatos admitidos:** JPG, JPEG, PNG, GIF, WebP, BMP, TIFF, TIF, ICO y AVIF
@@ -90,6 +91,7 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 ### ▶️ Reproducción de video
 - Abre MP4, M4V, WebM, MOV y MKV desde el selector, arrastrando archivos, navegando por carpetas o mediante pestañas. La compatibilidad depende de los códecs de video y audio del archivo y de los decodificadores del equipo.
 - Reproduce/pausa, busca una posición, ajusta el volumen, silencia y repite. Los videos se reproducen al abrirlos por defecto; desactiva **Reproducir al abrir** en el menú **…** para iniciarlos manualmente. La preferencia se conserva. Pulsa **Espacio** para reproducir/pausar, **Izquierda/Derecha** para saltar 5 segundos o **M** para silenciar. **Arriba/Abajo** y **A/D** siguen navegando entre archivos.
+- **Detalles estilo YouTube:** haz clic sobre el video para pausar o reanudar y doble clic para pantalla completa; usa los botones anterior/siguiente para saltar entre videos de la carpeta; abre el panel de velocidad (0.25×–3×) desde el menú **…** o ciclalo con `>` / `<`; y pasa el cursor por la barra de progreso para ver la marca de tiempo con una miniatura del fotograma. Repetir, volumen, silencio y velocidad se conservan entre sesiones.
 - Los controles compactos se superponen al video y se ocultan durante la reproducción tras un periodo de inactividad. El menú **…** reúne repetir, propiedades, abrir e información de audio. Las barras de edición de imágenes se ocultan al ver videos.
 - Usa el botón de pantalla completa o **Ctrl+F** para entrar en pantalla completa nativa con el fotograma completo ajustado a la pantalla. Solo queda el video cuando se ocultan los controles y el cursor; mover el ratón o pulsar una tecla revela los controles. **Esc** vuelve a la ventana (o cierra primero el menú de reproducción).
 - Un solo reproductor activo mantiene ligeras las pestañas inactivas. La posición se conserva al cambiar de pestaña y, si activas la restauración de sesión, al reiniciar.
@@ -131,7 +133,7 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 - **Inicio automático con Windows:** inicia minimizado al iniciar sesión
 - **Atajo global:** atajo configurable para mostrar u ocultar, predeterminado `Alt+Shift+V`
 - **Menú contextual del Explorador:** haz clic derecho en imágenes admitidas para abrirlas en CyberViewer
-- **Asociaciones de archivo:** establece CyberViewer como visor predeterminado de JPG, PNG, GIF, WebP, BMP, TIFF, ICO o AVIF
+- **Asociaciones de archivo:** establece CyberViewer como visor predeterminado de JPG, PNG, GIF, WebP, BMP, TIFF, ICO o AVIF, con una opción de reproductor de video predeterminado en el instalador (MP4, M4V, WebM, MOV, MKV). La pestaña Sistema muestra el visor actual por formato y enlaza a los ajustes de Windows.
 - **Una sola instancia residente:** las aperturas desde el Explorador y los nuevos inicios envían las imágenes a pestañas de la ventana existente
 - **Actualización automática:** actualizador integrado de GitHub Releases con instalación silenciosa
 - **Copia de seguridad de la configuración:** exporta o importa la configuración y los favoritos como JSON
@@ -140,7 +142,7 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 ### 🎨 Personalización
 - **Temas:** CyberViewer (oscuro con acento), Gris (escala de grises sobria, sin color) y Claro (interfaz clara con acento)
 - **Colores de acento:** Cian, Rosa, Verde, Naranja, Violeta, Azul, Rojo y Menta
-- **Estilos de fondo:** Cuadriculado oscuro, Cuadriculado claro o Sin cuadriculado
+- **Estilos de fondo:** Automático (sigue el tema), Cuadriculado oscuro, Cuadriculado claro o Sin cuadriculado
 - **Ajustes de interfaz:** barra lateral, barra de herramientas, barra de estado, tooltips, guía de atajos, retrasos de ocultación automática y comportamiento del doble clic
 - **Configuración con pestañas:** General, Apariencia, Interfaz, Presentación, Sistema y Respaldo y datos
 ---

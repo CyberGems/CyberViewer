@@ -77,6 +77,7 @@ Most image viewers are either bloated with features you never use or so barebone
 
 ### 🖼️ Viewing
 - **Image tabs:** open multiple files together, reorder tabs, search by name or path, and reopen closed tabs. Each tab keeps its zoom, pan, and pending rotation. Folder navigation stays in the current tab; use the thumbnail context menu or middle-click to open another tab. A tab with unsaved changes stays open when navigating to another image.
+- **Tab strip extras:** double-click the empty strip to open files, right-click it for a context menu with reopen-closed-tab and close-all, use the edge arrows while the tabs overflow, and open the switcher for a searchable list with a close-all footer.
 - **Optional session restore:** enable **Configuration → General → Restore previous session** to recover tab order, the active image, views, pending rotations, and pasted images after restarting. Missing files stay in their tabs and can be located again. Session data stays local and separate from settings backups; disabling the option removes the saved session.
 - **Lightning-fast open:** custom streaming protocol loads images without hogging RAM
 - **Supported formats:** JPG, JPEG, PNG, GIF, WebP, BMP, TIFF, TIF, ICO, and AVIF
@@ -90,6 +91,7 @@ Most image viewers are either bloated with features you never use or so barebone
 ### ▶️ Video playback
 - Open MP4, M4V, WebM, MOV, and MKV through the file picker, drag and drop, folder navigation, or tabs. Support depends on the video and audio codecs inside each file and the computer's decoder capabilities.
 - Play/pause, seek, adjust volume, mute, and loop. Videos play automatically on open by default; turn **Autoplay on open** off in the **…** menu for manual playback. The preference is saved. Press **Space** to play/pause, **Left/Right** to skip 5 seconds, or **M** to mute. **Up/Down** and **A/D** still navigate files.
+- **YouTube-style touches:** click the video to pause or resume and double-click it for fullscreen; use the previous/next buttons to jump between videos in the folder; open the speed panel (0.25×–3×) from the **…** menu or cycle it with `>` / `<`; and hover the seek bar for a timestamp with a frame preview. Loop, volume, mute, and speed persist between sessions.
 - Compact controls sit over the video and hide during playback after inactivity. The **…** menu provides loop, properties, open, and audio information. Image editing bars are hidden while viewing video.
 - Use the fullscreen button or **Ctrl+F** for native fullscreen with the complete frame fitted to the screen. Only the video remains after the controls and cursor hide; moving the pointer or pressing a key reveals the controls. **Esc** returns to the window (or closes the playback menu first).
 - One active player keeps inactive tabs lightweight. Playback position survives tab changes and, when session restore is enabled, restarts.
@@ -131,7 +133,7 @@ Most image viewers are either bloated with features you never use or so barebone
 - **Auto-start with Windows:** launch minimized on sign-in
 - **Global hotkey:** configurable show/hide shortcut, default `Alt+Shift+V`
 - **Explorer context menu:** right-click supported images to open them in CyberViewer
-- **File associations:** set CyberViewer as the default viewer for JPG, PNG, GIF, WebP, BMP, TIFF, ICO, or AVIF
+- **File associations:** set CyberViewer as the default viewer for JPG, PNG, GIF, WebP, BMP, TIFF, ICO, or AVIF, with a video default-viewer option in the installer (MP4, M4V, WebM, MOV, MKV). The System tab shows the current viewer per format and links to the Windows settings.
 - **Single resident instance:** Explorer opens and additional launches send images to tabs in the existing window
 - **Auto-update:** built-in GitHub Releases updater with silent install
 - **Settings backup:** export or import configuration and favorites as JSON
@@ -140,7 +142,7 @@ Most image viewers are either bloated with features you never use or so barebone
 ### 🎨 Customization
 - **Themes:** CyberViewer (dark with accent), Gray (refined grayscale, no colour), and Light (light with accent)
 - **Accent colors:** Cyan, Pink, Green, Orange, Violet, Blue, Red, and Mint
-- **Background styles:** Checker-dark, Checker-light, or Solid
+- **Background styles:** Auto (follows the theme), Checker-dark, Checker-light, or Solid
 - **Interface tweaks:** sidebar, toolbar, status bar, tooltips, shortcut guide, auto-hide delays, and double-click behavior
 - **Tabbed settings:** General, Appearance, Interface, Slideshow, System, and Backup & Data
 
