@@ -682,7 +682,8 @@
     "cfg_file_assoc_open": "Open Windows settings",
     "cfg_file_assoc_default": "CyberViewer is the default viewer",
     "cfg_file_assoc_other": "Another app is the default",
-    "cfg_file_assoc_unset": "No default chosen yet"
+    "cfg_file_assoc_unset": "No default chosen yet",
+    "toggle_hotkey_restore": "Restore default (Alt+Shift+V)"
   },
   "es": {
     "tabs_label": "Pestañas de archivos abiertos",
@@ -1367,6 +1368,7 @@
     "cfg_file_assoc_open": "Abrir configuración de Windows",
     "cfg_file_assoc_default": "CyberViewer es el visor predeterminado",
     "cfg_file_assoc_other": "Otra aplicación es la predeterminada",
-    "cfg_file_assoc_unset": "Aún sin elección"
+    "cfg_file_assoc_unset": "Aún sin elección",
+    "toggle_hotkey_restore": "Restaurar por defecto (Alt+Shift+V)"
   }
 }

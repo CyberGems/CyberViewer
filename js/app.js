@@ -8222,6 +8222,17 @@ if (clearRecentImagesBtn) {
     setCapturing(false);
     scheduleConfigAutosave({ immediate: true });
   });
+
+  // Restore the factory binding. Note Limpiar does NOT do this: an empty value
+  // means "disabled by design" (no global shortcut at all).
+  const restoreBtn = $('cfg-hotkey-restore');
+  if (restoreBtn) {
+    restoreBtn.addEventListener('click', () => {
+      input.value = 'Alt+Shift+V';
+      setCapturing(false);
+      scheduleConfigAutosave({ immediate: true });
+    });
+  }
 })();
 
 function applySettings() {
