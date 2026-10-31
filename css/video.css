@@ -203,6 +203,51 @@ html[data-theme='light'] #video-audio-note {
   gap: 8px;
   padding: 2px 0 6px;
 }
+/* Fully controlled track: fill and thumb derive from the same rate. */
+.video-speed-track {
+  position: relative;
+  flex: 1;
+  min-width: 60px;
+  height: 22px;
+  cursor: pointer;
+  touch-action: none;
+  outline: none;
+}
+.video-speed-track::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 4px;
+  border-radius: 4px;
+  background: #ffffff50;
+}
+.video-speed-track:focus-visible::before { background: rgba(var(--cyber-accent-rgb), .25); }
+.video-speed-fill {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 4px;
+  border-radius: 4px;
+  background: var(--cyber-accent);
+  pointer-events: none;
+}
+.video-speed-thumb {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #f5fbff;
+  border: 2px solid var(--cyber-accent);
+  box-shadow: 0 1px 5px #0006;
+  pointer-events: none;
+}
+.video-speed-track:focus-visible .video-speed-thumb { box-shadow: 0 0 0 2px var(--cyber-accent), 0 1px 5px #0006; }
 /* ID-scoped: #video-menu button would otherwise stretch these into full-width rows.
    The circles are hover-only chrome: bare glyphs at rest, elegant on hover. */
 #video-menu .video-speed-slider-row button {
@@ -226,7 +271,6 @@ html[data-theme='light'] #video-audio-note {
   background: rgba(var(--cyber-tint-rgb), .14);
   color: var(--cyber-accent-ink);
 }
-#video-speed-slider { flex: 1; min-width: 60px; --video-progress: 50%; }
 .video-speed-presets { display: flex; justify-content: space-between; gap: 4px; }
 #video-speed-panel .video-menu-rate {
   flex: 1;

@@ -430,7 +430,10 @@
               <div id="video-speed-display">1.00×</div>
               <div class="video-speed-slider-row">
                 <button type="button" id="video-speed-minus" aria-label="-">−</button>
-                <input id="video-speed-slider" type="range" min="0.25" max="3" step="0.05" value="1">
+                <div id="video-speed-track" class="video-speed-track" role="slider" tabindex="0" aria-label="Velocidad" aria-valuemin="0.25" aria-valuemax="3" aria-valuenow="1" aria-valuetext="1.00×">
+                  <div id="video-speed-fill" class="video-speed-fill"></div>
+                  <div id="video-speed-thumb" class="video-speed-thumb"></div>
+                </div>
                 <button type="button" id="video-speed-plus" aria-label="+">+</button>
               </div>
               <div class="video-speed-presets" id="video-speed-presets">

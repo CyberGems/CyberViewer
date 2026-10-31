@@ -297,12 +297,19 @@ window.CVVideo = (() => {
     try { saved = parseFloat(localStorage.getItem('cv_video_rate')); } catch (_) { /* storage unavailable */ }
     return SPEEDS.includes(saved) ? saved : 1;
   }
+  function setSpeedVisual(rate) {
+    const pct = (rate - 0.25) / 2.75 * 100;
+    $('video-speed-fill').style.width = `${pct}%`;
+    $('video-speed-thumb').style.left = `${pct}%`;
+    const track = $('video-speed-track');
+    track.setAttribute('aria-valuenow', String(rate));
+    track.setAttribute('aria-valuetext', `${rate.toFixed(2)}×`);
+  }
   function syncSpeedUi() {
     const rate = currentRate();
     $('video-speed-value').textContent = rate === 1 ? text('video_speed_normal') : `${rate}×`;
     $('video-speed-display').textContent = `${rate.toFixed(2)}×`;
-    $('video-speed-slider').value = String(rate);
-    $('video-speed-slider').style.setProperty('--video-progress', `${(rate - 0.25) / 2.75 * 100}%`);
+    setSpeedVisual(rate);
   }
   function setPlaybackRate(rate) {
     if (!Number.isFinite(rate)) return;
@@ -427,25 +434,31 @@ window.CVVideo = (() => {
     $('video-next').addEventListener('click', () => openSibling(1));
     $('video-speed-row').addEventListener('click', () => setSpeedPanel(true));
     $('video-speed-back').addEventListener('click', () => setSpeedPanel(false));
-    // Custom pointer-driven drag with capture: the thumb and the track fill
-    // always derive from the same rate, so they can never drift apart.
+    // YouTube-style track: pointer-driven with 0.05 snapping, fully controlled
+    // visuals so the fill and the thumb can never drift apart.
     let speedDragging = false;
-    const speedSlider = $('video-speed-slider');
+    const speedTrack = $('video-speed-track');
     const speedFromEvent = (event) => {
-      const rect = speedSlider.getBoundingClientRect();
+      const rect = speedTrack.getBoundingClientRect();
       const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
-      setPlaybackRate(0.25 + ratio * 2.75);
+      const snapped = 0.25 + Math.round((ratio * 2.75) / 0.05) * 0.05;
+      const rate = Math.max(0.25, Math.min(3, snapped));
+      if (rate !== currentRate()) setPlaybackRate(rate);
     };
-    speedSlider.addEventListener('pointerdown', (event) => {
+    speedTrack.addEventListener('pointerdown', (event) => {
       speedDragging = true;
-      speedSlider.setPointerCapture(event.pointerId);
+      speedTrack.setPointerCapture(event.pointerId);
       speedFromEvent(event);
     });
-    speedSlider.addEventListener('pointermove', (event) => { if (speedDragging) speedFromEvent(event); });
-    speedSlider.addEventListener('pointerup', () => { speedDragging = false; });
-    speedSlider.addEventListener('lostpointercapture', () => { speedDragging = false; });
-    // Keyboard activation of the native input still applies through 'input'.
-    speedSlider.addEventListener('input', (event) => setPlaybackRate(parseFloat(event.target.value)));
+    speedTrack.addEventListener('pointermove', (event) => { if (speedDragging) speedFromEvent(event); });
+    speedTrack.addEventListener('pointerup', () => { speedDragging = false; });
+    speedTrack.addEventListener('lostpointercapture', () => { speedDragging = false; });
+    speedTrack.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        setPlaybackRate(currentRate() + (event.key === 'ArrowRight' ? 0.05 : -0.05));
+      }
+    });
     $('video-speed-minus').addEventListener('click', () => setPlaybackRate(currentRate() - 0.05));
     $('video-speed-plus').addEventListener('click', () => setPlaybackRate(currentRate() + 0.05));
     document.querySelectorAll('#video-speed-presets .video-menu-rate').forEach((btn) => {

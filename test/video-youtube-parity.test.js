@@ -32,15 +32,18 @@ describe('video player youtube parity (phase 1)', () => {
     assert.match(player, /return \{ element, active, load, unload, toggle, toggleMute, seekBy, sync, syncTools, localize, initialize, imageActions, reveal, closeMenu, handleVideoDblClick, cyclePlaybackRate, setPlaybackRate \};/);
   });
 
-  it('adds a youtube-style speed panel with display, slider and presets', () => {
+  it('adds a youtube-style speed panel with display, track and presets', () => {
     assert.match(html, /id="video-speed-display"/);
-    assert.match(html, /id="video-speed-slider" type="range" min="0\.25" max="3" step="0\.05"/);
+    assert.match(html, /id="video-speed-track" class="video-speed-track" role="slider" tabindex="0"/);
+    assert.match(html, /id="video-speed-fill" class="video-speed-fill"/);
+    assert.match(html, /id="video-speed-thumb" class="video-speed-thumb"/);
     assert.match(html, /id="video-speed-presets"/);
     assert.match(html, /data-rate="3"/);
     assert.match(player, /\$\('video-speed-display'\)\.textContent = `\$\{rate\.toFixed\(2\)\}×`;/);
-    assert.match(player, /const speedSlider = \$\('video-speed-slider'\);/);
-    assert.match(player, /speedSlider\.setPointerCapture\(event\.pointerId\);/);
-    assert.match(player, /setPlaybackRate\(0\.25 \+ ratio \* 2\.75\);/);
+    assert.match(player, /\$\('video-speed-fill'\)\.style\.width = `\$\{pct\}%`;/);
+    assert.match(player, /\$\('video-speed-thumb'\)\.style\.left = `\$\{pct\}%`;/);
+    assert.match(player, /0\.25 \+ Math\.round\(\(ratio \* 2\.75\) \/ 0\.05\) \* 0\.05/);
+    assert.match(player, /speedTrack\.setPointerCapture\(event\.pointerId\);/);
     assert.match(player, /\$\('video-speed-minus'\)\.addEventListener\('click', \(\) => setPlaybackRate\(currentRate\(\) - 0\.05\)\)/);
     assert.match(player, /rate = Math\.max\(0\.25, Math\.min\(3, rate\)\);/);
     assert.match(player, /const SPEEDS = \[0\.25, 0\.5, 0\.75, 1, 1\.25, 1\.5, 1\.75, 2, 3\];/);
@@ -75,7 +78,9 @@ describe('video player youtube parity (phase 1)', () => {
     assert.match(css, /@keyframes video-flash \{/);
     // The speed slider gets its own progress track (the shared seek track rule
     // left it invisible) and the More button keeps its hover while open.
-    assert.match(css, /#video-speed-slider \{ flex: 1; min-width: 60px; --video-progress: 50%; \}/);
+    assert.match(css, /\.video-speed-track \{[^}]*position: relative;[^}]*touch-action: none;/);
+    assert.match(css, /\.video-speed-fill \{[^}]*background: var\(--cyber-accent\);/);
+    assert.match(css, /\.video-speed-thumb \{[^}]*background: #f5fbff;\s*border: 2px solid var\(--cyber-accent\);/);
     assert.match(css, /#video-more\[aria-expanded="true"\], #video-more\[aria-expanded="true"\]:hover \{ background: rgba\(var\(--cyber-tint-rgb\), 0\.12\); \}/);
   });
 
