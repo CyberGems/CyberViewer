@@ -297,12 +297,16 @@ window.CVVideo = (() => {
     try { saved = parseFloat(localStorage.getItem('cv_video_rate')); } catch (_) { /* storage unavailable */ }
     return SPEEDS.includes(saved) ? saved : 1;
   }
+  let speedSliderActive = false;
   function syncSpeedUi() {
     const rate = currentRate();
     $('video-speed-value').textContent = rate === 1 ? text('video_speed_normal') : `${rate}×`;
     $('video-speed-display').textContent = `${rate.toFixed(2)}×`;
-    $('video-speed-slider').value = String(rate);
-    $('video-speed-slider').style.setProperty('--video-progress', `${(rate - 0.25) / 2.75 * 100}%`);
+    // Never rewrite the slider while the user is dragging it: timeupdate
+    // would otherwise snap the thumb back four times per second.
+    const slider = $('video-speed-slider');
+    if (slider && !speedSliderActive) slider.value = String(rate);
+    slider.style.setProperty('--video-progress', `${(rate - 0.25) / 2.75 * 100}%`);
     document.querySelectorAll('#video-speed-presets .video-menu-rate').forEach((btn) => {
       btn.classList.toggle('active', Math.abs(parseFloat(btn.dataset.rate) - rate) < 0.001);
     });
@@ -430,6 +434,8 @@ window.CVVideo = (() => {
     $('video-next').addEventListener('click', () => openSibling(1));
     $('video-speed-row').addEventListener('click', () => setSpeedPanel(true));
     $('video-speed-back').addEventListener('click', () => setSpeedPanel(false));
+    $('video-speed-slider').addEventListener('pointerdown', () => { speedSliderActive = true; });
+    window.addEventListener('pointerup', () => { speedSliderActive = false; });
     $('video-speed-slider').addEventListener('input', (event) => setPlaybackRate(parseFloat(event.target.value)));
     $('video-speed-minus').addEventListener('click', () => setPlaybackRate(currentRate() - 0.05));
     $('video-speed-plus').addEventListener('click', () => setPlaybackRate(currentRate() + 0.05));
