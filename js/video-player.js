@@ -355,17 +355,12 @@ window.CVVideo = (() => {
     flashEl.classList.add('run');
   }
 
-  // ── Click on the video pauses; double-click fullscreens (YouTube) ──
-  // The click acts immediately; a double-click undoes its pause and
-  // fullscreens, so the net effect matches YouTube exactly.
-  let videoClickToggledUntil = 0;
-  let flashSuppressed = false;
+  // ── Click on the video pauses (delayed); double-click fullscreens ──
+  // The short delay lets the dblclick handler cancel the pending pause, so
+  // double-clicking fullscreens without flashing play/pause states.
+  let videoClickTimer = null;
   function handleVideoDblClick() {
-    if (Date.now() < videoClickToggledUntil) {
-      videoClickToggledUntil = 0;
-      flashSuppressed = true;
-      void toggle();
-    }
+    if (videoClickTimer) { clearTimeout(videoClickTimer); videoClickTimer = null; }
     toggleFullscreen();
     reveal();
   }
@@ -408,20 +403,14 @@ window.CVVideo = (() => {
     $('viewer-wrap').addEventListener('click', (event) => {
       if (!active() || window.CVYouTube.active()) return;
       if (event.target.closest('#video-controls, #video-menu, #sidebar-handle, #kbd-hint, #nav-container, #topbar, #sidebar, #ghost-close')) return;
-      // A second click inside the dblclick window belongs to the dblclick
-      // handler: ignoring it keeps the first click's pause from toggling back.
-      if (Date.now() < videoClickToggledUntil) return;
-      void toggle();
-      videoClickToggledUntil = Date.now() + 700;
+      if (videoClickTimer) return;
+      videoClickTimer = setTimeout(() => {
+        videoClickTimer = null;
+        void toggle();
+      }, 230);
     });
-    element.addEventListener('play', () => {
-      if (flashSuppressed) { flashSuppressed = false; return; }
-      if (Date.now() - loadedAt > 400) flashOverlay(FLASH_PLAY);
-    });
-    element.addEventListener('pause', () => {
-      if (flashSuppressed) { flashSuppressed = false; return; }
-      flashOverlay(FLASH_PAUSE);
-    });
+    element.addEventListener('play', () => { if (Date.now() - loadedAt > 400) flashOverlay(FLASH_PLAY); });
+    element.addEventListener('pause', () => flashOverlay(FLASH_PAUSE));
     $('video-prev').addEventListener('click', () => openSibling(-1));
     $('video-next').addEventListener('click', () => openSibling(1));
     $('video-speed-row').addEventListener('click', () => setSpeedPanel(true));

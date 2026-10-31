@@ -26,8 +26,8 @@ describe('video player youtube parity (phase 1)', () => {
 
   it('pauses on video click with double-click discrimination', () => {
     assert.match(player, /\$\('viewer-wrap'\)\.addEventListener\('click', \(event\) => \{\s*if \(!active\(\) \|\| window\.CVYouTube\.active\(\)\) return;/);
-    assert.match(player, /void toggle\(\);\s*videoClickToggledUntil = Date\.now\(\) \+ 700;/);
-    assert.match(player, /function handleVideoDblClick\(\) \{\s*if \(Date\.now\(\) < videoClickToggledUntil\) \{/);
+    assert.match(player, /if \(videoClickTimer\) return;\s*videoClickTimer = setTimeout\(\(\) => \{\s*videoClickTimer = null;\s*void toggle\(\);\s*\}, 230\);/);
+    assert.match(player, /function handleVideoDblClick\(\) \{\s*if \(videoClickTimer\) \{ clearTimeout\(videoClickTimer\); videoClickTimer = null; \}/);
     assert.match(appJs, /if \(window\.CVVideo\.active\(\)\) \{ window\.CVVideo\.handleVideoDblClick\(\); return; \}/);
     assert.match(player, /return \{ element, active, load, unload, toggle, toggleMute, seekBy, sync, syncTools, localize, initialize, imageActions, reveal, closeMenu, handleVideoDblClick, cyclePlaybackRate, setPlaybackRate \};/);
   });
@@ -55,7 +55,21 @@ describe('video player youtube parity (phase 1)', () => {
   it('flashes youtube-style overlay icons on play and pause', () => {
     assert.match(player, /const FLASH_PLAY = /);
     assert.match(player, /const FLASH_PAUSE = /);
-    assert.match(player, /element\.addEventListener\('play', \(\) => \{\s*if \(flashSuppressed\) \{ flashSuppressed = false; return; \}\s*if \(Date\.now\(\) - loadedAt > 400\) flashOverlay\(FLASH_PLAY\);\s*\}\)/);
-    assert.match(player, /element\.addEventListener\('pause', \(\) => \{\s*if \(flashSuppressed\) \{ flashSuppressed = false; return; \}\s*flashOverlay\(FLASH_PAUSE\);\s*\}\)/);
+    assert.match(player, /element\.addEventListener\('play', \(\) => \{ if \(Date\.now\(\) - loadedAt > 400\) flashOverlay\(FLASH_PLAY\); \}\)/);
+    assert.match(player, /element\.addEventListener\('pause', \(\) => flashOverlay\(FLASH_PAUSE\)\)/);
+  });
+
+  it('keeps every More menu row iconized and the confirm overlay readable on video', () => {
+    for (const id of ['video-speed-row', 'video-open', 'video-youtube', 'video-properties', 'video-autoplay', 'video-loop', 'video-audio-info']) {
+      const row = html.match(new RegExp(`id="${id}"[\\s\\S]*?</button>`));
+      assert.ok(row && row[0].includes('menu-ico'), `${id} must carry a menu icon`);
+    }
+    assert.match(css, /#video-menu \.menu-ico \{ width: 14px; height: 14px;/);
+    // Titlebar filename keeps room for descenders (g, y)
+    assert.match(read('css/app.css'), /\.titlebar-filename\s*\{[^}]*font: 600 12px\/1\.3 var\(--font-ui\);/);
+    // The confirm overlay keeps the paused frame recognizable in video mode
+    assert.match(read('css/app.css'), /body\.video-active #modal-cyber-confirm\s*\{[^}]*backdrop-filter: blur\(3px\);/);
+    // The confirm dialog uses the same trash glyph as the context menu
+    assert.match(appJs, /const trashGlyph = '<svg viewBox="0 0 24 24" width="22" height="22"[^]*?M14 11v6/);
   });
 });

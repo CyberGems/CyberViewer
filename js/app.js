@@ -10368,8 +10368,10 @@ function showCyberConfirm({ title, message, detail, danger = true, onConfirm }) 
     iconBox.style.color = 'var(--cyber-accent2-ink)';
     iconBox.style.borderColor = 'rgba(255, 45, 120, 0.3)';
     iconBox.style.background = 'rgba(255, 45, 120, 0.1)';
-    iconBox.innerHTML = '&#128465;&#xFE0E;'; // Trash bin icon
-    headerIcon.innerHTML = '&#128465;&#xFE0E;';
+    // Same trash glyph as the context menu (menu_trash), not the unicode one.
+    const trashGlyph = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
+    iconBox.innerHTML = trashGlyph;
+    headerIcon.innerHTML = trashGlyph;
     headerIcon.style.color = 'var(--cyber-accent2-ink)';
 
     okBtn.style.borderColor = 'var(--cyber-accent2)';

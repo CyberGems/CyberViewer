@@ -235,3 +235,4 @@ html[data-theme='light'] #video-audio-note {
   color: #fff;
   font: 11px var(--font-mono, monospace);
 }
+#video-menu .menu-ico { width: 14px; height: 14px; flex-shrink: 0; color: var(--cyber-muted); }
