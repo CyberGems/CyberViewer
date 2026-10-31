@@ -1370,6 +1370,57 @@ ipcMain.handle('open-folder-path', async (event, dirPath) => {
   return resolveFirstImageInDir(dirPath);
 });
 
+// ── File association status (read-only) ──
+// Windows 8+ protects the per-extension UserChoice hash, so an app cannot SET
+// defaults programmatically; it can only read what the user chose and hand
+// them to the right Settings page. Resolution order: the FileExts UserChoice
+// wins over the legacy Classes default value written by the installer.
+const FILE_ASSOCIATION_TYPES = [
+  { ext: '.jpg', progid: 'CyberViewer.jpg', group: 'image' },
+  { ext: '.jpeg', progid: 'CyberViewer.jpg', group: 'image' },
+  { ext: '.png', progid: 'CyberViewer.png', group: 'image' },
+  { ext: '.gif', progid: 'CyberViewer.gif', group: 'image' },
+  { ext: '.webp', progid: 'CyberViewer.webp', group: 'image' },
+  { ext: '.bmp', progid: 'CyberViewer.bmp', group: 'image' },
+  { ext: '.tif', progid: 'CyberViewer.tiff', group: 'image' },
+  { ext: '.tiff', progid: 'CyberViewer.tiff', group: 'image' },
+  { ext: '.ico', progid: 'CyberViewer.ico', group: 'image' },
+  { ext: '.avif', progid: 'CyberViewer.avif', group: 'image' },
+  { ext: '.mp4', progid: 'CyberViewer.video', group: 'video' },
+  { ext: '.m4v', progid: 'CyberViewer.video', group: 'video' },
+  { ext: '.webm', progid: 'CyberViewer.video', group: 'video' },
+  { ext: '.mov', progid: 'CyberViewer.video', group: 'video' },
+  { ext: '.mkv', progid: 'CyberViewer.video', group: 'video' }
+];
+
+function regQueryStringValue(key, valueName) {
+  return new Promise((resolve) => {
+    if (process.platform !== 'win32') return resolve(null);
+    const args = valueName === '' ? ['query', key, '/ve'] : ['query', key, '/v', valueName];
+    execFile('reg', args, { windowsHide: true }, (error, stdout) => {
+      if (error || !stdout) return resolve(null);
+      const match = stdout.match(/REG(?:_SZ|_EXPAND_SZ)\s+(\S.*)$/m);
+      resolve(match ? match[1].trim() : null);
+    });
+  });
+}
+
+ipcMain.handle('get-file-associations', async () => {
+  return Promise.all(FILE_ASSOCIATION_TYPES.map(async ({ ext, progid, group }) => {
+    const [userChoice, classDefault] = await Promise.all([
+      regQueryStringValue(`HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts\\${ext}`, 'ProgId'),
+      regQueryStringValue(`HKCU\\Software\\Classes\\${ext}`, '')
+    ]);
+    const current = userChoice || classDefault || '';
+    return {
+      ext,
+      group,
+      status: current === progid ? 'default' : (current ? 'other' : 'unset'),
+      current
+    };
+  }));
+});
+
 ipcMain.handle('get-settings', () => {
   const settings = loadSettings();
   // Manual launch (opened from the icon/shortcut without a file argument) always

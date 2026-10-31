@@ -675,7 +675,14 @@
     "about_formats_videos": "Videos",
     "about_skip_version": "Skip this version",
     "about_dismiss": "Dismiss",
-    "about_popup_peek_empty": "Open About for the full release notes."
+    "about_popup_peek_empty": "Open About for the full release notes.",
+    "cfg_file_assoc": "File associations",
+    "cfg_file_assoc_desc": "Current viewer per supported format, as Windows reports it. The actual choice is managed in Windows Settings > Apps > Default apps.",
+    "cfg_file_assoc_refresh": "Refresh",
+    "cfg_file_assoc_open": "Open Windows settings",
+    "cfg_file_assoc_default": "CyberViewer is the default viewer",
+    "cfg_file_assoc_other": "Another app is the default",
+    "cfg_file_assoc_unset": "No default chosen yet"
   },
   "es": {
     "tabs_label": "Pestañas de archivos abiertos",
@@ -1353,6 +1360,13 @@
     "about_formats_videos": "Videos",
     "about_skip_version": "Omitir esta versión",
     "about_dismiss": "Descartar",
-    "about_popup_peek_empty": "Abre Acerca de para ver las notas completas."
+    "about_popup_peek_empty": "Abre Acerca de para ver las notas completas.",
+    "cfg_file_assoc": "Asociaciones de archivos",
+    "cfg_file_assoc_desc": "Visor actual por formato soportado, tal como lo reporta Windows. La elección real se gestiona en Configuración de Windows > Aplicaciones > Aplicaciones predeterminadas.",
+    "cfg_file_assoc_refresh": "Actualizar",
+    "cfg_file_assoc_open": "Abrir configuración de Windows",
+    "cfg_file_assoc_default": "CyberViewer es el visor predeterminado",
+    "cfg_file_assoc_other": "Otra aplicación es la predeterminada",
+    "cfg_file_assoc_unset": "Aún sin elección"
   }
 }

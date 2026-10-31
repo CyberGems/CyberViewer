@@ -4546,6 +4546,55 @@
     flex-shrink: 0;
   }
 
+  /* ── FILE ASSOCIATION STATUS (System tab) ── */
+  .cfg-file-assoc {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .cfg-file-assoc-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .cfg-file-assoc-group-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--cyber-muted);
+    min-width: 66px;
+  }
+  .cfg-file-assoc-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 7px;
+    border: 1px solid var(--cyber-border);
+    border-radius: 4px;
+    background: rgba(var(--cyber-tint-rgb), 0.04);
+    color: var(--cyber-muted);
+    font-family: var(--font-mono, monospace);
+    font-size: 9.5px;
+    font-weight: 700;
+    line-height: 1.6;
+    white-space: nowrap;
+  }
+  .cfg-file-assoc-chip.is-default {
+    border-color: rgba(var(--cyber-accent3-rgb), 0.4);
+    background: rgba(var(--cyber-accent3-rgb), 0.1);
+    color: var(--cyber-accent3-ink);
+  }
+  .cfg-file-assoc-chip.is-unset {
+    border-style: dashed;
+    opacity: 0.8;
+  }
+  .cfg-file-assoc-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
   /* ── AUTO BACKUP LIST ── */
   .cfg-backup-path {
     word-break: break-all;

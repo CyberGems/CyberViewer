@@ -27,6 +27,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   getSettings: () => ipcRenderer.invoke('get-settings'),
+  getFileAssociations: () => ipcRenderer.invoke('get-file-associations'),
+  openDefaultAppsSettings: () => ipcRenderer.invoke('open-default-apps-settings'),
   getVersion: () => ipcRenderer.invoke('get-version'),
   getDiagnostics: () => ipcRenderer.invoke('get-diagnostics'),
   openDataFolder: () => ipcRenderer.invoke('open-data-folder'),

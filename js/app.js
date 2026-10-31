@@ -7354,6 +7354,7 @@ function openConfig() {
   const alphaBg = normalizeAlphaBackground(s.alphaBackground);
   if ($('cfg-alpha-bg')) $('cfg-alpha-bg').value = alphaBg;
   if ($('cfg-image-outline')) $('cfg-image-outline').checked = s.imageOutline === true;
+  refreshFileAssociations();
 
   // Auto-backup settings
   const ab = currentAutoBackupSettings();
@@ -7632,6 +7633,51 @@ $('cfg-hud-delay').addEventListener('input', (e) => {
 document.querySelectorAll('#modal-config input, #modal-config select').forEach(ctrl => {
   if (ctrl.id === 'cfg-hud-delay' || ctrl.id === 'cfg-hotkey') return;
   ctrl.addEventListener('change', () => scheduleConfigAutosave({ immediate: true }));
+});
+
+// ── File association status (System tab) ──
+// Windows 8+ protects per-extension defaults, so this surface is read-only:
+// show which viewer owns each format and hand the user to Windows Settings.
+const assocEscape = (value) => String(value).replace(/[&<>"]/g, (c) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'
+}[c]));
+
+async function refreshFileAssociations() {
+  const container = $('cfg-file-assoc');
+  if (!container || !isElectron || !window.electronAPI.getFileAssociations) return;
+  let rows;
+  try {
+    rows = await window.electronAPI.getFileAssociations();
+  } catch (_) {
+    return;
+  }
+  if (!Array.isArray(rows) || !rows.length) return;
+  const lang = state.settings.app.language || 'en';
+  const t = I18N[lang] || I18N.en;
+  const statusLabel = (status) => status === 'default'
+    ? (t.cfg_file_assoc_default || 'CyberViewer is the default viewer')
+    : status === 'other'
+      ? (t.cfg_file_assoc_other || 'Another app is the default')
+      : (t.cfg_file_assoc_unset || 'No default chosen yet');
+  const groups = [
+    { key: 'image', label: t.about_formats_images || 'Images' },
+    { key: 'video', label: t.about_formats_videos || 'Videos' }
+  ];
+  container.innerHTML = groups.map((group) => {
+    const chips = rows.filter((row) => row.group === group.key).map((row) => `
+      <span class="cfg-file-assoc-chip is-${row.status}" role="status" title="${assocEscape(statusLabel(row.status))}" aria-label="${assocEscape(`${row.ext}: ${statusLabel(row.status)}`)}">${assocEscape(row.ext)}</span>`).join('');
+    return `<div class="cfg-file-assoc-group">
+      <span class="cfg-file-assoc-group-label">${assocEscape(group.label)}</span>
+      ${chips}
+    </div>`;
+  }).join('');
+}
+
+const fileAssocRefreshBtn = $('cfg-file-assoc-refresh');
+if (fileAssocRefreshBtn) fileAssocRefreshBtn.addEventListener('click', () => { refreshFileAssociations(); });
+const fileAssocSettingsBtn = $('cfg-file-assoc-settings');
+if (fileAssocSettingsBtn) fileAssocSettingsBtn.addEventListener('click', () => {
+  if (isElectron && window.electronAPI.openDefaultAppsSettings) window.electronAPI.openDefaultAppsSettings();
 });
 
 const resetFactoryBtn = $('cfg-reset-factory');
