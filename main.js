@@ -320,6 +320,15 @@ function clearQuitTimers() {
   if (quitRevealTimer) { clearTimeout(quitRevealTimer); quitRevealTimer = null; }
 }
 
+// Every app.quit() must actually quit. electron-updater's quitAndInstall and
+// OS-driven shutdowns fire before-quit, and without this flag the tray/close
+// handlers would hijack the quit into hide-to-tray, leaving the old binary
+// locked under the NSIS uninstaller ("Fallo al desinstalar archivos antiguos").
+app.on('before-quit', () => {
+  isQuitting = true;
+  quitRequested = true;
+});
+
 const initialFilePaths = process.argv.map(arg => getFilePathFromArgs([arg])).filter(Boolean);
 const initialFilePath = initialFilePaths[0] || null;
 const instanceHasInitialFile = !!initialFilePath;
