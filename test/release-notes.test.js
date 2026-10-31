@@ -178,3 +178,73 @@ describe('localized release notes', () => {
     assert.ok(releaseScriptIdx > 0 && releaseScriptIdx < appScriptIdx, 'release-notes.js must load before app.js');
   });
 });
+
+describe('changelog peek for the update popup', () => {
+  const PEEK_BODY = [
+    '### Highlights',
+    '- ✨ New transparency background picker',
+    '- Faster folder scanning',
+    '  - Applies to folders above 500 files',
+    '- Fixed a crash on rotation',
+    '',
+    '### Downloads',
+    '- [CyberViewer-Setup.exe](https://example.com) (recommended installer)'
+  ].join('\n');
+
+  it('extracts the highlights bullets for English users', () => {
+    const items = releaseNotes.parseChangelogPeek(PEEK_BODY, 'en');
+    assert.equal(items.length, 4);
+    assert.match(items[0].text, /transparency background picker/);
+    assert.equal(items[3].text, 'Fixed a crash on rotation');
+    assert.equal(items.every((item) => !/installer/i.test(item.text)), true);
+  });
+
+  it('flags indented bullets as sub-items', () => {
+    const items = releaseNotes.parseChangelogPeek(PEEK_BODY, 'en');
+    assert.equal(items[2].isSubItem, true);
+    assert.equal(items[2].text, 'Applies to folders above 500 files');
+    assert.equal(items[0].isSubItem, false);
+  });
+
+  it('serves the Spanish section to Spanish users', () => {
+    const body = [
+      '### Highlights',
+      '- English bullet only',
+      '',
+      '<details>',
+      '<summary>🌐 Ver notas de la versión en Español</summary>',
+      '',
+      '### Novedades',
+      '- Fondo de transparencia automático',
+      '- Escaneo más rápido',
+      '',
+      '</details>'
+    ].join('\n');
+    const items = releaseNotes.parseChangelogPeek(body, 'es');
+    assert.equal(items.length, 2);
+    assert.match(items[0].text, /Fondo de transparencia automático/);
+    const en = releaseNotes.parseChangelogPeek(body, 'en');
+    assert.equal(en.length, 1);
+    assert.match(en[0].text, /English bullet only/);
+  });
+
+  it('falls back to top-level bullets without a highlights section', () => {
+    const body = '- First change\n- Second change\n\n### Downloads\n- Setup (recommended installer)';
+    const items = releaseNotes.parseChangelogPeek(body, 'en');
+    assert.equal(items.length, 2);
+    assert.equal(items[0].text, 'First change');
+  });
+
+  it('falls back to descriptive sentences when there are no bullets', () => {
+    const body = 'CyberViewer 1.19 brings a redesigned update popup with changelog peek.\n\n### Downloads\n- Setup.exe';
+    const items = releaseNotes.parseChangelogPeek(body, 'en');
+    assert.equal(items.length, 1);
+    assert.match(items[0].text, /redesigned update popup/);
+  });
+
+  it('respects the item limit and empty input', () => {
+    const body = '### Highlights\n- A\n- B\n- C\n- D\n- E';
+    assert.equal(releaseNotes.parseChangelogPeek(body, 'en', 2).length, 2);
+    assert.deepEqual(releaseNotes.parseChangelogPeek('', 'en'), []);
+  });
+});

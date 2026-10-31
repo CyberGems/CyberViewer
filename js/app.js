@@ -364,6 +364,9 @@ const MENU_ICONS = {
   'layout': '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>',
   'next': '<path d="M9 6l6 6-6 6"/>',
   'arrow-right': '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+  'sparkles': '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>',
+  'external-link': '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+  'skip-forward': '<polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/>',
   'prev': '<path d="M15 6l-6 6 6 6"/>',
   'star': '<path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.9-5.2-2.7-5.2 2.7 1-5.9-4.3-4.1 5.9-.9z"/>',
   'settings': '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1l2.1-2.1M17 7l2.1-2.1"/>',
@@ -8640,6 +8643,7 @@ $('btn-go-end').addEventListener('click', (e) => {
     window.__cvUpdateStatus = updateStatus;
     syncUpdateActions(overlay);
     syncTitleBarUpdateButton();
+    syncUpdatePopup(false);
     maybeToastUpdateStatus(updateStatus, opts);
   }
   window.__cvApplyUpdateStatus = applyUpdateStatus;
@@ -8744,8 +8748,190 @@ $('btn-go-end').addEventListener('click', (e) => {
     window.__cvUpdateStatus = updateStatus;
     syncUpdateActions(overlay);
     syncTitleBarUpdateButton();
+    syncUpdatePopup(true);
     return next;
   };
+
+  // ── MAIN-WINDOW UPDATE POPUP (CyberFeeds pattern) ──
+  // A fixed bottom-right card driven by the same status pipeline as the About
+  // modal: available shows a language-aware changelog peek, downloading shows
+  // progress and downloaded offers the restart. The About modal suppresses it
+  // while open, and a per-version skip persists in updateNotify.skippedVersion.
+  const updatePopupEl = document.createElement('div');
+  updatePopupEl.id = 'update-popup';
+  updatePopupEl.setAttribute('role', 'dialog');
+  updatePopupEl.setAttribute('aria-label', 'Update');
+  document.body.appendChild(updatePopupEl);
+
+  const escapePopupHtml = (value) => String(value).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+
+  let popupAppVersion = '';
+  let popupAppVersionFetched = false;
+  let popupDismissedKey = '';
+
+  function popupOpenReleaseUrl() {
+    const version = updateStatus.version ? String(updateStatus.version) : '';
+    const tag = version.startsWith('v') ? version : `v${version}`;
+    const url = updateStatus.releaseUrl || `https://github.com/CyberGems/CyberViewer/releases/tag/${tag}`;
+    if (window.electronAPI.openExternal) {
+      window.electronAPI.openExternal(url);
+    } else {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  }
+
+  function syncUpdatePopup(ignoreSkip) {
+    const t = tAbout();
+    const s = updateStatus.state;
+    const version = updateStatus.version ? String(updateStatus.version) : '';
+    const aboutOpen = overlay.classList.contains('active');
+    const skipped = String((state.settings.app.updateNotify && state.settings.app.updateNotify.skippedVersion) || '');
+    const key = `${s}:${version}`;
+    const show = !aboutOpen && (s === 'available' || s === 'downloading' || s === 'downloaded') &&
+      (ignoreSkip || (key !== popupDismissedKey && (s !== 'available' || version !== skipped)));
+    if (!show) {
+      updatePopupEl.classList.remove('visible');
+      return;
+    }
+
+    let titleText = '';
+    if (s === 'available') {
+      titleText = t.about_update_avail || 'Update available!';
+    } else if (s === 'downloading') {
+      titleText = (t.about_downloading || 'Downloading… {percent}%')
+        .replace('{percent}%', '').replace(/\s+/g, ' ').trim();
+    } else {
+      titleText = t.about_downloaded || 'Update ready to install';
+    }
+    titleText = String(titleText).replace(/\.$/, '');
+
+    const versionTags = `
+      ${popupAppVersion ? `<span class="update-popup-badge-current" title="${t.about_current_version || 'Current'}">v${escapePopupHtml(popupAppVersion)}</span>` : ''}
+      ${popupAppVersion && version ? '<span class="update-popup-version-arrow">&#8594;</span>' : ''}
+      ${version ? `<span class="update-popup-badge" title="${t.about_latest_version || 'Latest'}">v${escapePopupHtml(version)}</span>` : ''}`;
+
+    let bodyHtml = '';
+    if (s === 'available') {
+      const lang = state.settings.app.language || 'en';
+      const items = (window.CVReleaseNotes && window.CVReleaseNotes.parseChangelogPeek)
+        ? window.CVReleaseNotes.parseChangelogPeek(updateStatus.releaseBody || updateStatus.releaseNotes || '', lang, 4)
+        : [];
+      bodyHtml = `
+        <div class="update-popup-changelog">
+          <div class="update-popup-changelog-header">${t.about_release_notes || "What's new"}</div>
+          ${items.length ? `<div class="update-popup-changelog-list">${items.map((item) => `
+            <div class="update-popup-changelog-item${item.isSubItem ? ' is-sub' : ''}">
+              <span class="update-popup-changelog-bullet">&#8226;</span>
+              <span>${escapePopupHtml(item.text)}</span>
+            </div>`).join('')}</div>`
+          : `<div class="update-popup-changelog-empty">${t.about_popup_peek_empty || 'Open About for the full release notes.'}</div>`}
+        </div>`;
+    } else if (s === 'downloading') {
+      const percent = Math.max(0, Math.min(100, updateStatus.percent || 0));
+      bodyHtml = `
+        <div class="update-popup-progress">
+          <div class="update-popup-progress-meta">
+            <span>${t.about_download_btn || 'Download'}&#8230;</span>
+            <span class="update-popup-progress-pct">${percent}%</span>
+          </div>
+          <div class="about-update-track"><div class="about-update-bar" style="width:${percent}%"></div></div>
+        </div>`;
+    } else {
+      bodyHtml = `<div class="update-popup-ready">${t.about_downloaded || 'Update ready to install'}</div>`;
+    }
+
+    let footerHtml = '';
+    if (s === 'available') {
+      footerHtml = `
+        <div class="update-popup-secondary-row">
+          <button type="button" class="update-popup-btn" data-popup-action="release">${iconHtml('external-link')}<span>${t.about_view_release || 'View release page'}</span></button>
+          <button type="button" class="update-popup-btn" data-popup-action="skip">${iconHtml('skip-forward')}<span>${t.about_skip_version || 'Skip this version'}</span></button>
+        </div>
+        <button type="button" class="update-popup-btn is-primary" data-popup-action="download">${iconHtml('download')}<span>${t.about_download_btn || 'Download update'}</span></button>`;
+    } else if (s === 'downloading') {
+      footerHtml = `<button type="button" class="update-popup-btn" data-popup-action="dismiss"><span>${t.about_dismiss || 'Dismiss'}</span></button>`;
+    } else {
+      footerHtml = `
+        <button type="button" class="update-popup-btn" data-popup-action="dismiss"><span>${t.about_dismiss || 'Dismiss'}</span></button>
+        <button type="button" class="update-popup-btn is-primary" data-popup-action="install">${iconHtml('rotate-cw')}<span>${t.about_install_btn || 'Restart and update'}</span></button>`;
+    }
+
+    updatePopupEl.innerHTML = `
+      <div class="update-popup-header">
+        <span class="update-popup-icon">${iconHtml('sparkles')}</span>
+        <div class="update-popup-title-group">
+          <span class="update-popup-title">${escapePopupHtml(titleText)}</span>
+          <div class="update-popup-version-tags">${versionTags}</div>
+        </div>
+        <button type="button" class="update-popup-close" data-popup-action="dismiss" aria-label="${t.about_dismiss || 'Dismiss'}">&#10005;</button>
+      </div>
+      ${bodyHtml}
+      <div class="update-popup-footer">${footerHtml}</div>
+    `;
+
+    updatePopupEl.querySelectorAll('[data-popup-action]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const action = btn.dataset.popupAction;
+        if (action === 'dismiss') {
+          popupDismissedKey = `${updateStatus.state}:${updateStatus.version || ''}`;
+          syncUpdatePopup(false);
+        } else if (action === 'skip') {
+          const notify = ensureUpdateNotify();
+          if (updateStatus.version) notify.skippedVersion = String(updateStatus.version);
+          else popupDismissedKey = `${updateStatus.state}:`;
+          persistAppSettings();
+          syncUpdatePopup(false);
+        } else if (action === 'download') {
+          const notify = ensureUpdateNotify();
+          notify.skippedVersion = null;
+          persistAppSettings();
+          startUpdateDownload();
+        } else if (action === 'install') {
+          if (window.electronAPI.installUpdate) window.electronAPI.installUpdate();
+        } else if (action === 'release') {
+          popupOpenReleaseUrl();
+        }
+      });
+    });
+
+    updatePopupEl.classList.add('visible');
+  }
+
+  async function startUpdateDownload() {
+    updateStatus = { state: 'downloading', percent: 0 };
+    window.__cvUpdateStatus = updateStatus;
+    syncUpdateActions(overlay);
+    syncTitleBarUpdateButton();
+    syncUpdatePopup(false);
+    const res = (isElectron && window.electronAPI.downloadUpdate)
+      ? await window.electronAPI.downloadUpdate()
+      : { ok: false, error: 'unavailable' };
+    if (!res || !res.ok) {
+      updateStatus = { state: 'error', message: (res && res.error) || 'Download failed' };
+      window.__cvUpdateStatus = updateStatus;
+      syncUpdateActions(overlay);
+      syncTitleBarUpdateButton();
+      syncUpdatePopup(false);
+    }
+  }
+
+  if (isElectron && window.electronAPI.getVersion && !popupAppVersionFetched) {
+    popupAppVersionFetched = true;
+    window.electronAPI.getVersion().then((v) => {
+      popupAppVersion = String(v || '');
+      syncUpdatePopup(false);
+    }).catch(() => {});
+  }
+
+  // Live statuses must reach the popup even when the About modal has never
+  // been opened; the About keeps its own subscription for its lifetime.
+  if (isElectron && window.electronAPI.onUpdateStatus) {
+    window.electronAPI.onUpdateStatus((status) => {
+      applyUpdateStatus(status);
+    });
+  }
 
   function syncUpdateBanner(root) {
     if (!root) return;
@@ -9177,14 +9363,8 @@ $('btn-go-end').addEventListener('click', (e) => {
     overlay.querySelector('#about-btn-update').addEventListener('click', () => {
       window.checkUpdatesGlobal(true);
     });
-    overlay.querySelector('#about-btn-download').addEventListener('click', async () => {
-      updateStatus = { state: 'downloading', percent: 0 };
-      syncUpdateActions(overlay);
-      const res = await window.electronAPI.downloadUpdate();
-      if (!res || !res.ok) {
-        updateStatus = { state: 'error', message: (res && res.error) || 'Download failed' };
-        syncUpdateActions(overlay);
-      }
+    overlay.querySelector('#about-btn-download').addEventListener('click', () => {
+      startUpdateDownload();
     });
     overlay.querySelector('#about-btn-install').addEventListener('click', () => {
       window.electronAPI.installUpdate();
@@ -9255,10 +9435,14 @@ $('btn-go-end').addEventListener('click', (e) => {
 
     syncUpdateActions(overlay);
     overlay.classList.add('active');
+    // One surface at a time: the popup hides while the About is open.
+    syncUpdatePopup(false);
   }
 
   function closeAbout() {
     overlay.classList.remove('active');
+    // The update may still be pending: the popup returns when the About closes.
+    syncUpdatePopup(false);
     if (unsubUpdateStatus) {
       unsubUpdateStatus();
       unsubUpdateStatus = null;

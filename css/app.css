@@ -6956,6 +6956,224 @@
   width: 18px;
   height: 18px;
 }
+
+/* ── MAIN-WINDOW UPDATE POPUP (CyberFeeds pattern) ──
+   Fixed bottom-right card: changelog peek when available, progress while
+   downloading, restart when ready. Per-version dismissible. */
+#update-popup {
+  position: fixed;
+  right: 14px;
+  bottom: 48px;
+  z-index: 999998;
+  width: 400px;
+  max-width: calc(100vw - 28px);
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(var(--cyber-accent-rgb), 0.35);
+  border-radius: 12px;
+  background: var(--cyber-panel);
+  box-shadow: 0 14px 36px rgba(var(--cyber-scrim-rgb), 0.45), 0 0 16px rgba(var(--cyber-accent-rgb), 0.12);
+}
+#update-popup.visible {
+  display: flex;
+  animation: update-popup-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes update-popup-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.update-popup-header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.update-popup-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: rgba(var(--cyber-accent-rgb), 0.12);
+  color: var(--cyber-accent-ink);
+}
+.update-popup-icon .menu-ico { width: 14px; height: 14px; }
+.update-popup-title-group {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.update-popup-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--cyber-text);
+  line-height: 1.3;
+}
+.update-popup-version-tags {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.update-popup-version-arrow {
+  color: var(--cyber-muted);
+  font-size: 10px;
+}
+.update-popup-badge,
+.update-popup-badge-current {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  border-radius: 4px;
+  border: 1px solid var(--cyber-border);
+  background: rgba(var(--cyber-tint-rgb), 0.04);
+  color: var(--cyber-muted);
+  font-family: var(--font-mono, monospace);
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+.update-popup-badge {
+  border-color: rgba(var(--cyber-accent-rgb), 0.4);
+  background: rgba(var(--cyber-accent-rgb), 0.08);
+  color: var(--cyber-accent-ink);
+}
+.update-popup-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--cyber-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.update-popup-close:hover {
+  background: rgba(var(--cyber-accent2-rgb), 0.12);
+  color: var(--cyber-accent2-ink);
+}
+.update-popup-changelog {
+  border: 1px solid rgba(var(--cyber-border-soft-rgb), 0.55);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: rgba(var(--cyber-tint-rgb), 0.03);
+}
+.update-popup-changelog-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--cyber-muted);
+  margin-bottom: 6px;
+}
+.update-popup-changelog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.update-popup-changelog-item {
+  display: flex;
+  gap: 6px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+.update-popup-changelog-item > span:last-child {
+  font-weight: 600;
+  color: var(--cyber-text);
+}
+.update-popup-changelog-item.is-sub {
+  padding-left: 14px;
+}
+.update-popup-changelog-item.is-sub > span:last-child {
+  font-weight: 400;
+  color: var(--cyber-text-soft-2);
+}
+.update-popup-changelog-bullet {
+  color: var(--cyber-accent-ink);
+  flex-shrink: 0;
+}
+.update-popup-changelog-empty {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--cyber-muted);
+}
+.update-popup-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--cyber-muted);
+  margin-bottom: 6px;
+}
+.update-popup-progress-pct {
+  font-weight: 700;
+  color: var(--cyber-accent-ink);
+  font-family: var(--font-mono, monospace);
+}
+.update-popup-ready {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--cyber-accent-ink);
+}
+.update-popup-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.update-popup-secondary-row {
+  display: flex;
+  gap: 6px;
+}
+.update-popup-secondary-row .update-popup-btn {
+  flex: 1;
+}
+.update-popup-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid var(--cyber-border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--cyber-text-soft-2);
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  text-transform: none;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.update-popup-btn .menu-ico { width: 13px; height: 13px; }
+.update-popup-btn:hover {
+  border-color: rgba(var(--cyber-accent-rgb), 0.45);
+  background: rgba(var(--cyber-accent-rgb), 0.08);
+  color: var(--cyber-text);
+}
+.update-popup-btn.is-primary {
+  border-color: var(--cyber-accent);
+  background: var(--cyber-accent);
+  color: var(--cyber-on-accent-2);
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.25);
+}
+.update-popup-btn.is-primary:hover {
+  filter: brightness(1.12);
+  background: var(--cyber-accent);
+  color: var(--cyber-on-accent-2);
+}
 .about-update-version-label,
 .about-release-notes-heading {
   font-size: 10px;

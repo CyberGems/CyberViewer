@@ -120,9 +120,83 @@
     return sanitizeReleaseNotes(cleaned);
   }
 
+  /**
+   * Changelog "peek" for the main-window update popup: a short bullet list
+   * from the localized notes. Prefers a highlights-style section
+   * (novedades/what's new/cambios/...), falls back to any top-level bullets,
+   * then to the first descriptive sentences. Technical sections (downloads,
+   * checksums, installer recommendations) never leak into the peek.
+   */
+  function parseChangelogPeek(body, lang, maxItems) {
+    const limit = Math.max(1, Math.min(8, Number(maxItems) || 4));
+    const markdown = extractLocalizedReleaseNotes(body, lang);
+    if (!markdown) return [];
+    const technicalHeader = /downloads|packages|virustotal|assets|descargas|instrucciones|checksums/i;
+    const highlightsHeader = /highlights|features|novedades|what'?s new|cambios|destacadas|changelog|mejoras/i;
+    const installerLine = /recommended installer|setup installer/i;
+    const clean = (raw) => String(raw)
+      .replace(/^[-*]\s+/, '')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/\*([^*]+)\*/g, '$1')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/~~([^~]+)~~/g, '$1')
+      .replace(/:\s*$/, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const lines = String(markdown).replace(/\r\n?/g, '\n').split('\n');
+    const items = [];
+    let inHighlights = false;
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line) continue;
+      if (/^#{1,6}\s/.test(line)) {
+        if (technicalHeader.test(line)) {
+          if (inHighlights) break;
+          continue;
+        }
+        inHighlights = highlightsHeader.test(line);
+        continue;
+      }
+      if (inHighlights && /^[-*]\s/.test(line)) {
+        const text = clean(line);
+        if (text && !installerLine.test(text)) {
+          items.push({ text, isSubItem: /^\s+[-*]\s+/.test(rawLine) });
+          if (items.length >= limit) return items;
+        }
+      }
+    }
+    if (!items.length) {
+      for (const rawLine of lines) {
+        const line = rawLine.trim();
+        if (/^[-*]\s/.test(line)) {
+          const text = clean(line);
+          if (text && !installerLine.test(text) && !/virustotal/i.test(text)) {
+            items.push({ text, isSubItem: /^\s+[-*]\s+/.test(rawLine) });
+            if (items.length >= limit) return items;
+          }
+        }
+      }
+    }
+    if (!items.length) {
+      for (const rawLine of lines) {
+        const line = rawLine.trim();
+        if (line && !/^#/.test(line) && !/^---/.test(line) && !/^\|/.test(line)) {
+          const text = clean(line);
+          if (text.length > 15) {
+            items.push({ text, isSubItem: false });
+            if (items.length >= limit) return items;
+          }
+        }
+      }
+    }
+    return items;
+  }
+
   return {
     sanitizeReleaseNotes,
     normalizeReleaseLang,
-    extractLocalizedReleaseNotes
+    extractLocalizedReleaseNotes,
+    parseChangelogPeek
   };
 }));

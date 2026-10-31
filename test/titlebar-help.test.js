@@ -308,4 +308,21 @@ describe('title bar Help menu', () => {
     // Maintenance box is a flex column with gap; children carry no outer margins
     assert.match(css, /\.about-release-notes\s*\{[\s\S]*?margin-top:\s*0;[\s\S]*?margin-bottom:\s*0;/);
   });
+
+  it('provides a dismissible main-window update popup with per-version skip', () => {
+    // Popup card driven by the same status pipeline as the About modal
+    assert.match(appJs, /updatePopupEl\.id = 'update-popup';/);
+    assert.match(appJs, /function syncUpdatePopup\(ignoreSkip\)/);
+    assert.match(appJs, /syncUpdatePopup\(false\);\s*maybeToastUpdateStatus/);
+    // The simulator previews the popup ignoring the per-version skip
+    assert.match(appJs, /syncUpdatePopup\(true\);/);
+    // Skip persists in updateNotify; downloading clears it
+    assert.match(appJs, /notify\.skippedVersion = String\(updateStatus\.version\)/);
+    assert.match(appJs, /notify\.skippedVersion = null;/);
+    // A live subscription keeps the popup working with the About closed
+    assert.match(appJs, /window\.electronAPI\.onUpdateStatus\(\(status\) => \{\s*applyUpdateStatus\(status\);\s*\}\);/);
+    // Fixed bottom-right card, hidden until a state makes it visible
+    assert.match(css, /#update-popup\s*\{[^}]*position: fixed;[^}]*right: 14px;[^}]*bottom: 48px;/);
+    assert.match(css, /#update-popup\.visible\s*\{\s*display: flex;/);
+  });
 });

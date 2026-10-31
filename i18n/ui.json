@@ -672,7 +672,10 @@
     "video_toggle_keys": "PLAY / PAUSE",
     "video_mute_keys": "MUTE / UNMUTE",
     "about_formats_images": "Images",
-    "about_formats_videos": "Videos"
+    "about_formats_videos": "Videos",
+    "about_skip_version": "Skip this version",
+    "about_dismiss": "Dismiss",
+    "about_popup_peek_empty": "Open About for the full release notes."
   },
   "es": {
     "tabs_label": "Pestañas de archivos abiertos",
@@ -1347,6 +1350,9 @@
     "video_toggle_keys": "REPRODUCIR / PAUSAR",
     "video_mute_keys": "SILENCIAR / ACTIVAR SONIDO",
     "about_formats_images": "Imágenes",
-    "about_formats_videos": "Videos"
+    "about_formats_videos": "Videos",
+    "about_skip_version": "Omitir esta versión",
+    "about_dismiss": "Descartar",
+    "about_popup_peek_empty": "Abre Acerca de para ver las notas completas."
   }
 }
