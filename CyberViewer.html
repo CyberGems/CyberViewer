@@ -208,13 +208,29 @@
   <button class="win-btn" id="win-close" data-i18n-tt="close" data-tooltip="Cerrar" data-tooltip-kbd="Alt+F4"><svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
 </div>
 <nav id="image-tabs" aria-label="Pestañas de imágenes" hidden>
+  <button type="button" id="image-tabs-scroll-left" class="tab-bar-nav-btn" data-i18n-aria="tabs_scroll_prev" aria-label="Desplazar pestañas a la izquierda" hidden>
+    <svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+  </button>
   <div id="image-tab-list" role="tablist"></div>
-  <button type="button" id="image-tabs-open" class="tab-bar-button" aria-label="Abrir imágenes">+</button>
-  <button type="button" id="image-tabs-list-btn" class="tab-bar-button" aria-label="Ver pestañas" aria-haspopup="dialog" aria-controls="tab-switcher"><span id="image-tabs-count">0</span><span aria-hidden="true">⌄</span></button>
+  <button type="button" id="image-tabs-scroll-right" class="tab-bar-nav-btn" data-i18n-aria="tabs_scroll_next" aria-label="Desplazar pestañas a la derecha" hidden>
+    <svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+  </button>
+  <button type="button" id="image-tabs-open" class="tab-bar-button" aria-label="Abrir imágenes">
+    <svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+  </button>
+  <button type="button" id="image-tabs-list-btn" class="tab-bar-button" aria-label="Ver pestañas" aria-haspopup="dialog" aria-controls="tab-switcher"><span id="image-tabs-count">0</span><svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
 </nav>
 <section id="tab-switcher" role="dialog" aria-label="Pestañas abiertas" data-i18n-aria="tabs_label" hidden>
+  <div class="tab-switcher-head">
+    <span class="tab-switcher-title" data-i18n="tabs_switcher_title">Pestañas abiertas</span>
+    <span id="tab-switcher-count" class="tab-switcher-count">0</span>
+  </div>
   <input id="tab-search" type="search" autocomplete="off" spellcheck="false" aria-label="Buscar pestañas">
   <div id="tab-switcher-list"></div>
+  <button type="button" id="tab-switcher-close-all" class="tab-switcher-close-all">
+    <svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    <span data-i18n="tabs_close_all">Cerrar todas las pestañas</span>
+  </button>
 </section>
 <div id="app">
 

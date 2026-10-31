@@ -1850,6 +1850,8 @@ function buildMenuTemplate(type, data) {
 
   if (type === 'tab') return window.CVWorkspace.contextMenu(data.id);
 
+  if (type === 'tab-bar') return window.CVWorkspace.barMenu();
+
   if ((type === 'image' || type === 'thumb') && window.CVFormats.isVideo(data.path || state.images[data.index ?? state.current])) {
     const filePath = data.path || state.images[state.current]?.file.path;
     return [

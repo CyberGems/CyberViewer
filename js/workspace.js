@@ -274,6 +274,27 @@ window.CVWorkspace = (() => {
       { label: text('tabs_reopen'), shortcut: 'Ctrl+Shift+T', icon: 'restore', enabled: model.closed.length > 0, action: reopen }
     ];
   }
+  // Menu for right-clicks on the tab bar's empty strip (CyberFeeds pattern).
+  function barMenu() {
+    return [
+      { label: text('menu_open'), shortcut: 'Ctrl+O', icon: 'image', action: () => window.openImageDialog && window.openImageDialog() },
+      { label: text('menu_open_folder'), shortcut: 'Ctrl+Shift+F', icon: 'folder', action: () => window.openFolderDialog && window.openFolderDialog() },
+      { type: 'separator' },
+      { label: text('tabs_reopen'), shortcut: 'Ctrl+Shift+T', icon: 'restore', enabled: model.closed.length > 0, action: reopen },
+      { label: text('tabs_close_all'), icon: 'x', enabled: model.tabs.length > 0, action: () => closeTabs(model.tabs.map(tab => tab.id)) }
+    ];
+  }
+  // Show the edge navigation buttons only when the strip actually overflows,
+  // and only on the side that still has hidden tabs.
+  function syncTabOverflow() {
+    const left = $('image-tabs-scroll-left');
+    const right = $('image-tabs-scroll-right');
+    const list = $('image-tab-list');
+    if (!left || !right || !list) return;
+    const overflowing = list.scrollWidth > list.clientWidth + 1;
+    left.hidden = !overflowing || list.scrollLeft <= 1;
+    right.hidden = !overflowing || list.scrollLeft >= list.scrollWidth - list.clientWidth - 1;
+  }
   function render() {
     const bar = $('image-tabs');
     const list = $('image-tab-list');
@@ -346,6 +367,7 @@ window.CVWorkspace = (() => {
     if (model.activeId) $('viewer-wrap').setAttribute('aria-labelledby', model.activeId);
     else $('viewer-wrap').removeAttribute('aria-labelledby');
     if (!$('tab-switcher').hidden) renderSwitcher();
+    syncTabOverflow();
   }
   function prepareTooltip(button) {
     const label = button.querySelector('.image-tab-name');
@@ -358,6 +380,8 @@ window.CVWorkspace = (() => {
     const query = $('tab-search').value.toLowerCase();
     $('tab-search').placeholder = text('tabs_search');
     $('tab-search').setAttribute('aria-label', text('tabs_search'));
+    $('tab-switcher-count').textContent = model.tabs.length;
+    $('tab-switcher-close-all').disabled = !model.tabs.length;
     const list = $('tab-switcher-list');
     list.replaceChildren();
     const fragment = document.createDocumentFragment();
@@ -599,7 +623,25 @@ window.CVWorkspace = (() => {
       const switcher = $('tab-switcher'); switcher.hidden = !switcher.hidden;
       if (!switcher.hidden) { $('tab-search').value = ''; renderSwitcher(); $('tab-search').focus(); }
     });
-    $('image-tabs-open').addEventListener('click', () => $('btn-open').click());
+    $('image-tabs-open').addEventListener('click', () => window.openImageDialog && window.openImageDialog());
+    $('tab-switcher-close-all').addEventListener('click', () => {
+      $('tab-switcher').hidden = true;
+      closeTabs(model.tabs.map(tab => tab.id));
+    });
+    const tabBar = $('image-tabs');
+    const tabList = $('image-tab-list');
+    // Double-click on the empty strip opens the file dialog, like a browser.
+    tabBar.addEventListener('dblclick', (event) => {
+      if ((event.target === tabBar || event.target === tabList) && window.openImageDialog) window.openImageDialog();
+    });
+    // Context menu for the empty strip (tab shells bind their own).
+    tabBar.addEventListener('contextmenu', (event) => {
+      if (event.target === tabBar || event.target === tabList) showCustomContextMenu(event, 'tab-bar', {});
+    });
+    $('image-tabs-scroll-left').addEventListener('click', () => tabList.scrollBy({ left: -tabList.clientWidth * 0.75, behavior: 'smooth' }));
+    $('image-tabs-scroll-right').addEventListener('click', () => tabList.scrollBy({ left: tabList.clientWidth * 0.75, behavior: 'smooth' }));
+    tabList.addEventListener('scroll', syncTabOverflow, { passive: true });
+    window.addEventListener('resize', syncTabOverflow);
     $('btn-relocate-tab').addEventListener('click', async () => {
       const id = model.activeId;
       const result = await window.electronAPI.openFile();
@@ -667,6 +709,6 @@ window.CVWorkspace = (() => {
   }
   return { model, get busy() { return busy; }, get ready() { return ready; }, capture, render,
     activate, openPath, openFiles, openYouTube, beforeShow, viewFor, restoreView, closeTabs, reopen,
-    contextMenu, clearPreloads, release, changed, flush, settingsChanged, restore, edit, dialog,
+    contextMenu, barMenu, clearPreloads, release, changed, flush, settingsChanged, restore, edit, dialog,
     suspend, resume, imageBound, relocate, fileDeleted, initialize, isEditing };
 })();
