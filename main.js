@@ -283,6 +283,10 @@ let quitRequested = false;
 let quitCloseReadyReceived = false;
 let quitWatchdog = null;
 let quitRevealTimer = null;
+// True while the window settles after show(): the mixed-DPI crossing applies
+// its inflated suggested rect shortly after that, so persistence is suppressed
+// and any mismatched resize is corrected back to the startup bounds.
+let boundsSettling = false;
 
 function armQuitWatchdog() {
   if (quitWatchdog) clearTimeout(quitWatchdog);
@@ -405,6 +409,10 @@ function persistWindowState() {
   try {
     // Do not persist exclusive-fullscreen metrics as normal window bounds
     if (typeof win.isFullScreen === 'function' && win.isFullScreen()) return;
+
+    // During the post-show settle window the live size may be the mixed-DPI
+    // inflated suggestion; never let it become the saved one.
+    if (boundsSettling) return;
 
     const isMax = win.isMaximized();
     // Live bounds identify the monitor even while maximized
@@ -565,6 +573,7 @@ function createWindow() {
     win.show();
 
     if (startMaximized) {
+      boundsSettling = false;
       try {
         // Nudge onto the target display before maximize if needed
         const target =
@@ -586,24 +595,32 @@ function createWindow() {
         if (!win.isMaximized()) win.maximize();
       } catch (_) { /* ignore */ }
     } else {
-      // The mixed-DPI rescale can be deferred until the window is actually
-      // shown: the pre-show correction then reads a stale hidden-window size,
-      // and the visible window ends up inflated and shifted, spilling onto the
-      // neighbouring monitor. Re-assert the startup bounds once the window is
-      // on screen; a no-op when the pre-show placement already stuck.
+      // The mixed-DPI rescale can land AFTER the timed corrections: the log
+      // shows the crossing applying its inflated suggested rect (width x1.2,
+      // the 1.5/1.25 ratio) ~250ms after show, which the debounced persist
+      // then saved as the new normal size. While the window settles, any
+      // resize that does not match the startup target is corrected back and
+      // persistence stays suppressed, so the inflated size is never saved.
+      boundsSettling = true;
       const reassertStartupBounds = () => {
         try {
-          if (!win || win.isDestroyed()) return;
+          if (!win || win.isDestroyed() || win.isMaximized()) return;
           if (!boundsMatch(startupWant, win.getBounds())) {
             const fixed = applyBoundsExact(win, startupWant, startupArea);
             diagWindow('reveal-bounds-reassert', { fixed });
           }
         } catch (_) { /* ignore */ }
       };
+      const settleHandler = () => reassertStartupBounds();
+      win.on('resize', settleHandler);
       reassertStartupBounds();
       // Second pass after the fade tick: the deferred rescale lands within the
       // first frames after show(), never later.
       setTimeout(reassertStartupBounds, 64);
+      setTimeout(() => {
+        boundsSettling = false;
+        if (win && !win.isDestroyed()) win.removeListener('resize', settleHandler);
+      }, 2500);
     }
 
     const fadeIn = () => {
