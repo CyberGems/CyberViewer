@@ -7010,10 +7010,14 @@
 }
 .about-release-btn {
   margin-top: 0;
-  /* border/background/color come from .about-action-ghost (CyberFeeds pattern) */
+  /* Secondary action: a permanent subtle outline so it reads as a button,
+     not a text link. Hover strengthens it. */
+  border-color: rgba(var(--cyber-accent-rgb), 0.28);
+  background: rgba(var(--cyber-accent-rgb), 0.05);
 }
-.about-release-btn:hover {
+.about-release-btn:hover:not(:disabled) {
   border-color: rgba(var(--cyber-accent-rgb), 0.45);
+  background: rgba(var(--cyber-accent-rgb), 0.09);
   color: var(--cyber-text);
 }
 

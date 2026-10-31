@@ -9024,13 +9024,6 @@ $('btn-go-end').addEventListener('click', (e) => {
               <div id="about-update-progress" class="about-update-progress" style="display:none">
                 <div class="about-update-track"><div id="about-update-bar" class="about-update-bar"></div></div>
               </div>
-              <div class="about-auto-update-row">
-                <button type="button" class="about-auto-update" id="about-auto-update-toggle" role="switch" aria-checked="${state.settings.app.checkUpdatesOnStartup !== false ? 'true' : 'false'}" aria-label="${t.about_check_on_startup}">
-                  <span class="custom-switch ${state.settings.app.checkUpdatesOnStartup !== false ? 'active' : ''}" aria-hidden="true"></span>
-                  <span class="about-auto-update-label">${t.about_check_on_startup}</span>
-                </button>
-              </div>
-              ${t.about_auto_updates_hint ? `<div class="about-update-hint">${t.about_auto_updates_hint}</div>` : ''}
               <div id="about-update-details" class="about-update-details" style="display:none">
                 <div class="about-update-version-card">
                   <span class="about-update-version-label">${t.about_current_version || 'Current'}</span>
@@ -9050,6 +9043,13 @@ $('btn-go-end').addEventListener('click', (e) => {
                 ${t.about_view_release || 'View release page'}
               </button>
               ${!updateInfo.canUpdate && updateInfo.portable ? `<div class="about-update-hint">${t.about_portable_hint}</div>` : ''}
+              <div class="about-auto-update-row">
+                <button type="button" class="about-auto-update" id="about-auto-update-toggle" role="switch" aria-checked="${state.settings.app.checkUpdatesOnStartup !== false ? 'true' : 'false'}" aria-label="${t.about_check_on_startup}">
+                  <span class="custom-switch ${state.settings.app.checkUpdatesOnStartup !== false ? 'active' : ''}" aria-hidden="true"></span>
+                  <span class="about-auto-update-label">${t.about_check_on_startup}</span>
+                </button>
+              </div>
+              ${t.about_auto_updates_hint ? `<div class="about-update-hint">${t.about_auto_updates_hint}</div>` : ''}
             </div>
           </div>
 

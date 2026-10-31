@@ -291,6 +291,8 @@ describe('title bar Help menu', () => {
     const statusIdx = appJs.indexOf('id="about-update-status"');
     const notesIdx = appJs.indexOf('id="about-release-notes"');
     const releaseBtnIdx = appJs.indexOf('id="about-btn-release"');
+    const toggleIdx = appJs.indexOf('id="about-auto-update-toggle"');
+    const hintIdx = appJs.indexOf('about_auto_updates_hint');
 
     assert.ok(bannerIdx > 0, 'about-update-banner must be present');
     assert.ok(actionsIdx > bannerIdx, 'action buttons must follow the banner');
@@ -299,6 +301,10 @@ describe('title bar Help menu', () => {
     assert.ok(statusIdx > detailsIdx, 'status text must follow version cards');
     assert.ok(notesIdx > statusIdx, 'release notes must be below the status text');
     assert.ok(releaseBtnIdx > notesIdx, 'view release page button must follow notes');
+    // The auto-check toggle and its hint close the section, after the release
+    // link and the portable hint.
+    assert.ok(toggleIdx > releaseBtnIdx, 'auto-check toggle must come after the release button');
+    assert.ok(hintIdx > toggleIdx, 'auto-check hint must follow the toggle');
     // Maintenance box is a flex column with gap; children carry no outer margins
     assert.match(css, /\.about-release-notes\s*\{[\s\S]*?margin-top:\s*0;[\s\S]*?margin-bottom:\s*0;/);
   });
