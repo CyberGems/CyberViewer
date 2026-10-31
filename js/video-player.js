@@ -270,7 +270,20 @@ window.CVVideo = (() => {
     if (window.CVYouTube.active()) { window.CVYouTube.command('mute'); return; }
     if (audioStatus === 'unavailable') return;
     element.muted = !element.muted;
+    persistVideoPrefs();
     reveal();
+  }
+
+  // Loop, volume and mute survive sessions (YouTube behavior). Speed lives in
+  // localStorage; autoplay in the regular settings.
+  function persistVideoPrefs() {
+    try {
+      const app = state.settings.app;
+      app.videoLoop = element.loop;
+      if (!element.muted) app.videoVolume = element.volume;
+      app.videoMuted = element.muted;
+      if (window.electronAPI && window.electronAPI.saveSettings) window.electronAPI.saveSettings(app);
+    } catch (_) { /* ignore */ }
   }
   function seekBy(seconds) {
     if (window.CVYouTube.active()) { window.CVYouTube.command('seek', { seconds }); return; }
@@ -424,6 +437,11 @@ window.CVVideo = (() => {
     });
     element.addEventListener('loadedmetadata', () => {
       if (!window.CVYouTube.active()) element.playbackRate = currentRate();
+      // Restore the persisted playback prefs before the first sync paints them.
+      const prefs = state.settings.app;
+      element.loop = prefs.videoLoop === true;
+      if (Number.isFinite(prefs.videoVolume)) element.volume = Math.max(0, Math.min(1, prefs.videoVolume));
+      element.muted = prefs.videoMuted === true;
       try { $('video-preview').src = element.currentSrc || ''; } catch (_) { /* preview stays off */ }
       previewLast = -1;
       loadedAt = Date.now();
@@ -432,7 +450,7 @@ window.CVVideo = (() => {
     $('video-back').addEventListener('click', () => seekBy(-5));
     $('video-forward').addEventListener('click', () => seekBy(5));
     $('video-mute').addEventListener('click', toggleMute);
-    $('video-loop').addEventListener('click', () => { element.loop = !element.loop; sync(); });
+    $('video-loop').addEventListener('click', () => { element.loop = !element.loop; persistVideoPrefs(); sync(); });
     $('video-autoplay').addEventListener('click', () => {
       state.settings.app.videoAutoplay = state.settings.app.videoAutoplay === false;
       window.electronAPI?.saveSettings(state.settings.app);
@@ -473,6 +491,7 @@ window.CVVideo = (() => {
     $('video-volume').addEventListener('input', event => {
       if (audioStatus === 'unavailable') return;
       element.volume = Number(event.target.value); element.muted = element.volume === 0;
+      persistVideoPrefs();
     });
     ['timeupdate', 'play', 'pause', 'ended', 'volumechange', 'durationchange', 'seeked', 'loadedmetadata'].forEach(event => element.addEventListener(event, sync));
     ['play', 'pause', 'ended'].forEach(event => element.addEventListener(event, reveal));

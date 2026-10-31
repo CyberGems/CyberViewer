@@ -251,9 +251,12 @@ const state = {
       slideshowEnterFullscreen: true,
       restoreSession: false,
       videoAutoplay: true,
+      videoLoop: false,
+      videoVolume: 1,
+      videoMuted: false,
       showFileName: true,
       navZoomMode: 'reset'
-    } 
+    }
   },
   // Runtime slideshow (not persisted)
   slideshowActive: false,
@@ -7531,6 +7534,9 @@ function getFactoryAppSettings() {
     slideshowEnterFullscreen: true,
     restoreSession: false,
     videoAutoplay: true,
+    videoLoop: false,
+    videoVolume: 1,
+    videoMuted: false,
     showFileName: true,
     animateGifs: true,
     dblClickAction: 'fullscreen',

@@ -72,7 +72,7 @@ function diagWindow(event, extra) {
       lines = fs.readFileSync(file, 'utf8').split('\n').filter(Boolean);
     } catch (_) { /* first run */ }
     lines.push(JSON.stringify(entry));
-    fs.writeFileSync(file, lines.slice(-200).join('\n') + '\n');
+    fs.writeFileSync(file, lines.slice(-120).join('\n') + '\n');
   } catch (_) { /* diagnostics must never break the app */ }
 }
 
@@ -172,6 +172,9 @@ function loadSettings() {
         if (data.app.showFileName === undefined) data.app.showFileName = true;
         if (data.app.animateGifs === undefined) data.app.animateGifs = true;
         if (typeof data.app.videoAutoplay !== 'boolean') data.app.videoAutoplay = true;
+        if (data.app.videoLoop === undefined) data.app.videoLoop = false;
+        if (!Number.isFinite(data.app.videoVolume)) data.app.videoVolume = 1;
+        if (data.app.videoMuted === undefined) data.app.videoMuted = false;
         if (data.app.closeChoiceMade === undefined) data.app.closeChoiceMade = false;
       if (data.app.dblClickAction === undefined) data.app.dblClickAction = 'fullscreen';
         if (data.app.toggleHotkey === undefined || data.app.toggleHotkey === '') {
@@ -443,8 +446,6 @@ function persistWindowState() {
       if (sig !== lastPersistDiagSig) {
         lastPersistDiagSig = sig;
         diagWindow('window-persist', {
-          live,
-          raw,
           saved: { x: clamped.x, y: clamped.y, width: clamped.width, height: clamped.height },
           displayId: (liveDisplay && liveDisplay.id) || clamped.displayId,
           scaleFactor: liveDisplay && liveDisplay.scaleFactor,

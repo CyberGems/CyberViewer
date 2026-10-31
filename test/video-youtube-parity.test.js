@@ -59,6 +59,32 @@ describe('video player youtube parity (phase 1)', () => {
     assert.match(player, /element\.addEventListener\('pause', \(\) => flashOverlay\(FLASH_PAUSE\)\)/);
   });
 
+  it('persists loop, volume and mute across sessions', () => {
+    assert.match(player, /function persistVideoPrefs\(\) \{/);
+    assert.match(player, /app\.videoLoop = element\.loop;/);
+    assert.match(player, /app\.videoMuted = element\.muted;/);
+    assert.match(player, /video-loop'\)\.addEventListener\('click', \(\) => \{ element\.loop = !element\.loop; persistVideoPrefs\(\); sync\(\); \}\)/);
+    assert.match(player, /element\.volume = Number\(event\.target\.value\); element\.muted = element\.volume === 0;\s*persistVideoPrefs\(\);/);
+    assert.match(player, /element\.loop = prefs\.videoLoop === true;/);
+    assert.match(player, /element\.muted = prefs\.videoMuted === true;/);
+    assert.match(read('main.js'), /data\.app\.videoLoop === undefined/);
+    assert.match(read('main.js'), /data\.app\.videoVolume = 1;/);
+    assert.match(appJs, /videoLoop: false,\s*videoVolume: 1,\s*videoMuted: false,/);
+  });
+
+  it('unifies transport tooltip placement and slims the window diagnostics', () => {
+    assert.doesNotMatch(html, /id="video-play" class="tooltip-right"/);
+    assert.doesNotMatch(html, /id="video-back" class="tooltip-right"/);
+    assert.match(html, /id="video-fullscreen" class="tooltip-align-right"/);
+    assert.match(html, /id="video-more" class="tooltip-align-right"/);
+    // Prev/next join the outlined stroke family of the play triangle
+    assert.doesNotMatch(css, /#video-prev svg, #video-next svg \{ fill: currentColor/);
+    // window-persist entries carry only the saved facts, and the log cap is 120
+    assert.match(read('main.js'), /diagWindow\('window-persist', \{\s*saved:/);
+    assert.doesNotMatch(read('main.js'), /diagWindow\('window-persist', \{\s*live:/);
+    assert.match(read('main.js'), /lines\.slice\(-120\)\.join\('\\n'\)/);
+  });
+
   it('keeps every More menu row iconized and the confirm overlay readable on video', () => {
     for (const id of ['video-speed-row', 'video-open', 'video-youtube', 'video-properties', 'video-autoplay', 'video-loop', 'video-audio-info']) {
       const row = html.match(new RegExp(`id="${id}"[\\s\\S]*?</button>`));

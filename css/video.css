@@ -160,7 +160,6 @@ html[data-theme='light'] #video-audio-note {
 }
 
 /* ── YouTube-style refinements ── */
-#video-prev svg, #video-next svg { fill: currentColor; stroke: none; }
 #video-prev[hidden], #video-next[hidden] { display: none; }
 .video-speed-row {
   display: flex;
