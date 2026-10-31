@@ -363,6 +363,7 @@ const MENU_ICONS = {
   'grid': '<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
   'layout': '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>',
   'next': '<path d="M9 6l6 6-6 6"/>',
+  'arrow-right': '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
   'prev': '<path d="M15 6l-6 6 6 6"/>',
   'star': '<path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.9-5.2-2.7-5.2 2.7 1-5.9-4.3-4.1 5.9-.9z"/>',
   'settings': '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1l2.1-2.1M17 7l2.1-2.1"/>',
@@ -9029,6 +9030,7 @@ $('btn-go-end').addEventListener('click', (e) => {
                   <span class="about-update-version-label">${t.about_current_version || 'Current'}</span>
                   <span class="about-update-version-value">${verLabel}</span>
                 </div>
+                <span class="about-update-version-arrow" aria-hidden="true">${iconHtml('arrow-right')}</span>
                 <div class="about-update-version-card latest">
                   <span class="about-update-version-label">${t.about_latest_version || 'Latest'}</span>
                   <span id="about-latest-version" class="about-update-version-value">—</span>

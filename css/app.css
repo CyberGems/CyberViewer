@@ -6928,23 +6928,33 @@
 
 .about-update-details {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
   margin-bottom: 0;
 }
+/* Version chips: tinted, borderless, so they read as status, not buttons. */
 .about-update-version-card {
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
   padding: 8px 10px;
-  border: 1px solid rgba(var(--cyber-tint-rgb), 0.1);
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  background: rgba(var(--cyber-tint-rgb), 0.05);
 }
 .about-update-version-card.latest {
-  border-color: rgba(var(--cyber-accent-rgb), 0.24);
-  background: rgba(var(--cyber-accent-rgb), 0.06);
+  background: rgba(var(--cyber-accent-rgb), 0.07);
+}
+.about-update-version-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cyber-accent-ink);
+}
+.about-update-version-arrow svg {
+  width: 18px;
+  height: 18px;
 }
 .about-update-version-label,
 .about-release-notes-heading {
