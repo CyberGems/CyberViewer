@@ -8,27 +8,38 @@
 
 <!-- IMPORTANT FOR AGENTS & MAINTAINERS: Always rewrite this entire section and highlights with the ACTUAL release notes for this specific new version before tagging. NEVER leave or copy previous version notes! Use 25-45 words for the summary, lead with user-facing changes, and do not repeat the app name or version. -->
 <!-- changelog-summary:start -->
-Quitting to the tray no longer hijacks in-app update installs, so updating from the About dialog lands on the first attempt, and the VirusTotal links on the release page now resolve as soon as a release goes out.
+A YouTube-style video player arrives: overlay flash, prev/next video, click-to-pause, a persistent speed panel and a seek preview with frame thumbnail. The tab bar gains edge navigation, a context menu and a richer switcher, with video defaults in the installer and per-format association status.
 <!-- changelog-summary:end -->
 
 ---
 
 ### ✨ Key Features & Highlights
 
-- 🛠️ **In-app updates fixed**:
-  - Closing to the tray no longer intercepts the updater's restart, which previously left the old executable locked and made the NSIS installer fail with "Fallo al desinstalar archivos antiguos de la aplicación".
-  - "Restart and update" from the About dialog now quits cleanly and completes on the first attempt.
+- ▶️ **YouTube-style video playback**:
+  - An overlay flash on play/pause, previous and next video buttons driven by the folder contents, and click-to-pause on the video with double-click fullscreen.
+  - A speed panel with display, slider and presets (0.25×–3×) that persists across sessions, plus > / < shortcuts and a seek-bar hover preview with timestamp and frame thumbnail.
 
-- 🛡️ **VirusTotal links that resolve**:
-  - Release builds submit the installer and portable binaries to VirusTotal automatically, so the SHA256 report links in the release body work from day one.
+- 🗂️ **Tab bar overhaul**:
+  - Double-clicking the empty strip opens files; the strip has its own context menu with reopen closed tab and close all, and a working "+" button with the suite look.
+  - Edge navigation buttons appear only while the tabs overflow, and the switcher gains a header, a live count and a close-all footer.
+
+- 🔗 **File associations**:
+  - A video default-viewer option joins the installer alongside the image one.
+  - The System tab shows the current viewer per supported format, read live from the registry, with a shortcut to the Windows settings.
+
+- 🛠️ **Persistence and reliability**:
+  - Video loop, volume and mute now persist across sessions alongside speed and autoplay.
+  - Windows no longer reopen wider than the screen after mixed-DPI inflation, tray quits work with dialogs open, ghost tooltips after restore are gone, and the confirm dialog keeps the paused video frame recognizable.
 
 <details>
 <summary><b>🌐 Ver notas de la versión en Español</b></summary>
 
 ### 🚀 Novedades de esta versión
 
-- **Actualizaciones integradas corregidas**: cerrar a la bandeja ya no intercepta el reinicio del actualizador, que antes dejaba el ejecutable antiguo bloqueado y hacía fallar al instalador NSIS con "Fallo al desinstalar archivos antiguos de la aplicación". "Reiniciar y actualizar" desde el Acerca de ahora sale limpio y completa al primer intento.
-- **Enlaces de VirusTotal que resuelven**: las builds suben el instalador y el portable a VirusTotal automáticamente, así que los enlaces SHA256 del cuerpo del release funcionan desde el primer día.
+- **Reproducción estilo YouTube**: destello del overlay en play/pausa, botones de video anterior y siguiente según la carpeta, clic sobre el video para pausar con doble clic a pantalla completa, panel de velocidad persistente (0.25×–3×) con display, slider y presets, atajos > / < y vista previa en la barra de progreso con miniatura del fotograma.
+- **Barra de pestañas renovada**: doble clic en la franja vacía abre archivos, menú contextual propio con reabrir cerradas y cerrar todas, botón "+" funcional, navegación en los extremos solo cuando las pestañas desbordan y un switcher con encabezado, contador y cierre total.
+- **Asociaciones de archivos**: opción de reproductor de video predeterminado en el instalador y panel de estado por formato en la pestaña Sistema, leído del registro, con acceso directo a los ajustes de Windows.
+- **Persistencia y fiabilidad**: repetir, volumen y silencio ahora sobreviven sesiones, las ventanas ya no se abren más anchas que la pantalla por inflado de DPI, salir desde la bandeja funciona con diálogos abiertos, y el diálogo de confirmación mantiene reconocible el fotograma pausado.
 
 </details>
 

@@ -3,6 +3,29 @@
 Notable user-facing changes per release. Earlier versions are documented in the
 [GitHub Releases](https://github.com/CyberGems/CyberViewer/releases) page.
 
+## [1.20.0] - 2026-10-31
+
+### Added
+
+- YouTube-style video playback: an overlay flash on play/pause, previous and next video buttons driven by the folder contents, click-to-pause on the video with double-click fullscreen, a persistent speed panel (0.25×–3× with display, slider and presets, plus > / < shortcuts), a seek-bar hover preview with timestamp and frame thumbnail, and a video shortcut sheet in the shortcuts popover.
+- Tab bar overhaul: double-clicking the empty strip opens files, the strip has its own context menu (reopen closed tab, close all), a working "+" button with the suite look, edge navigation buttons that appear only while the tabs overflow, and a richer switcher with header, live count and close-all.
+- A video default-viewer option in the installer and a read-only file association panel in the System tab: the current viewer per supported format, read live from the registry, with a shortcut to the Windows settings.
+- Video playback preferences now persist across sessions: loop, volume and mute join speed and autoplay.
+- The speed adjustment buttons support press-and-hold to repeat while the video menu is open.
+
+### Changed
+
+- The video More menu follows the suite language: an icon on every row, app-style toggles for autoplay and loop, a themed hover, and neutral separators. The old context menus share the same subtle hover and sober separators.
+- The tab bar buttons match the suite look, the transport tooltips render above the controls, and the switcher keeps the edge navigation from saturating the strip.
+- The titlebar gains a top hairline, a restore-default hotkey button next to Limpiar, and filename text that keeps descenders visible.
+
+### Fixed
+
+- The video speed slider is now a fully controlled pointer-driven track with 0.05 snapping: the thumb and the fill always move together, drag beyond the edges clamps, and custom values no longer snap back.
+- Windows no longer reopen wider than the screen after mixed-DPI inflation: the inflated size is corrected while the window settles and can no longer be persisted.
+- Quitting from the tray works with the About or configuration dialogs open, and the ghost tooltip and hover no longer resurface on the minimize button after restoring from the taskbar.
+- The tab bar "+" button opens the file dialog again, the confirm dialog keeps the paused video frame recognizable, and the empty canvas no longer shows a grab cursor.
+
 ## [1.19.1] - 2026-10-30
 
 ### Fixed
