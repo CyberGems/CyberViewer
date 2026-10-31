@@ -307,9 +307,6 @@ window.CVVideo = (() => {
     const slider = $('video-speed-slider');
     if (slider && !speedSliderActive) slider.value = String(rate);
     slider.style.setProperty('--video-progress', `${(rate - 0.25) / 2.75 * 100}%`);
-    document.querySelectorAll('#video-speed-presets .video-menu-rate').forEach((btn) => {
-      btn.classList.toggle('active', Math.abs(parseFloat(btn.dataset.rate) - rate) < 0.001);
-    });
   }
   function setPlaybackRate(rate) {
     if (!Number.isFinite(rate)) return;

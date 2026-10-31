@@ -239,11 +239,6 @@ html[data-theme='light'] #video-audio-note {
   cursor: pointer;
 }
 #video-speed-panel .video-menu-rate:hover { background: rgba(var(--cyber-tint-rgb), .07); }
-#video-speed-panel .video-menu-rate.active {
-  color: var(--cyber-accent);
-  border-color: rgba(var(--cyber-accent-rgb), .4);
-  background: rgba(var(--cyber-accent-rgb), .06);
-}
 #video-speed-panel .video-menu-rate small { font-size: 9px; color: var(--cyber-muted); }
 #video-overlay-flash {
   position: absolute;
