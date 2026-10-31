@@ -435,24 +435,25 @@ window.CVVideo = (() => {
     $('video-speed-row').addEventListener('click', () => setSpeedPanel(true));
     $('video-speed-back').addEventListener('click', () => setSpeedPanel(false));
     // YouTube-style track: pointer-driven with 0.05 snapping, fully controlled
-    // visuals so the fill and the thumb can never drift apart.
+    // visuals so the fill and the thumb can never drift apart. The move
+    // tracking lives on window so the drag survives capture quirks and
+    // overlays; the pointer only needs to START on the track.
     let speedDragging = false;
     const speedTrack = $('video-speed-track');
     const speedFromEvent = (event) => {
       const rect = speedTrack.getBoundingClientRect();
       const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
-      const snapped = 0.25 + Math.round((ratio * 2.75) / 0.05) * 0.05;
-      const rate = Math.max(0.25, Math.min(3, snapped));
+      const rate = Math.max(0.25, Math.min(3, 0.25 + Math.round((ratio * 2.75) / 0.05) * 0.05));
       if (rate !== currentRate()) setPlaybackRate(rate);
     };
     speedTrack.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
       speedDragging = true;
-      speedTrack.setPointerCapture(event.pointerId);
+      try { speedTrack.setPointerCapture(event.pointerId); } catch (_) { /* optional */ }
       speedFromEvent(event);
     });
-    speedTrack.addEventListener('pointermove', (event) => { if (speedDragging) speedFromEvent(event); });
-    speedTrack.addEventListener('pointerup', () => { speedDragging = false; });
-    speedTrack.addEventListener('lostpointercapture', () => { speedDragging = false; });
+    window.addEventListener('pointermove', (event) => { if (speedDragging) speedFromEvent(event); });
+    window.addEventListener('pointerup', () => { speedDragging = false; });
     speedTrack.addEventListener('keydown', (event) => {
       if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
         event.preventDefault();
