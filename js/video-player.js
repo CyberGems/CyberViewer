@@ -15,6 +15,7 @@ window.CVVideo = (() => {
   let idleTimer = null;
   let interacting = false;
   let keyboardFocus = false;
+  let speedRepeatTimer = null;
   let audioStatus = 'pending';
   let loadedAt = 0;
   const text = key => (I18N[state.settings.app.language || 'en'] || I18N.en)[key];
@@ -119,6 +120,7 @@ window.CVVideo = (() => {
     reveal();
   }
   function setSpeedPanel(on) {
+    if (!on) stopSpeedRepeat();
     $('video-menu-main').hidden = on;
     $('video-speed-panel').hidden = !on;
   }
@@ -320,6 +322,30 @@ window.CVVideo = (() => {
     syncSpeedUi();
     reveal();
   }
+  function stopSpeedRepeat() {
+    clearTimeout(speedRepeatTimer);
+    speedRepeatTimer = null;
+  }
+  function bindSpeedStep(button, direction) {
+    const step = () => setPlaybackRate(currentRate() + direction * 0.05);
+    const repeat = () => {
+      const previous = currentRate();
+      step();
+      if (currentRate() !== previous) speedRepeatTimer = setTimeout(repeat, 80);
+      else stopSpeedRepeat();
+    };
+    button.addEventListener('pointerdown', event => {
+      if (event.button !== 0 || !event.isPrimary) return;
+      stopSpeedRepeat();
+      try { button.setPointerCapture(event.pointerId); } catch (_) { /* optional */ }
+      step();
+      speedRepeatTimer = setTimeout(repeat, 350);
+    });
+    // Pointer input steps on press. Keyboard and accessible/programmatic clicks
+    // retain native activation without adding another step when a hold ends.
+    button.addEventListener('click', event => { if (event.detail === 0) step(); });
+    button.addEventListener('lostpointercapture', stopSpeedRepeat);
+  }
   function cyclePlaybackRate(direction) {
     const rate = window.CVYouTube.active() ? currentRate() : (element.playbackRate || currentRate());
     let index = SPEEDS.indexOf(rate);
@@ -462,8 +488,12 @@ window.CVVideo = (() => {
         setPlaybackRate(currentRate() + (event.key === 'ArrowRight' ? 0.05 : -0.05));
       }
     });
-    $('video-speed-minus').addEventListener('click', () => setPlaybackRate(currentRate() - 0.05));
-    $('video-speed-plus').addEventListener('click', () => setPlaybackRate(currentRate() + 0.05));
+    bindSpeedStep($('video-speed-minus'), -1);
+    bindSpeedStep($('video-speed-plus'), 1);
+    window.addEventListener('pointerup', stopSpeedRepeat);
+    window.addEventListener('pointercancel', stopSpeedRepeat);
+    window.addEventListener('blur', stopSpeedRepeat);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) stopSpeedRepeat(); });
     document.querySelectorAll('#video-speed-presets .video-menu-rate').forEach((btn) => {
       btn.addEventListener('click', () => setPlaybackRate(parseFloat(btn.dataset.rate)));
     });

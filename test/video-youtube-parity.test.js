@@ -44,7 +44,8 @@ describe('video player youtube parity (phase 1)', () => {
     assert.match(player, /\$\('video-speed-thumb'\)\.style\.left = `\$\{pct\}%`;/);
     assert.match(player, /0\.25 \+ Math\.round\(\(ratio \* 2\.75\) \/ 0\.05\) \* 0\.05/);
     assert.match(player, /speedTrack\.setPointerCapture\(event\.pointerId\);/);
-    assert.match(player, /\$\('video-speed-minus'\)\.addEventListener\('click', \(\) => setPlaybackRate\(currentRate\(\) - 0\.05\)\)/);
+    assert.match(player, /bindSpeedStep\(\$\('video-speed-minus'\), -1\);/);
+    assert.match(player, /bindSpeedStep\(\$\('video-speed-plus'\), 1\);/);
     assert.match(player, /rate = Math\.max\(0\.25, Math\.min\(3, rate\)\);/);
     assert.match(player, /const SPEEDS = \[0\.25, 0\.5, 0\.75, 1, 1\.25, 1\.5, 1\.75, 2, 3\];/);
     assert.match(player, /function cyclePlaybackRate\(direction\) \{/);

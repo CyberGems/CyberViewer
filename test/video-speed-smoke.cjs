@@ -116,6 +116,61 @@ app.whenReady().then(async () => {
   input('mouseUp', -.2, { button: 'left', clickCount: 1 });
   console.log('PASS real pointer hit testing, dragging, bounds and release');
 
+  const pressStep = async id => {
+    const point = await evaluate(`const r=$('${id}').getBoundingClientRect(); return {x:Math.round(r.left+r.width/2), y:Math.round(r.top+r.height/2)};`);
+    win.webContents.sendInputEvent({ type: 'mouseMove', ...point });
+    win.webContents.sendInputEvent({ type: 'mouseDown', ...point, button: 'left', clickCount: 1 });
+    return point;
+  };
+  const releaseStep = point => win.webContents.sendInputEvent({ type: 'mouseUp', ...point, button: 'left', clickCount: 1 });
+  const expectStopped = async () => {
+    const stopped = await snapshot();
+    await delay(500);
+    assert.deepEqual(await snapshot(), stopped, 'Repetition stops without an extra release click');
+  };
+  await evaluate('window.CVVideo.setPlaybackRate(1);');
+  const plusPoint = await pressStep('video-speed-plus');
+  await waitFor(async () => (await snapshot()).rate === 1.05, 'initial press steps once');
+  releaseStep(plusPoint);
+  await expectStopped();
+  await expectRate(1.05);
+
+  for (const [id, direction] of [['video-speed-plus', 1], ['video-speed-minus', -1]]) {
+    await evaluate('window.CVVideo.setPlaybackRate(1);');
+    const pressed = await pressStep(id);
+    await waitFor(async () => direction * ((await snapshot()).rate - 1) >= .14, id + ' repeats while held');
+    // Pointer capture must allow release outside the button without continuing.
+    const outside = { x: pressed.x, y: pressed.y - 100 };
+    win.webContents.sendInputEvent({ type: 'mouseMove', ...outside, button: 'left' });
+    releaseStep(outside);
+    await delay(50);
+    await expectStopped();
+  }
+  for (const [id, start, limit] of [['video-speed-plus', 2.95, 3], ['video-speed-minus', .3, .25]]) {
+    await evaluate(`window.CVVideo.setPlaybackRate(${start});`);
+    const pressed = await pressStep(id);
+    await waitFor(async () => (await snapshot()).rate === limit, 'hold reaches speed bound');
+    await expectStopped();
+    releaseStep(pressed);
+  }
+  console.log('PASS single pointer click, hold +/- repetition, outside release and speed bounds');
+
+  for (const cancel of [
+    "window.dispatchEvent(new PointerEvent('pointercancel'));",
+    "window.dispatchEvent(new Event('blur'));",
+    "$('video-speed-back').click();",
+    'window.CVVideo.closeMenu();'
+  ]) {
+    await evaluate("if ($('video-menu').hidden) $('video-more').click(); $('video-speed-row').click(); window.CVVideo.setPlaybackRate(1);");
+    const pressed = await pressStep('video-speed-plus');
+    await waitFor(async () => (await snapshot()).rate >= 1.15, 'hold before cancellation');
+    await evaluate(cancel);
+    await expectStopped();
+    releaseStep(pressed);
+  }
+  await evaluate("if ($('video-menu').hidden) $('video-more').click(); $('video-speed-row').click();");
+  console.log('PASS hold cancellation on pointer cancel, blur, panel back and menu close');
+
   await evaluate(`window.CVVideo.setPlaybackRate(1); $('video-speed-track').focus();
     window.__speedSeekCalls = 0;
     const original = window.CVVideo.seekBy;
