@@ -4746,6 +4746,9 @@
     transition: color 0.12s ease, border-color 0.12s ease;
   }
   .cfg-hotkey-clear .menu-ico { width: 13px; height: 13px; }
+  .cfg-hotkey-input.is-disabled-hotkey::placeholder {
+    letter-spacing: 2px;
+  }
   .cfg-hotkey-clear:hover {
     color: var(--cyber-accent-ink);
     border-color: rgba(var(--cyber-accent-rgb), 0.5);

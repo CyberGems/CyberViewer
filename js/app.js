@@ -7343,9 +7343,9 @@ function openConfig() {
   $('cfg-show-filename').checked = s.showFileName !== false;
   $('cfg-lang').value = s.language || 'en';
   $('cfg-hotkey').value = (!s.toggleHotkey || s.toggleHotkey === 'disabled') ? '' : s.toggleHotkey;
-  // Disabled state shows the assign invitation instead of the stale binding.
+  // Disabled state reads as the CyberNotes-style Disabled marker.
   $('cfg-hotkey').placeholder = (!s.toggleHotkey || s.toggleHotkey === 'disabled')
-    ? ((I18N[(s.language || 'en')] || I18N.en).toggle_hotkey_assign || 'Click to assign')
+    ? ((I18N[(s.language || 'en')] || I18N.en).toggle_hotkey_disabled || 'Disabled')
     : 'Alt+Shift+V';
   
   // Auto-hide settings (independent per element)
@@ -8175,16 +8175,17 @@ if (clearRecentImagesBtn) {
     return pack.toggle_hotkey_press || 'Press keys…';
   }
 
-  function tAssign(lang) {
+  function tDisabled(lang) {
     const pack = (I18N[lang] || I18N.en) || {};
-    return pack.toggle_hotkey_assign || 'Click to assign';
+    return pack.toggle_hotkey_disabled || 'Disabled';
   }
 
-  // Placeholder reflects the state: a value hides it, "disabled" invites to
-  // assign, and capture mode asks for the keys.
+  // Placeholder reflects the state: a value hides it, "disabled" reads as the
+  // CyberNotes-style Disabled marker, and capture mode asks for the keys.
   function syncHotkeyPlaceholder() {
     const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
-    input.placeholder = input.value ? 'Alt+Shift+V' : tAssign(lang);
+    input.placeholder = input.value ? 'Alt+Shift+V' : tDisabled(lang);
+    input.classList.toggle('is-disabled-hotkey', !input.value);
   }
 
   function setCapturing(on) {

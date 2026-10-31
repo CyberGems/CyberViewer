@@ -638,8 +638,34 @@ window.CVWorkspace = (() => {
     tabBar.addEventListener('contextmenu', (event) => {
       if (event.target === tabBar || event.target === tabList) showCustomContextMenu(event, 'tab-bar', {});
     });
-    $('image-tabs-scroll-left').addEventListener('click', () => tabList.scrollBy({ left: -tabList.clientWidth * 0.75, behavior: 'smooth' }));
-    $('image-tabs-scroll-right').addEventListener('click', () => tabList.scrollBy({ left: tabList.clientWidth * 0.75, behavior: 'smooth' }));
+    // Press-and-hold scrolls the strip steadily; a short click still jumps a page.
+    let tabScrollRaf = null;
+    let tabScrollHeld = false;
+    const stopTabScroll = () => {
+      if (tabScrollRaf) { cancelAnimationFrame(tabScrollRaf); tabScrollRaf = null; }
+    };
+    const startTabScroll = (direction) => {
+      stopTabScroll();
+      tabScrollHeld = true;
+      const step = () => {
+        tabList.scrollLeft += direction * 8;
+        tabScrollRaf = requestAnimationFrame(step);
+      };
+      tabScrollRaf = requestAnimationFrame(step);
+    };
+    const bindHoldScroll = (btn, direction) => {
+      btn.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        startTabScroll(direction);
+      });
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => btn.addEventListener(ev, stopTabScroll));
+      btn.addEventListener('click', () => {
+        if (tabScrollHeld) { tabScrollHeld = false; return; }
+        tabList.scrollBy({ left: direction * tabList.clientWidth * 0.75, behavior: 'smooth' });
+      });
+    };
+    bindHoldScroll($('image-tabs-scroll-left'), -1);
+    bindHoldScroll($('image-tabs-scroll-right'), 1);
     tabList.addEventListener('scroll', syncTabOverflow, { passive: true });
     window.addEventListener('resize', syncTabOverflow);
     $('btn-relocate-tab').addEventListener('click', async () => {
