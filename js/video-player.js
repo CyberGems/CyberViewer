@@ -302,6 +302,7 @@ window.CVVideo = (() => {
     $('video-speed-value').textContent = rate === 1 ? text('video_speed_normal') : `${rate}×`;
     $('video-speed-display').textContent = `${rate.toFixed(2)}×`;
     $('video-speed-slider').value = String(rate);
+    $('video-speed-slider').style.setProperty('--video-progress', `${(rate - 0.25) / 2.75 * 100}%`);
     document.querySelectorAll('#video-speed-presets .video-menu-rate').forEach((btn) => {
       btn.classList.toggle('active', Math.abs(parseFloat(btn.dataset.rate) - rate) < 0.001);
     });

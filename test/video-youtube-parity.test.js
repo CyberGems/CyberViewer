@@ -39,6 +39,7 @@ describe('video player youtube parity (phase 1)', () => {
     assert.match(html, /data-rate="3"/);
     assert.match(player, /\$\('video-speed-display'\)\.textContent = `\$\{rate\.toFixed\(2\)\}×`;/);
     assert.match(player, /\$\('video-speed-slider'\)\.value = String\(rate\);/);
+    assert.match(player, /\$\('video-speed-slider'\)\.style\.setProperty\('--video-progress', `\$\{\(rate - 0\.25\) \/ 2\.75 \* 100\}%`\);/);
     assert.match(player, /\$\('video-speed-minus'\)\.addEventListener\('click', \(\) => setPlaybackRate\(currentRate\(\) - 0\.05\)\)/);
     assert.match(player, /rate = Math\.max\(0\.25, Math\.min\(3, rate\)\);/);
     assert.match(player, /const SPEEDS = \[0\.25, 0\.5, 0\.75, 1, 1\.25, 1\.5, 1\.75, 2, 3\];/);
@@ -71,6 +72,10 @@ describe('video player youtube parity (phase 1)', () => {
     assert.match(css, /#video-seek-preview \{/);
     assert.match(css, /#video-overlay-flash \{/);
     assert.match(css, /@keyframes video-flash \{/);
+    // The speed slider gets its own progress track (the shared seek track rule
+    // left it invisible) and the More button keeps its hover while open.
+    assert.match(css, /#video-speed-slider \{ flex: 1; min-width: 60px; --video-progress: 50%; \}/);
+    assert.match(css, /#video-more\[aria-expanded="true"\], #video-more\[aria-expanded="true"\]:hover \{ background: rgba\(var\(--cyber-tint-rgb\), 0\.12\); \}/);
   });
 
   it('flashes youtube-style overlay icons on play and pause', () => {

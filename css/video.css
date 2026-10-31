@@ -106,6 +106,8 @@ body.ghost-mode .video-icon-collapse { display: initial; }
 #video-menu button { width: 100%; height: auto; min-height: 36px; padding: 8px 10px; justify-content: flex-start; text-align: left; }
 #video-menu kbd { margin-left: auto; font: 10px var(--font-ui); color: #a9b6c6; }
 #video-more[aria-expanded="true"]::after, #video-more[aria-expanded="true"]::before { display: none; }
+/* The More button keeps its hover look while its menu is open (btn-menu pattern). */
+#video-more[aria-expanded="true"], #video-more[aria-expanded="true"]:hover { background: rgba(var(--cyber-tint-rgb), 0.12); }
 .video-menu-switch {
   margin-left: auto; width: 40px; height: 20px; border-radius: 10px;
   background: var(--cyber-switch-off); position: relative; flex-shrink: 0;
@@ -213,7 +215,7 @@ html[data-theme='light'] #video-audio-note {
   flex-shrink: 0;
 }
 .video-speed-slider-row button:hover { background: rgba(var(--cyber-tint-rgb), .07); }
-#video-speed-slider { flex: 1; accent-color: var(--cyber-accent); }
+#video-speed-slider { flex: 1; min-width: 60px; --video-progress: 50%; }
 .video-speed-presets { display: flex; justify-content: space-between; gap: 4px; }
 #video-speed-panel .video-menu-rate {
   flex: 1;
