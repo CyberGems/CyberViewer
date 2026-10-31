@@ -292,8 +292,12 @@ window.CVWorkspace = (() => {
     const list = $('image-tab-list');
     if (!left || !right || !list) return;
     const overflowing = list.scrollWidth > list.clientWidth + 1;
-    left.hidden = !overflowing || list.scrollLeft <= 1;
-    right.hidden = !overflowing || list.scrollLeft >= list.scrollWidth - list.clientWidth - 1;
+    // Always visible while overflowing; disabled at their end of the strip so
+    // they cannot vanish mid-interaction and cause mis-clicks.
+    left.hidden = !overflowing;
+    right.hidden = !overflowing;
+    left.disabled = list.scrollLeft <= 1;
+    right.disabled = list.scrollLeft >= list.scrollWidth - list.clientWidth - 1;
   }
   function render() {
     const bar = $('image-tabs');

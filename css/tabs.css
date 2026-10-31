@@ -109,6 +109,8 @@ body.ghost-mode #image-tabs, body.ghost-mode #tab-switcher { display: none; }
 }
 .tab-bar-nav-btn .menu-ico { width: 13px; height: 13px; }
 .tab-bar-nav-btn:hover { color: var(--cyber-accent-ink); background: rgba(var(--cyber-accent-rgb), .08); }
+.tab-bar-nav-btn:disabled { opacity: .3; cursor: default; }
+.tab-bar-nav-btn:disabled:hover { background: transparent; color: var(--cyber-muted); }
 .tab-bar-nav-btn[hidden] { display: none; }
 .image-tab:focus-visible, .image-tab-close:focus-visible, .tab-bar-button:focus-visible, .tab-switcher-item:focus-visible {
   outline: 1px solid var(--cyber-accent); outline-offset: -2px;

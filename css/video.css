@@ -113,6 +113,8 @@ body.ghost-mode .video-icon-collapse { display: initial; }
 #video-audio-note { margin: 2px 10px 10px; line-height: 1.5; color: #b6c5d7; font-size: 11px; }
 body.video-active #ghost-close { border: 0; border-radius: 50%; background: #0004; box-shadow: none; color: #fff; }
 body.video-idle #video-controls, body.video-idle #ghost-close { opacity: 0 !important; pointer-events: none !important; }
+/* The sidebar toggle follows the same auto-hide rhythm as the video controls. */
+body.video-idle #sidebar-handle { opacity: 0 !important; pointer-events: none !important; }
 body.video-idle #video-controls * { pointer-events: none !important; }
 body.video-idle #viewer-wrap, body.video-idle #canvas-layer { cursor: none; }
 body.image-error #video-controls { display: none; }

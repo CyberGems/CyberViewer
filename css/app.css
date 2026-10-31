@@ -874,16 +874,14 @@
 
   .win-btn:hover { color: var(--cyber-accent-ink); background: rgba(var(--cyber-accent-rgb),0.08); }
   #win-close:hover { color: var(--cyber-accent2-ink); background: rgba(var(--cyber-accent2-rgb),0.12); }
-  /* Elegant fading divider between the app controls and the window controls */
+  /* Neutral crisp divider between the app controls and the window controls */
   .win-sep {
     width: 1px;
     height: 20px;
     margin: 0 7px;
     flex-shrink: 0;
     align-self: center;
-    border-radius: 1px;
-    background: linear-gradient(to bottom, transparent, rgba(var(--cyber-accent-rgb), 0.26) 50%, transparent);
-    box-shadow: 0 0 3px rgba(var(--cyber-accent-rgb), 0.10);
+    background: var(--cyber-border);
   }
   #btn-config { font-size: 15px; }
   .titlebar-config-glyph {
@@ -1635,6 +1633,7 @@
     display: block;
     user-select: none;
     overflow: visible;
+    transition: opacity 0.18s ease;
     -webkit-app-region: no-drag;
   }
   body:not(.sidebar-open) #sidebar-handle {
