@@ -356,11 +356,16 @@ window.CVVideo = (() => {
   }
 
   // ── Click on the video pauses; double-click fullscreens (YouTube) ──
-  let videoClickTimer = null;
-  let videoClickToggled = false;
+  // The click acts immediately; a double-click undoes its pause and
+  // fullscreens, so the net effect matches YouTube exactly.
+  let videoClickToggledUntil = 0;
+  let flashSuppressed = false;
   function handleVideoDblClick() {
-    if (videoClickTimer) { clearTimeout(videoClickTimer); videoClickTimer = null; }
-    else if (videoClickToggled) { void toggle(); videoClickToggled = false; }
+    if (Date.now() < videoClickToggledUntil) {
+      videoClickToggledUntil = 0;
+      flashSuppressed = true;
+      void toggle();
+    }
     toggleFullscreen();
     reveal();
   }
@@ -397,22 +402,23 @@ window.CVVideo = (() => {
       if (!event.target.closest('#video-menu, #video-more')) closeMenu();
     }, true);
     $('video-play').addEventListener('click', () => void toggle());
-    // Click on the video pauses (YouTube); a second click within the window is
-    // left to the dblclick handler, which fullscreens and undoes the toggle.
-    // Bound on the wrap because #canvas-layer sits above the video element and
-    // receives the clicks.
+    // Click on the video pauses immediately (YouTube); a double-click undoes
+    // the pause and fullscreens. Bound on the wrap because #canvas-layer sits
+    // above the video element and receives the clicks.
     $('viewer-wrap').addEventListener('click', (event) => {
       if (!active() || window.CVYouTube.active()) return;
       if (event.target.closest('#video-controls, #video-menu, #sidebar-handle, #kbd-hint, #nav-container, #topbar, #sidebar, #ghost-close')) return;
-      if (videoClickTimer) return;
-      videoClickTimer = setTimeout(() => {
-        videoClickTimer = null;
-        void toggle();
-        videoClickToggled = true;
-      }, 230);
+      void toggle();
+      videoClickToggledUntil = Date.now() + 700;
     });
-    element.addEventListener('play', () => { if (Date.now() - loadedAt > 400) flashOverlay(FLASH_PLAY); });
-    element.addEventListener('pause', () => flashOverlay(FLASH_PAUSE));
+    element.addEventListener('play', () => {
+      if (flashSuppressed) { flashSuppressed = false; return; }
+      if (Date.now() - loadedAt > 400) flashOverlay(FLASH_PLAY);
+    });
+    element.addEventListener('pause', () => {
+      if (flashSuppressed) { flashSuppressed = false; return; }
+      flashOverlay(FLASH_PAUSE);
+    });
     $('video-prev').addEventListener('click', () => openSibling(-1));
     $('video-next').addEventListener('click', () => openSibling(1));
     $('video-speed-row').addEventListener('click', () => setSpeedPanel(true));

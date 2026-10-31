@@ -26,7 +26,8 @@ describe('video player youtube parity (phase 1)', () => {
 
   it('pauses on video click with double-click discrimination', () => {
     assert.match(player, /\$\('viewer-wrap'\)\.addEventListener\('click', \(event\) => \{\s*if \(!active\(\) \|\| window\.CVYouTube\.active\(\)\) return;/);
-    assert.match(player, /function handleVideoDblClick\(\) \{/);
+    assert.match(player, /void toggle\(\);\s*videoClickToggledUntil = Date\.now\(\) \+ 700;/);
+    assert.match(player, /function handleVideoDblClick\(\) \{\s*if \(Date\.now\(\) < videoClickToggledUntil\) \{/);
     assert.match(appJs, /if \(window\.CVVideo\.active\(\)\) \{ window\.CVVideo\.handleVideoDblClick\(\); return; \}/);
     assert.match(player, /return \{ element, active, load, unload, toggle, toggleMute, seekBy, sync, syncTools, localize, initialize, imageActions, reveal, closeMenu, handleVideoDblClick, cyclePlaybackRate, setPlaybackRate \};/);
   });
@@ -54,7 +55,7 @@ describe('video player youtube parity (phase 1)', () => {
   it('flashes youtube-style overlay icons on play and pause', () => {
     assert.match(player, /const FLASH_PLAY = /);
     assert.match(player, /const FLASH_PAUSE = /);
-    assert.match(player, /element\.addEventListener\('play', \(\) => \{ if \(Date\.now\(\) - loadedAt > 400\) flashOverlay\(FLASH_PLAY\); \}\)/);
-    assert.match(player, /element\.addEventListener\('pause', \(\) => flashOverlay\(FLASH_PAUSE\)\)/);
+    assert.match(player, /element\.addEventListener\('play', \(\) => \{\s*if \(flashSuppressed\) \{ flashSuppressed = false; return; \}\s*if \(Date\.now\(\) - loadedAt > 400\) flashOverlay\(FLASH_PLAY\);\s*\}\)/);
+    assert.match(player, /element\.addEventListener\('pause', \(\) => \{\s*if \(flashSuppressed\) \{ flashSuppressed = false; return; \}\s*flashOverlay\(FLASH_PAUSE\);\s*\}\)/);
   });
 });

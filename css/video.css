@@ -77,9 +77,12 @@ body.ghost-mode #video-heading { display: block; }
   border: 0; border-radius: 6px; background: transparent; color: inherit;
   font: inherit; cursor: pointer;
 }
-#video-controls button:hover { background: #ffffff16; }
+#video-controls button:hover { background: rgba(var(--cyber-tint-rgb), 0.07); }
 #video-controls button:disabled { cursor: default; background: transparent; }
-.video-sound.audio-unavailable { opacity: .38; }
+/* Dim only the controls, never the group: the tooltip lives inside it and
+   would inherit the transparency. */
+.video-sound.audio-unavailable #video-mute,
+.video-sound.audio-unavailable #video-volume { opacity: .38; }
 .video-sound.audio-unavailable input { cursor: default !important; }
 .video-sound.audio-unavailable #video-mute::after, .video-sound.audio-unavailable #video-mute::before { display: none; }
 #video-controls button:focus-visible, #video-controls input:focus-visible,
@@ -167,7 +170,7 @@ html[data-theme='light'] #video-audio-note {
   color: var(--cyber-text);
 }
 .video-speed-row .menu-ico { width: 14px; height: 14px; color: var(--cyber-muted); }
-.video-speed-value { margin-left: auto; color: var(--cyber-muted); font-size: 11px; }
+.video-speed-value { margin-left: auto; color: var(--cyber-text); font-size: 11px; }
 #video-speed-panel .video-menu-rate {
   display: flex;
   align-items: center;
