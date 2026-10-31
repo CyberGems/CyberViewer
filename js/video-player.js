@@ -408,6 +408,9 @@ window.CVVideo = (() => {
     $('viewer-wrap').addEventListener('click', (event) => {
       if (!active() || window.CVYouTube.active()) return;
       if (event.target.closest('#video-controls, #video-menu, #sidebar-handle, #kbd-hint, #nav-container, #topbar, #sidebar, #ghost-close')) return;
+      // A second click inside the dblclick window belongs to the dblclick
+      // handler: ignoring it keeps the first click's pause from toggling back.
+      if (Date.now() < videoClickToggledUntil) return;
       void toggle();
       videoClickToggledUntil = Date.now() + 700;
     });

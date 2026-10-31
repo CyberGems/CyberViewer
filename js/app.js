@@ -306,6 +306,7 @@ const MENU_ICON_BY_I18N = {
   menu_recent_folders: 'folder', menu_paste: 'clipboard', menu_close_image: 'close',
   menu_show: 'folder-open', menu_open_containing_folder: 'folder-open', menu_save: 'save', menu_copy: 'copy',
   menu_copy_path: 'link', menu_save_as: 'save',
+  video_play: 'play', video_pause: 'pause', tabs_open_new: 'copy',
   menu_print: 'printer', menu_export_pdf: 'download',
   menu_props: 'info', menu_trash: 'trash', menu_quit: 'quit',
   menu_close_app: 'x',
