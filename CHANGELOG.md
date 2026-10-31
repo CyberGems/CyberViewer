@@ -3,15 +3,28 @@
 Notable user-facing changes per release. Earlier versions are documented in the
 [GitHub Releases](https://github.com/CyberGems/CyberViewer/releases) page.
 
-## [Unreleased]
-
-### Fixed
-
-- Quitting from the tray menu while the window was hidden only restored the window on the first attempt. The renderer's beforeunload prevents the first close attempt, and its late prevention notice could abort the acknowledged quit in flight. Explicit quits are no longer cancelled, the acknowledged close retries the quit until it lands, and a watchdog restores normal close semantics if the renderer's close chain never completes.
+## [1.19.0] - 2026-10-30
 
 ### Added
 
 - Appearance themes: CyberViewer (default dark with the chosen accent), Gray (a sober grayscale palette that neutralises every chromatic accent), and Light (light surfaces that keep the accent, with darkened accent text for contrast). Pick one on the Appearance tab; the choice is saved, included in backups, and applied before the first frame so the window does not flash.
+- A dismissible update popup in the main window on the CyberFeeds pattern: a language-aware changelog peek when a new version is available, download progress and restart actions, and a per-version skip that is remembered in settings. A console command previews every update state for testing.
+- A theme-following automatic transparency background: light theme users get the light checkerboard by default (existing dark defaults migrate once), explicit choices are respected, and the View menu toggle still overrides it.
+- Update check feedback now mirrors in the About formats box, so checking, up-to-date and error states are visible at the top of the modal without scrolling.
+
+### Changed
+
+- Interface colours come from a shared token layer, so every theme repaints the chrome, menus, modals and canvas consistently instead of relying on hardcoded dark values.
+- The Light theme is tuned per accent: text uses hand-picked ink tones per swatch, menus, the video player menu and the shortcuts popover get a white frost instead of the dark glass, and the titlebar branding keeps its contrast.
+- Every switch follows the suite toggle pattern: a dark thumb at rest and an accent track with a white check when on, with graphite and light variants per theme.
+- The About modal was refined: language-aware format badges now include video support, the tagline mentions videos, the updates section opens with a green status pill and version chips joined by a transition arrow, the release link reads as a secondary button, the auto-check toggle closes the section, and scrolling fades at the edges.
+- The default CyberViewer theme keeps the previous palette and accent behaviour unchanged.
+
+### Fixed
+
+- Quitting from the tray menu while the window was hidden only restored the window on the first attempt. The renderer's beforeunload prevents the first close attempt, and its late prevention notice could abort the acknowledged quit in flight. Explicit quits are no longer cancelled, the acknowledged close retries the quit until it lands, a watchdog restores normal close semantics if the renderer's close chain never completes, and chrome-only dialogs such as the configuration panel no longer count as work in progress.
+- Windows center correctly on mixed-DPI multi-monitor setups: startup bounds are re-asserted after the window is shown, and the maximize nudge can no longer exceed the target work area.
+- The welcome drop frame is square so its corner brackets align, the titlebar divider reads as a crisp 1px line without glow, and the grab cursor no longer appears over the empty canvas.
 
 ### Changed
 

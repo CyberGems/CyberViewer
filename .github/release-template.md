@@ -8,51 +8,38 @@
 
 <!-- IMPORTANT FOR AGENTS & MAINTAINERS: Always rewrite this entire section and highlights with the ACTUAL release notes for this specific new version before tagging. NEVER leave or copy previous version notes! Use 25-45 words for the summary, lead with user-facing changes, and do not repeat the app name or version. -->
 <!-- changelog-summary:start -->
-Video playback arrives with local files plus isolated YouTube videos and playlists, alongside image tabs with optional session restore, scheduled automatic backups, a redesigned About dialog, and correct window centering on mixed-DPI monitors.
+Two new appearance themes join a tuned Light mode with per-accent text tones, suite-style switches and frost menus, a dismissible in-app update popup with language-aware release notes, mixed-DPI window centering fixes, and a cleaner About with video format badges.
 <!-- changelog-summary:end -->
 
 ---
 
 ### ✨ Key Features & Highlights
 
-- 🎬 **Integrated video playback**:
-  - Play local videos in lightweight media tabs alongside images, with MP4, M4V, WebM, MOV and Matroska (MKV) support and matching Windows file associations.
-  - Refined playback controls and immersive fullscreen keep the viewer out of the way, and Matroska initialization is now reliable.
-  - Images and videos live side by side in the same window, each tab adapting to its content.
+- 🎨 **Two new appearance themes**:
+  - A sober Gray theme that neutralises every chromatic accent, and a full Light theme that keeps the user accent with hand-picked text tones per swatch.
+  - Every surface is driven by a shared token layer, so chrome, menus, modals and the canvas repaint consistently in the three themes.
 
-- ▶️ **Isolated YouTube playback**:
-  - Open YouTube videos or full playlists in a dedicated, isolated viewer, separate from local media tabs.
-  - Playback runs in its own contained session so the main viewer stays lightweight.
+- 🧊 **Suite-style polish**:
+  - Menus, the video player menu and the shortcuts popover get a white frost on light surfaces, and every switch follows the suite toggle pattern with per-theme thumb variants.
+  - The welcome drop frame is square so its corner brackets align, the titlebar divider reads as a crisp line, and the transparency background follows the theme automatically.
 
-- 🗂️ **Tabs and session restore**:
-  - Browse images in tabs with optional session restore, bringing back the previous set of images on the next launch.
-  - The sidebar starts closed on manual launches and collapses automatically when an image is opened externally, keeping the focus on the content.
+- 🔔 **Dismissible update popup**:
+  - A bottom-right card announces new versions with a language-aware changelog peek, download progress and a restart action, and skipping a version is remembered in settings.
+  - The About modal closes the loop: a green status pill and version chips announce the update, check feedback surfaces at the top without scrolling, and format badges now include video support.
 
-- 💾 **Backups and wallpaper**:
-  - Scheduled automatic backups with safety restore are enabled by default, and the tray icon stays resident for quick access.
-  - Set the Windows desktop wallpaper directly from pasted or dropped images, even before saving them to disk.
-
-- 🎨 **Polished interface**:
-  - The About modal is redesigned on the CyberFeeds pattern, with a diagnostics copy button and suite icons synchronized before release builds.
-  - A first-close dialog lets users choose between the tray and quitting, complemented by an elegant titlebar divider and unified hotkey badges across titlebar controls and dialogs.
-  - The welcome banner icon is redesigned as a drop-into-tray glyph, with the supported format list grouped by media type, alongside a new brand app icon and branded installer artwork.
-
-- 🔧 **Reliability and platform**:
-  - Windows are centered correctly on monitors with a different scale factor, fixing mixed-DPI multi-monitor placement at startup, maximize and restore.
-  - Window lifecycle diagnostics with a compositor frame nudge improve visibility after Windows auto-start.
-  - The project is licensed under GPL-3.0-only with the canonical license text, and a Spanish README joins the documentation.
+- 🪟 **Reliability fixes**:
+  - Windows center correctly on mixed-DPI multi-monitor setups at startup and restore, and the maximize nudge can no longer exceed the target work area.
+  - Quitting from the tray lands on the first click even when the window is hidden or a dialog is open.
 
 <details>
 <summary><b>🌐 Ver notas de la versión en Español</b></summary>
 
 ### 🚀 Novedades de esta versión
 
-- **Reproducción de video integrada**: reproduce videos locales en pestañas de medios ligeras junto a las imágenes, con soporte para MP4, M4V, WebM, MOV y Matroska (MKV) y sus asociaciones de archivos en Windows. Los controles refinados y la pantalla completa inmersiva mantienen el foco en el contenido, y la inicialización de Matroska ahora es confiable.
-- **YouTube aislado**: abre videos o listas completas de YouTube en un visor dedicado y aislado, separado de las pestañas de medios locales, con una sesión propia para mantener ligero el visor principal.
-- **Pestañas y restauración de sesión**: navega imágenes en pestañas con restauración opcional de la sesión anterior al iniciar. La barra lateral inicia cerrada en lanzamientos manuales y se contrae al abrir imágenes desde fuera de la app.
-- **Respaldos y fondo de pantalla**: los respaldos automáticos programados con restauración de seguridad vienen activados por defecto, y el ícono de bandeja permanece residente. Establece el fondo de escritorio directamente desde imágenes pegadas o soltadas, incluso antes de guardarlas en disco.
-- **Interfaz pulida**: modal About rediseñado con botón para copiar diagnósticos, diálogo de primer cierre para elegir entre bandeja o salir, divisor elegante en la barra de título e insignias de atajos unificadas. El ícono de bienvenida es ahora una gota entrando en la bandeja con formatos agrupados por tipo de medio, junto a un nuevo ícono de marca e instalador etiquetado.
-- **Fiabilidad y plataforma**: centrado correcto de ventanas en monitores con escalas distintas al iniciar, maximizar y restaurar, diagnósticos del ciclo de vida con impulso del compositor tras el autoinicio de Windows, licencia GPL-3.0-only y README en español.
+- **Dos nuevos temas de apariencia**: un tema Gris sobrio que neutraliza los acentos cromáticos y un tema Claro completo que mantiene el acento con tonos de texto ajustados a mano por color. Toda la superficie usa una capa de tokens compartida, así chrome, menús, modales y lienzo se repinten de forma consistente en los tres temas.
+- **Pulido estilo suite**: los menús, el menú del reproductor de video y el popover de atajos usan escarcha blanca sobre superficies claras, todos los interruptores siguen el patrón toggle de la suite con variantes por tema, el marco de bienvenida es cuadrado con brackets alineados, el divisor del titlebar es una línea nítida y el fondo de transparencia sigue al tema automáticamente.
+- **Popup de actualización descartable**: una tarjeta en la esquina inferior derecha anuncia nuevas versiones con un vistazo al changelog según el idioma, progreso de descarga y acción de reinicio; omitir una versión se recuerda en los ajustes. El Acerca de cierra el círculo con una pastilla verde de estado, chips de versión con flecha, feedback de búsqueda arriba sin hacer scroll y badges de formatos que ahora incluyen video.
+- **Correcciones de fiabilidad**: las ventanas se centran correctamente en configuraciones mixtas de DPI al iniciar y restaurar, el empujón de maximizado ya no excede el área de trabajo, y salir desde la bandeja funciona al primer clic aunque la ventana esté oculta o haya un diálogo abierto.
 
 </details>
 
