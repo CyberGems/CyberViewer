@@ -113,7 +113,7 @@ describe('title bar Help menu', () => {
   it('suppresses shortcuts button tooltip when open and provides an expanded 2-column shortcuts cheat sheet', () => {
     // Tooltip suppression when open (titlebar tooltip card guard, CyberNotes style)
     assert.match(appJs, /function ttSuppressedWhileOpen\(el\)[\s\S]*?btn-shortcuts[\s\S]*?shortcuts-popover/);
-    assert.match(appJs, /function ttShow\(el\)\s*\{\s*if \(ttSuppressedWhileOpen\(el\)\) return;/);
+    assert.match(appJs, /function ttShow\(el\)\s*\{\s*if \(Date\.now\(\) < ttRestoreSuppressUntil\) return;\s*if \(ttSuppressedWhileOpen\(el\)\) return;/);
     assert.match(appJs, /button\.classList\.toggle\('open',\s*next\);[\s\S]*?if \(next\) button\.blur\(\);/);
 
     // 2-column grid structure in HTML & CSS
@@ -203,8 +203,10 @@ describe('title bar Help menu', () => {
     assert.match(mainJs, /win\.on\('show', \(\) => \{[\s\S]*?webContents\.send\('window-restore'\)/);
     // preload bridge
     assert.match(preload, /onWindowRestore:\s*\(cb\)\s*=>\s*ipcRenderer\.on\('window-restore',\s*\(\)\s*=>\s*cb\(\)\)/);
-    // renderer toggles a one-frame pointer-events reset to force a re-hit-test
-    assert.match(appJs, /onWindowRestore\(\(\) => \{[\s\S]*?classList\.add\('hover-reset'\);[\s\S]*?requestAnimationFrame\(\(\) => requestAnimationFrame\(\(\) => \{[\s\S]*?classList\.remove\('hover-reset'\);/);
+    // renderer hides the ghost tooltip, suppresses it briefly, and holds a
+    // pointer-events reset long enough to force a re-hit-test
+    assert.match(appJs, /onWindowRestore\(\(\) => \{[\s\S]*?ttHide\(\);[\s\S]*?ttRestoreSuppressUntil = Date\.now\(\) \+ 450;[\s\S]*?classList\.add\('hover-reset'\);[\s\S]*?setTimeout\(\(\) => document\.body\.classList\.remove\('hover-reset'\), 300\);/);
+    assert.match(appJs, /function ttShow\(el\)\s*\{[\s\S]*?if \(Date\.now\(\) < ttRestoreSuppressUntil\) return;/);
     assert.match(css, /body\.hover-reset,\s*body\.hover-reset \*\s*\{\s*pointer-events:\s*none !important;\s*\}/);
   });
 
