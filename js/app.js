@@ -44,6 +44,10 @@ function setCyberTooltip(el, text) {
 // showing a <kbd> badge whenever data-tooltip-kbd is present. Text comes from
 // data-tooltip (dynamic) or from the data-i18n-tt key (localized).
 const TT_SHOW_DELAY_MS = 250;
+// Restoring from the taskbar makes Chromium re-fire mouseover under the
+// stationary cursor, which would reshow the tooltip of the button that
+// minimized the window; suppressed for a short window after each restore.
+let ttRestoreSuppressUntil = 0;
 const TT_VIEWPORT_MARGIN = 8;
 const TT_GAP = 8;
 let ttCard = null;
@@ -90,6 +94,7 @@ function ttPositionCard() {
 }
 
 function ttShow(el) {
+  if (Date.now() < ttRestoreSuppressUntil) return;
   if (ttSuppressedWhileOpen(el)) return;
   const text = ttTextFor(el);
   if (!text) return;
@@ -8463,10 +8468,14 @@ if (isElectron) {
   if (typeof window.electronAPI.onWindowRestore === 'function') {
     window.electronAPI.onWindowRestore(() => {
       window.CVWorkspace.resume();
+      // Chromium re-fires mouseover under the stationary cursor after a
+      // restore: hide the tooltip card, suppress it briefly, and hold the
+      // hover-reset long enough that the minimizing button does not resurface
+      // hovered as if the user had touched it.
+      ttHide();
+      ttRestoreSuppressUntil = Date.now() + 450;
       document.body.classList.add('hover-reset');
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        document.body.classList.remove('hover-reset');
-      }));
+      setTimeout(() => document.body.classList.remove('hover-reset'), 300);
     });
   }
 
