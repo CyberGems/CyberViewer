@@ -399,7 +399,11 @@ window.CVVideo = (() => {
     $('video-play').addEventListener('click', () => void toggle());
     // Click on the video pauses (YouTube); a second click within the window is
     // left to the dblclick handler, which fullscreens and undoes the toggle.
-    element.addEventListener('click', () => {
+    // Bound on the wrap because #canvas-layer sits above the video element and
+    // receives the clicks.
+    $('viewer-wrap').addEventListener('click', (event) => {
+      if (!active() || window.CVYouTube.active()) return;
+      if (event.target.closest('#video-controls, #video-menu, #sidebar-handle, #kbd-hint, #nav-container, #topbar, #sidebar, #ghost-close')) return;
       if (videoClickTimer) return;
       videoClickTimer = setTimeout(() => {
         videoClickTimer = null;

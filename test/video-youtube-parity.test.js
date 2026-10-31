@@ -25,7 +25,7 @@ describe('video player youtube parity (phase 1)', () => {
   });
 
   it('pauses on video click with double-click discrimination', () => {
-    assert.match(player, /element\.addEventListener\('click', \(\) => \{\s*if \(videoClickTimer\) return;/);
+    assert.match(player, /\$\('viewer-wrap'\)\.addEventListener\('click', \(event\) => \{\s*if \(!active\(\) \|\| window\.CVYouTube\.active\(\)\) return;/);
     assert.match(player, /function handleVideoDblClick\(\) \{/);
     assert.match(appJs, /if \(window\.CVVideo\.active\(\)\) \{ window\.CVVideo\.handleVideoDblClick\(\); return; \}/);
     assert.match(player, /return \{ element, active, load, unload, toggle, toggleMute, seekBy, sync, syncTools, localize, initialize, imageActions, reveal, closeMenu, handleVideoDblClick, cyclePlaybackRate, setPlaybackRate \};/);
