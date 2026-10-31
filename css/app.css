@@ -161,7 +161,9 @@
     left: 0;
     width: 100%;
     height: 1px;
-    background: rgba(var(--cyber-accent-rgb), 0.45);
+    /* Same subtle level as the window hairlines, so the whole fine-border
+       family reads as one. */
+    background: rgba(var(--cyber-accent-rgb), 0.22);
   }
 
   /* Fine line at the bottom of the window (only when restored / not maximized) */
