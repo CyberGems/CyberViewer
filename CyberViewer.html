@@ -326,11 +326,23 @@
         <div class="video-transport">
           <div class="video-timeline">
             <input id="video-seek" type="range" min="0" max="1" step="0.1" value="0" data-i18n-aria="video_seek" disabled>
+            <div id="video-seek-preview" hidden>
+              <video id="video-preview" muted preload="metadata"></video>
+              <span id="video-seek-preview-time">0:00</span>
+            </div>
           </div>
           <div class="video-actions">
+            <button type="button" id="video-prev" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5v14L8 12Z"/><path d="M6 5h2v14H6z"/></svg>
+              <span class="video-sr-only" data-i18n="video_prev">Video anterior</span>
+            </button>
             <button type="button" id="video-play" class="tooltip-right" aria-keyshortcuts="Space">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path class="video-icon-play" d="m9 5 11 7-11 7Z"/><path class="video-icon-pause" d="M8 5h3v14H8zM15 5h3v14h-3z"/></svg>
               <span id="video-play-label" class="video-sr-only">Reproducir</span>
+            </button>
+            <button type="button" id="video-next" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l11 7-11 7Z"/><path d="M16 5h2v14h-2z"/></svg>
+              <span class="video-sr-only" data-i18n="video_next">Video siguiente</span>
             </button>
             <button type="button" id="video-back" class="tooltip-right">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8a8.5 8.5 0 1 1-.5 7M4 3v5h5"/><text x="12" y="16" text-anchor="middle">5</text></svg>
@@ -355,13 +367,36 @@
             </button>
           </div>
           <div id="video-menu" class="menu-panel" role="group" data-i18n-aria="video_more" hidden>
-            <button type="button" id="video-open"><span data-i18n="menu_open">Abrir archivo...</span><kbd>Ctrl+O</kbd></button>
-            <button type="button" id="video-youtube"><span data-i18n="youtube_open">Abrir enlace de YouTube</span><kbd>Ctrl+L</kbd></button>
-            <button type="button" id="video-properties"><span data-i18n="menu_props">Propiedades</span><kbd>Ctrl+I</kbd></button>
-            <div class="video-menu-divider"></div>
-            <button type="button" id="video-autoplay" role="switch" aria-checked="true"><span data-i18n="video_autoplay">Reproducir al abrir</span><span class="video-menu-switch" aria-hidden="true"></span></button>
-            <button type="button" id="video-loop" aria-pressed="false"><span data-i18n="video_loop">Repetir</span><span class="video-loop-check" aria-hidden="true">✓</span></button>
-            <button type="button" id="video-audio-info" aria-expanded="false" aria-controls="video-audio-note" data-i18n="video_audio_info">Información de audio</button>
+            <div id="video-menu-main">
+              <button type="button" id="video-speed-row">
+                <svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>
+                <span data-i18n="video_speed">Velocidad</span>
+                <span id="video-speed-value" class="video-speed-value">Normal</span>
+              </button>
+              <button type="button" id="video-open"><span data-i18n="menu_open">Abrir archivo...</span><kbd>Ctrl+O</kbd></button>
+              <button type="button" id="video-youtube"><span data-i18n="youtube_open">Abrir enlace de YouTube</span><kbd>Ctrl+L</kbd></button>
+              <button type="button" id="video-properties"><span data-i18n="menu_props">Propiedades</span><kbd>Ctrl+I</kbd></button>
+              <div class="video-menu-divider"></div>
+              <button type="button" id="video-autoplay" role="switch" aria-checked="true"><span data-i18n="video_autoplay">Reproducir al abrir</span><span class="video-menu-switch" aria-hidden="true"></span></button>
+              <button type="button" id="video-loop" aria-pressed="false"><span data-i18n="video_loop">Repetir</span><span class="video-loop-check" aria-hidden="true">✓</span></button>
+              <button type="button" id="video-audio-info" aria-expanded="false" aria-controls="video-audio-note" data-i18n="video_audio_info">Información de audio</button>
+            </div>
+            <div id="video-speed-panel" hidden>
+              <button type="button" id="video-speed-back" class="video-speed-row">
+                <svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+                <span data-i18n="video_speed">Velocidad</span>
+              </button>
+              <div class="video-menu-divider"></div>
+              <button type="button" class="video-menu-rate" data-rate="0.25">0.25</button>
+              <button type="button" class="video-menu-rate" data-rate="0.5">0.5</button>
+              <button type="button" class="video-menu-rate" data-rate="0.75">0.75</button>
+              <button type="button" class="video-menu-rate" data-rate="1"><span data-i18n="video_speed_normal">Normal</span></button>
+              <button type="button" class="video-menu-rate" data-rate="1.25">1.25</button>
+              <button type="button" class="video-menu-rate" data-rate="1.5">1.5</button>
+              <button type="button" class="video-menu-rate" data-rate="1.75">1.75</button>
+              <button type="button" class="video-menu-rate" data-rate="2">2</button>
+              <button type="button" class="video-menu-rate" data-rate="3">3</button>
+            </div>
             <p id="video-audio-note" role="status" hidden></p>
           </div>
         </div>

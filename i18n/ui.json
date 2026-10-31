@@ -687,7 +687,11 @@
     "tabs_switcher_title": "Open tabs",
     "tabs_scroll_prev": "Scroll tabs left",
     "tabs_scroll_next": "Scroll tabs right",
-    "toggle_hotkey_disabled": "Disabled"
+    "toggle_hotkey_disabled": "Disabled",
+    "video_speed": "Speed",
+    "video_speed_normal": "Normal",
+    "video_prev": "Previous video",
+    "video_next": "Next video"
   },
   "es": {
     "tabs_label": "Pestañas de archivos abiertos",
@@ -1377,6 +1381,10 @@
     "tabs_switcher_title": "Pestañas abiertas",
     "tabs_scroll_prev": "Desplazar pestañas a la izquierda",
     "tabs_scroll_next": "Desplazar pestañas a la derecha",
-    "toggle_hotkey_disabled": "Desactivado"
+    "toggle_hotkey_disabled": "Desactivado",
+    "video_speed": "Velocidad",
+    "video_speed_normal": "Normal",
+    "video_prev": "Video anterior",
+    "video_next": "Video siguiente"
   }
 }

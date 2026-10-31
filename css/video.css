@@ -155,3 +155,80 @@ html[data-theme='light'] #video-menu .video-menu-divider {
 html[data-theme='light'] #video-audio-note {
   color: var(--cyber-muted);
 }
+
+/* ── YouTube-style refinements ── */
+#video-prev svg, #video-next svg { fill: currentColor; stroke: none; }
+#video-prev[hidden], #video-next[hidden] { display: none; }
+.video-speed-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  color: var(--cyber-text);
+}
+.video-speed-row .menu-ico { width: 14px; height: 14px; color: var(--cyber-muted); }
+.video-speed-value { margin-left: auto; color: var(--cyber-muted); font-size: 11px; }
+#video-speed-panel .video-menu-rate {
+  display: flex;
+  align-items: center;
+  color: var(--cyber-text);
+}
+#video-speed-panel .video-menu-rate.active { color: var(--cyber-accent); }
+#video-speed-panel .video-menu-rate.active::after { content: '✓'; margin-left: auto; }
+#video-overlay-flash {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 72px;
+  height: 72px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+#video-overlay-flash .menu-ico { width: 34px; height: 34px; }
+#video-overlay-flash span {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+}
+#video-overlay-flash.run { animation: video-flash 0.5s ease forwards; }
+@keyframes video-flash {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+  25% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.05); }
+}
+.video-timeline { position: relative; }
+#video-seek-preview {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  z-index: 5;
+}
+#video-seek-preview[hidden] { display: none; }
+#video-preview {
+  width: 160px;
+  height: 90px;
+  border-radius: 6px;
+  background: #000;
+  border: 1px solid rgba(var(--cyber-accent-rgb), .35);
+  object-fit: cover;
+}
+#video-seek-preview-time {
+  margin-top: 4px;
+  padding: 1px 7px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, .7);
+  color: #fff;
+  font: 11px var(--font-mono, monospace);
+}

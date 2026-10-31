@@ -5612,6 +5612,9 @@ window.addEventListener('mouseup', () => {
 viewerWrap.addEventListener('dblclick', e => {
   if (window.CVYouTube.active()) return;
   if (e.target.closest('#video-controls')) return;
+  // In video mode double-click always fullscreens (YouTube behavior); the
+  // single-click pause lives in the video player with its own timer.
+  if (window.CVVideo.active()) { window.CVVideo.handleVideoDblClick(); return; }
   if (e.target.closest('#kbd-hint') || e.target.closest('#topbar') || e.target.closest('#sidebar') || e.target.closest('#nav-container')) return;
   // The drop-zone buttons already handle their own clicks; don't open the dialog twice on double-click.
   if (e.target.closest('#btn-drop-open') || e.target.closest('#btn-drop-paste') || e.target.closest('#btn-drop-icon')) return;
@@ -5865,6 +5868,7 @@ document.addEventListener('keydown', e => {
     if (key === ' ') { e.preventDefault(); if (!e.repeat) void window.CVVideo.toggle(); return; }
     if (key === 'arrowleft' || key === 'arrowright') { e.preventDefault(); window.CVVideo.seekBy(key === 'arrowleft' ? -5 : 5); return; }
     if (key === 'm') { e.preventDefault(); if (!e.repeat) window.CVVideo.toggleMute(); return; }
+    if (key === '>' || key === '<') { e.preventDefault(); if (!e.repeat) window.CVVideo.cyclePlaybackRate(key === '>' ? 1 : -1); return; }
   }
 
   if (pendingRotation) {

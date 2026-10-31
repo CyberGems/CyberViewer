@@ -16,6 +16,7 @@ window.CVVideo = (() => {
   let interacting = false;
   let keyboardFocus = false;
   let audioStatus = 'pending';
+  let loadedAt = 0;
   const text = key => (I18N[state.settings.app.language || 'en'] || I18N.en)[key];
   const active = () => window.CVFormats.isVideo(state.images[state.current]);
   const imageActions = new Set(['save', 'save-as', 'export-pdf', 'print', 'copy',
@@ -80,6 +81,8 @@ window.CVVideo = (() => {
     seek.setAttribute('aria-valuetext', $('video-time').textContent);
     $('video-volume').value = String(element.volume);
     $('video-volume').style.setProperty('--video-progress', `${element.muted ? 0 : element.volume * 100}%`);
+    syncSiblings();
+    syncSpeedUi();
     if (owner?.loaded && !element.seeking && state.images[state.current] === owner) {
       state.videoTime = current;
       owner.videoTime = current;
@@ -112,8 +115,13 @@ window.CVVideo = (() => {
     if (!open) {
       $('video-audio-note').hidden = true;
       $('video-audio-info').setAttribute('aria-expanded', 'false');
+      setSpeedPanel(false);
     }
     reveal();
+  }
+  function setSpeedPanel(on) {
+    $('video-menu-main').hidden = on;
+    $('video-speed-panel').hidden = !on;
   }
   function closeMenu(restoreFocus = false) {
     if ($('video-menu').hidden) return false;
@@ -269,9 +277,98 @@ window.CVVideo = (() => {
     reveal();
     if (owner && Number.isFinite(element.duration)) element.currentTime = Math.max(0, Math.min(element.duration, element.currentTime + seconds));
   }
+
+  // ── Playback speed (YouTube-style panel + >/< shortcuts) ──
+  const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3];
+  function currentRate() {
+    let saved = null;
+    try { saved = parseFloat(localStorage.getItem('cv_video_rate')); } catch (_) { /* storage unavailable */ }
+    return SPEEDS.includes(saved) ? saved : 1;
+  }
+  function syncSpeedUi() {
+    const rate = currentRate();
+    const value = $('video-speed-value');
+    if (value) value.textContent = rate === 1 ? text('video_speed_normal') : `${rate}×`;
+    document.querySelectorAll('#video-speed-panel .video-menu-rate').forEach((btn) => {
+      btn.classList.toggle('active', parseFloat(btn.dataset.rate) === rate);
+    });
+  }
+  function setPlaybackRate(rate) {
+    if (!SPEEDS.includes(rate)) return;
+    try { localStorage.setItem('cv_video_rate', String(rate)); } catch (_) { /* storage unavailable */ }
+    if (!window.CVYouTube.active()) element.playbackRate = rate;
+    syncSpeedUi();
+    reveal();
+  }
+  function cyclePlaybackRate(direction) {
+    const rate = window.CVYouTube.active() ? currentRate() : (element.playbackRate || currentRate());
+    let index = SPEEDS.indexOf(rate);
+    if (index === -1) index = SPEEDS.indexOf(1);
+    index = Math.max(0, Math.min(SPEEDS.length - 1, index + direction));
+    if (SPEEDS[index] !== rate) {
+      setPlaybackRate(SPEEDS[index]);
+      flashOverlay(`<span>${SPEEDS[index]}&#215;</span>`);
+    }
+  }
+
+  // ── Prev/next video in the folder ──
+  function videoSibling(direction) {
+    const list = state.images || [];
+    let index = state.current + direction;
+    while (index >= 0 && index < list.length) {
+      const candidate = list[index];
+      if (candidate && candidate.file && candidate.file.path && window.CVFormats.isVideo(candidate.file.path)) return candidate;
+      index += direction;
+    }
+    return null;
+  }
+  function syncSiblings() {
+    const prev = $('video-prev');
+    const next = $('video-next');
+    if (!prev || !next) return;
+    if (window.CVYouTube.active()) { prev.hidden = true; next.hidden = true; return; }
+    prev.hidden = !videoSibling(-1);
+    next.hidden = !videoSibling(1);
+  }
+  function openSibling(direction) {
+    const sibling = videoSibling(direction);
+    if (sibling && sibling.file.path && window.openImagePath) void window.openImagePath(sibling.file.path);
+  }
+
+  // ── Center overlay flash (YouTube-style play/pause and speed feedback) ──
+  const FLASH_PLAY = '<svg class="menu-ico" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="m9 5 11 7-11 7Z"/></svg>';
+  const FLASH_PAUSE = '<svg class="menu-ico" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M8 5h3v14H8zM15 5h3v14h-3z"/></svg>';
+  let flashEl = null;
+  function flashOverlay(content) {
+    if (window.CVYouTube.active()) return;
+    const wrap = $('viewer-wrap');
+    if (!wrap) return;
+    if (!flashEl || !wrap.contains(flashEl)) {
+      flashEl = document.createElement('div');
+      flashEl.id = 'video-overlay-flash';
+      flashEl.setAttribute('aria-hidden', 'true');
+      wrap.appendChild(flashEl);
+    }
+    flashEl.innerHTML = content;
+    flashEl.classList.remove('run');
+    void flashEl.offsetWidth;
+    flashEl.classList.add('run');
+  }
+
+  // ── Click on the video pauses; double-click fullscreens (YouTube) ──
+  let videoClickTimer = null;
+  let videoClickToggled = false;
+  function handleVideoDblClick() {
+    if (videoClickTimer) { clearTimeout(videoClickTimer); videoClickTimer = null; }
+    else if (videoClickToggled) { void toggle(); videoClickToggled = false; }
+    toggleFullscreen();
+    reveal();
+  }
   function localize() {
     for (const [id, key] of [['video-controls', 'video_controls'], ['video-seek', 'video_seek'], ['video-volume', 'video_volume']]) $(id).setAttribute('aria-label', text(key));
     setCyberTooltip($('video-mute'), text('video_mute_shortcut'));
+    setCyberTooltip($('video-prev'), text('video_prev'));
+    setCyberTooltip($('video-next'), text('video_next'));
     for (const [id, key] of [['video-back', 'video_back'], ['video-forward', 'video_forward'], ['video-more', 'video_more']]) {
       $(id).setAttribute('aria-label', text(key));
       setCyberTooltip($(id), text(key));
@@ -300,6 +397,36 @@ window.CVVideo = (() => {
       if (!event.target.closest('#video-menu, #video-more')) closeMenu();
     }, true);
     $('video-play').addEventListener('click', () => void toggle());
+    // Click on the video pauses (YouTube); a second click within the window is
+    // left to the dblclick handler, which fullscreens and undoes the toggle.
+    element.addEventListener('click', () => {
+      if (videoClickTimer) return;
+      videoClickTimer = setTimeout(() => {
+        videoClickTimer = null;
+        void toggle();
+        videoClickToggled = true;
+      }, 230);
+    });
+    element.addEventListener('play', () => { if (Date.now() - loadedAt > 400) flashOverlay(FLASH_PLAY); });
+    element.addEventListener('pause', () => flashOverlay(FLASH_PAUSE));
+    $('video-prev').addEventListener('click', () => openSibling(-1));
+    $('video-next').addEventListener('click', () => openSibling(1));
+    $('video-speed-row').addEventListener('click', () => setSpeedPanel(true));
+    $('video-speed-back').addEventListener('click', () => setSpeedPanel(false));
+    document.querySelectorAll('#video-speed-panel .video-menu-rate').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        setPlaybackRate(parseFloat(btn.dataset.rate));
+        setSpeedPanel(false);
+        closeMenu();
+      });
+    });
+    element.addEventListener('loadedmetadata', () => {
+      if (!window.CVYouTube.active()) element.playbackRate = currentRate();
+      try { $('video-preview').src = element.currentSrc || ''; } catch (_) { /* preview stays off */ }
+      previewLast = -1;
+      loadedAt = Date.now();
+      sync();
+    });
     $('video-back').addEventListener('click', () => seekBy(-5));
     $('video-forward').addEventListener('click', () => seekBy(5));
     $('video-mute').addEventListener('click', toggleMute);
@@ -321,13 +448,33 @@ window.CVVideo = (() => {
     $('video-seek').addEventListener('input', event => {
       if (owner && Number.isFinite(element.duration)) element.currentTime = Math.max(0, Math.min(element.duration, Number(event.target.value)));
     });
+    // Seek bar hover: timestamp chip plus a cheap frame preview from a muted
+    // twin decoder, throttled so seeking stays light.
+    let previewLast = -1;
+    const previewBox = $('video-seek-preview');
+    const previewVideo = $('video-preview');
+    $('video-seek').addEventListener('mousemove', (event) => {
+      if (window.CVYouTube.active() || !Number.isFinite(element.duration)) { previewBox.hidden = true; return; }
+      const rect = event.currentTarget.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+      const time = ratio * element.duration;
+      previewBox.hidden = false;
+      previewBox.style.left = `${Math.max(92, Math.min(rect.width - 92, event.clientX - rect.left))}px`;
+      $('video-seek-preview-time').textContent = window.CVFormats.formatTime(time);
+      if (previewVideo.src !== element.currentSrc) { try { previewVideo.src = element.currentSrc; } catch (_) {} }
+      if (Math.abs(time - previewLast) > 0.35) {
+        previewLast = time;
+        try { previewVideo.currentTime = Math.min(time + 0.05, Math.max(0, (element.duration || 0) - 0.05)); } catch (_) { /* ignore */ }
+      }
+    });
+    $('video-seek').addEventListener('mouseleave', () => { previewBox.hidden = true; });
     $('video-volume').addEventListener('input', event => {
       if (audioStatus === 'unavailable') return;
       element.volume = Number(event.target.value); element.muted = element.volume === 0;
     });
-    ['timeupdate', 'play', 'pause', 'ended', 'volumechange', 'durationchange', 'seeked'].forEach(event => element.addEventListener(event, sync));
+    ['timeupdate', 'play', 'pause', 'ended', 'volumechange', 'durationchange', 'seeked', 'loadedmetadata'].forEach(event => element.addEventListener(event, sync));
     ['play', 'pause', 'ended'].forEach(event => element.addEventListener(event, reveal));
     localize();
   }
-  return { element, active, load, unload, toggle, toggleMute, seekBy, sync, syncTools, localize, initialize, imageActions, reveal, closeMenu };
+  return { element, active, load, unload, toggle, toggleMute, seekBy, sync, syncTools, localize, initialize, imageActions, reveal, closeMenu, handleVideoDblClick, cyclePlaybackRate, setPlaybackRate };
 })();
