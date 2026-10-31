@@ -7588,7 +7588,11 @@ function saveConfigSettings({ toast = false, silent = false } = {}) {
   if (isElectron) {
     const lang = newSettings.language || 'en';
     const prevContextMenu = !!(state.settings.app.contextMenuEnabled);
-    if (prevContextMenu !== contextMenuEnabled) {
+    const prevLang = state.settings.app.language || 'en';
+    // The registry caption is written in one language at registration time, so
+    // a language switch while the menu stays enabled needs a re-registration.
+    const langChanged = prevContextMenu && contextMenuEnabled && lang !== prevLang;
+    if (prevContextMenu !== contextMenuEnabled || langChanged) {
       window.electronAPI.registerContextMenu(contextMenuEnabled, lang).then(res => {
         if (res && !res.success) {
           showToast(lang === 'es' ? 'AVISO: ' + res.error : 'WARNING: ' + res.error, 'warning');

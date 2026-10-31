@@ -2590,56 +2590,118 @@ function runRegCommands(commands) {
   });
 }
 
-ipcMain.handle('register-context-menu', async (event, enable, lang) => {
-  try {
-    const isPackaged = app.isPackaged;
-    let exePath = process.execPath;
-    if (!isPackaged) {
-      exePath = path.join(app.getAppPath(), 'dist', 'win-unpacked', 'CyberViewer.exe');
-    }
+// ProgIDs that carry the "Open with CyberViewer" caption and icon. Images use
+// the electron-builder association names plus the legacy icofile; videos are
+// covered by electron-builder's 'Video' and installer.nsh's 'CyberViewer.video'.
+const CONTEXT_MENU_PROGIDS = [
+  'BMP Image', 'GIF Image', 'JPEG Image', 'PNG Image', 'WebP Image', 'TIFF Image', 'icofile',
+  'Video', 'CyberViewer.video'
+];
+// Bookkeeping used to detect registrations that went stale (app updated,
+// install path changed, language switched) and re-register on startup.
+const CONTEXT_MENU_MARKER_KEY = 'HKCU\\Software\\CyberViewer\\ContextMenu';
 
-    const extensions = [...MEDIA_EXTS];
-    const progIds = ['BMP Image', 'GIF Image', 'JPEG Image', 'PNG Image', 'WebP Image', 'TIFF Image', 'icofile'];
+function getContextMenuExePath() {
+  if (app.isPackaged) return process.execPath;
+  return path.join(app.getAppPath(), 'dist', 'win-unpacked', 'CyberViewer.exe');
+}
 
-    if (enable) {
-      if (!fs.existsSync(exePath)) {
-        return { success: false, error: 'No se encontró el ejecutable. Construye la app primero.' };
-      }
-
-      const label = lang === 'es' ? 'Ver con CyberViewer' : 'View with CyberViewer';
-      const assocLabel = lang === 'es' ? 'Abrir con CyberViewer' : 'Open with CyberViewer';
-      const commands = [];
-
-      for (const ext of extensions) {
-        const regPath = `HKCU\\Software\\Classes\\SystemFileAssociations\\${ext}\\shell\\CyberViewer`;
-        commands.push(['reg', 'add', regPath, '/ve', '/d', label, '/f']);
-        commands.push(['reg', 'add', regPath, '/v', 'Icon', '/d', exePath, '/f']);
-        commands.push(['reg', 'add', `${regPath}\\command`, '/ve', '/d', `"${exePath}" "%1"`, '/f']);
-      }
-      for (const progId of progIds) {
-        const regPath = `HKCU\\Software\\Classes\\${progId}\\shell\\open`;
-        commands.push(['reg', 'add', regPath, '/ve', '/d', assocLabel, '/f']);
-        commands.push(['reg', 'add', regPath, '/v', 'Icon', '/d', exePath, '/f']);
-      }
-      return runRegCommands(commands);
-    }
-
+function buildContextMenuCommands(enable, lang, exePath) {
+  const extensions = [...MEDIA_EXTS];
+  if (enable) {
+    const label = lang === 'es' ? 'Ver con CyberViewer' : 'View with CyberViewer';
+    const assocLabel = lang === 'es' ? 'Abrir con CyberViewer' : 'Open with CyberViewer';
     const commands = [];
+
     for (const ext of extensions) {
       const regPath = `HKCU\\Software\\Classes\\SystemFileAssociations\\${ext}\\shell\\CyberViewer`;
-      commands.push(['reg', 'delete', regPath, '/f']);
+      commands.push(['reg', 'add', regPath, '/ve', '/d', label, '/f']);
+      commands.push(['reg', 'add', regPath, '/v', 'Icon', '/d', exePath, '/f']);
+      commands.push(['reg', 'add', `${regPath}\\command`, '/ve', '/d', `"${exePath}" "%1"`, '/f']);
     }
-    for (const progId of progIds) {
+    for (const progId of CONTEXT_MENU_PROGIDS) {
       const regPath = `HKCU\\Software\\Classes\\${progId}\\shell\\open`;
-      commands.push(['reg', 'add', regPath, '/ve', '/d', 'Open with CyberViewer', '/f']);
-      commands.push(['reg', 'delete', regPath, '/v', 'Icon', '/f']);
+      commands.push(['reg', 'add', regPath, '/ve', '/d', assocLabel, '/f']);
+      commands.push(['reg', 'add', regPath, '/v', 'Icon', '/d', exePath, '/f']);
     }
-    return runRegCommands(commands);
+    return commands;
+  }
+
+  const commands = [];
+  for (const ext of extensions) {
+    const regPath = `HKCU\\Software\\Classes\\SystemFileAssociations\\${ext}\\shell\\CyberViewer`;
+    commands.push(['reg', 'delete', regPath, '/f']);
+  }
+  for (const progId of CONTEXT_MENU_PROGIDS) {
+    const regPath = `HKCU\\Software\\Classes\\${progId}\\shell\\open`;
+    // Drop the custom caption and icon so Explorer falls back to the plain
+    // "Open" verb instead of leaving an English-only caption behind.
+    commands.push(['reg', 'delete', regPath, '/ve', '/f']);
+    commands.push(['reg', 'delete', regPath, '/v', 'Icon', '/f']);
+  }
+  return commands;
+}
+
+function writeContextMenuMarker(exePath, lang) {
+  return runRegCommands([
+    ['reg', 'add', CONTEXT_MENU_MARKER_KEY, '/v', 'Exe', '/d', exePath, '/f'],
+    ['reg', 'add', CONTEXT_MENU_MARKER_KEY, '/v', 'Lang', '/d', lang, '/f'],
+    ['reg', 'add', CONTEXT_MENU_MARKER_KEY, '/v', 'Version', '/d', app.getVersion(), '/f']
+  ]);
+}
+
+function deleteContextMenuMarker() {
+  return runRegCommands([['reg', 'delete', CONTEXT_MENU_MARKER_KEY, '/f']]);
+}
+
+async function applyContextMenuRegistration(enable, lang) {
+  const exePath = getContextMenuExePath();
+  if (enable && !fs.existsSync(exePath)) {
+    return { success: false, error: 'No se encontró el ejecutable. Construye la app primero.' };
+  }
+  const result = await runRegCommands(buildContextMenuCommands(enable, lang, exePath));
+  if (result.success) {
+    if (enable) {
+      const marker = await writeContextMenuMarker(exePath, lang);
+      if (!marker.success) console.error('Context menu marker write failed:', marker.error);
+    } else {
+      await deleteContextMenuMarker();
+    }
+  }
+  return result;
+}
+
+ipcMain.handle('register-context-menu', async (event, enable, lang) => {
+  try {
+    return await applyContextMenuRegistration(!!enable, lang === 'es' ? 'es' : 'en');
   } catch (e) {
     console.error('Error in register-context-menu handler:', e);
     return { success: false, error: e.message };
   }
 });
+
+// Re-register when the stored registration went stale: a previous run from a
+// build that no longer exists (dev path), an app update, or a language switch.
+// Registrations used to be write-once, so machines that enabled the menu with
+// older versions kept missing extensions (videos) and dead icon paths.
+async function ensureContextMenuRegistration() {
+  if (process.platform !== 'win32') return;
+  const settings = loadSettings();
+  if (!settings.app || !settings.app.contextMenuEnabled) return;
+  const exePath = getContextMenuExePath();
+  if (!fs.existsSync(exePath)) return;
+  const [markerExe, markerLang, markerVersion] = await Promise.all([
+    regQueryStringValue(CONTEXT_MENU_MARKER_KEY, 'Exe'),
+    regQueryStringValue(CONTEXT_MENU_MARKER_KEY, 'Lang'),
+    regQueryStringValue(CONTEXT_MENU_MARKER_KEY, 'Version')
+  ]);
+  const lang = (settings.app.language || 'en') === 'es' ? 'es' : 'en';
+  if (markerExe === exePath && markerLang === lang && markerVersion === app.getVersion()) return;
+  const result = await applyContextMenuRegistration(true, lang);
+  if (!result.success) {
+    console.error('Context menu re-registration failed:', result.error);
+  }
+}
 
 ipcMain.on('save-settings', (event, newSettings) => {
   const currentSettings = loadSettings();
@@ -2976,6 +3038,7 @@ if (!gotTheLock) {
     createTray();
     applyToggleHotkey(settings.app && settings.app.toggleHotkey);
     initAutoBackup();
+    ensureContextMenuRegistration();
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();
