@@ -203,18 +203,26 @@ html[data-theme='light'] #video-audio-note {
   gap: 8px;
   padding: 2px 0 6px;
 }
-.video-speed-slider-row button {
-  width: 24px;
-  height: 24px;
+/* ID-scoped: #video-menu button would otherwise stretch these into full-width rows. */
+#video-menu .video-speed-slider-row button {
+  width: 26px;
+  height: 26px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
   border-radius: 50%;
   border: 0;
-  background: transparent;
+  background: rgba(var(--cyber-tint-rgb), .07);
   color: var(--cyber-text);
   font-size: 14px;
   cursor: pointer;
   flex-shrink: 0;
+  justify-content: center;
 }
-.video-speed-slider-row button:hover { background: rgba(var(--cyber-tint-rgb), .07); }
+#video-menu .video-speed-slider-row button:hover {
+  background: rgba(var(--cyber-tint-rgb), .14);
+  color: var(--cyber-accent-ink);
+}
 #video-speed-slider { flex: 1; min-width: 60px; --video-progress: 50%; }
 .video-speed-presets { display: flex; justify-content: space-between; gap: 4px; }
 #video-speed-panel .video-menu-rate {
