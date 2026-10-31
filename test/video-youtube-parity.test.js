@@ -38,9 +38,9 @@ describe('video player youtube parity (phase 1)', () => {
     assert.match(html, /id="video-speed-presets"/);
     assert.match(html, /data-rate="3"/);
     assert.match(player, /\$\('video-speed-display'\)\.textContent = `\$\{rate\.toFixed\(2\)\}×`;/);
-    assert.match(player, /let speedSliderActive = false;/);
-    assert.match(player, /if \(slider && !speedSliderActive\) slider\.value = String\(rate\);/);
-    assert.match(player, /\$\('video-speed-slider'\)\.addEventListener\('pointerdown', \(\) => \{ speedSliderActive = true; \}\);/);
+    assert.match(player, /const speedSlider = \$\('video-speed-slider'\);/);
+    assert.match(player, /speedSlider\.setPointerCapture\(event\.pointerId\);/);
+    assert.match(player, /setPlaybackRate\(0\.25 \+ ratio \* 2\.75\);/);
     assert.match(player, /\$\('video-speed-minus'\)\.addEventListener\('click', \(\) => setPlaybackRate\(currentRate\(\) - 0\.05\)\)/);
     assert.match(player, /rate = Math\.max\(0\.25, Math\.min\(3, rate\)\);/);
     assert.match(player, /const SPEEDS = \[0\.25, 0\.5, 0\.75, 1, 1\.25, 1\.5, 1\.75, 2, 3\];/);

@@ -203,7 +203,8 @@ html[data-theme='light'] #video-audio-note {
   gap: 8px;
   padding: 2px 0 6px;
 }
-/* ID-scoped: #video-menu button would otherwise stretch these into full-width rows. */
+/* ID-scoped: #video-menu button would otherwise stretch these into full-width rows.
+   The circles are hover-only chrome: bare glyphs at rest, elegant on hover. */
 #video-menu .video-speed-slider-row button {
   width: 26px;
   height: 26px;
@@ -212,12 +213,14 @@ html[data-theme='light'] #video-audio-note {
   padding: 0;
   border-radius: 50%;
   border: 0;
-  background: rgba(var(--cyber-tint-rgb), .07);
+  background: transparent;
   color: var(--cyber-text);
   font-size: 14px;
+  line-height: 1;
   cursor: pointer;
   flex-shrink: 0;
   justify-content: center;
+  touch-action: none;
 }
 #video-menu .video-speed-slider-row button:hover {
   background: rgba(var(--cyber-tint-rgb), .14);
