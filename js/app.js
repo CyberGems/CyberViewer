@@ -702,7 +702,17 @@ function setShortcutsPopoverOpen(open) {
   popover.hidden = !next;
   button.classList.toggle('open', next);
   button.setAttribute('aria-expanded', String(next));
-  if (next) button.blur();
+  if (next) {
+    // Video mode gets its own shortcut sheet (playback + general).
+    const video = window.CVVideo && window.CVVideo.active();
+    const gridImage = $('shortcuts-grid-image');
+    const gridVideo = $('shortcuts-grid-video');
+    if (gridImage && gridVideo) {
+      gridImage.hidden = video;
+      gridVideo.hidden = !video;
+    }
+    button.blur();
+  }
   return next;
 }
 

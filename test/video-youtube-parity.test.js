@@ -32,14 +32,35 @@ describe('video player youtube parity (phase 1)', () => {
     assert.match(player, /return \{ element, active, load, unload, toggle, toggleMute, seekBy, sync, syncTools, localize, initialize, imageActions, reveal, closeMenu, handleVideoDblClick, cyclePlaybackRate, setPlaybackRate \};/);
   });
 
-  it('adds a speed panel (0.25-3x) with cycling shortcuts', () => {
-    assert.match(html, /id="video-speed-row"/);
-    assert.match(html, /id="video-speed-panel" hidden/);
+  it('adds a youtube-style speed panel with display, slider and presets', () => {
+    assert.match(html, /id="video-speed-display"/);
+    assert.match(html, /id="video-speed-slider" type="range" min="0\.25" max="3" step="0\.05"/);
+    assert.match(html, /id="video-speed-presets"/);
     assert.match(html, /data-rate="3"/);
+    assert.match(player, /\$\('video-speed-display'\)\.textContent = `\$\{rate\.toFixed\(2\)\}×`;/);
+    assert.match(player, /\$\('video-speed-slider'\)\.value = String\(rate\);/);
+    assert.match(player, /\$\('video-speed-minus'\)\.addEventListener\('click', \(\) => setPlaybackRate\(currentRate\(\) - 0\.05\)\)/);
+    assert.match(player, /rate = Math\.max\(0\.25, Math\.min\(3, rate\)\);/);
     assert.match(player, /const SPEEDS = \[0\.25, 0\.5, 0\.75, 1, 1\.25, 1\.5, 1\.75, 2, 3\];/);
     assert.match(player, /function cyclePlaybackRate\(direction\) \{/);
     assert.match(appJs, /key === '>' \|\| key === '<'\) \{ e\.preventDefault\(\); if \(!e\.repeat\) window\.CVVideo\.cyclePlaybackRate\(key === '>' \? 1 : -1\);/);
     assert.match(player, /localStorage\.setItem\('cv_video_rate', String\(rate\)\)/);
+  });
+
+  it('uses app-style switches for autoplay and loop in the More menu', () => {
+    assert.match(html, /id="video-loop" role="switch" aria-checked="false"/);
+    assert.doesNotMatch(html, /video-loop-check/);
+    assert.match(player, /\$\('video-loop'\)\.setAttribute\('aria-checked', String\(element\.loop\)\)/);
+    assert.match(css, /#video-menu button\[aria-checked="true"\] \.video-menu-switch \{ background: var\(--cyber-accent\); \}/);
+    assert.match(css, /html\[data-theme='gray'\] #video-menu button\[aria-checked="true"\] \.video-menu-switch::before/);
+  });
+
+  it('shows a video shortcut sheet when a video is active', () => {
+    assert.match(html, /id="shortcuts-grid-image"/);
+    assert.match(html, /id="shortcuts-grid-video" hidden/);
+    assert.match(html, /data-i18n="shortcuts_sec_playback"/);
+    assert.match(html, /data-i18n="video_speed_keys"/);
+    assert.match(appJs, /gridImage\.hidden = video;\s*gridVideo\.hidden = !video;/);
   });
 
   it('shows a seek hover preview with timestamp', () => {

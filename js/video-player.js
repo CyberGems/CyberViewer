@@ -67,8 +67,7 @@ window.CVVideo = (() => {
     setCyberTooltip($('video-play'), text(playing ? 'video_pause_shortcut' : 'video_play_shortcut'));
     $('video-mute-label').textContent = text(element.muted ? 'video_unmute' : 'video_mute');
     $('video-mute').setAttribute('aria-pressed', String(element.muted));
-    $('video-loop').setAttribute('aria-pressed', String(element.loop));
-    $('video-loop').classList.toggle('active', element.loop);
+    $('video-loop').setAttribute('aria-checked', String(element.loop));
     $('video-autoplay').setAttribute('aria-checked', String(state.settings.app.videoAutoplay !== false));
     const duration = Number.isFinite(element.duration) ? element.duration : 0;
     const current = Number.isFinite(element.currentTime) ? element.currentTime : 0;
@@ -300,14 +299,16 @@ window.CVVideo = (() => {
   }
   function syncSpeedUi() {
     const rate = currentRate();
-    const value = $('video-speed-value');
-    if (value) value.textContent = rate === 1 ? text('video_speed_normal') : `${rate}×`;
-    document.querySelectorAll('#video-speed-panel .video-menu-rate').forEach((btn) => {
-      btn.classList.toggle('active', parseFloat(btn.dataset.rate) === rate);
+    $('video-speed-value').textContent = rate === 1 ? text('video_speed_normal') : `${rate}×`;
+    $('video-speed-display').textContent = `${rate.toFixed(2)}×`;
+    $('video-speed-slider').value = String(rate);
+    document.querySelectorAll('#video-speed-presets .video-menu-rate').forEach((btn) => {
+      btn.classList.toggle('active', Math.abs(parseFloat(btn.dataset.rate) - rate) < 0.001);
     });
   }
   function setPlaybackRate(rate) {
-    if (!SPEEDS.includes(rate)) return;
+    if (!Number.isFinite(rate)) return;
+    rate = Math.max(0.25, Math.min(3, rate));
     try { localStorage.setItem('cv_video_rate', String(rate)); } catch (_) { /* storage unavailable */ }
     if (!window.CVYouTube.active()) element.playbackRate = rate;
     syncSpeedUi();
@@ -428,12 +429,11 @@ window.CVVideo = (() => {
     $('video-next').addEventListener('click', () => openSibling(1));
     $('video-speed-row').addEventListener('click', () => setSpeedPanel(true));
     $('video-speed-back').addEventListener('click', () => setSpeedPanel(false));
-    document.querySelectorAll('#video-speed-panel .video-menu-rate').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        setPlaybackRate(parseFloat(btn.dataset.rate));
-        setSpeedPanel(false);
-        closeMenu();
-      });
+    $('video-speed-slider').addEventListener('input', (event) => setPlaybackRate(parseFloat(event.target.value)));
+    $('video-speed-minus').addEventListener('click', () => setPlaybackRate(currentRate() - 0.05));
+    $('video-speed-plus').addEventListener('click', () => setPlaybackRate(currentRate() + 0.05));
+    document.querySelectorAll('#video-speed-presets .video-menu-rate').forEach((btn) => {
+      btn.addEventListener('click', () => setPlaybackRate(parseFloat(btn.dataset.rate)));
     });
     element.addEventListener('loadedmetadata', () => {
       if (!window.CVYouTube.active()) element.playbackRate = currentRate();

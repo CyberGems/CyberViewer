@@ -691,7 +691,10 @@
     "video_speed": "Speed",
     "video_speed_normal": "Normal",
     "video_prev": "Previous video",
-    "video_next": "Next video"
+    "video_next": "Next video",
+    "shortcuts_sec_playback": "PLAYBACK",
+    "shortcuts_sec_general": "GENERAL",
+    "video_speed_keys": "SPEED"
   },
   "es": {
     "tabs_label": "Pestañas de archivos abiertos",
@@ -1385,6 +1388,9 @@
     "video_speed": "Velocidad",
     "video_speed_normal": "Normal",
     "video_prev": "Video anterior",
-    "video_next": "Video siguiente"
+    "video_next": "Video siguiente",
+    "shortcuts_sec_playback": "REPRODUCCIÓN",
+    "shortcuts_sec_general": "GENERAL",
+    "video_speed_keys": "VELOCIDAD"
   }
 }

@@ -114,7 +114,7 @@ describe('title bar Help menu', () => {
     // Tooltip suppression when open (titlebar tooltip card guard, CyberNotes style)
     assert.match(appJs, /function ttSuppressedWhileOpen\(el\)[\s\S]*?btn-shortcuts[\s\S]*?shortcuts-popover/);
     assert.match(appJs, /function ttShow\(el\)\s*\{\s*if \(Date\.now\(\) < ttRestoreSuppressUntil\) return;\s*if \(ttSuppressedWhileOpen\(el\)\) return;/);
-    assert.match(appJs, /button\.classList\.toggle\('open',\s*next\);[\s\S]*?if \(next\) button\.blur\(\);/);
+    assert.match(appJs, /button\.classList\.toggle\('open',\s*next\);[\s\S]*?gridImage\.hidden = video;[\s\S]*?if \(next\) button\.blur\(\);/);
 
     // 2-column grid structure in HTML & CSS
     assert.match(html, /class="shortcuts-grid"[\s\S]*?class="shortcuts-col"[\s\S]*?data-i18n="shortcuts_sec_view"[\s\S]*?data-i18n="shortcuts_sec_edit"/);
