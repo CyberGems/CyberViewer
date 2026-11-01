@@ -101,7 +101,7 @@ Most image viewers are either bloated with features you never use or so barebone
 ### Audio playback and visualizations
 - Open MP3, PCM WAV, FLAC, Ogg Vorbis/Opus (.ogg, .oga, .opus), and AAC (.aac ADTS, .m4a MP4) directly, without conversion or an additional playback engine. Unusual codecs or profiles inside these containers may not be supported.
 - Audio shares the video playback controls, shortcuts, volume, loop, speed and optional session position restoration. Previous/next stays within audio files.
-- Choose Spectrum, Oscilloscope, Radial, Particles or Effects off from the playback menu. The selected style is remembered. Visuals follow the accent color, run at up to 30 fps and stop when paused or hidden. Reduced-motion preferences keep them static. Playing audio continues when hidden to the tray.
+- Choose Spectrum, Oscilloscope, Radial, Particles, Aurora or Effects off from the playback menu. The selected style is remembered. Each style has its own composition and an accent-based color palette. Visuals ease in when playback starts and settle smoothly when paused or finished, then stop drawing. They run at up to 30 fps on a canvas capped at 1440 × 810 pixels and stop immediately while hidden. Reduced-motion preferences keep them static. Playing audio continues when hidden to the tray.
 
 ### YouTube videos and playlists
 - Choose **Open YouTube link** in the main menu or press **Ctrl+L**. Paste a video, Shorts, live stream, or public playlist link. Links containing a video and a playlist retain that context; timestamps and playlist indexes are supported.

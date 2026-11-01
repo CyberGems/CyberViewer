@@ -708,7 +708,8 @@
     "audio_error": "Could not play \"{name}\". Its audio codec may be unsupported, or the file may be damaged.",
     "audio_play_error": "Could not start audio playback.",
     "audio_duration": "Duration",
-    "audio_paused": "Paused"
+    "audio_paused": "Paused",
+    "audio_aurora": "Aurora"
   },
   "es": {
     "tabs_label": "Pestañas de archivos abiertos",
@@ -1419,6 +1420,7 @@
     "audio_error": "No se pudo reproducir \"{name}\". Su códec de audio puede no ser compatible o el archivo puede estar dañado.",
     "audio_play_error": "No se pudo iniciar la reproducción del audio.",
     "audio_duration": "Duración",
-    "audio_paused": "En pausa"
+    "audio_paused": "En pausa",
+    "audio_aurora": "Aurora"
   }
 }

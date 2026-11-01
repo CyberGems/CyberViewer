@@ -45,8 +45,13 @@ if (!restoring) {
   pcm.writeUInt32LE(rate, 24); pcm.writeUInt32LE(rate * 2, 28); pcm.writeUInt16LE(2, 32);
   pcm.writeUInt16LE(16, 34); pcm.write('data', 36); pcm.writeUInt32LE(samples * 2, 40);
   for (let i = 0; i < samples; i++) {
-    const envelope = 0.55 + 0.35 * Math.sin(i / rate * Math.PI * 2 * 0.8);
-    pcm.writeInt16LE(Math.round(Math.sin(i / rate * 440 * Math.PI * 2) * 16000 * envelope), 44 + i * 2);
+    const t = i / rate, beat = Math.pow((1 + Math.sin(t * Math.PI * 4)) / 2, 5);
+    const envelope = 0.55 + 0.35 * Math.sin(t * Math.PI * 2 * .8);
+    const signal = Math.sin(t * Math.PI * 110) * .24 * beat
+      + Math.sin(t * Math.PI * 440) * .2 * envelope + Math.sin(t * Math.PI * 880) * .15
+      + Math.sin(t * Math.PI * 1760) * .07 * (1 - envelope)
+      + Math.sin(t * Math.PI * 3520) * .06 * envelope;
+    pcm.writeInt16LE(Math.round(signal * 26000), 44 + i * 2);
   }
   fs.writeFileSync(path.join(dataDir, 'Tone #ñ %.wav'), pcm);
   // MPEG-1 Layer III: 128 kb/s, 44.1 kHz stereo, no reservoir or spectral
@@ -146,18 +151,38 @@ app.whenReady().then(async () => {
       AnalyserNode.prototype.getByteFrequencyData=function(bytes){
         read.call(this,bytes); window.__analysisReads++; window.__audioPeak=Math.max(...bytes);
       };
+      const raf=window.requestAnimationFrame;
+      window.__paintTimes=[];
+      window.requestAnimationFrame=callback=>raf(now=>{
+        const reads=window.__analysisReads, start=performance.now(); callback(now);
+        if(window.__analysisReads>reads) window.__paintTimes.push(performance.now()-start);
+      });
+      const signature=document.createElement('canvas'); signature.width=64; signature.height=36;
+      const signatureContext=signature.getContext('2d',{willReadFrequently:true});
+      window.__visualSignature=()=>{
+        signatureContext.drawImage($('audio-canvas'),0,0,64,36);
+        return Array.from(signatureContext.getImageData(0,0,64,36).data);
+      };
     `);
     await evaluate('await window.CVVideo.toggle();');
     await waitFor(() => evaluate('return window.CVVideo.element.currentTime > .15 && window.CVVideo.element.webkitAudioDecodedByteCount > 0;'), 'WAV audio decoded');
-    for (const mode of ['spectrum', 'waveform', 'radial', 'particles']) {
+    const renderStats = {};
+    for (const mode of ['spectrum', 'waveform', 'radial', 'particles', 'aurora']) {
       await evaluate(`$('audio-visualizer').value='${mode}'; $('audio-visualizer').dispatchEvent(new Event('change'));`);
+      await evaluate('window.__paintTimes=[];');
       await delay(180);
       const first = await evaluate("return $('audio-canvas').toDataURL();");
       await delay(150);
       const second = await evaluate("return $('audio-canvas').toDataURL();");
       assert.ok(first !== second, mode + ' reacts/animates during actual audio playback');
       fs.writeFileSync(path.join(dataDir, mode + '.png'), (await win.webContents.capturePage()).toPNG());
+      assert.equal(await evaluate("return $('audio-canvas').width<=1440 && $('audio-canvas').height<=810;"), true);
+      renderStats[mode] = await evaluate('return window.__paintTimes.reduce((a,b)=>a+b,0)/Math.max(1,window.__paintTimes.length);');
     }
+    console.log('Mean drawing time (ms, software-rendered test): ' + JSON.stringify(renderStats));
+    const counter = await evaluate('return {reads:window.__analysisReads,time:performance.now()};'); await delay(1000);
+    const fps = await evaluate(`return (window.__analysisReads-${counter.reads})*1000/(performance.now()-${counter.time});`);
+    assert.ok(fps > 10 && fps <= 32, 'Live analysis/drawing remains capped near 30 fps: ' + fps);
     assert.ok(await evaluate('return window.__audioPeak > 20;'), 'Analyser receives real audio, not CORS-muted silence');
     win.webContents.debugger.attach('1.3');
     await win.webContents.debugger.sendCommand('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
@@ -168,9 +193,42 @@ app.whenReady().then(async () => {
     await win.webContents.debugger.sendCommand('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] });
     win.webContents.debugger.detach();
     await delay(100);
-    await evaluate('window.CVVideo.element.pause();');
-    const stopped = await evaluate("return $('audio-canvas').toDataURL();"); await delay(150);
+    const pauseFrames = await evaluate(`
+      const before=window.__visualSignature(), e=window.CVVideo.element;
+      const paused=new Promise(resolve=>e.addEventListener('pause',resolve,{once:true}));
+      e.pause(); await paused; return {before,after:window.__visualSignature(),image:$('audio-canvas').toDataURL(),reads:window.__analysisReads};
+    `);
+    await delay(120);
+    assert.ok(await evaluate(`return $('audio-canvas').toDataURL()!==${JSON.stringify(pauseFrames.image)};`), 'Pause has an animated release');
+    await delay(850);
+    const stopped = await evaluate("return $('audio-canvas').toDataURL();"); await delay(180);
     assert.equal(await evaluate("return $('audio-canvas').toDataURL();"), stopped, 'Paused canvas is static');
+    await evaluate('window.CVAudioVisuals.refresh();');
+    assert.equal(await evaluate("return $('audio-canvas').toDataURL();"), stopped, 'Idle repaint leaves no accumulating trails');
+    const idleSignature = await evaluate('return window.__visualSignature();');
+    const distance = (a, b) => a.reduce((sum, value, i) => sum + Math.abs(value - b[i]), 0) / a.length;
+    // Native pause delivery may span a render frame. Compare the first step
+    // with the whole release, instead of requiring byte-identical frame timing.
+    assert.ok(distance(pauseFrames.before, pauseFrames.after) < distance(pauseFrames.before, idleSignature) * .65,
+      'Pause starts with a small visual step rather than jumping straight to rest');
+    assert.equal(await evaluate('return window.__analysisReads;'), pauseFrames.reads, 'Release reuses frozen samples without extra FFT work');
+    // Natural end uses the same short release, then leaves no animation loop.
+    await evaluate('window.CVVideo.element.loop=false; window.CVVideo.element.currentTime=window.CVVideo.element.duration-.18;');
+    await waitFor(() => evaluate('return !window.CVVideo.element.seeking;'), 'seek close to natural end');
+    await evaluate('await window.CVVideo.toggle();');
+    await waitFor(() => evaluate('return window.CVVideo.element.ended;'), 'natural end');
+    const endStart = await evaluate("return $('audio-canvas').toDataURL();"); await delay(180);
+    assert.ok(await evaluate(`return $('audio-canvas').toDataURL()!==${JSON.stringify(endStart)};`), 'End of track settles smoothly');
+    await delay(850);
+    const ended = await evaluate("return $('audio-canvas').toDataURL();"); await delay(150);
+    assert.equal(await evaluate("return $('audio-canvas').toDataURL();"), ended, 'Ended canvas stops drawing');
+    await evaluate('await window.CVVideo.toggle();');
+    for (let i = 0; i < 3; i++) {
+      await evaluate('window.CVVideo.element.pause();'); await delay(40);
+      await evaluate('await window.CVVideo.toggle();'); await delay(40);
+    }
+    assert.equal(await evaluate('return !window.CVVideo.element.paused && window.__audioContext.state==="running";'), true, 'Rapid pause/resume during release preserves playback');
+    await evaluate('window.CVVideo.element.pause();'); await delay(850);
     await evaluate('await window.CVVideo.toggle(); window.__audioHidden=true; document.dispatchEvent(new Event("visibilitychange"));');
     const hidden = await evaluate("return $('audio-canvas').toDataURL();"); await delay(150);
     assert.equal(await evaluate("return $('audio-canvas').toDataURL();"), hidden, 'Hidden canvas stops');
@@ -196,7 +254,7 @@ app.whenReady().then(async () => {
     await evaluate("closeModal('modal-properties');");
     await evaluate("$('video-mute').click(); $('video-loop').click(); window.CVVideo.setPlaybackRate(1.25);");
     assert.equal(await evaluate('return window.CVVideo.element.muted && window.CVVideo.element.loop && window.CVVideo.element.playbackRate===1.25;'), true);
-    console.log('PASS PCM WAV, byte ranges, thumbnail, four animated modes, pause/hide/off, shared controls');
+    console.log('PASS PCM WAV, five animated modes, smooth pause/end, 30 fps cap, hide/off and shared controls');
     await open('Silence.mp3'); await ready();
     await evaluate('await window.CVVideo.toggle();');
     await waitFor(() => evaluate('return window.CVVideo.element.currentTime > .15 && window.CVVideo.element.webkitAudioDecodedByteCount > 0;'), 'MP3 decoder');

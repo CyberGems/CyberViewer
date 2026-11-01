@@ -101,7 +101,7 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 ### Audio y visualizaciones
 - Abre MP3, WAV PCM, FLAC, Ogg Vorbis/Opus (.ogg, .oga, .opus) y AAC (.aac ADTS, .m4a MP4) directamente, sin conversión ni otro motor de reproducción. Los códecs o perfiles poco habituales dentro de estos contenedores pueden no ser compatibles.
 - El audio comparte los controles, atajos, volumen, repetición, velocidad y restauración opcional de posición del video. Anterior/siguiente recorre solo archivos de audio.
-- Elige Espectro, Osciloscopio, Radial, Partículas o Efectos desactivados en el menú del reproductor. Se recuerda el estilo elegido. Los efectos siguen el color de acento, funcionan hasta a 30 fps y se detienen al pausar u ocultar la ventana. La preferencia de movimiento reducido los mantiene estáticos. El audio en reproducción continúa al ocultar en la bandeja.
+- Elige Espectro, Osciloscopio, Radial, Partículas, Aurora o Efectos desactivados en el menú del reproductor. Se recuerda el estilo elegido. Cada estilo tiene una composición propia y una paleta basada en el color de acento. Los efectos aparecen suavemente al reproducir y reposan gradualmente al pausar o finalizar, tras lo cual dejan de dibujar. Funcionan hasta a 30 fps en un canvas limitado a 1440 × 810 píxeles y se detienen de inmediato al ocultar la ventana. La preferencia de movimiento reducido los mantiene estáticos. El audio en reproducción continúa al ocultar en la bandeja.
 
 ### Videos y playlists de YouTube
 - Selecciona **Abrir enlace de YouTube** en el menú principal o pulsa **Ctrl+L**. Pega el enlace de un video, Short, directo o playlist pública. Los enlaces con video y playlist conservan ese contexto; se admiten marcas de tiempo e índices de playlist.
