@@ -102,7 +102,10 @@ app.whenReady().then(async () => {
     await evaluate("state.settings.app.hudAutoHideDelay=350; $('video-fullscreen').click();");
     await waitFor(() => win.isFullScreen(), 'native fullscreen enabled');
     await waitFor(() => evaluate("return state.isGhost && $('viewer-wrap').clientHeight === innerHeight;"), 'fullscreen viewport');
-    assert.equal(await evaluate("return getComputedStyle($('main-video')).objectFit === 'contain' && getComputedStyle($('canvas-layer')).transform === 'none' && $('main-video').getBoundingClientRect().width === innerWidth && getComputedStyle($('image-tabs')).display === 'none' && getComputedStyle($('topbar')).display === 'none';"), true, 'Native fullscreen fits the complete frame without app chrome');
+    // Fractional display scaling (125%, 150%) snaps the composited video rect
+    // to whole device pixels, so the width can miss innerWidth by a fraction
+    // of a CSS pixel. Compare with a one-pixel tolerance instead of equality.
+    assert.equal(await evaluate("return getComputedStyle($('main-video')).objectFit === 'contain' && getComputedStyle($('canvas-layer')).transform === 'none' && Math.abs($('main-video').getBoundingClientRect().width - innerWidth) <= 1 && getComputedStyle($('image-tabs')).display === 'none' && getComputedStyle($('topbar')).display === 'none';"), true, 'Native fullscreen fits the complete frame without app chrome');
     await evaluate('window.CVVideo.element.loop=true; await window.CVVideo.toggle(); window.CVVideo.reveal();');
     const center = await evaluate('return {x:Math.floor(innerWidth/2),y:Math.floor(innerHeight/2)};');
     win.webContents.sendInputEvent({type:'mouseMove', ...center});
