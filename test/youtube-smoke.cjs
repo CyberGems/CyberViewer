@@ -25,7 +25,7 @@ app.whenReady().then(async () => {
   const info = () => evaluate('return window.CVYouTube.info;');
   diagnostics = async () => {
     if (child()) fs.writeFileSync(path.join(dir,'failure-player.png'),(await child().capturePage()).toPNG());
-    if (child()) for (const f of child().mainFrame.frames) console.error('Player frame:', f.url, await f.executeJavaScript("[...document.querySelectorAll('button')].map(el=>({label:el.getAttribute('aria-label'),class:el.className})).slice(-40)"));
+    if (child()) for (const f of child().mainFrame.frames) console.error('Player frame:', f.url, await f.executeJavaScript("({fullscreen:!!document.fullscreenElement,buttons:[...document.querySelectorAll('button')].map(el=>({label:el.getAttribute('aria-label'),class:el.className})).slice(-40)})"));
     return evaluate("return {info:window.CVYouTube.info,status:$('youtube-status').textContent,hidden:document.hidden,modals:[...document.querySelectorAll('.modal-overlay.active')].map(el=>el.id)};");
   };
   const loaded = () => waitFor(async () => (await info())?.videoId, 'YouTube video ready');
@@ -72,6 +72,7 @@ app.whenReady().then(async () => {
     await evaluate("$('youtube-fullscreen').click();");
     await waitFor(() => win.isFullScreen(), 'native fullscreen');
     await waitFor(() => evaluate("return state.isGhost && getComputedStyle($('youtube-footer')).display==='none';"), 'fullscreen without CyberViewer overlays');
+    await waitFor(() => child().mainFrame.frames[0].executeJavaScript('!!document.fullscreenElement'), 'app fullscreen reaches YouTube document');
     assert.equal(await evaluate("return getComputedStyle($('ghost-close')).display==='none';"), true);
     child().sendInputEvent({ type: 'keyDown', keyCode: 'ESC' });
     child().sendInputEvent({ type: 'keyUp', keyCode: 'ESC' });
@@ -82,6 +83,31 @@ app.whenReady().then(async () => {
     await waitFor(() => officialFrame.executeJavaScript('!!document.querySelector(' + JSON.stringify(fullscreen) + ')'), 'official fullscreen button ready');
     await officialFrame.executeJavaScript('document.querySelector(' + JSON.stringify(fullscreen) + ').click()', true);
     await waitFor(() => win.isFullScreen(), 'official YouTube fullscreen control');
+    await waitFor(() => officialFrame.executeJavaScript('!!document.fullscreenElement'), 'YouTube document owns fullscreen');
+    await officialFrame.executeJavaScript('document.querySelector(' + JSON.stringify(fullscreen) + ').click()', true);
+    await waitFor(() => !win.isFullScreen(), 'official YouTube button exits fullscreen');
+    await waitFor(() => child().executeJavaScript('!document.fullscreenElement'), 'button clears HTML fullscreen');
+    const doubleClickPlayer = async () => {
+      win.show(); win.focus(); child().focus();
+      // Native window notifications precede the DOM fullscreen promise and
+      // layout. Let Chromium finish both before issuing another gesture.
+      await officialFrame.executeJavaScript('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+      // Dispatch inside the cross-origin frame; parent renderer events cannot
+      // bubble into it. Electron supplies the Fullscreen API user activation.
+      await officialFrame.executeJavaScript("(()=>{const r=document.querySelector('video').getBoundingClientRect(),x=r.x+r.width*.3,y=r.y+r.height*.45;document.elementFromPoint(x,y).dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true,view:window,detail:2,button:0,clientX:x,clientY:y}))})()", true);
+    };
+    await doubleClickPlayer();
+    await waitFor(() => win.isFullScreen(), 'double-click enters YouTube fullscreen');
+    await waitFor(() => officialFrame.executeJavaScript('!!document.fullscreenElement'), 'double-click fullscreen transition settled');
+    await doubleClickPlayer();
+    await waitFor(() => !win.isFullScreen(), 'double-click exits YouTube fullscreen');
+    await waitFor(() => officialFrame.executeJavaScript('!document.fullscreenElement'), 'double-click clears YouTube fullscreen');
+    await evaluate("$('youtube-fullscreen').click();");
+    await waitFor(() => officialFrame.executeJavaScript('!!document.fullscreenElement'), 'app button enters YouTube fullscreen');
+    await doubleClickPlayer();
+    await waitFor(() => !win.isFullScreen(), 'double-click exits app-initiated fullscreen');
+    await doubleClickPlayer();
+    await waitFor(() => win.isFullScreen(), 'double-click re-enters YouTube fullscreen');
     child().sendInputEvent({ type: 'keyDown', keyCode: 'ESC' });
     child().sendInputEvent({ type: 'keyUp', keyCode: 'ESC' });
     await waitFor(() => !win.isFullScreen(), 'Escape from official YouTube fullscreen');
@@ -105,7 +131,7 @@ app.whenReady().then(async () => {
     await evaluate('await window.CVWorkspace.activate(' + JSON.stringify(listId) + ');');
     await waitFor(async () => (await info())?.videoId === second && (await info())?.index === 1, 'playlist selection across tab switches');
     assert.equal(webContents.getAllWebContents().filter(w => w.getURL().endsWith('/assets/youtube-player.html')).length, 1, 'Only one YouTube renderer stays active');
-    console.log('PASS native fullscreen/Escape, modal layering, full playlist, next video, retained playlist position and decoder release');
+    console.log('PASS fullscreen buttons/double-click/Escape, modal layering, full playlist, next video, retained playlist position and decoder release');
     fs.writeFileSync(path.join(dir, 'youtube-playlist.png'), (await child().capturePage()).toPNG());
     const png = nativeImage.createFromBitmap(Buffer.alloc(80*60*4,255),{width:80,height:60}).toPNG();
     const image = path.join(dir,'still.png'); fs.writeFileSync(image,png);
