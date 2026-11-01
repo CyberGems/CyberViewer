@@ -41,12 +41,6 @@ jobs:
       - name: Unit Tests
         run: npm test
 
-      # The transcoder for WMV/AVI/FLV is not committed: fetch the pinned
-      # official build (checksum-verified) so extraResources can bundle it.
-      - name: Fetch ffmpeg for bundling
-        shell: pwsh
-        run: npm run fetch:ffmpeg
-
       # Build only — never let electron-builder publish on tag (avoids double-upload + API flakes).
       - name: Compile and Package Electron App
         run: npm run build

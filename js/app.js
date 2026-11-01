@@ -3215,47 +3215,8 @@ function showImage(idx, direction, isInitial = false) {
     }
     if (window.CVFormats.isVideo(im)) {
       state.currentRotation = 0; state.visualRotation = 0; state.hasChanges = false;
-      updateHUDStates();
-      if (window.CVFormats.isConvertible(im) && window.electronAPI && window.electronAPI.convertVideo) {
-        // Chromium cannot decode WMV/AVI/FLV: transcode to MP4 first, then
-        // play the converted file from the cache (spinner already visible).
-        void (async () => {
-          try {
-            const unwatch = window.electronAPI.onConvertProgress ? window.electronAPI.onConvertProgress(payload => {
-              if (payload && payload.path && payload.path.toLowerCase() === String(im.file.path || '').toLowerCase()) {
-                showConvertProgress(payload.percent);
-              }
-            }) : null;
-            showConvertProgress(0);
-            let loadUrl = url;
-            try {
-              const result = await window.electronAPI.convertVideo(im.file.path);
-              if (!result || !result.ok) throw new Error((result && result.error) || 'conversion failed');
-              loadUrl = mediaUrl(result.path);
-            } finally {
-              if (unwatch) unwatch();
-              hideConvertProgress();
-            }
-            if (!isLive()) { markMainReady(); return; }
-            window.CVVideo.load(im, loadUrl, markMainReady);
-            // The converted file now provides a sidebar frame; refresh it.
-            schedulePriorityThumb(idx);
-          } catch (error) {
-            console.error('Video conversion failed:', error);
-            hideConvertProgress();
-            if (!isLive()) { markMainReady(); return; }
-            spinner.classList.remove('active');
-            state.transitioning = false;
-            im.loaded = false;
-            im.w = 0; im.h = 0;
-            clearImageError();
-            setImageError(im);
-            markMainReady();
-          }
-        })();
-        return;
-      }
       window.CVVideo.load(im, url, markMainReady);
+      updateHUDStates();
       return;
     }
     mainImg.hidden = false;
@@ -3344,22 +3305,6 @@ function showImage(idx, direction, isInitial = false) {
     mainImg.style.transition = 'none'; // Sin transición para máxima velocidad inicial
     doLoad();
   }
-}
-
-// ── LEGACY VIDEO CONVERSION PROGRESS ──
-/** Show the conversion percent under the loading spinner (WMV/AVI/FLV). */
-function showConvertProgress(percent) {
-  const label = $('spinner-label');
-  if (!label) return;
-  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
-  const t = I18N[lang] || I18N.en;
-  label.textContent = (t.spinner_converting || 'Converting video… {percent}%').replace('{percent}', String(Math.max(0, Math.min(100, Math.round(percent)))));
-  label.hidden = false;
-}
-
-function hideConvertProgress() {
-  const label = $('spinner-label');
-  if (label) label.hidden = true;
 }
 
 function displayImage(url, w, h, direction) {

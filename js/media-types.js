@@ -6,10 +6,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (youtube) {
   'use strict';
   const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.tif', '.ico', '.avif']);
-  const VIDEO_EXTS = new Set(['.mp4', '.m4v', '.webm', '.mov', '.mkv', '.wmv', '.avi', '.flv']);
-  // Legacy containers Chromium cannot decode; they are transcoded to MP4 with
-  // the bundled ffmpeg the first time they are opened (see lib/convert.js).
-  const CONVERTIBLE_EXTS = new Set(['.wmv', '.avi', '.flv']);
+  const VIDEO_EXTS = new Set(['.mp4', '.m4v', '.webm', '.mov', '.mkv']);
   const MEDIA_EXTS = new Set([...IMAGE_EXTS, ...VIDEO_EXTS]);
   function extension(value) {
     const file = value?.file || value;
@@ -17,7 +14,6 @@
     return /\.[^.\\/]+$/.exec(name)?.[0].toLowerCase() || '';
   }
   const isVideo = value => !!youtube?.isYouTube(value) || VIDEO_EXTS.has(extension(value));
-  const isConvertible = value => !youtube?.isYouTube(value) && CONVERTIBLE_EXTS.has(extension(value));
   const isSupportedFile = file => !!youtube?.isYouTube(file) || MEDIA_EXTS.has(extension(file)) || (!file?.path && file?.type?.startsWith('image/'));
   function formatTime(seconds) {
     if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
@@ -26,5 +22,5 @@
     const rest = String(total % 60).padStart(2, '0');
     return minutes >= 60 ? `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}:${rest}` : `${minutes}:${rest}`;
   }
-  return { IMAGE_EXTS, VIDEO_EXTS, CONVERTIBLE_EXTS, MEDIA_EXTS, isVideo, isConvertible, isSupportedFile, formatTime };
+  return { IMAGE_EXTS, VIDEO_EXTS, MEDIA_EXTS, isVideo, isSupportedFile, formatTime };
 });

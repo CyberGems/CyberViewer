@@ -2143,8 +2143,7 @@
   body:not(.ghost-mode):not(.empty-state) #crop-overlay,
   body:not(.ghost-mode):not(.empty-state) #drop-zone,
   body:not(.ghost-mode):not(.empty-state) #drag-overlay,
-  body:not(.ghost-mode):not(.empty-state) #spinner,
-  body:not(.ghost-mode):not(.empty-state) #spinner-label {
+  body:not(.ghost-mode):not(.empty-state) #spinner {
     bottom: var(--dock-h, 56px);
   }
 
@@ -5442,26 +5441,6 @@
   /* Fade out only: image decodes can finish within the fade window, so the
      spinner must appear at full opacity right away. */
   #spinner.active { opacity: 1; visibility: visible; transition: none; }
-
-  /* Conversion percent under the spinner (WMV/AVI/FLV transcode). */
-  #spinner-label {
-    position: absolute;
-    left: 50%;
-    top: calc(50% + 48px);
-    transform: translateX(-50%);
-    z-index: 8;
-    pointer-events: none;
-    font: 11px var(--font-ui);
-    letter-spacing: 0.5px;
-    color: var(--cyber-muted);
-    background: rgba(var(--cyber-shell-rgb), 0.85);
-    border: 1px solid rgba(var(--cyber-accent-rgb), 0.35);
-    border-radius: 3px;
-    padding: 4px 10px;
-    white-space: nowrap;
-  }
-
-  #spinner-label[hidden] { display: none; }
 
   .spinner-track {
     fill: none;

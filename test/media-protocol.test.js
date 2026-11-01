@@ -67,6 +67,21 @@ describe('mixed media tabs', () => {
     assert.equal(isSupportedFile({ name: 'secret.txt', type: 'video/mp4' }), false);
     assert.equal(isSupportedFile({ name: 'photo.png' }), true);
   });
+  it('rejects WMV, AVI and FLV in file selection and native path grants', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cv-unsupported-video-'));
+    try {
+      const allowlist = createPathAllowlist();
+      for (const name of ['clip.wmv', 'clip.AVI', 'clip.flv']) {
+        const file = path.join(dir, name);
+        fs.writeFileSync(file, 'unsupported video fixture');
+        assert.equal(isVideo({ file: { name, path: file } }), false, name);
+        assert.equal(isSupportedFile({ name, type: 'video/mp4' }), false, name);
+        assert.equal(isSupportedFile({ name, path: file }), false, name);
+        assert.equal(isExistingMediaFile(file), false, name);
+        assert.equal(allowlist.allowMediaFile(file), null, name);
+      }
+    } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  });
   it('round-trips playback time without retaining a decoder or invalid state', () => {
     const model = new TabModel();
     const tab = model.open({ file: { name: 'clip.mp4', path: 'C:/clip.mp4' } });

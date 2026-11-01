@@ -45,7 +45,6 @@ sample('delayed-audio.mp4', ['-i',base,'-itsoffset','3','-i',base,'-map','0:v:0'
 fs.copyFileSync(base, path.join(dataDir, 'autoplay.mp4'));
 sample('long.mp4', ['-stream_loop','-1','-i',base,'-t','600','-c','copy','-movflags','+faststart']);
 sample('1080p.mp4', ['-f','lavfi','-i','testsrc2=size=1920x1080:rate=24','-t','3','-an','-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p','-movflags','+faststart']);
-sample('sample.wmv', ['-f','lavfi','-i','testsrc2=size=320x180:rate=24','-f','lavfi','-i','sine=frequency=600:sample_rate=48000','-t','4','-c:v','wmv2','-b:v','400k','-c:a','wmav2']);
 fs.writeFileSync(path.join(dataDir, 'damaged.mp4'), 'Not a video');
 const environment = { ...process.env, CV_VIDEO_TEST_DIR: dataDir };
 delete environment.ELECTRON_RUN_AS_NODE;
