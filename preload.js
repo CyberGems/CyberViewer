@@ -89,6 +89,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   validatePaths: (paths) => ipcRenderer.invoke('validate-paths', paths),
   showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),
   registerContextMenu: (enable, lang) => ipcRenderer.invoke('register-context-menu', enable, lang),
+  // Legacy video transcode (WMV/AVI/FLV -> MP4); progress arrives as {path, percent}
+  convertVideo: (path) => ipcRenderer.invoke('convert-video', path),
+  onConvertProgress: (cb) => {
+    const handler = (_, payload) => cb(payload);
+    ipcRenderer.on('convert-progress', handler);
+    return () => ipcRenderer.removeListener('convert-progress', handler);
+  },
   uiReady: () => ipcRenderer.send('ui-ready'),
 
   // Updates (electron-updater) — download/install always user-requested

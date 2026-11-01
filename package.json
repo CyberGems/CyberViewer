@@ -14,6 +14,7 @@
     "lint": "eslint main.js preload.js tray-preload.js youtube-preload.js lib test js",
     "i18n:sync": "node scripts/sync-i18n-ui.js",
     "test:video": "node scripts/test-video.cjs",
+    "fetch:ffmpeg": "node scripts/fetch-ffmpeg.cjs",
     "test:video-speed": "node test/video-speed-smoke.cjs",
     "test:youtube": "node scripts/test-youtube.cjs"
   },
@@ -49,6 +50,10 @@
       {
         "from": "electron/open-taskbar-settings.exe",
         "to": "open-taskbar-settings.exe"
+      },
+      {
+        "from": "electron/ffmpeg.exe",
+        "to": "ffmpeg.exe"
       }
     ],
     "publish": {
@@ -145,7 +150,10 @@
             "m4v",
             "webm",
             "mov",
-            "mkv"
+            "mkv",
+            "wmv",
+            "avi",
+            "flv"
           ],
           "name": "Video",
           "description": "Video",

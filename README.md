@@ -90,6 +90,7 @@ Most image viewers are either bloated with features you never use or so barebone
 
 ### ▶️ Video playback
 - Open MP4, M4V, WebM, MOV, and MKV through the file picker, drag and drop, folder navigation, or tabs. Support depends on the video and audio codecs inside each file and the computer's decoder capabilities.
+- Legacy videos (WMV, AVI, FLV) are supported too: Chromium cannot decode them, so CyberViewer converts them to MP4 with the bundled ffmpeg the first time they are opened and caches the result (the original file is never modified).
 - Play/pause, seek, adjust volume, mute, and loop. Videos play automatically on open by default; turn **Autoplay on open** off in the **…** menu for manual playback. The preference is saved. Press **Space** to play/pause, **Left/Right** to skip 5 seconds, or **M** to mute. **Up/Down** and **A/D** still navigate files.
 - **YouTube-style touches:** click the video to pause or resume and double-click it for fullscreen; use the previous/next buttons to jump between videos in the folder; open the speed panel (0.25×–3×) from the **…** menu or cycle it with `>` / `<`; and hover the seek bar for a timestamp with a frame preview. Loop, volume, mute, and speed persist between sessions.
 - Compact controls sit over the video and hide during playback after inactivity. The **…** menu provides loop, properties, open, and audio information. Image editing bars are hidden while viewing video.
@@ -133,7 +134,7 @@ Most image viewers are either bloated with features you never use or so barebone
 - **Auto-start with Windows:** launch minimized on sign-in
 - **Global hotkey:** configurable show/hide shortcut, default `Alt+Shift+V`
 - **Explorer context menu:** right-click supported images to open them in CyberViewer
-- **File associations:** set CyberViewer as the default viewer for JPG, PNG, GIF, WebP, BMP, TIFF, ICO, or AVIF, with a video default-viewer option in the installer (MP4, M4V, WebM, MOV, MKV). The System tab shows the current viewer per format and links to the Windows settings.
+- **File associations:** set CyberViewer as the default viewer for JPG, PNG, GIF, WebP, BMP, TIFF, ICO, or AVIF, with a video default-viewer option in the installer (MP4, M4V, WebM, MOV, MKV, WMV, AVI, FLV). The System tab shows the current viewer per format and links to the Windows settings.
 - **Single resident instance:** Explorer opens and additional launches send images to tabs in the existing window
 - **Auto-update:** built-in GitHub Releases updater with silent install
 - **Settings backup:** export or import configuration and favorites as JSON

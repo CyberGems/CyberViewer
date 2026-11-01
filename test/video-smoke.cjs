@@ -234,6 +234,32 @@ app.whenReady().then(async () => {
     const suspendedSession=JSON.parse(fs.readFileSync(path.join(dataDir,'session.json'),'utf8'));
     assert.ok(Math.abs(suspendedSession.tabs.find(tab=>tab.path===file).view.videoTime-6)<.3, 'Suspending preserves the captured position');
     console.log('PASS saved session position and decoder release on suspend');
+
+    // ── Legacy container (WMV): transcode on open, then play the MP4 ──
+    const wmvPath = path.join(dataDir, 'sample.wmv');
+    await open(path.basename(wmvPath));
+    await waitFor(() => evaluate('return window.CVVideo.element.readyState >= 2 && window.CVVideo.element.videoWidth === 320;'), 'wmv plays after conversion', 40000);
+    await evaluate('window.CVVideo.element.pause();');
+    assert.equal(await evaluate("return !$('video-controls').hidden;"), true, 'Converted WMV shows the video controls');
+    assert.equal(await evaluate("return $('spinner-label').hidden;"), true, 'Conversion progress label hides after load');
+    const convertedDir = path.join(dataDir, 'converted');
+    const converted = fs.readdirSync(convertedDir).filter(name => name.endsWith('.mp4'));
+    assert.equal(converted.length, 1, 'Conversion cache holds one MP4');
+    const convertStart = Date.now();
+    await open(path.basename(wmvPath));
+    await waitFor(() => evaluate('return window.CVVideo.element.readyState >= 2 && window.CVVideo.element.videoWidth === 320;'), 'second wmv open uses the cached conversion', 20000);
+    await evaluate('window.CVVideo.element.pause();');
+    assert.ok(Date.now() - convertStart < 8000, 'Cached conversion reopens quickly');
+    const thumbs = await evaluate('return await window.electronAPI.getThumbnail(' + JSON.stringify(wmvPath) + ',{priority:true});');
+    assert.ok(thumbs, 'converted wmv yields a sidebar thumbnail');
+    console.log('PASS WMV conversion on open, cached reopen and thumbnail');
+
+    // Leave the persisted session in the state the restore phase expects.
+    await open(path.basename(file));
+    await loaded();
+    await evaluate('window.CVVideo.element.currentTime=6;');
+    await waitFor(() => evaluate('return !window.CVVideo.element.seeking;'), 'wmv section resets clip position');
+    await evaluate('window.CVVideo.element.pause(); window.CVWorkspace.capture(); await window.CVWorkspace.flush();');
   }
   // Decoder errors for the deliberately damaged fixture are expected.
   const unexpected=errors.filter(message=>!/(DEMUXER|FFmpegDemuxer|ERR_REQUEST_RANGE_NOT_SATISFIABLE)/i.test(message));

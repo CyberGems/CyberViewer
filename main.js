@@ -12,10 +12,11 @@ const { pathToFileURL } = require('url');
 const { execFile, spawn } = require('child_process');
 
 const {
-  cleanFsPath, toMediaUrl, createPathAllowlist, MEDIA_EXTS,
+  cleanFsPath, toMediaUrl, createPathAllowlist, MEDIA_EXTS, CONVERTIBLE_EXTS,
   isExistingMediaFile, isVideoPath
 } = require('./lib/paths');
 const { createMediaResponse } = require('./lib/media-protocol');
+const { createConverter } = require('./lib/convert');
 const { clearThumbCache, evictThumbCache } = require('./lib/thumb-cache');
 const { clampWindowBounds, MIN_W, MIN_H, nextBoundsAttempt, boundsMatch, provisionalBoundsForMaximize } = require('./lib/window-bounds');
 const { initUpdater, setAutoCheckEnabled, isPortableBuild } = require('./lib/updater');
@@ -1196,6 +1197,7 @@ function applyToggleHotkey(accelerator) {
 
 app.on('will-quit', () => {
   try { globalShortcut.unregisterAll(); } catch (_) { /* nothing registered */ }
+  mediaConverter.dispose();
 });
 
 ipcMain.handle('open-taskbar-settings', async () => {
@@ -1444,7 +1446,10 @@ const FILE_ASSOCIATION_TYPES = [
   { ext: '.m4v', progid: 'CyberViewer.video', group: 'video' },
   { ext: '.webm', progid: 'CyberViewer.video', group: 'video' },
   { ext: '.mov', progid: 'CyberViewer.video', group: 'video' },
-  { ext: '.mkv', progid: 'CyberViewer.video', group: 'video' }
+  { ext: '.mkv', progid: 'CyberViewer.video', group: 'video' },
+  { ext: '.wmv', progid: 'CyberViewer.video', group: 'video' },
+  { ext: '.avi', progid: 'CyberViewer.video', group: 'video' },
+  { ext: '.flv', progid: 'CyberViewer.video', group: 'video' }
 ];
 
 function regQueryStringValue(key, valueName) {
@@ -2025,6 +2030,41 @@ const thumbCachePath = path.join(app.getPath('userData'), 'thumb_cache');
 if (!fs.existsSync(thumbCachePath)) fs.mkdirSync(thumbCachePath, { recursive: true });
 pathAllowlist.allow(thumbCachePath);
 
+// Legacy containers (WMV/AVI/FLV) transcode into MP4 under userData/converted.
+// The whole directory sits on the media allowlist so converted files can be
+// served by the cvlocal protocol without per-file grants.
+const convertedCachePath = path.join(app.getPath('userData'), 'converted');
+
+/** Locate the transcoder: bundled build, dev download, or PATH fallback. */
+function getFfmpegPath() {
+  if (app.isPackaged) {
+    const bundled = path.join(process.resourcesPath, 'ffmpeg.exe');
+    return fs.existsSync(bundled) ? bundled : null;
+  }
+  const dev = path.join(__dirname, 'electron', 'ffmpeg.exe');
+  if (fs.existsSync(dev)) return dev;
+  return 'ffmpeg';
+}
+
+const mediaConverter = createConverter({ getFfmpegPath, cacheDir: convertedCachePath });
+pathAllowlist.allow(convertedCachePath);
+
+ipcMain.handle('convert-video', async (event, filePath) => {
+  try {
+    const abs = resolveAllowedPath(filePath);
+    const result = await mediaConverter.convert(abs, {
+      onProgress: percent => {
+        if (!event.sender.isDestroyed()) event.sender.send('convert-progress', { path: abs, percent });
+      }
+    });
+    if (result.ok) pathAllowlist.allow(result.path);
+    return result;
+  } catch (e) {
+    console.error('convert-video failed:', e);
+    return { ok: false, error: e.message || String(e) };
+  }
+});
+
 ipcMain.handle('clear-thumbnail-cache', () => {
   try {
     return { ok: true, ...clearThumbCache(thumbCachePath) };
@@ -2165,7 +2205,10 @@ ipcMain.handle('get-thumbnail', async (event, filePath, opts) => {
     const isGif = ext === '.gif';
     const isAvif = ext === '.avif';
     const isVideo = isVideoPath(abs);
-    const thumbVersion = isVideo ? 'video-frame-v1' : isGif ? 'gif-frame-v2' : isAvif ? 'avif-browser-v1' : 'still-v1';
+    const isConvertible = CONVERTIBLE_EXTS.has(ext);
+    // Convertible sources only get a frame once a conversion exists; passive
+    // folder scans must never trigger a transcode.
+    const thumbVersion = isVideo ? (isConvertible ? 'video-convert-v1' : 'video-frame-v1') : isGif ? 'gif-frame-v2' : isAvif ? 'avif-browser-v1' : 'still-v1';
     const hash = crypto.createHash('md5').update(normalizedPath + stats.mtimeMs + thumbVersion).digest('hex');
     const cacheFile = path.join(thumbCachePath, `${hash}.jpg`);
 
@@ -2180,7 +2223,9 @@ ipcMain.handle('get-thumbnail', async (event, filePath, opts) => {
         return toMediaUrl(cacheFile);
       }
       if (isVideo) {
-        if (!await renderVideoThumb(abs, cacheFile)) return null;
+        const frameSource = isConvertible ? mediaConverter.peekConverted(abs) : abs;
+        if (!frameSource) return null;
+        if (!await renderVideoThumb(frameSource, cacheFile)) return null;
       } else if ((isGif || isAvif) && await renderBrowserImageThumb(abs, cacheFile)) {
         // Browser-decoded formats use a static thumbnail so animated sources
         // do not keep repainting the sidebar. Chromium also provides the AVIF
@@ -3035,6 +3080,7 @@ if (!gotTheLock) {
     applyToggleHotkey(settings.app && settings.app.toggleHotkey);
     initAutoBackup();
     ensureContextMenuRegistration();
+    mediaConverter.prune();
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

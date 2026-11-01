@@ -16,8 +16,8 @@
 LangString CV_DefaultViewerTitle 1033 "Default apps"
 LangString CV_DefaultViewerTitle 3082 "Aplicaciones predeterminadas"
 
-LangString CV_DefaultViewerBody 1033 "CyberViewer can open images (JPG, JPEG, PNG, GIF, WEBP, BMP, TIFF, ICO, AVIF) and videos (MP4, M4V, WEBM, MOV, MKV).$\r$\n$\r$\nCheck the options below to use CyberViewer as your default viewer for each group (current user).$\r$\n$\r$\nYou can change or review these defaults later in Windows Settings > Apps > Default apps."
-LangString CV_DefaultViewerBody 3082 "CyberViewer puede abrir imágenes (JPG, JPEG, PNG, GIF, WEBP, BMP, TIFF, ICO, AVIF) y videos (MP4, M4V, WEBM, MOV, MKV).$\r$\n$\r$\nMarca las opciones de abajo para usar CyberViewer como tu visor predeterminado de cada grupo (usuario actual).$\r$\n$\r$\nPuedes cambiar o revisar estos valores más tarde en la Configuración de Windows > Aplicaciones > Aplicaciones predeterminadas."
+LangString CV_DefaultViewerBody 1033 "CyberViewer can open images (JPG, JPEG, PNG, GIF, WEBP, BMP, TIFF, ICO, AVIF) and videos (MP4, M4V, WEBM, MOV, MKV, WMV, AVI, FLV). Legacy videos are converted automatically on first open.$\r$\n$\r$\nCheck the options below to use CyberViewer as your default viewer for each group (current user).$\r$\n$\r$\nYou can change or review these defaults later in Windows Settings > Apps > Default apps."
+LangString CV_DefaultViewerBody 3082 "CyberViewer puede abrir imágenes (JPG, JPEG, PNG, GIF, WEBP, BMP, TIFF, ICO, AVIF) y videos (MP4, M4V, WEBM, MOV, MKV, WMV, AVI, FLV). Los videos legados se convierten automáticamente al abrirlos por primera vez.$\r$\n$\r$\nMarca las opciones de abajo para usar CyberViewer como tu visor predeterminado de cada grupo (usuario actual).$\r$\n$\r$\nPuedes cambiar o revisar estos valores más tarde en la Configuración de Windows > Aplicaciones > Aplicaciones predeterminadas."
 
 LangString CV_DefaultViewerCheckbox 1033 "Set CyberViewer as the default image viewer"
 LangString CV_DefaultViewerCheckbox 3082 "Establecer CyberViewer como el visor de imágenes predeterminado"
@@ -109,6 +109,9 @@ FunctionEnd
     !insertmacro CV_WriteFileAssoc ".webm" "CyberViewer.video" "Video"
     !insertmacro CV_WriteFileAssoc ".mov"  "CyberViewer.video" "Video"
     !insertmacro CV_WriteFileAssoc ".mkv"  "CyberViewer.video" "Video"
+    !insertmacro CV_WriteFileAssoc ".wmv"  "CyberViewer.video" "Video"
+    !insertmacro CV_WriteFileAssoc ".avi"  "CyberViewer.video" "Video"
+    !insertmacro CV_WriteFileAssoc ".flv"  "CyberViewer.video" "Video"
   ${EndIf}
 
   ${If} $R9 == 1
@@ -136,6 +139,9 @@ FunctionEnd
     WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".webm" "CyberViewer.video"
     WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".mov" "CyberViewer.video"
     WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".mkv" "CyberViewer.video"
+    WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".wmv" "CyberViewer.video"
+    WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".avi" "CyberViewer.video"
+    WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".flv" "CyberViewer.video"
   ${EndIf}
 
   ${If} $R9 == 1
@@ -218,6 +224,18 @@ FunctionEnd
   ReadRegStr $R8 HKCU "Software\Classes\.mkv" ""
   ${If} $R8 == "CyberViewer.video"
     DeleteRegValue HKCU "Software\Classes\.mkv" ""
+  ${EndIf}
+  ReadRegStr $R8 HKCU "Software\Classes\.wmv" ""
+  ${If} $R8 == "CyberViewer.video"
+    DeleteRegValue HKCU "Software\Classes\.wmv" ""
+  ${EndIf}
+  ReadRegStr $R8 HKCU "Software\Classes\.avi" ""
+  ${If} $R8 == "CyberViewer.video"
+    DeleteRegValue HKCU "Software\Classes\.avi" ""
+  ${EndIf}
+  ReadRegStr $R8 HKCU "Software\Classes\.flv" ""
+  ${If} $R8 == "CyberViewer.video"
+    DeleteRegValue HKCU "Software\Classes\.flv" ""
   ${EndIf}
   DeleteRegKey HKCU "Software\CyberViewer"
   DeleteRegValue HKCU "Software\RegisteredApplications" "CyberViewer"

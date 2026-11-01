@@ -90,6 +90,7 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 
 ### ▶️ Reproducción de video
 - Abre MP4, M4V, WebM, MOV y MKV desde el selector, arrastrando archivos, navegando por carpetas o mediante pestañas. La compatibilidad depende de los códecs de video y audio del archivo y de los decodificadores del equipo.
+- Los videos legados (WMV, AVI, FLV) también son compatibles: Chromium no puede decodificarlos, así que CyberViewer los convierte a MP4 con el ffmpeg incluido la primera vez que se abren y guarda el resultado en caché (el archivo original nunca se modifica).
 - Reproduce/pausa, busca una posición, ajusta el volumen, silencia y repite. Los videos se reproducen al abrirlos por defecto; desactiva **Reproducir al abrir** en el menú **…** para iniciarlos manualmente. La preferencia se conserva. Pulsa **Espacio** para reproducir/pausar, **Izquierda/Derecha** para saltar 5 segundos o **M** para silenciar. **Arriba/Abajo** y **A/D** siguen navegando entre archivos.
 - **Detalles estilo YouTube:** haz clic sobre el video para pausar o reanudar y doble clic para pantalla completa; usa los botones anterior/siguiente para saltar entre videos de la carpeta; abre el panel de velocidad (0.25×–3×) desde el menú **…** o ciclalo con `>` / `<`; y pasa el cursor por la barra de progreso para ver la marca de tiempo con una miniatura del fotograma. Repetir, volumen, silencio y velocidad se conservan entre sesiones.
 - Los controles compactos se superponen al video y se ocultan durante la reproducción tras un periodo de inactividad. El menú **…** reúne repetir, propiedades, abrir e información de audio. Las barras de edición de imágenes se ocultan al ver videos.
@@ -133,7 +134,7 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 - **Inicio automático con Windows:** inicia minimizado al iniciar sesión
 - **Atajo global:** atajo configurable para mostrar u ocultar, predeterminado `Alt+Shift+V`
 - **Menú contextual del Explorador:** haz clic derecho en imágenes admitidas para abrirlas en CyberViewer
-- **Asociaciones de archivo:** establece CyberViewer como visor predeterminado de JPG, PNG, GIF, WebP, BMP, TIFF, ICO o AVIF, con una opción de reproductor de video predeterminado en el instalador (MP4, M4V, WebM, MOV, MKV). La pestaña Sistema muestra el visor actual por formato y enlaza a los ajustes de Windows.
+- **Asociaciones de archivo:** establece CyberViewer como visor predeterminado de JPG, PNG, GIF, WebP, BMP, TIFF, ICO o AVIF, con una opción de reproductor de video predeterminado en el instalador (MP4, M4V, WebM, MOV, MKV, WMV, AVI, FLV). La pestaña Sistema muestra el visor actual por formato y enlaza a los ajustes de Windows.
 - **Una sola instancia residente:** las aperturas desde el Explorador y los nuevos inicios envían las imágenes a pestañas de la ventana existente
 - **Actualización automática:** actualizador integrado de GitHub Releases con instalación silenciosa
 - **Copia de seguridad de la configuración:** exporta o importa la configuración y los favoritos como JSON
