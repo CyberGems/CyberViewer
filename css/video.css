@@ -97,8 +97,11 @@ body.video-active #ghost-close:focus-visible { outline: 2px solid var(--cyber-ac
 .video-playing .video-icon-pause, .video-muted .video-icon-muted { display: initial; }
 /* Fit-to-window: dimmed while the video is already fitted or while native
    fullscreen blocks zoom adjustment; plain opacity once the zoom has been
-   adjusted, without an accent highlight. */
-#video-fit:disabled, #video-fit:disabled:hover { opacity: .38; background: transparent; }
+   adjusted, without an accent highlight. Only the glyph is dimmed: the
+   tooltip is a pseudo-element of the button and would inherit a button
+   level opacity (same reasoning as the muted audio group). */
+#video-fit:disabled, #video-fit:disabled:hover { background: transparent; }
+#video-fit:disabled svg { opacity: .38; }
 /* Fullscreen stays accented while native fullscreen is active. */
 body.video-active.ghost-mode #video-fullscreen,
 body.video-active.ghost-mode #video-fullscreen:hover { background: rgba(var(--cyber-accent-rgb), 0.12); color: var(--cyber-accent-ink); }

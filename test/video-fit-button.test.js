@@ -36,7 +36,8 @@ describe('video fit-to-window button', () => {
     assert.match(appJs, /const zoomed = window\.CVVideo\.active\(\) && !window\.CVYouTube\.active\(\) && !state\.isGhost && state\.viewMode !== 'fit';/);
     assert.match(appJs, /videoFit\.disabled = !zoomed;/);
     assert.doesNotMatch(appJs, /videoFit\.classList\.toggle\('active'/);
-    assert.match(videoCss, /#video-fit:disabled, #video-fit:disabled:hover \{ opacity: \.38; background: transparent; \}/);
+    assert.match(videoCss, /#video-fit:disabled, #video-fit:disabled:hover \{ background: transparent; \}/);
+    assert.match(videoCss, /#video-fit:disabled svg \{ opacity: \.38; \}/);
     assert.doesNotMatch(videoCss, /#video-fit\.active/);
   });
 
