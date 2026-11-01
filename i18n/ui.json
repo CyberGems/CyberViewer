@@ -709,7 +709,12 @@
     "audio_play_error": "Could not start audio playback.",
     "audio_duration": "Duration",
     "audio_paused": "Paused",
-    "audio_aurora": "Aurora"
+    "audio_aurora": "Aurora",
+    "audio_tunnel": "Tunnel",
+    "audio_terrain": "Terrain",
+    "audio_helix": "Helix",
+    "audio_grid": "Matrix",
+    "audio_flares": "Fireworks"
   },
   "es": {
     "tabs_label": "Pestañas de archivos abiertos",
@@ -1421,6 +1426,11 @@
     "audio_play_error": "No se pudo iniciar la reproducción del audio.",
     "audio_duration": "Duración",
     "audio_paused": "En pausa",
-    "audio_aurora": "Aurora"
+    "audio_aurora": "Aurora",
+    "audio_tunnel": "Túnel",
+    "audio_terrain": "Relieve",
+    "audio_helix": "Hélice",
+    "audio_grid": "Matriz",
+    "audio_flares": "Fuegos artificiales"
   }
 }

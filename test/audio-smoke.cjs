@@ -167,7 +167,7 @@ app.whenReady().then(async () => {
     await evaluate('await window.CVVideo.toggle();');
     await waitFor(() => evaluate('return window.CVVideo.element.currentTime > .15 && window.CVVideo.element.webkitAudioDecodedByteCount > 0;'), 'WAV audio decoded');
     const renderStats = {};
-    for (const mode of ['spectrum', 'waveform', 'radial', 'particles', 'aurora']) {
+    for (const mode of ['spectrum', 'waveform', 'radial', 'particles', 'aurora', 'tunnel', 'terrain', 'helix', 'grid', 'flares']) {
       await evaluate(`$('audio-visualizer').value='${mode}'; $('audio-visualizer').dispatchEvent(new Event('change'));`);
       await evaluate('window.__paintTimes=[];');
       await delay(180);
