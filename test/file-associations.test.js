@@ -17,17 +17,33 @@ const updater = read('lib/updater.js');
 const css = read('css/app.css');
 
 describe('file association management', () => {
-  it('registers video and audio formats with a dedicated playback checkbox', () => {
-    assert.match(nsh, /LangString CV_VideoViewerCheckbox 1033 "Set CyberViewer as the default video and audio player"/);
-    assert.match(nsh, /LangString CV_VideoViewerCheckbox 3082 "Establecer CyberViewer como el reproductor de video y audio predeterminado"/);
+  it('offers independent image, video and audio checkboxes in both languages', () => {
+    assert.match(nsh, /LangString CV_VideoViewerCheckbox 1033 "Set CyberViewer as the default video player"/);
+    assert.match(nsh, /LangString CV_VideoViewerCheckbox 3082 "Establecer CyberViewer como el reproductor de video predeterminado"/);
+    assert.match(nsh, /LangString CV_AudioViewerCheckbox 1033 "Set CyberViewer as the default audio player"/);
+    assert.match(nsh, /LangString CV_AudioViewerCheckbox 3082 "Establecer CyberViewer como el reproductor de audio predeterminado"/);
+    assert.match(nsh, /NSD_CreateCheckbox[^\n]+CV_AudioViewerCheckbox[^\n]*\r?\n\s*Pop \$R6/);
+    assert.match(nsh, /NSD_GetState\} \$R6 \$R6/);
     assert.match(nsh, /insertmacro CV_WriteFileAssoc "\.mp4"\s+"CyberViewer\.video"/);
     assert.match(nsh, /insertmacro CV_WriteFileAssoc "\.mkv"\s+"CyberViewer\.video"/);
     assert.match(nsh, /insertmacro CV_WriteFileAssoc "\.mp3"\s+"CyberViewer\.audio"/);
     assert.match(nsh, /insertmacro CV_WriteFileAssoc "\.wav"\s+"CyberViewer\.audio"/);
-    // Both groups can be chosen independently
+    // Each group has its own saved choice, including silent-install defaults.
     assert.match(nsh, /StrCpy \$R9 1/);
     assert.match(nsh, /StrCpy \$R7 1/);
+    assert.match(nsh, /StrCpy \$R6 1/);
     assert.match(nsh, /insertmacro CV_WriteFileAssoc "\.jpg"\s+"CyberViewer\.jpg"/);
+  });
+
+  it('keeps audio registration independent of the video checkbox', () => {
+    const install = nsh.split('!macro customInstall')[1].split('!macroend')[0];
+    const audioBlocks = [...install.matchAll(/\$\{If\} \$R6 == 1([\s\S]*?)\$\{EndIf\}/g)];
+    assert.equal(audioBlocks.length, 2, 'Separate audio ProgID and capabilities blocks');
+    assert.match(audioBlocks[0][1], /CV_WriteFileAssoc "\.mp3"/);
+    assert.match(audioBlocks[0][1], /CV_WriteFileAssoc "\.wav"/);
+    assert.match(audioBlocks[1][1], /FileAssociations" "\.mp3"/);
+    assert.match(audioBlocks[1][1], /FileAssociations" "\.wav"/);
+    assert.match(install, /\$\{OrIf\} \$R6 == 1\s*WriteRegStr HKCU "Software\\RegisteredApplications"/);
   });
 
   it('cleans up video and image registrations without touching third-party defaults', () => {

@@ -138,7 +138,7 @@ Most image viewers are either bloated with features you never use or so barebone
 - **Auto-start with Windows:** launch minimized on sign-in
 - **Global hotkey:** configurable show/hide shortcut, default `Alt+Shift+V`
 - **Explorer context menu:** right-click supported images to open them in CyberViewer
-- **File associations:** set CyberViewer as the default viewer for JPG, PNG, GIF, WebP, BMP, TIFF, ICO, or AVIF, with a video and audio default-player option in the installer (MP4, M4V, WebM, MOV, MKV, MP3, WAV). The System tab shows the current viewer per format and links to the Windows settings.
+- **File associations:** set CyberViewer as the default viewer for JPG, PNG, GIF, WebP, BMP, TIFF, ICO, or AVIF, with separate image, video and audio default-app checkboxes in the installer (MP4, M4V, WebM, MOV, MKV, MP3, WAV). The System tab shows the current viewer per format and links to the Windows settings.
 - **Single resident instance:** Explorer opens and additional launches send images to tabs in the existing window
 - **Auto-update:** built-in GitHub Releases updater with silent install
 - **Settings backup:** export or import configuration and favorites as JSON

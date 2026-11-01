@@ -138,7 +138,7 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 - **Inicio automático con Windows:** inicia minimizado al iniciar sesión
 - **Atajo global:** atajo configurable para mostrar u ocultar, predeterminado `Alt+Shift+V`
 - **Menú contextual del Explorador:** haz clic derecho en imágenes admitidas para abrirlas en CyberViewer
-- **Asociaciones de archivo:** establece CyberViewer como visor predeterminado de JPG, PNG, GIF, WebP, BMP, TIFF, ICO o AVIF, con una opción de reproductor de video y audio predeterminado en el instalador (MP4, M4V, WebM, MOV, MKV, MP3, WAV). La pestaña Sistema muestra el visor actual por formato y enlaza a los ajustes de Windows.
+- **Asociaciones de archivo:** establece CyberViewer como visor predeterminado de JPG, PNG, GIF, WebP, BMP, TIFF, ICO o AVIF, con casillas independientes para imágenes, video y audio en el instalador (MP4, M4V, WebM, MOV, MKV, MP3, WAV). La pestaña Sistema muestra el visor actual por formato y enlaza a los ajustes de Windows.
 - **Una sola instancia residente:** las aperturas desde el Explorador y los nuevos inicios envían las imágenes a pestañas de la ventana existente
 - **Actualización automática:** actualizador integrado de GitHub Releases con instalación silenciosa
 - **Copia de seguridad de la configuración:** exporta o importa la configuración y los favoritos como JSON

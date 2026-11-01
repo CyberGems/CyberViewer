@@ -1,11 +1,11 @@
 ; CyberViewer NSIS customizations (electron-builder include)
-; - Optional "Set as default image viewer" page (checked by default)
+; - Independent image, video and audio default-app options (checked by default)
 ; - Per-user HKCU associations when the option is enabled
 ; - Cleanup on uninstall
 ;
 ; electron-builder compiles this script twice (installer + uninstaller with
 ; BUILD_UNINSTALLER) and treats NSIS warnings as errors. Rules of thumb:
-; - No unused `Var` (use $R8/$R9 for the checkbox page instead)
+; - No unused `Var` (use register variables for the checkbox page instead)
 ; - Guard install-only Page/Functions with !ifndef BUILD_UNINSTALLER
 ; - Avoid MUI_HEADER_TEXT (not always defined in this include context)
 
@@ -22,14 +22,18 @@ LangString CV_DefaultViewerBody 3082 "CyberViewer puede abrir imágenes (JPG, JP
 LangString CV_DefaultViewerCheckbox 1033 "Set CyberViewer as the default image viewer"
 LangString CV_DefaultViewerCheckbox 3082 "Establecer CyberViewer como el visor de imágenes predeterminado"
 
-LangString CV_VideoViewerCheckbox 1033 "Set CyberViewer as the default video and audio player"
-LangString CV_VideoViewerCheckbox 3082 "Establecer CyberViewer como el reproductor de video y audio predeterminado"
+LangString CV_VideoViewerCheckbox 1033 "Set CyberViewer as the default video player"
+LangString CV_VideoViewerCheckbox 3082 "Establecer CyberViewer como el reproductor de video predeterminado"
 
-; $R9 = default image viewer flag, $R7 = default video player flag (1 = yes,
-; 0 = no). Both default ON for silent installs.
+LangString CV_AudioViewerCheckbox 1033 "Set CyberViewer as the default audio player"
+LangString CV_AudioViewerCheckbox 3082 "Establecer CyberViewer como el reproductor de audio predeterminado"
+
+; $R9 = image flag, $R7 = video flag, $R6 = audio flag (1 = yes, 0 = no).
+; All three default ON for silent installs.
 !macro customInit
   StrCpy $R9 1
   StrCpy $R7 1
+  StrCpy $R6 1
 !macroend
 
 ; Shown after directory page, before files are installed (installer pass only)
@@ -66,13 +70,18 @@ Function CV_DefaultViewerPage_Show
   Pop $R7
   ${NSD_Check} $R7
 
+  ${NSD_CreateCheckbox} 0 114u 100% 14u "$(CV_AudioViewerCheckbox)"
+  Pop $R6
+  ${NSD_Check} $R6
+
   nsDialogs::Show
 FunctionEnd
 
 Function CV_DefaultViewerPage_Leave
-  ; 1 = checked, 0 = unchecked ($R9 images, $R7 videos)
+  ; 1 = checked, 0 = unchecked ($R9 images, $R7 videos, $R6 audio)
   ${NSD_GetState} $R8 $R9
   ${NSD_GetState} $R7 $R7
+  ${NSD_GetState} $R6 $R6
 FunctionEnd
 !endif
 
@@ -109,12 +118,16 @@ FunctionEnd
     !insertmacro CV_WriteFileAssoc ".webm" "CyberViewer.video" "Video"
     !insertmacro CV_WriteFileAssoc ".mov"  "CyberViewer.video" "Video"
     !insertmacro CV_WriteFileAssoc ".mkv"  "CyberViewer.video" "Video"
+  ${EndIf}
+
+  ${If} $R6 == 1
     !insertmacro CV_WriteFileAssoc ".mp3"  "CyberViewer.audio" "Audio"
     !insertmacro CV_WriteFileAssoc ".wav"  "CyberViewer.audio" "Audio"
   ${EndIf}
 
   ${If} $R9 == 1
     ${OrIf} $R7 == 1
+    ${OrIf} $R6 == 1
     WriteRegStr HKCU "Software\CyberViewer\Capabilities" "ApplicationName" "CyberViewer"
     WriteRegStr HKCU "Software\CyberViewer\Capabilities" "ApplicationDescription" "CyberViewer image, video and audio viewer"
   ${EndIf}
@@ -138,12 +151,16 @@ FunctionEnd
     WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".webm" "CyberViewer.video"
     WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".mov" "CyberViewer.video"
     WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".mkv" "CyberViewer.video"
+  ${EndIf}
+
+  ${If} $R6 == 1
     WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".mp3" "CyberViewer.audio"
     WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".wav" "CyberViewer.audio"
   ${EndIf}
 
   ${If} $R9 == 1
     ${OrIf} $R7 == 1
+    ${OrIf} $R6 == 1
     WriteRegStr HKCU "Software\RegisteredApplications" "CyberViewer" "Software\CyberViewer\Capabilities"
     System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, p 0, p 0)'
   ${EndIf}
