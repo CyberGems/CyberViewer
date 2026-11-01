@@ -6831,7 +6831,8 @@ function scheduleInitialTrayPinReminder() {
 }
 
 function openModal(id) {
-  if (window.CVVideo.active()) window.CVVideo.element.pause();
+  // Dialogs never interrupt playback: media keeps running while any panel is
+  // open, and the load/unload paths pause only when files actually change.
   const el = $(id);
   if (!el) return;
   el.classList.add('active');

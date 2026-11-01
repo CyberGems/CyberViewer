@@ -193,6 +193,12 @@ app.whenReady().then(async () => {
     await win.webContents.debugger.sendCommand('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] });
     win.webContents.debugger.detach();
     await delay(100);
+    // Dialogs must never interrupt playback (openModal used to pause the media).
+    await evaluate('$("btn-config").click();');
+    assert.equal(await evaluate("return $('modal-config').classList.contains('active');"), true, 'Config dialog opens during playback');
+    assert.equal(await evaluate('return !window.CVVideo.element.paused;'), true, 'Playback continues while the config dialog is open');
+    await evaluate('window.closeModal("modal-config");');
+    assert.equal(await evaluate("return !$('modal-config').classList.contains('active') && !window.CVVideo.element.paused;"), true, 'Playback continues after closing the config dialog');
     const pauseFrames = await evaluate(`
       const before=window.__visualSignature(), e=window.CVVideo.element;
       const paused=new Promise(resolve=>e.addEventListener('pause',resolve,{once:true}));
