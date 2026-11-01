@@ -25,6 +25,14 @@
     if (options.autoplay) player.loadPlaylist(list); else player.cuePlaylist(list);
     return true;
   }
+  // The API names the iframe "YouTube video player", which shows a native hover
+  // tooltip. Drop it and keep a localized, screen-reader-only accessible name.
+  function labelFrame() {
+    const frame = player.getIframe();
+    if (!frame) return;
+    frame.removeAttribute('title');
+    frame.setAttribute('aria-label', options.language === 'es' ? 'Reproductor de YouTube' : 'YouTube player');
+  }
   function create() {
     if (!options || !window.YT?.Player || player) return;
     const vars = { controls: 1, autoplay: 0, playsinline: 1, rel: 0, hl: options.language, fs: 1 };
@@ -60,6 +68,7 @@
         onError: event => { lastError = Number(event.data) || 'playback'; report({ error: lastError }); },
         onAutoplayBlocked: () => { mediaReady = true; report({ blocked: true }); snapshot(); }
       } });
+    labelFrame();
   }
   window.onYouTubeIframeAPIReady = create;
   window.youtubeHost.onLoad(value => {
