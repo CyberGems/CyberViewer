@@ -62,7 +62,11 @@ describe('mixed media tabs', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cv-audio-range-'));
     try {
       const allowlist = createPathAllowlist();
-      for (const [name, mime] of [['song.MP3', 'audio/mpeg'], ['tone.wav', 'audio/wav']]) {
+      for (const [name, mime] of [
+        ['song.MP3', 'audio/mpeg'], ['tone.wav', 'audio/wav'], ['lossless.FLAC', 'audio/flac'],
+        ['music.ogg', 'audio/ogg'], ['music.OGA', 'audio/ogg'], ['voice.opus', 'audio/ogg'],
+        ['music.AAC', 'audio/aac'], ['music.m4a', 'audio/mp4']
+      ]) {
         const file = path.join(dir, name);
         fs.writeFileSync(file, '0123456789');
         assert.equal(isAudio({ file: { name, path: file } }), true);

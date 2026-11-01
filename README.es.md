@@ -99,7 +99,7 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 - Los códecs de video no compatibles muestran un error. Los videos silenciosos se reproducen sin avisos automáticos de audio; volumen y silencio se atenúan y deshabilitan cuando la reproducción no produce audio decodificable, y se recuperan si el audio aparece más adelante. Puedes consultar la información de audio en el menú del reproductor. HEVC y el audio multicanal no tienen compatibilidad universal; no se incluye un transcodificador ni se necesita un reproductor externo.
 
 ### Audio y visualizaciones
-- Abre MP3 y WAV PCM directamente, sin conversión ni otro motor de reproducción. Los códecs WAV poco habituales pueden no ser compatibles.
+- Abre MP3, WAV PCM, FLAC, Ogg Vorbis/Opus (.ogg, .oga, .opus) y AAC (.aac ADTS, .m4a MP4) directamente, sin conversión ni otro motor de reproducción. Los códecs o perfiles poco habituales dentro de estos contenedores pueden no ser compatibles.
 - El audio comparte los controles, atajos, volumen, repetición, velocidad y restauración opcional de posición del video. Anterior/siguiente recorre solo archivos de audio.
 - Elige Espectro, Osciloscopio, Radial, Partículas o Efectos desactivados en el menú del reproductor. Se recuerda el estilo elegido. Los efectos siguen el color de acento, funcionan hasta a 30 fps y se detienen al pausar u ocultar la ventana. La preferencia de movimiento reducido los mantiene estáticos. El audio en reproducción continúa al ocultar en la bandeja.
 
@@ -138,7 +138,7 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 - **Inicio automático con Windows:** inicia minimizado al iniciar sesión
 - **Atajo global:** atajo configurable para mostrar u ocultar, predeterminado `Alt+Shift+V`
 - **Menú contextual del Explorador:** haz clic derecho en imágenes admitidas para abrirlas en CyberViewer
-- **Asociaciones de archivo:** establece CyberViewer como visor predeterminado de JPG, PNG, GIF, WebP, BMP, TIFF, ICO o AVIF, con casillas independientes para imágenes, video y audio en el instalador (MP4, M4V, WebM, MOV, MKV, MP3, WAV). La pestaña Sistema muestra el visor actual por formato y enlaza a los ajustes de Windows.
+- **Asociaciones de archivo:** establece CyberViewer como visor predeterminado de JPG, PNG, GIF, WebP, BMP, TIFF, ICO o AVIF, con casillas independientes para imágenes, video y audio en el instalador (MP4, M4V, WebM, MOV, MKV, MP3, WAV, FLAC, OGG, OGA, OPUS, AAC, M4A). La pestaña Sistema muestra el visor actual por formato y enlaza a los ajustes de Windows.
 - **Una sola instancia residente:** las aperturas desde el Explorador y los nuevos inicios envían las imágenes a pestañas de la ventana existente
 - **Actualización automática:** actualizador integrado de GitHub Releases con instalación silenciosa
 - **Copia de seguridad de la configuración:** exporta o importa la configuración y los favoritos como JSON

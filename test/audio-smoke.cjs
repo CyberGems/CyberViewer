@@ -5,8 +5,11 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const assert = require('node:assert/strict');
+const formatSamples = ['tone.flac', 'tone.ogg', 'tone.oga', 'voice.ogg', 'voice.opus', 'tone.aac', 'tone.m4a'];
+const sampleName = name => 'Format #ñ % ' + name;
 if (!process.versions.electron) {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cyberviewer-audio-test-'));
+  for (const name of formatSamples) fs.copyFileSync(path.join(__dirname, 'fixtures', 'audio', name), path.join(dataDir, sampleName(name)));
   const env = { ...process.env, CV_AUDIO_TEST_DIR: dataDir };
   delete env.ELECTRON_RUN_AS_NODE;
   for (const phase of ['initial', 'restore']) {
@@ -70,11 +73,56 @@ app.whenReady().then(async () => {
   const wav = path.join(dataDir, 'Tone #ñ %.wav');
   const open = name => evaluate('await openImagePath(' + JSON.stringify(path.join(dataDir, name)) + ');');
   const ready = () => waitFor(() => evaluate('return !state.transitioning && window.CVVideo.element.readyState >= 2 && state.images[state.current]?.loaded;'), 'audio loaded');
+  async function checkFormat(name, restoringPosition = false) {
+    const label = name.split('.').pop().toUpperCase();
+    await open(sampleName(name)); await ready();
+    const info = await evaluate(`return {audio:document.body.classList.contains('audio-active'), label:$('audio-format').textContent,
+      duration:window.CVVideo.element.duration, time:window.CVVideo.element.currentTime, paused:window.CVVideo.element.paused};`);
+    assert.equal(info.audio, true, name);
+    assert.equal(info.label, label, name);
+    assert.ok(info.duration >= 11.5 && info.duration < 13, name + ' has a usable duration: ' + info.duration);
+    assert.equal(info.paused, true, name + ' opens paused with autoplay disabled');
+    if (restoringPosition) {
+      assert.ok(Math.abs(info.time - 4) < .2, name + ' restores four seconds after a real restart: ' + info.time);
+      console.log('PASS ' + name + ' position restored after restart');
+      return;
+    }
+    await evaluate(`window.__audioPeak=0; window.CVVideo.setPlaybackRate(1); window.CVVideo.element.loop=false;
+      window.CVVideo.element.muted=false; window.CVVideo.element.volume=.1;
+      $('audio-visualizer').value='spectrum'; $('audio-visualizer').dispatchEvent(new Event('change')); await window.CVVideo.toggle();`);
+    try {
+      await waitFor(() => evaluate('return window.CVVideo.element.currentTime>.15 && window.CVVideo.element.webkitAudioDecodedByteCount>0 && window.__audioPeak>0;'), name + ' decodes and feeds the visualizer');
+    } catch (error) {
+      console.error(name, await evaluate(`const e=window.CVVideo.element;return {time:e.currentTime,paused:e.paused,ended:e.ended,
+        error:e.error?.code,ready:e.readyState,decoded:e.webkitAudioDecodedByteCount,peak:window.__audioPeak,context:window.__audioContext?.state};`));
+      throw error;
+    }
+    await evaluate('window.CVVideo.element.pause(); window.CVVideo.element.currentTime=2.5;');
+    await waitFor(() => evaluate('return !window.CVVideo.element.seeking;'), name + ' seek');
+    assert.ok(await evaluate('return Math.abs(window.CVVideo.element.currentTime-2.5)<.1;'), name + ' exact seek');
+    await evaluate('window.CVVideo.seekBy(5);');
+    await waitFor(() => evaluate('return !window.CVVideo.element.seeking;'), name + ' forward');
+    assert.ok(await evaluate('return Math.abs(window.CVVideo.element.currentTime-7.5)<.1;'), name + ' skips five seconds forward');
+    await evaluate('window.CVVideo.seekBy(-5);');
+    await waitFor(() => evaluate('return !window.CVVideo.element.seeking;'), name + ' backward');
+    assert.ok(await evaluate('return Math.abs(window.CVVideo.element.currentTime-2.5)<.1;'), name + ' skips five seconds backward');
+    await evaluate('await window.CVVideo.toggle();');
+    await waitFor(() => evaluate('return window.CVVideo.element.currentTime>2.65 && !window.CVVideo.element.paused;'), name + ' resumes after seeking');
+    await evaluate('window.CVVideo.element.pause(); window.CVVideo.element.currentTime=4;');
+    await waitFor(() => evaluate('return !window.CVVideo.element.seeking;'), name + ' saved position');
+    await evaluate('window.CVWorkspace.capture(); await window.CVWorkspace.flush();');
+    // Reopen another tab and return, exercising restoration before restarting.
+    await open('Tone #ñ %.wav'); await ready();
+    await open(sampleName(name)); await ready();
+    assert.ok(await evaluate('return Math.abs(window.CVVideo.element.currentTime-4)<.2;'), name + ' restores across tabs');
+    console.log('PASS ' + name + ' decoding, visualization, seeking, +/-5s and tab position');
+  }
   if (restoring) {
     await ready();
     assert.equal(await evaluate("return document.body.classList.contains('audio-active') && window.CVVideo.element.paused;"), true);
     assert.ok(await evaluate('return Math.abs(window.CVVideo.element.currentTime - 4) < .2;'));
     assert.equal(await evaluate("return $('audio-visualizer').value;"), 'off');
+    for (const name of formatSamples) await checkFormat(name, true);
     console.log('PASS audio session restores position, paused playback and effects preference');
   } else {
     await open('Tone #ñ %.wav'); await ready();
@@ -178,6 +226,8 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("return !$('audio-stage').hidden || window.CVVideo.active();"), false);
     assert.equal(await evaluate('return window.__sourceCount;'), 1, 'All local media share a single audio graph');
     console.log('PASS audio/video/image switches preserve decoding and release the visualizer');
+    for (const name of formatSamples) await checkFormat(name);
+    await evaluate("$('audio-visualizer').value='off'; $('audio-visualizer').dispatchEvent(new Event('change'));");
     for (const lang of ['en', 'es']) {
       await evaluate(`state.settings.app.language='${lang}'; updateLanguage('${lang}');`);
       assert.equal(await evaluate("return $('audio-visualizer').getAttribute('aria-label');"), lang === 'es' ? 'Visualización' : 'Visualization');

@@ -43,6 +43,16 @@ describe('file association management', () => {
     assert.match(audioBlocks[0][1], /CV_WriteFileAssoc "\.wav"/);
     assert.match(audioBlocks[1][1], /FileAssociations" "\.mp3"/);
     assert.match(audioBlocks[1][1], /FileAssociations" "\.wav"/);
+    const audioExts = ['mp3', 'wav', 'flac', 'ogg', 'oga', 'opus', 'aac', 'm4a'];
+    const pkg = JSON.parse(read('package.json'));
+    assert.deepEqual(pkg.build.win.fileAssociations.find(group => group.name === 'Audio').ext, audioExts);
+    for (const ext of audioExts) {
+      assert.match(audioBlocks[0][1], new RegExp(`CV_WriteFileAssoc "\\.${ext}"\\s+"CyberViewer\\.audio"`));
+      assert.ok(audioBlocks[1][1].includes(`FileAssociations" ".${ext}" "CyberViewer.audio"`));
+      assert.match(nsh, new RegExp(`\\$\\{If\\} \\$R8 == "CyberViewer\\.audio"\\s*DeleteRegValue HKCU "Software\\\\Classes\\\\\\.${ext}" ""`));
+      assert.ok(mainJs.includes(`{ ext: '.${ext}', progid: 'CyberViewer.audio', group: 'audio' }`));
+      assert.ok(html.match(/id="file-input" accept="([^"]+)"/)[1].split(',').includes('.' + ext));
+    }
     assert.match(install, /\$\{OrIf\} \$R6 == 1\s*WriteRegStr HKCU "Software\\RegisteredApplications"/);
   });
 

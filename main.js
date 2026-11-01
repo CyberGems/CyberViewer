@@ -1446,7 +1446,13 @@ const FILE_ASSOCIATION_TYPES = [
   { ext: '.mov', progid: 'CyberViewer.video', group: 'video' },
   { ext: '.mkv', progid: 'CyberViewer.video', group: 'video' },
   { ext: '.mp3', progid: 'CyberViewer.audio', group: 'audio' },
-  { ext: '.wav', progid: 'CyberViewer.audio', group: 'audio' }
+  { ext: '.wav', progid: 'CyberViewer.audio', group: 'audio' },
+  { ext: '.flac', progid: 'CyberViewer.audio', group: 'audio' },
+  { ext: '.ogg', progid: 'CyberViewer.audio', group: 'audio' },
+  { ext: '.oga', progid: 'CyberViewer.audio', group: 'audio' },
+  { ext: '.opus', progid: 'CyberViewer.audio', group: 'audio' },
+  { ext: '.aac', progid: 'CyberViewer.audio', group: 'audio' },
+  { ext: '.m4a', progid: 'CyberViewer.audio', group: 'audio' }
 ];
 
 function regQueryStringValue(key, valueName) {

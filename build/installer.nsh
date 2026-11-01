@@ -16,8 +16,8 @@
 LangString CV_DefaultViewerTitle 1033 "Default apps"
 LangString CV_DefaultViewerTitle 3082 "Aplicaciones predeterminadas"
 
-LangString CV_DefaultViewerBody 1033 "CyberViewer can open images (JPG, JPEG, PNG, GIF, WEBP, BMP, TIFF, ICO, AVIF), videos (MP4, M4V, WEBM, MOV, MKV) and audio (MP3, WAV).$\r$\n$\r$\nCheck the options below to use CyberViewer as your default viewer for each group (current user).$\r$\n$\r$\nYou can change or review these defaults later in Windows Settings > Apps > Default apps."
-LangString CV_DefaultViewerBody 3082 "CyberViewer puede abrir imágenes (JPG, JPEG, PNG, GIF, WEBP, BMP, TIFF, ICO, AVIF), videos (MP4, M4V, WEBM, MOV, MKV) y audio (MP3, WAV).$\r$\n$\r$\nMarca las opciones de abajo para usar CyberViewer como tu visor predeterminado de cada grupo (usuario actual).$\r$\n$\r$\nPuedes cambiar o revisar estos valores más tarde en la Configuración de Windows > Aplicaciones > Aplicaciones predeterminadas."
+LangString CV_DefaultViewerBody 1033 "Choose which file groups CyberViewer should open by default.$\r$\n$\r$\nAudio: MP3, WAV, FLAC, OGG, OGA, OPUS, AAC, M4A.$\r$\n$\r$\nYou can change these choices later in Windows Settings > Apps > Default apps."
+LangString CV_DefaultViewerBody 3082 "Elige los grupos de archivos que CyberViewer abrirá de forma predeterminada.$\r$\n$\r$\nAudio: MP3, WAV, FLAC, OGG, OGA, OPUS, AAC, M4A.$\r$\n$\r$\nPuedes cambiar estas opciones después en Configuración de Windows > Aplicaciones > Aplicaciones predeterminadas."
 
 LangString CV_DefaultViewerCheckbox 1033 "Set CyberViewer as the default image viewer"
 LangString CV_DefaultViewerCheckbox 3082 "Establecer CyberViewer como el visor de imágenes predeterminado"
@@ -123,6 +123,12 @@ FunctionEnd
   ${If} $R6 == 1
     !insertmacro CV_WriteFileAssoc ".mp3"  "CyberViewer.audio" "Audio"
     !insertmacro CV_WriteFileAssoc ".wav"  "CyberViewer.audio" "Audio"
+    !insertmacro CV_WriteFileAssoc ".flac" "CyberViewer.audio" "Audio"
+    !insertmacro CV_WriteFileAssoc ".ogg" "CyberViewer.audio" "Audio"
+    !insertmacro CV_WriteFileAssoc ".oga" "CyberViewer.audio" "Audio"
+    !insertmacro CV_WriteFileAssoc ".opus" "CyberViewer.audio" "Audio"
+    !insertmacro CV_WriteFileAssoc ".aac" "CyberViewer.audio" "Audio"
+    !insertmacro CV_WriteFileAssoc ".m4a" "CyberViewer.audio" "Audio"
   ${EndIf}
 
   ${If} $R9 == 1
@@ -156,6 +162,12 @@ FunctionEnd
   ${If} $R6 == 1
     WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".mp3" "CyberViewer.audio"
     WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".wav" "CyberViewer.audio"
+    WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".flac" "CyberViewer.audio"
+    WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".ogg" "CyberViewer.audio"
+    WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".oga" "CyberViewer.audio"
+    WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".opus" "CyberViewer.audio"
+    WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".aac" "CyberViewer.audio"
+    WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".m4a" "CyberViewer.audio"
   ${EndIf}
 
   ${If} $R9 == 1
@@ -248,6 +260,30 @@ FunctionEnd
   ReadRegStr $R8 HKCU "Software\Classes\.wav" ""
   ${If} $R8 == "CyberViewer.audio"
     DeleteRegValue HKCU "Software\Classes\.wav" ""
+  ${EndIf}
+  ReadRegStr $R8 HKCU "Software\Classes\.flac" ""
+  ${If} $R8 == "CyberViewer.audio"
+    DeleteRegValue HKCU "Software\Classes\.flac" ""
+  ${EndIf}
+  ReadRegStr $R8 HKCU "Software\Classes\.ogg" ""
+  ${If} $R8 == "CyberViewer.audio"
+    DeleteRegValue HKCU "Software\Classes\.ogg" ""
+  ${EndIf}
+  ReadRegStr $R8 HKCU "Software\Classes\.oga" ""
+  ${If} $R8 == "CyberViewer.audio"
+    DeleteRegValue HKCU "Software\Classes\.oga" ""
+  ${EndIf}
+  ReadRegStr $R8 HKCU "Software\Classes\.opus" ""
+  ${If} $R8 == "CyberViewer.audio"
+    DeleteRegValue HKCU "Software\Classes\.opus" ""
+  ${EndIf}
+  ReadRegStr $R8 HKCU "Software\Classes\.aac" ""
+  ${If} $R8 == "CyberViewer.audio"
+    DeleteRegValue HKCU "Software\Classes\.aac" ""
+  ${EndIf}
+  ReadRegStr $R8 HKCU "Software\Classes\.m4a" ""
+  ${If} $R8 == "CyberViewer.audio"
+    DeleteRegValue HKCU "Software\Classes\.m4a" ""
   ${EndIf}
   DeleteRegKey HKCU "Software\CyberViewer"
   DeleteRegValue HKCU "Software\RegisteredApplications" "CyberViewer"

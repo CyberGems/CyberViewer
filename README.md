@@ -99,7 +99,7 @@ Most image viewers are either bloated with features you never use or so barebone
 - Unsupported video codecs show an error. Silent videos play without automatic audio notices; volume and mute are dimmed and disabled when playback yields no decodable audio, and recover if audio becomes available later. Audio information is available on request in the playback menu. HEVC and multichannel audio are not universally supported; there is no bundled transcoder or external player dependency.
 
 ### Audio playback and visualizations
-- Open MP3 and PCM WAV directly, without conversion or an additional playback engine. Unusual WAV codecs may not be supported.
+- Open MP3, PCM WAV, FLAC, Ogg Vorbis/Opus (.ogg, .oga, .opus), and AAC (.aac ADTS, .m4a MP4) directly, without conversion or an additional playback engine. Unusual codecs or profiles inside these containers may not be supported.
 - Audio shares the video playback controls, shortcuts, volume, loop, speed and optional session position restoration. Previous/next stays within audio files.
 - Choose Spectrum, Oscilloscope, Radial, Particles or Effects off from the playback menu. The selected style is remembered. Visuals follow the accent color, run at up to 30 fps and stop when paused or hidden. Reduced-motion preferences keep them static. Playing audio continues when hidden to the tray.
 
@@ -138,7 +138,7 @@ Most image viewers are either bloated with features you never use or so barebone
 - **Auto-start with Windows:** launch minimized on sign-in
 - **Global hotkey:** configurable show/hide shortcut, default `Alt+Shift+V`
 - **Explorer context menu:** right-click supported images to open them in CyberViewer
-- **File associations:** set CyberViewer as the default viewer for JPG, PNG, GIF, WebP, BMP, TIFF, ICO, or AVIF, with separate image, video and audio default-app checkboxes in the installer (MP4, M4V, WebM, MOV, MKV, MP3, WAV). The System tab shows the current viewer per format and links to the Windows settings.
+- **File associations:** set CyberViewer as the default viewer for JPG, PNG, GIF, WebP, BMP, TIFF, ICO, or AVIF, with separate image, video and audio default-app checkboxes in the installer (MP4, M4V, WebM, MOV, MKV, MP3, WAV, FLAC, OGG, OGA, OPUS, AAC, M4A). The System tab shows the current viewer per format and links to the Windows settings.
 - **Single resident instance:** Explorer opens and additional launches send images to tabs in the existing window
 - **Auto-update:** built-in GitHub Releases updater with silent install
 - **Settings backup:** export or import configuration and favorites as JSON
