@@ -193,6 +193,8 @@ const state = {
   panStartX: 0,
   panStartY: 0,
   transitioning: false,
+  /** True between a tab activation and its load finishing: show the spinner, not the welcome banner. */
+  viewerLoading: false,
   sidebarOpen: false,
   toolbarOpen: true,
   /** Monotonic token bumped per open so stale folder scans never merge. */
@@ -728,7 +730,10 @@ function closeImage() {
   if (tab) window.CVWorkspace.closeTabs([tab.id]);
 }
 
-function clearViewer() {
+function clearViewer(opts = {}) {
+  // loading: a tab is about to load, so the viewer goes straight to the
+  // spinner instead of flashing the welcome banner (see syncEmptyState).
+  const loading = opts.loading === true;
   window.CVYouTube.unload();
   window.CVVideo.unload();
   if (typeof stopSlideshow === 'function') stopSlideshow({ silent: true });
@@ -742,6 +747,7 @@ function clearViewer() {
   state.mainImageReady = Promise.resolve();
   state.mainImageReadyIdx = -1;
   state.images = [];
+  state.viewerLoading = loading;
   state.transitioning = false;
   state.nonFavImages = [];
   state.nonFavCurrent = -1;
@@ -759,7 +765,8 @@ function clearViewer() {
   updateSaveButton();
   updateHUDStates();
 
-  dropZone.style.display = 'flex';
+  dropZone.style.display = loading ? 'none' : 'flex';
+  if (loading) spinner.classList.add('active');
 
   mainImg.src = '';
   mainImg.classList.remove('loaded', 'slide-in-left', 'slide-in-right', 'slide-out-left', 'slide-out-right');
@@ -841,6 +848,7 @@ function loadFiles(files, initialIdx = 0, internal = false) {
     syncCurrentIndex(initialIdx);
     console.log('Archivos cargados:', state.images.length);
     dropZone.style.display = 'none';
+    state.viewerLoading = false;
     syncEmptyState();
     buildSidebar();
     // Main image first; thumbs after it paints (avoids large-folder decode thrash)
@@ -5492,7 +5500,12 @@ function updateCounter() {
  * Toolbar tools that need an image are disabled (and hidden via CSS in empty).
  */
 function syncEmptyState() {
-  const empty = !state.images.length || state.current < 0;
+  const hasMedia = !!state.images.length && state.current >= 0;
+  // While a tab is loading (viewerLoading), the chrome keeps its docked viewer
+  // layout and the spinner shows instead; the welcome banner only appears when
+  // the viewer is genuinely empty.
+  const empty = !hasMedia && !state.viewerLoading;
+  const idle = !hasMedia;
   if (empty && document.body.classList.contains('image-error')) {
     // Returning from an invalid favorite to an empty gallery must show only
     // the welcome banner, never the stale invalid-image banner as well.
@@ -5504,9 +5517,9 @@ function syncEmptyState() {
   needs.forEach((el) => {
     if (el.classList && el.classList.contains('kbd-sep')) return;
     if (el.tagName === 'BUTTON' || el.classList.contains('kbd-btn')) {
-      el.disabled = empty;
-      el.classList.toggle('is-disabled', empty);
-      if (empty) el.setAttribute('aria-disabled', 'true');
+      el.disabled = idle;
+      el.classList.toggle('is-disabled', idle);
+      if (idle) el.setAttribute('aria-disabled', 'true');
       else el.removeAttribute('aria-disabled');
     }
   });
@@ -5518,8 +5531,8 @@ function syncEmptyState() {
   ].forEach((id) => {
     const el = $(id);
     if (!el) return;
-    el.disabled = empty;
-    el.classList.toggle('is-disabled', empty);
+    el.disabled = idle;
+    el.classList.toggle('is-disabled', idle);
   });
 
   updateHUDStates();

@@ -5427,28 +5427,36 @@
     inset: 0;
     margin: auto;
     z-index: 8;
-    width: 36px;
-    height: 36px;
-    display: none;
+    width: 56px;
+    height: 56px;
+    display: block;
+    opacity: 0;
+    visibility: hidden;
     pointer-events: none;
+    transition: opacity 160ms ease, visibility 0s linear 160ms;
   }
 
-  #spinner.active { display: block; }
+  #spinner.active { opacity: 1; visibility: visible; transition: opacity 160ms ease; }
+
+  .spinner-track {
+    fill: none;
+    stroke: rgba(var(--cyber-accent-rgb), 0.16);
+    stroke-width: 3;
+  }
 
   .spinner-ring {
     fill: none;
     stroke: var(--cyber-accent);
-    stroke-width: 2;
-    stroke-dasharray: 80;
-    stroke-dashoffset: 80;
-    animation: spin-draw 800ms linear infinite;
-    transform-origin: 18px 18px;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 40 86;
+    transform-origin: 24px 24px;
+    animation: spin-arc 900ms linear infinite;
+    filter: drop-shadow(0 0 6px rgba(var(--cyber-accent-rgb), 0.55));
   }
 
-  @keyframes spin-draw {
-    0%   { stroke-dashoffset: 80; transform: rotate(0deg); }
-    50%  { stroke-dashoffset: 20; }
-    100% { stroke-dashoffset: 80; transform: rotate(360deg); }
+  @keyframes spin-arc {
+    to { transform: rotate(360deg); }
   }
 
 

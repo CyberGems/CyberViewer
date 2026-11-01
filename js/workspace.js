@@ -97,7 +97,8 @@ window.CVWorkspace = (() => {
     if (!force && !canSwitch()) return false;
     capture();
     if (model.active) { delete model.active.image.staticUrl; model.active.image.loaded = false; }
-    clearViewer();
+    // Loading mode: straight to the spinner, never the welcome banner.
+    clearViewer({ loading: true });
     model.activate(id);
     if (source) tab.source = source;
     suspended = false;

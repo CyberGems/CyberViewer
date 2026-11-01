@@ -100,6 +100,6 @@ describe('folder scan cache and sidebar pause/resume', () => {
   it('opens clipboard images through the workspace lifecycle instead of replacing other tabs', () => {
     assert.match(appJs, /function insertPastedImage\(blob, mime = 'image\/png'\) \{[\s\S]*?new File\([\s\S]*?return window\.CVWorkspace\.openFiles\(\[file\]\);/);
     const workspace = fs.readFileSync(path.join(root, 'js', 'workspace.js'), 'utf8');
-    assert.match(workspace, /capture\(\);[\s\S]*?clearViewer\(\);[\s\S]*?loadFiles\(\[tab\.image\.file\], 0, true\);/);
+    assert.match(workspace, /capture\(\);[\s\S]*?clearViewer\(\{ loading: true \}\);[\s\S]*?loadFiles\(\[tab\.image\.file\], 0, true\);/);
   });
 });
