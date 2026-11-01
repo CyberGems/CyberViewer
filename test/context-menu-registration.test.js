@@ -12,11 +12,13 @@ const mainJs = read('main.js');
 const appJs = read('js/app.js');
 
 describe('explorer context menu registration', () => {
-  it('decorates image and video ProgIDs with the caption and icon', () => {
+  it('clears leftover ProgID captions on every pass and never writes them', () => {
     assert.match(mainJs, /CONTEXT_MENU_PROGIDS = \[\s*'BMP Image', 'GIF Image', 'JPEG Image', 'PNG Image', 'WebP Image', 'TIFF Image', 'icofile',\s*'Video', 'CyberViewer\.video'/);
     assert.ok(mainJs.includes('const regPath = `HKCU\\\\Software\\\\Classes\\\\${progId}\\\\shell\\\\open`;'));
-    assert.match(mainJs, /commands\.push\(\['reg', 'add', regPath, '\/ve', '\/d', assocLabel, '\/f'\]\);/);
-    assert.match(mainJs, /commands\.push\(\['reg', 'add', regPath, '\/v', 'Icon', '\/d', exePath, '\/f'\]\);/);
+    assert.match(mainJs, /commands\.push\(\['reg', 'delete', regPath, '\/ve', '\/f'\]\);/);
+    assert.match(mainJs, /commands\.push\(\['reg', 'delete', regPath, '\/v', 'Icon', '\/f'\]\);/);
+    assert.doesNotMatch(mainJs, /'Abrir con CyberViewer' : 'Open with CyberViewer'/);
+    assert.doesNotMatch(mainJs, /'add', regPath, '\/ve', '\/d', assocLabel/);
   });
 
   it('writes the per-extension verb for every supported media type', () => {
@@ -24,10 +26,8 @@ describe('explorer context menu registration', () => {
     assert.ok(mainJs.includes('const regPath = `HKCU\\\\Software\\\\Classes\\\\SystemFileAssociations\\\\${ext}\\\\shell\\\\CyberViewer`;'));
   });
 
-  it('removes the custom caption and icon on disable instead of leaving English text', () => {
-    assert.match(mainJs, /commands\.push\(\['reg', 'delete', regPath, '\/ve', '\/f'\]\);/);
-    assert.match(mainJs, /commands\.push\(\['reg', 'delete', regPath, '\/v', 'Icon', '\/f'\]\);/);
-    assert.doesNotMatch(mainJs, /'add', regPath, '\/ve', '\/d', 'Open with CyberViewer'/);
+  it('removes the per-extension verb on disable', () => {
+    assert.ok(mainJs.includes("commands.push(['reg', 'delete', `HKCU\\\\Software\\\\Classes\\\\SystemFileAssociations\\\\${ext}\\\\shell\\\\CyberViewer`, '/f']);"));
   });
 
   it('records a registration marker with exe, language and version', () => {

@@ -2590,9 +2590,12 @@ function runRegCommands(commands) {
   });
 }
 
-// ProgIDs that carry the "Open with CyberViewer" caption and icon. Images use
-// the electron-builder association names plus the legacy icofile; videos are
-// covered by electron-builder's 'Video' and installer.nsh's 'CyberViewer.video'.
+// ProgIDs that may carry leftover "Open with CyberViewer" captions and icons
+// written by older versions. Registration clears them on every pass so
+// Explorer shows the plain Open verb; only the per-extension verb is added.
+// Images use the electron-builder association names plus the legacy icofile;
+// videos are covered by electron-builder's 'Video' and installer.nsh's
+// 'CyberViewer.video'.
 const CONTEXT_MENU_PROGIDS = [
   'BMP Image', 'GIF Image', 'JPEG Image', 'PNG Image', 'WebP Image', 'TIFF Image', 'icofile',
   'Video', 'CyberViewer.video'
@@ -2608,36 +2611,29 @@ function getContextMenuExePath() {
 
 function buildContextMenuCommands(enable, lang, exePath) {
   const extensions = [...MEDIA_EXTS];
+  const commands = [];
+
+  // Older versions labeled the ProgID Open verb ("Abrir con CyberViewer").
+  // Only the per-extension verb is written now, and leftover captions and
+  // icons are cleared on every pass so the menu never shows both entries.
+  for (const progId of CONTEXT_MENU_PROGIDS) {
+    const regPath = `HKCU\\Software\\Classes\\${progId}\\shell\\open`;
+    commands.push(['reg', 'delete', regPath, '/ve', '/f']);
+    commands.push(['reg', 'delete', regPath, '/v', 'Icon', '/f']);
+  }
+
   if (enable) {
     const label = lang === 'es' ? 'Ver con CyberViewer' : 'View with CyberViewer';
-    const assocLabel = lang === 'es' ? 'Abrir con CyberViewer' : 'Open with CyberViewer';
-    const commands = [];
-
     for (const ext of extensions) {
       const regPath = `HKCU\\Software\\Classes\\SystemFileAssociations\\${ext}\\shell\\CyberViewer`;
       commands.push(['reg', 'add', regPath, '/ve', '/d', label, '/f']);
       commands.push(['reg', 'add', regPath, '/v', 'Icon', '/d', exePath, '/f']);
       commands.push(['reg', 'add', `${regPath}\\command`, '/ve', '/d', `"${exePath}" "%1"`, '/f']);
     }
-    for (const progId of CONTEXT_MENU_PROGIDS) {
-      const regPath = `HKCU\\Software\\Classes\\${progId}\\shell\\open`;
-      commands.push(['reg', 'add', regPath, '/ve', '/d', assocLabel, '/f']);
-      commands.push(['reg', 'add', regPath, '/v', 'Icon', '/d', exePath, '/f']);
+  } else {
+    for (const ext of extensions) {
+      commands.push(['reg', 'delete', `HKCU\\Software\\Classes\\SystemFileAssociations\\${ext}\\shell\\CyberViewer`, '/f']);
     }
-    return commands;
-  }
-
-  const commands = [];
-  for (const ext of extensions) {
-    const regPath = `HKCU\\Software\\Classes\\SystemFileAssociations\\${ext}\\shell\\CyberViewer`;
-    commands.push(['reg', 'delete', regPath, '/f']);
-  }
-  for (const progId of CONTEXT_MENU_PROGIDS) {
-    const regPath = `HKCU\\Software\\Classes\\${progId}\\shell\\open`;
-    // Drop the custom caption and icon so Explorer falls back to the plain
-    // "Open" verb instead of leaving an English-only caption behind.
-    commands.push(['reg', 'delete', regPath, '/ve', '/f']);
-    commands.push(['reg', 'delete', regPath, '/v', 'Icon', '/f']);
   }
   return commands;
 }
