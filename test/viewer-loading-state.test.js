@@ -35,10 +35,10 @@ describe('viewer loading state', () => {
     assert.match(appJs, /dropZone\.style\.display = 'none';\s*state\.viewerLoading = false;\s*syncEmptyState\(\);/);
   });
 
-  it('renders a bigger two-ring spinner with a fade-in', () => {
+  it('renders a bigger two-ring spinner with a fade-in and an unclipped glow', () => {
     assert.match(html, /<circle class="spinner-track" cx="24" cy="24" r="20"\/>\s*<circle class="spinner-ring" cx="24" cy="24" r="20"\/>/);
-    assert.match(appCss, /#spinner \{[^}]*width: 56px;[^}]*\}/s);
-    assert.match(appCss, /#spinner\.active \{ opacity: 1; visibility: visible;/);
+    assert.match(appCss, /#spinner \{[^}]*width: 64px;[^}]*overflow: visible;[^}]*\}/s);
+    assert.match(appCss, /#spinner\.active \{ opacity: 1; visibility: visible; transition: none; \}/);
     assert.match(appCss, /@keyframes spin-arc \{/);
     assert.doesNotMatch(appCss, /spin-draw/);
   });

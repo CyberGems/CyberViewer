@@ -5427,16 +5427,20 @@
     inset: 0;
     margin: auto;
     z-index: 8;
-    width: 56px;
-    height: 56px;
+    width: 64px;
+    height: 64px;
     display: block;
+    /* The glow must extend past the SVG box instead of being clipped square. */
+    overflow: visible;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
     transition: opacity 160ms ease, visibility 0s linear 160ms;
   }
 
-  #spinner.active { opacity: 1; visibility: visible; transition: opacity 160ms ease; }
+  /* Fade out only: image decodes can finish within the fade window, so the
+     spinner must appear at full opacity right away. */
+  #spinner.active { opacity: 1; visibility: visible; transition: none; }
 
   .spinner-track {
     fill: none;
