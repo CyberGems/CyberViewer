@@ -98,6 +98,11 @@ Most image viewers are either bloated with features you never use or so barebone
 - Video thumbnails are static frames. Image editing, image copying, wallpaper, and print/export actions are disabled for videos. Slideshows continue to show images and skip videos.
 - Unsupported video codecs show an error. Silent videos play without automatic audio notices; volume and mute are dimmed and disabled when playback yields no decodable audio, and recover if audio becomes available later. Audio information is available on request in the playback menu. HEVC and multichannel audio are not universally supported; there is no bundled transcoder or external player dependency.
 
+### Audio playback and visualizations
+- Open MP3 and PCM WAV directly, without conversion or an additional playback engine. Unusual WAV codecs may not be supported.
+- Audio shares the video playback controls, shortcuts, volume, loop, speed and optional session position restoration. Previous/next stays within audio files.
+- Choose Spectrum, Oscilloscope, Radial, Particles or Effects off from the playback menu. The selected style is remembered. Visuals follow the accent color, run at up to 30 fps and stop when paused or hidden. Reduced-motion preferences keep them static. Playing audio continues when hidden to the tray.
+
 ### YouTube videos and playlists
 - Choose **Open YouTube link** in the main menu or press **Ctrl+L**. Paste a video, Shorts, live stream, or public playlist link. Links containing a video and a playlist retain that context; timestamps and playlist indexes are supported.
 - The official YouTube player provides playback, volume, captions, quality, and its playlist selector. CyberViewer adds previous/next, playlist repeat, retry, opening the current video in YouTube, and native fullscreen (**Ctrl+F**, **Esc** to exit). Its footer stays outside the video and disappears in fullscreen.
@@ -133,7 +138,7 @@ Most image viewers are either bloated with features you never use or so barebone
 - **Auto-start with Windows:** launch minimized on sign-in
 - **Global hotkey:** configurable show/hide shortcut, default `Alt+Shift+V`
 - **Explorer context menu:** right-click supported images to open them in CyberViewer
-- **File associations:** set CyberViewer as the default viewer for JPG, PNG, GIF, WebP, BMP, TIFF, ICO, or AVIF, with a video default-viewer option in the installer (MP4, M4V, WebM, MOV, MKV). The System tab shows the current viewer per format and links to the Windows settings.
+- **File associations:** set CyberViewer as the default viewer for JPG, PNG, GIF, WebP, BMP, TIFF, ICO, or AVIF, with a video and audio default-player option in the installer (MP4, M4V, WebM, MOV, MKV, MP3, WAV). The System tab shows the current viewer per format and links to the Windows settings.
 - **Single resident instance:** Explorer opens and additional launches send images to tabs in the existing window
 - **Auto-update:** built-in GitHub Releases updater with silent install
 - **Settings backup:** export or import configuration and favorites as JSON
@@ -272,7 +277,7 @@ npm run build:portable   # portable only
 
 | Key | Action |
 |---|---|
-| `Ctrl+O` | Open images or videos |
+| `Ctrl+O` | Open images, videos or audio |
 | `Ctrl+L` | Open a YouTube video or playlist link |
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
 | `Ctrl+W` | Close tab |

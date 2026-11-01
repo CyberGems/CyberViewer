@@ -11,7 +11,7 @@
     "go_start": "Go to Start",
     "go_end": "Go to End",
     "move_trash": "Move to Trash",
-    "open_folder": "Open images or videos",
+    "open_folder": "Open images, videos or audio",
     "close_image": "Close File",
     "copy_path": "Copy File Path",
     "config": "Configuration",
@@ -52,7 +52,7 @@
     "tray_recent_images": "Recent Files",
     "tray_clear_recent": "Clear Recent List",
     "tray_no_recent": "No Recent Files",
-    "dialog_open_title": "Open Images or Videos",
+    "dialog_open_title": "Open images, videos or audio",
     "dialog_open_folder_title": "Open Folder",
     "dialog_open_filter_images": "Images",
     "dialog_open_filter_all": "All files",
@@ -70,8 +70,8 @@
     "wallpaper_fit": "Fit",
     "wallpaper_center": "Center",
     "wallpaper_span": "Span",
-    "dialog_open_filter_media": "Images and videos",
-    "video_edit_unsupported": "Video editing is not supported"
+    "dialog_open_filter_media": "Images, videos and audio",
+    "video_edit_unsupported": "Video and audio editing is not supported"
   },
   "es": {
     "file": "Archivo",
@@ -85,7 +85,7 @@
     "go_start": "Ir al Principio",
     "go_end": "Ir al Final",
     "move_trash": "Mover a la Papelera",
-    "open_folder": "Abrir imágenes o videos",
+    "open_folder": "Abrir imágenes, videos o audio",
     "close_image": "Cerrar archivo",
     "copy_path": "Copiar ruta del archivo",
     "config": "Configuración",
@@ -126,7 +126,7 @@
     "tray_recent_images": "Archivos recientes",
     "tray_clear_recent": "Limpiar lista reciente",
     "tray_no_recent": "Sin archivos recientes",
-    "dialog_open_title": "Abrir imágenes o videos",
+    "dialog_open_title": "Abrir imágenes, videos o audio",
     "dialog_open_folder_title": "Abrir Carpeta",
     "dialog_open_filter_images": "Imágenes",
     "dialog_open_filter_all": "Todos los archivos",
@@ -144,7 +144,7 @@
     "wallpaper_fit": "Ajustar",
     "wallpaper_center": "Centrar",
     "wallpaper_span": "Extender",
-    "dialog_open_filter_media": "Imágenes y videos",
-    "video_edit_unsupported": "La edición de video no está disponible"
+    "dialog_open_filter_media": "Imágenes, videos y audio",
+    "video_edit_unsupported": "La edición de video y audio no está disponible"
   }
 }

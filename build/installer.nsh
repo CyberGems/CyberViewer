@@ -16,14 +16,14 @@
 LangString CV_DefaultViewerTitle 1033 "Default apps"
 LangString CV_DefaultViewerTitle 3082 "Aplicaciones predeterminadas"
 
-LangString CV_DefaultViewerBody 1033 "CyberViewer can open images (JPG, JPEG, PNG, GIF, WEBP, BMP, TIFF, ICO, AVIF) and videos (MP4, M4V, WEBM, MOV, MKV).$\r$\n$\r$\nCheck the options below to use CyberViewer as your default viewer for each group (current user).$\r$\n$\r$\nYou can change or review these defaults later in Windows Settings > Apps > Default apps."
-LangString CV_DefaultViewerBody 3082 "CyberViewer puede abrir imágenes (JPG, JPEG, PNG, GIF, WEBP, BMP, TIFF, ICO, AVIF) y videos (MP4, M4V, WEBM, MOV, MKV).$\r$\n$\r$\nMarca las opciones de abajo para usar CyberViewer como tu visor predeterminado de cada grupo (usuario actual).$\r$\n$\r$\nPuedes cambiar o revisar estos valores más tarde en la Configuración de Windows > Aplicaciones > Aplicaciones predeterminadas."
+LangString CV_DefaultViewerBody 1033 "CyberViewer can open images (JPG, JPEG, PNG, GIF, WEBP, BMP, TIFF, ICO, AVIF), videos (MP4, M4V, WEBM, MOV, MKV) and audio (MP3, WAV).$\r$\n$\r$\nCheck the options below to use CyberViewer as your default viewer for each group (current user).$\r$\n$\r$\nYou can change or review these defaults later in Windows Settings > Apps > Default apps."
+LangString CV_DefaultViewerBody 3082 "CyberViewer puede abrir imágenes (JPG, JPEG, PNG, GIF, WEBP, BMP, TIFF, ICO, AVIF), videos (MP4, M4V, WEBM, MOV, MKV) y audio (MP3, WAV).$\r$\n$\r$\nMarca las opciones de abajo para usar CyberViewer como tu visor predeterminado de cada grupo (usuario actual).$\r$\n$\r$\nPuedes cambiar o revisar estos valores más tarde en la Configuración de Windows > Aplicaciones > Aplicaciones predeterminadas."
 
 LangString CV_DefaultViewerCheckbox 1033 "Set CyberViewer as the default image viewer"
 LangString CV_DefaultViewerCheckbox 3082 "Establecer CyberViewer como el visor de imágenes predeterminado"
 
-LangString CV_VideoViewerCheckbox 1033 "Set CyberViewer as the default video player"
-LangString CV_VideoViewerCheckbox 3082 "Establecer CyberViewer como el reproductor de video predeterminado"
+LangString CV_VideoViewerCheckbox 1033 "Set CyberViewer as the default video and audio player"
+LangString CV_VideoViewerCheckbox 3082 "Establecer CyberViewer como el reproductor de video y audio predeterminado"
 
 ; $R9 = default image viewer flag, $R7 = default video player flag (1 = yes,
 ; 0 = no). Both default ON for silent installs.
@@ -109,12 +109,14 @@ FunctionEnd
     !insertmacro CV_WriteFileAssoc ".webm" "CyberViewer.video" "Video"
     !insertmacro CV_WriteFileAssoc ".mov"  "CyberViewer.video" "Video"
     !insertmacro CV_WriteFileAssoc ".mkv"  "CyberViewer.video" "Video"
+    !insertmacro CV_WriteFileAssoc ".mp3"  "CyberViewer.audio" "Audio"
+    !insertmacro CV_WriteFileAssoc ".wav"  "CyberViewer.audio" "Audio"
   ${EndIf}
 
   ${If} $R9 == 1
     ${OrIf} $R7 == 1
     WriteRegStr HKCU "Software\CyberViewer\Capabilities" "ApplicationName" "CyberViewer"
-    WriteRegStr HKCU "Software\CyberViewer\Capabilities" "ApplicationDescription" "CyberViewer image and video viewer"
+    WriteRegStr HKCU "Software\CyberViewer\Capabilities" "ApplicationDescription" "CyberViewer image, video and audio viewer"
   ${EndIf}
 
   ${If} $R9 == 1
@@ -136,6 +138,8 @@ FunctionEnd
     WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".webm" "CyberViewer.video"
     WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".mov" "CyberViewer.video"
     WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".mkv" "CyberViewer.video"
+    WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".mp3" "CyberViewer.audio"
+    WriteRegStr HKCU "Software\CyberViewer\Capabilities\FileAssociations" ".wav" "CyberViewer.audio"
   ${EndIf}
 
   ${If} $R9 == 1
@@ -158,6 +162,7 @@ FunctionEnd
   DeleteRegKey HKCU "Software\Classes\CyberViewer.ico"
   DeleteRegKey HKCU "Software\Classes\CyberViewer.avif"
   DeleteRegKey HKCU "Software\Classes\CyberViewer.video"
+  DeleteRegKey HKCU "Software\Classes\CyberViewer.audio"
   ClearErrors
   ReadRegStr $R8 HKCU "Software\Classes\.jpg" ""
   ${If} $R8 == "CyberViewer.jpg"
@@ -218,6 +223,14 @@ FunctionEnd
   ReadRegStr $R8 HKCU "Software\Classes\.mkv" ""
   ${If} $R8 == "CyberViewer.video"
     DeleteRegValue HKCU "Software\Classes\.mkv" ""
+  ${EndIf}
+  ReadRegStr $R8 HKCU "Software\Classes\.mp3" ""
+  ${If} $R8 == "CyberViewer.audio"
+    DeleteRegValue HKCU "Software\Classes\.mp3" ""
+  ${EndIf}
+  ReadRegStr $R8 HKCU "Software\Classes\.wav" ""
+  ${If} $R8 == "CyberViewer.audio"
+    DeleteRegValue HKCU "Software\Classes\.wav" ""
   ${EndIf}
   DeleteRegKey HKCU "Software\CyberViewer"
   DeleteRegValue HKCU "Software\RegisteredApplications" "CyberViewer"

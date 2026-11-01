@@ -98,6 +98,11 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 - Las miniaturas de video son fotogramas estáticos. La edición, la copia de imágenes, el fondo de escritorio y la impresión/exportación quedan deshabilitados para videos. Las presentaciones siguen mostrando imágenes y omiten videos.
 - Los códecs de video no compatibles muestran un error. Los videos silenciosos se reproducen sin avisos automáticos de audio; volumen y silencio se atenúan y deshabilitan cuando la reproducción no produce audio decodificable, y se recuperan si el audio aparece más adelante. Puedes consultar la información de audio en el menú del reproductor. HEVC y el audio multicanal no tienen compatibilidad universal; no se incluye un transcodificador ni se necesita un reproductor externo.
 
+### Audio y visualizaciones
+- Abre MP3 y WAV PCM directamente, sin conversión ni otro motor de reproducción. Los códecs WAV poco habituales pueden no ser compatibles.
+- El audio comparte los controles, atajos, volumen, repetición, velocidad y restauración opcional de posición del video. Anterior/siguiente recorre solo archivos de audio.
+- Elige Espectro, Osciloscopio, Radial, Partículas o Efectos desactivados en el menú del reproductor. Se recuerda el estilo elegido. Los efectos siguen el color de acento, funcionan hasta a 30 fps y se detienen al pausar u ocultar la ventana. La preferencia de movimiento reducido los mantiene estáticos. El audio en reproducción continúa al ocultar en la bandeja.
+
 ### Videos y playlists de YouTube
 - Selecciona **Abrir enlace de YouTube** en el menú principal o pulsa **Ctrl+L**. Pega el enlace de un video, Short, directo o playlist pública. Los enlaces con video y playlist conservan ese contexto; se admiten marcas de tiempo e índices de playlist.
 - El reproductor oficial de YouTube ofrece reproducción, volumen, subtítulos, calidad y su selector de playlist. CyberViewer añade anterior/siguiente, repetir playlist, reintentar, abrir el video actual en YouTube y pantalla completa nativa (**Ctrl+F**, **Esc** para salir). La barra inferior queda fuera del video y desaparece en pantalla completa.
@@ -133,7 +138,7 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 - **Inicio automático con Windows:** inicia minimizado al iniciar sesión
 - **Atajo global:** atajo configurable para mostrar u ocultar, predeterminado `Alt+Shift+V`
 - **Menú contextual del Explorador:** haz clic derecho en imágenes admitidas para abrirlas en CyberViewer
-- **Asociaciones de archivo:** establece CyberViewer como visor predeterminado de JPG, PNG, GIF, WebP, BMP, TIFF, ICO o AVIF, con una opción de reproductor de video predeterminado en el instalador (MP4, M4V, WebM, MOV, MKV). La pestaña Sistema muestra el visor actual por formato y enlaza a los ajustes de Windows.
+- **Asociaciones de archivo:** establece CyberViewer como visor predeterminado de JPG, PNG, GIF, WebP, BMP, TIFF, ICO o AVIF, con una opción de reproductor de video y audio predeterminado en el instalador (MP4, M4V, WebM, MOV, MKV, MP3, WAV). La pestaña Sistema muestra el visor actual por formato y enlaza a los ajustes de Windows.
 - **Una sola instancia residente:** las aperturas desde el Explorador y los nuevos inicios envían las imágenes a pestañas de la ventana existente
 - **Actualización automática:** actualizador integrado de GitHub Releases con instalación silenciosa
 - **Copia de seguridad de la configuración:** exporta o importa la configuración y los favoritos como JSON
@@ -269,7 +274,7 @@ npm run build:portable   # solo portable
 
 | Tecla | Acción |
 |---|---|
-| `Ctrl+O` | Abrir imágenes o videos |
+| `Ctrl+O` | Abrir imágenes, videos o audio |
 | `Ctrl+L` | Abrir enlace de video o playlist de YouTube |
 | `Ctrl+Tab` / `Ctrl+Mayús+Tab` | Pestaña siguiente / anterior |
 | `Ctrl+W` | Cerrar pestaña |

@@ -14,6 +14,7 @@
     "lint": "eslint main.js preload.js tray-preload.js youtube-preload.js lib test js",
     "i18n:sync": "node scripts/sync-i18n-ui.js",
     "test:video": "node scripts/test-video.cjs",
+    "test:audio": "node test/audio-smoke.cjs",
     "test:video-speed": "node test/video-speed-smoke.cjs",
     "test:youtube": "node scripts/test-youtube.cjs"
   },
@@ -149,6 +150,12 @@
           ],
           "name": "Video",
           "description": "Video",
+          "role": "Viewer"
+        },
+        {
+          "ext": ["mp3", "wav"],
+          "name": "Audio",
+          "description": "Audio",
           "role": "Viewer"
         }
       ]

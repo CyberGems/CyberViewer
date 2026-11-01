@@ -19,7 +19,7 @@ window.CVVideo = (() => {
   let audioStatus = 'pending';
   let loadedAt = 0;
   const text = key => (I18N[state.settings.app.language || 'en'] || I18N.en)[key];
-  const active = () => window.CVFormats.isVideo(state.images[state.current]);
+  const active = () => window.CVFormats.isPlayable(state.images[state.current]);
   const imageActions = new Set(['save', 'save-as', 'export-pdf', 'print', 'copy',
     'rotate-left', 'rotate-right', 'crop', 'resize', 'adjust', 'flip-h', 'flip-v',
     'set-wallpaper', 'set-wallpaper-fill', 'set-wallpaper-fit', 'set-wallpaper-center', 'set-wallpaper-span',
@@ -30,6 +30,9 @@ window.CVVideo = (() => {
   function syncTools() {
     const video = active();
     document.body.classList.toggle('video-active', video);
+    const audio = window.CVFormats.isAudio(state.images[state.current]);
+    document.body.classList.toggle('audio-active', audio);
+    if (audio) $('video-fit').disabled = true;
     const navigation = $('shortcuts-navigation-label');
     navigation.dataset.i18n = video ? 'video_seek_keys' : 'navigate_hint';
     navigation.textContent = text(navigation.dataset.i18n);
@@ -161,6 +164,7 @@ window.CVVideo = (() => {
 
   function unload() {
     generation++;
+    window.CVAudioVisuals.attach(null);
     clearTimeout(timeout);
     timeout = null;
     if (owner?.loaded && !element.seeking && Number.isFinite(element.currentTime)) owner.videoTime = element.currentTime;
@@ -175,6 +179,9 @@ window.CVVideo = (() => {
     $('ghost-close').inert = false;
     keyboardFocus = false;
     element.pause();
+    $('video-preview').removeAttribute('src');
+    $('video-preview').load();
+    $('video-seek-preview').hidden = true;
     element.removeAttribute('src');
     element.load();
     element.hidden = true;
@@ -190,6 +197,8 @@ window.CVVideo = (() => {
     unload();
     const token = generation;
     owner = image;
+    const audio = window.CVFormats.isAudio(image);
+    window.CVAudioVisuals.attach(image);
     mainImg.onload = null; mainImg.onerror = null; mainImg.removeAttribute('src');
     mainImg.hidden = true;
     element.hidden = false;
@@ -228,7 +237,7 @@ window.CVVideo = (() => {
       finished = true;
       clearTimeout(timeout);
       image.w = element.videoWidth; image.h = element.videoHeight;
-      if (!image.w || !image.h) { fail(); return; }
+      if (!audio && (!image.w || !image.h)) { fail(); return; }
       image.loaded = true;
       image.duration = element.duration;
       clearImageError();
@@ -237,6 +246,7 @@ window.CVVideo = (() => {
       $('video-heading').textContent = image.file.name;
       element.pause();
       syncTools(); sync(); reveal();
+      window.CVAudioVisuals.refresh();
       onReady();
       if (live() && state.settings.app.videoAutoplay !== false) void play();
     };
@@ -255,11 +265,16 @@ window.CVVideo = (() => {
 
   async function play() {
     if (!owner || !owner.loaded || document.body.classList.contains('image-error')) return;
+    const token = generation;
     reveal();
     if (element.ended) element.currentTime = 0;
-    try { await element.play(); }
+    try {
+      await window.CVAudioVisuals.prepare();
+      if (token !== generation || !owner?.loaded) return;
+      await element.play();
+    }
     catch (error) {
-      if (error.name !== 'AbortError') { console.error('Video playback failed:', error); showToast(text('video_play_error'), 'error'); }
+      if (error.name !== 'AbortError') { console.error('Video playback failed:', error); showToast(text(window.CVFormats.isAudio(owner) ? 'audio_play_error' : 'video_play_error'), 'error'); }
     }
   }
   function toggle() {
@@ -363,12 +378,19 @@ window.CVVideo = (() => {
     let index = state.current + direction;
     while (index >= 0 && index < list.length) {
       const candidate = list[index];
-      if (candidate && candidate.file && candidate.file.path && window.CVFormats.isVideo(candidate.file.path)) return candidate;
+      if (candidate && candidate.file && candidate.file.path && (window.CVFormats.isAudio(owner) ? window.CVFormats.isAudio(candidate.file.path) : window.CVFormats.isVideo(candidate.file.path))) return candidate;
       index += direction;
     }
     return null;
   }
   function syncSiblings() {
+    const audio = window.CVFormats.isAudio(owner);
+    for (const direction of ['prev', 'next']) {
+      const button = $(`video-${direction}`);
+      const label = text(`${audio ? 'audio' : 'video'}_${direction}`);
+      setCyberTooltip(button, label);
+      button.querySelector('span').textContent = label;
+    }
     const prev = $('video-prev');
     const next = $('video-next');
     if (!prev || !next) return;
@@ -413,8 +435,13 @@ window.CVVideo = (() => {
   function localize() {
     for (const [id, key] of [['video-controls', 'video_controls'], ['video-seek', 'video_seek'], ['video-volume', 'video_volume']]) $(id).setAttribute('aria-label', text(key));
     setCyberTooltip($('video-mute'), text('video_mute_shortcut'));
-    setCyberTooltip($('video-prev'), text('video_prev'));
-    setCyberTooltip($('video-next'), text('video_next'));
+    const audio = window.CVFormats.isAudio(state.images[state.current]);
+    for (const direction of ['prev', 'next']) {
+      const label = text(`${audio ? 'audio' : 'video'}_${direction}`);
+      setCyberTooltip($(`video-${direction}`), label);
+      $(`video-${direction}`).querySelector('span').textContent = label;
+    }
+    window.CVAudioVisuals.localize();
     for (const [id, key] of [['video-back', 'video_back'], ['video-forward', 'video_forward'], ['video-more', 'video_more']]) {
       $(id).setAttribute('aria-label', text(key));
       setCyberTooltip($(id), text(key));
@@ -428,6 +455,7 @@ window.CVVideo = (() => {
     if (active() && document.body.classList.contains('image-error')) setImageError(state.images[state.current]);
   }
   function initialize() {
+    window.CVAudioVisuals.initialize(element);
     const controls = $('video-controls');
     controls.addEventListener('focusin', reveal);
     controls.addEventListener('focusout', () => {
@@ -506,7 +534,10 @@ window.CVVideo = (() => {
       element.loop = prefs.videoLoop === true;
       if (Number.isFinite(prefs.videoVolume)) element.volume = Math.max(0, Math.min(1, prefs.videoVolume));
       element.muted = prefs.videoMuted === true;
-      try { $('video-preview').src = element.currentSrc || ''; } catch (_) { /* preview stays off */ }
+      $('video-preview').removeAttribute('src');
+      if (!window.CVFormats.isAudio(owner)) {
+        try { $('video-preview').src = element.currentSrc || ''; } catch (_) { /* preview stays off */ }
+      }
       previewLast = -1;
       loadedAt = Date.now();
       sync();
@@ -553,6 +584,7 @@ window.CVVideo = (() => {
       previewBox.hidden = false;
       previewBox.style.left = `${Math.max(92, Math.min(rect.width - 92, event.clientX - rect.left))}px`;
       $('video-seek-preview-time').textContent = window.CVFormats.formatTime(time);
+      if (window.CVFormats.isAudio(owner)) return;
       if (previewVideo.src !== element.currentSrc) { try { previewVideo.src = element.currentSrc; } catch (_) {} }
       if (Math.abs(time - previewLast) > 0.35) {
         previewLast = time;

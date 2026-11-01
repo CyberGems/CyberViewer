@@ -6,7 +6,7 @@ const os = require('os');
 const path = require('path');
 const { parseByteRange, createMediaResponse } = require('../lib/media-protocol');
 const { createPathAllowlist, toMediaUrl, isExistingMediaFile, isExistingImageFile } = require('../lib/paths');
-const { isVideo, isSupportedFile, formatTime } = require('../js/media-types');
+const { isVideo, isAudio, isPlayable, isSupportedFile, formatTime } = require('../js/media-types');
 const { TabModel, cleanView } = require('../js/tab-model');
 
 describe('media byte ranges', () => {
@@ -58,6 +58,27 @@ describe('media byte ranges', () => {
 });
 
 describe('mixed media tabs', () => {
+  it('classifies audio separately and serves seekable audio with the right MIME', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cv-audio-range-'));
+    try {
+      const allowlist = createPathAllowlist();
+      for (const [name, mime] of [['song.MP3', 'audio/mpeg'], ['tone.wav', 'audio/wav']]) {
+        const file = path.join(dir, name);
+        fs.writeFileSync(file, '0123456789');
+        assert.equal(isAudio({ file: { name, path: file } }), true);
+        assert.equal(isVideo(file), false);
+        assert.equal(isPlayable(file), true);
+        assert.equal(isSupportedFile({ name, path: file }), true);
+        assert.equal(allowlist.allowMediaFile(file), file);
+        const response = await createMediaResponse({ method: 'GET', url: toMediaUrl(file), headers: new Map([['range', 'bytes=2-4']]) }, allowlist);
+        assert.equal(response.status, 206);
+        assert.equal(response.headers.get('content-type'), mime);
+        assert.equal(await response.text(), '234');
+      }
+      assert.equal(isAudio('picture.png'), false);
+      assert.equal(isSupportedFile({ name: 'secret.txt', type: 'audio/mpeg' }), false);
+    } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  });
   it('classifies supported videos without admitting arbitrary files', () => {
     for (const name of ['clip.MP4', 'clip.m4v', 'clip.webm', 'clip.mov', 'clip.mkv']) {
       assert.equal(isVideo({ file: { name } }), true);

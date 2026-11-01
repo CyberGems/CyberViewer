@@ -1505,7 +1505,7 @@ function buildSidebar() {
       gifBadge.className = 'thumb-gif-badge';
       gifBadge.textContent = 'GIF';
     }
-    if (window.CVFormats.isVideo(im)) {
+    if (window.CVFormats.isPlayable(im)) {
       gifBadge = document.createElement('span');
       gifBadge.className = 'thumb-gif-badge';
       gifBadge.textContent = '▶ ' + (im.file.name.split('.').pop() || '').toUpperCase();
@@ -1559,7 +1559,7 @@ function buildSidebar() {
 
 // ── CONTEXT MENU ──
 window.addEventListener('contextmenu', (e) => {
-  if (e.target.closest('input, textarea, [contenteditable="true"]')) return;
+  if (e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
   
   e.preventDefault();
   if (state.currentRotation !== 0 && state.hasChanges) return;
@@ -1879,10 +1879,10 @@ function buildMenuTemplate(type, data) {
 
   if (type === 'tab-bar') return window.CVWorkspace.barMenu();
 
-  if ((type === 'image' || type === 'thumb') && window.CVFormats.isVideo(data.path || state.images[data.index ?? state.current])) {
+  if ((type === 'image' || type === 'thumb') && window.CVFormats.isPlayable(data.path || state.images[data.index ?? state.current])) {
     const filePath = data.path || state.images[state.current]?.file.path;
     return [
-      { type: 'header', icon: 'play', label: getTxt('video_label'), subtitle: fileNameFromPath(filePath || '') },
+      { type: 'header', icon: 'play', label: getTxt(window.CVFormats.isAudio(data.path || state.images[state.current]) ? 'audio_label' : 'video_label'), subtitle: fileNameFromPath(filePath || '') },
       ...(type === 'image' ? [{ label: getTxt(window.CVVideo.element.paused ? 'video_play' : 'video_pause'),
         shortcut: 'Space', action: () => void window.CVVideo.toggle() }] : []),
       { label: getTxt('tabs_open_new'), action: () => openImagePath(filePath) },
@@ -2564,7 +2564,7 @@ function buildOpenFileContextItems(t) {
 }
 
 async function showSaveAsDialog(filePath) {
-  if (window.CVFormats.isVideo(filePath || state.images[state.current])) return;
+  if (window.CVFormats.isPlayable(filePath || state.images[state.current])) return;
   return window.CVWorkspace.dialog(async () => {
     if (!isElectron) return;
     const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
@@ -2991,7 +2991,8 @@ function getSidebarThumbUrl(i) {
   const im = state.images[i];
   if (!im) return '';
   if (im.thumbUrl) return im.thumbUrl;
-  if (isGifImage(im) || window.CVFormats.isVideo(im)) return '';
+  if (window.CVFormats.isAudio(im)) return 'assets/audio-thumbnail.svg';
+  if (isGifImage(im) || window.CVFormats.isPlayable(im)) return '';
   return getUrl(i);
 }
 
@@ -3101,7 +3102,7 @@ function getUrl(i) {
     im.url = mediaUrl(im.file.path);
   } else if (im.file) {
     im.url = URL.createObjectURL(im.file);
-    if (!window.CVFormats.isVideo(im)) im.thumbUrl = im.url;
+    if (!window.CVFormats.isPlayable(im)) im.thumbUrl = im.url;
   }
   return im.url;
 }
@@ -3213,7 +3214,7 @@ function showImage(idx, direction, isInitial = false) {
       updateHUDStates();
       return;
     }
-    if (window.CVFormats.isVideo(im)) {
+    if (window.CVFormats.isPlayable(im)) {
       state.currentRotation = 0; state.visualRotation = 0; state.hasChanges = false;
       window.CVVideo.load(im, url, markMainReady);
       updateHUDStates();
@@ -3364,7 +3365,7 @@ function preloadAdjacent(idx) {
   const seq = state.openSeq;
   for (let d = 1; d <= PRELOAD_RANGE; d++) {
     [idx + d, idx - d].forEach(i => {
-      if (i >= 0 && i < state.images.length && !state.images[i].loaded && !window.CVFormats.isVideo(state.images[i])) {
+      if (i >= 0 && i < state.images.length && !state.images[i].loaded && !window.CVFormats.isPlayable(state.images[i])) {
         const url = getUrl(i);
         if (state.preloadCache.has(url)) return;
 
@@ -4901,7 +4902,7 @@ function syncViewModeButtons() {
   // and the normal state, with no accent highlight.
   const videoFit = $('video-fit');
   if (videoFit) {
-    const zoomed = window.CVVideo.active() && !window.CVYouTube.active() && !state.isGhost && state.viewMode !== 'fit';
+    const zoomed = window.CVVideo.active() && !window.CVFormats.isAudio(state.images[state.current]) && !window.CVYouTube.active() && !state.isGhost && state.viewMode !== 'fit';
     videoFit.disabled = !zoomed;
   }
 }
@@ -5008,8 +5009,8 @@ function updateFileStats() {
   }
 
   const im = state.images[state.current];
-  const w = im.w || mainImg.naturalWidth || 0;
-  const h = im.h || mainImg.naturalHeight || 0;
+  const w = window.CVFormats.isAudio(im) ? 0 : im.w || mainImg.naturalWidth || 0;
+  const h = window.CVFormats.isAudio(im) ? 0 : im.h || mainImg.naturalHeight || 0;
   dimsEl.textContent = (w && h) ? `${w} × ${h}px` : '—';
 
   // Prefer known size on the image entry / File object
@@ -5191,7 +5192,7 @@ function slideshowAdvance(dir, opts = {}) {
     }
     idx = candidate;
     const im = state.images[idx];
-    if (im && !im.hidden && !window.CVFormats.isVideo(im)) {
+    if (im && !im.hidden && !window.CVFormats.isPlayable(im)) {
       state.viewMode = 'fit';
       showImage(idx, dir > 0 ? 'left' : 'right');
       if (state.slideshowPlaying) scheduleSlideshowTick();
@@ -5583,7 +5584,7 @@ function setImageError(im) {
   $('btn-relocate-tab').hidden = !isElectron;
   if (sub) {
     const name = (im && im.file && im.file.name) ? im.file.name : '';
-    const tpl = im?.unavailable || im?.missingDraft ? t.tabs_missing : window.CVFormats.isVideo(im) ? t.video_error : t.error_image_sub;
+    const tpl = im?.unavailable || im?.missingDraft ? t.tabs_missing : window.CVFormats.isAudio(im) ? t.audio_error : window.CVFormats.isPlayable(im) ? t.video_error : t.error_image_sub;
     if (name && tpl) sub.textContent = tpl.replace('{name}', name);
     else sub.textContent = (lang === 'es'
       ? 'No se pudo cargar la imagen. El archivo está dañado, no es una imagen o el formato no es compatible.'
@@ -5609,6 +5610,7 @@ function clearImageError() {
 // ── MOUSE / TOUCH ──
 viewerWrap.addEventListener('wheel', e => {
   if (window.CVYouTube.active()) return;
+  if (window.CVFormats.isAudio(state.images[state.current])) return;
   if (e.target.closest('#video-controls')) return;
   if (window.CVVideo.active() && state.isGhost) { e.preventDefault(); return; }
   if (state.images.length === 0 || state.isCropping) return;
@@ -5619,6 +5621,7 @@ viewerWrap.addEventListener('wheel', e => {
 
 viewerWrap.addEventListener('mousedown', e => {
   if (window.CVYouTube.active()) return;
+  if (window.CVFormats.isAudio(state.images[state.current])) return;
   if (e.target.closest('#video-controls')) return;
   if (window.CVVideo.active() && state.isGhost) return;
   if (e.target.closest('#kbd-hint') || e.target.closest('#topbar') || e.target.closest('#sidebar')) return;
@@ -5698,6 +5701,7 @@ viewerWrap.addEventListener('dblclick', e => {
 let lastPinchDist = 0;
 viewerWrap.addEventListener('touchstart', e => {
   if (window.CVYouTube.active()) return;
+  if (window.CVFormats.isAudio(state.images[state.current])) return;
   if (e.target.closest('#video-controls')) return;
   if (window.CVVideo.active() && state.isGhost) return;
   if (e.target.closest('#kbd-hint') || e.target.closest('#topbar') || e.target.closest('#sidebar')) return;
@@ -5816,7 +5820,7 @@ document.addEventListener('keydown', e => {
     return;
   }
 
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
 
   // ── TITLEBAR HOTKEYS (same assignments as the CyberNotes title bar) ──
   // Modifiers are read directly: the shared isCtrl const is declared further
@@ -7719,7 +7723,8 @@ async function refreshFileAssociations() {
       : (t.cfg_file_assoc_unset || 'No default chosen yet');
   const groups = [
     { key: 'image', label: t.about_formats_images || 'Images' },
-    { key: 'video', label: t.about_formats_videos || 'Videos' }
+    { key: 'video', label: t.about_formats_videos || 'Videos' },
+    { key: 'audio', label: t.audio_label }
   ];
   container.innerHTML = groups.map((group) => {
     const chips = rows.filter((row) => row.group === group.key).map((row) => `
@@ -9318,6 +9323,10 @@ $('btn-go-end').addEventListener('click', (e) => {
                 <span class="about-formats-label">${t.about_formats_videos || 'Videos'}</span>
                 ${ABOUT_VIDEO_FORMATS.map((f) => `<kbd class="about-format-badge">${f}</kbd>`).join('')}
               </div>
+              <div class="about-formats-row">
+                <span class="about-formats-label">${t.audio_label}</span>
+                ${[...window.CVFormats.AUDIO_EXTS].map((f) => `<kbd class="about-format-badge">${f.slice(1).toUpperCase()}</kbd>`).join('')}
+              </div>
               <span class="about-formats-tech">${t.about_formats_tech || ''}</span>
             </div>
           </div>
@@ -10505,7 +10514,7 @@ async function setWallpaperFromMemory(im, style, lang) {
 }
 
 async function setAsWallpaper(targetPath, style = 'fill') {
-  if (window.CVFormats.isVideo(targetPath || state.images[state.current])) return;
+  if (window.CVFormats.isPlayable(targetPath || state.images[state.current])) return;
   const im = state.current >= 0 ? state.images[state.current] : null;
   const p = targetPath || (im ? imageDiskPath(im) : null);
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
@@ -10584,6 +10593,14 @@ async function showPropertiesPanel(rawPath) {
   const h = im.h || mainImg.naturalHeight || 0;
   const ext = name.includes('.') ? name.split('.').pop().toUpperCase() : '';
   const mime = mimeFromPath(name || fpath);
+  const audio = window.CVFormats.isAudio(im);
+  const mediaSection = $('props-dims').closest('.props-section');
+  const sectionTitle = mediaSection.querySelector('.props-section-label');
+  sectionTitle.dataset.i18n = audio ? 'audio_label' : 'props_section_image';
+  sectionTitle.textContent = i18nLang[sectionTitle.dataset.i18n];
+  for (const id of ['props-dims', 'props-ratio', 'props-mp']) $(id).closest('.props-row').style.display = audio ? 'none' : '';
+  $('props-duration-row').hidden = !audio;
+  $('props-duration').textContent = audio && Number.isFinite(im.duration) ? window.CVFormats.formatTime(im.duration) : '-';
   const ratio = formatAspectRatio(w, h);
   const mp = formatMegapixels(w, h);
   const idx = state.current >= 0 ? (state.current + 1) : 0;
@@ -10625,7 +10642,7 @@ async function showPropertiesPanel(rawPath) {
 
   const preview = $('props-preview');
   if (preview) {
-    const previewUrl = window.CVVideo.active() ? im.thumbUrl : mainImg.getAttribute('src');
+    const previewUrl = audio ? 'assets/audio-thumbnail.svg' : window.CVVideo.active() ? im.thumbUrl : mainImg.getAttribute('src');
     if (previewUrl) {
       preview.src = previewUrl;
       preview.style.display = '';

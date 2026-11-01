@@ -33,7 +33,7 @@ describe('video fit-to-window button', () => {
   });
 
   it('switches between dimmed and plain without an accent highlight', () => {
-    assert.match(appJs, /const zoomed = window\.CVVideo\.active\(\) && !window\.CVYouTube\.active\(\) && !state\.isGhost && state\.viewMode !== 'fit';/);
+    assert.match(appJs, /const zoomed = window\.CVVideo\.active\(\) && !window\.CVFormats\.isAudio\(state\.images\[state\.current\]\) && !window\.CVYouTube\.active\(\) && !state\.isGhost && state\.viewMode !== 'fit';/);
     assert.match(appJs, /videoFit\.disabled = !zoomed;/);
     assert.doesNotMatch(appJs, /videoFit\.classList\.toggle\('active'/);
     assert.match(videoCss, /#video-fit:disabled, #video-fit:disabled:hover \{ background: transparent; \}/);

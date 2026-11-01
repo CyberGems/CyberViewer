@@ -17,11 +17,13 @@ const updater = read('lib/updater.js');
 const css = read('css/app.css');
 
 describe('file association management', () => {
-  it('registers video formats from the installer with a dedicated checkbox', () => {
-    assert.match(nsh, /LangString CV_VideoViewerCheckbox 1033 "Set CyberViewer as the default video player"/);
-    assert.match(nsh, /LangString CV_VideoViewerCheckbox 3082 "Establecer CyberViewer como el reproductor de video predeterminado"/);
+  it('registers video and audio formats with a dedicated playback checkbox', () => {
+    assert.match(nsh, /LangString CV_VideoViewerCheckbox 1033 "Set CyberViewer as the default video and audio player"/);
+    assert.match(nsh, /LangString CV_VideoViewerCheckbox 3082 "Establecer CyberViewer como el reproductor de video y audio predeterminado"/);
     assert.match(nsh, /insertmacro CV_WriteFileAssoc "\.mp4"\s+"CyberViewer\.video"/);
     assert.match(nsh, /insertmacro CV_WriteFileAssoc "\.mkv"\s+"CyberViewer\.video"/);
+    assert.match(nsh, /insertmacro CV_WriteFileAssoc "\.mp3"\s+"CyberViewer\.audio"/);
+    assert.match(nsh, /insertmacro CV_WriteFileAssoc "\.wav"\s+"CyberViewer\.audio"/);
     // Both groups can be chosen independently
     assert.match(nsh, /StrCpy \$R9 1/);
     assert.match(nsh, /StrCpy \$R7 1/);
@@ -30,9 +32,12 @@ describe('file association management', () => {
 
   it('cleans up video and image registrations without touching third-party defaults', () => {
     assert.match(nsh, /DeleteRegKey HKCU "Software\\Classes\\CyberViewer\.video"/);
+    assert.match(nsh, /DeleteRegKey HKCU "Software\\Classes\\CyberViewer\.audio"/);
     // Extension defaults are cleared only when they still point at us
     assert.match(nsh, /ReadRegStr \$R8 HKCU "Software\\Classes\\\.mp4" ""/);
     assert.match(nsh, /\${If} \$R8 == "CyberViewer\.video"\s*DeleteRegValue HKCU "Software\\Classes\\\.mp4" ""/);
+    assert.match(nsh, /\${If} \$R8 == "CyberViewer\.audio"\s*DeleteRegValue HKCU "Software\\Classes\\\.mp3" ""/);
+    assert.match(nsh, /\${If} \$R8 == "CyberViewer\.audio"\s*DeleteRegValue HKCU "Software\\Classes\\\.wav" ""/);
   });
 
   it('reports the current viewer per extension from the registry', () => {

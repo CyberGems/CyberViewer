@@ -548,6 +548,14 @@ window.CVWorkspace = (() => {
     if (busy || state.isCropping || isEditing()) { pendingSuspend = true; return; }
     pendingSuspend = false;
     capture();
+    // Unloading images on tray hide must not interrupt background music.
+    // Page visibility stops the visualizer; retain only the active decoder.
+    if (window.CVFormats.isAudio(model.active?.image) && !window.CVVideo.element.paused && !window.CVVideo.element.ended) {
+      state.openSeq++; state.scanInProgress = false;
+      clearPreloads();
+      void flush();
+      return;
+    }
     window.CVYouTube.unload();
     window.CVVideo.unload();
     stopSlideshow({ silent: true });

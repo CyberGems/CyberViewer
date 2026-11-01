@@ -13,7 +13,7 @@ const { execFile, spawn } = require('child_process');
 
 const {
   cleanFsPath, toMediaUrl, createPathAllowlist, MEDIA_EXTS,
-  isExistingMediaFile, isVideoPath
+  isExistingMediaFile, isVideoPath, isAudioPath
 } = require('./lib/paths');
 const { createMediaResponse } = require('./lib/media-protocol');
 const { clearThumbCache, evictThumbCache } = require('./lib/thumb-cache');
@@ -1444,7 +1444,9 @@ const FILE_ASSOCIATION_TYPES = [
   { ext: '.m4v', progid: 'CyberViewer.video', group: 'video' },
   { ext: '.webm', progid: 'CyberViewer.video', group: 'video' },
   { ext: '.mov', progid: 'CyberViewer.video', group: 'video' },
-  { ext: '.mkv', progid: 'CyberViewer.video', group: 'video' }
+  { ext: '.mkv', progid: 'CyberViewer.video', group: 'video' },
+  { ext: '.mp3', progid: 'CyberViewer.audio', group: 'audio' },
+  { ext: '.wav', progid: 'CyberViewer.audio', group: 'audio' }
 ];
 
 function regQueryStringValue(key, valueName) {
@@ -2158,6 +2160,7 @@ async function renderVideoThumb(abs, cacheFile) {
 ipcMain.handle('get-thumbnail', async (event, filePath, opts) => {
   try {
     const abs = resolveAllowedPath(filePath);
+    if (isAudioPath(abs)) return pathToFileURL(path.join(__dirname, 'assets', 'audio-thumbnail.svg')).href;
     const priority = !!(opts && opts.priority);
     const stats = await fs.promises.stat(abs);
     const normalizedPath = abs.toLowerCase();
@@ -2216,7 +2219,7 @@ ipcMain.handle('save-image', async (event, { filePath, rotation, buffer, createC
     if (!filePath) return { success: false, error: 'Ruta no proporcionada' };
 
     const cleanPath = resolveAllowedPath(filePath);
-    if (isVideoPath(cleanPath)) return { success: false, error: tMenu('video_edit_unsupported', getUiLang()) };
+    if (isVideoPath(cleanPath) || isAudioPath(cleanPath)) return { success: false, error: tMenu('video_edit_unsupported', getUiLang()) };
     let targetPath = cleanPath;
 
     if (createCopy) {
@@ -2598,7 +2601,7 @@ function runRegCommands(commands) {
 // 'CyberViewer.video'.
 const CONTEXT_MENU_PROGIDS = [
   'BMP Image', 'GIF Image', 'JPEG Image', 'PNG Image', 'WebP Image', 'TIFF Image', 'icofile',
-  'Video', 'CyberViewer.video'
+  'Video', 'CyberViewer.video', 'Audio', 'CyberViewer.audio'
 ];
 // Bookkeeping used to detect registrations that went stale (app updated,
 // install path changed, language switched) and re-register on startup.

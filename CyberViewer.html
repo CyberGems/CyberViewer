@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/tabs.css">
 <link rel="stylesheet" href="css/video.css">
+<link rel="stylesheet" href="css/audio.css">
 <link rel="stylesheet" href="css/youtube.css">
 </head>
 <body class="statusbar-visible" data-alpha-bg="checker-dark" data-image-outline="off">
@@ -341,8 +342,17 @@
       <div id="viewer-filename" class="hud-hidden-fade"></div>
       <div id="canvas-layer">
         <img id="main-img" data-i18n-alt="main_img_alt" alt="Imagen principal">
-        <video id="main-video" preload="auto" playsinline hidden></video>
+        <video id="main-video" crossorigin="anonymous" preload="auto" playsinline hidden></video>
       </div>
+
+      <section id="audio-stage" hidden aria-labelledby="audio-name">
+        <canvas id="audio-canvas" aria-hidden="true"></canvas>
+        <div class="audio-caption">
+          <span id="audio-format"></span>
+          <h2 id="audio-name"></h2>
+          <p id="audio-visual-status"></p>
+        </div>
+      </section>
 
       <div id="video-controls" role="group" data-i18n-aria="video_controls" hidden>
         <div id="video-heading"></div>
@@ -394,6 +404,16 @@
           </div>
           <div id="video-menu" class="menu-panel" role="group" data-i18n-aria="video_more" hidden>
             <div id="video-menu-main">
+              <label id="audio-visualizer-row" hidden>
+                <span data-i18n="audio_visualizer">Visualización</span>
+                <select id="audio-visualizer" data-i18n-aria="audio_visualizer">
+                  <option value="spectrum" data-i18n="audio_spectrum">Espectro</option>
+                  <option value="waveform" data-i18n="audio_waveform">Osciloscopio</option>
+                  <option value="radial" data-i18n="audio_radial">Radial</option>
+                  <option value="particles" data-i18n="audio_particles">Partículas</option>
+                  <option value="off" data-i18n="audio_effects_off">Efectos desactivados</option>
+                </select>
+              </label>
               <button type="button" id="video-speed-row">
                 <svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>
                 <span data-i18n="video_speed">Velocidad</span>
@@ -661,7 +681,7 @@
 </div>
 
 <!-- FILE INPUT -->
-<input type="file" id="file-input" accept="image/*,.ico,.avif,.mp4,.m4v,.webm,.mov,.mkv" multiple style="display:none">
+<input type="file" id="file-input" accept="image/*,.ico,.avif,.mp4,.m4v,.webm,.mov,.mkv,.mp3,.wav" multiple style="display:none">
 <button id="ghost-close" class="tooltip-left cyber-tooltip" data-i18n-title="ghost_close_title" data-tooltip="Salir de Pantalla Completa" title="Salir de Pantalla Completa">&#10005;</button>
 
 <!-- MODAL: CONFIRM -->
@@ -863,6 +883,7 @@
 
           <div class="props-section">
             <div class="props-section-label" data-i18n="props_section_image">Imagen</div>
+            <div class="props-row" id="props-duration-row" hidden><span class="props-key" data-i18n="audio_duration">Duración</span><span class="props-val props-val-digit" id="props-duration">-</span></div>
             <div class="props-row"><span class="props-key" data-i18n="props_k_dims">Dimensiones</span><span class="props-val props-val-digit" id="props-dims">-</span></div>
             <div class="props-row"><span class="props-key" data-i18n="props_k_ratio">Proporción</span><span class="props-val props-val-digit" id="props-ratio">-</span></div>
             <div class="props-row"><span class="props-key" data-i18n="props_k_mp">Megapíxeles</span><span class="props-val props-val-digit" id="props-mp">-</span></div>
@@ -1682,6 +1703,7 @@
 <script src="js/tab-model.js"></script>
 <script src="js/workspace.js"></script>
 <script src="js/video-player.js"></script>
+<script src="js/audio-visualizer.js"></script>
 <script src="js/youtube-player.js"></script>
 <script src="js/app.js"></script>
 </body>
