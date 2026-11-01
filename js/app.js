@@ -4887,13 +4887,14 @@ function syncViewModeButtons() {
   const origBtn = $('btn-orig-hud');
   if (fitBtn) fitBtn.classList.toggle('active', state.viewMode === 'fit');
   if (origBtn) origBtn.classList.toggle('active', state.viewMode === 'original');
-  // Video bar fit button: enabled and accented only while the video zoom has
-  // been adjusted away from fit; clicking returns the video to fit.
+  // Video bar fit button: enabled only while the video zoom has been adjusted
+  // away from fit in windowed mode (native fullscreen blocks video zoom);
+  // clicking returns the video to fit. It only switches between the dimmed
+  // and the normal state, with no accent highlight.
   const videoFit = $('video-fit');
   if (videoFit) {
-    const zoomed = window.CVVideo.active() && !window.CVYouTube.active() && state.viewMode !== 'fit';
+    const zoomed = window.CVVideo.active() && !window.CVYouTube.active() && !state.isGhost && state.viewMode !== 'fit';
     videoFit.disabled = !zoomed;
-    videoFit.classList.toggle('active', zoomed);
   }
 }
 

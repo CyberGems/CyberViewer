@@ -32,12 +32,16 @@ describe('video fit-to-window button', () => {
     assert.doesNotMatch(videoCss, /video-icon-expand|video-icon-collapse/);
   });
 
-  it('highlights the fit state only while the video zoom is adjusted', () => {
-    assert.match(appJs, /const zoomed = window\.CVVideo\.active\(\) && !window\.CVYouTube\.active\(\) && state\.viewMode !== 'fit';/);
+  it('switches between dimmed and plain without an accent highlight', () => {
+    assert.match(appJs, /const zoomed = window\.CVVideo\.active\(\) && !window\.CVYouTube\.active\(\) && !state\.isGhost && state\.viewMode !== 'fit';/);
     assert.match(appJs, /videoFit\.disabled = !zoomed;/);
-    assert.match(appJs, /videoFit\.classList\.toggle\('active', zoomed\);/);
+    assert.doesNotMatch(appJs, /videoFit\.classList\.toggle\('active'/);
     assert.match(videoCss, /#video-fit:disabled, #video-fit:disabled:hover \{ opacity: \.38; background: transparent; \}/);
-    assert.match(videoCss, /#video-fit\.active \{ background: rgba\(var\(--cyber-accent-rgb\), 0\.12\); color: var\(--cyber-accent-ink\); \}/);
+    assert.doesNotMatch(videoCss, /#video-fit\.active/);
+  });
+
+  it('accents the fullscreen button while native fullscreen is active', () => {
+    assert.match(videoCss, /body\.video-active\.ghost-mode #video-fullscreen,\s*body\.video-active\.ghost-mode #video-fullscreen:hover \{ background: rgba\(var\(--cyber-accent-rgb\), 0\.12\); color: var\(--cyber-accent-ink\); \}/);
   });
 
   it('reuses the image viewer fit pipeline and localized labels', () => {
