@@ -92,11 +92,13 @@ body.video-active #ghost-close:focus-visible { outline: 2px solid var(--cyber-ac
 #video-back svg, #video-forward svg { width: 22px !important; height: 22px !important; }
 #video-play { margin-right: 6px; }
 #video-play svg { fill: currentColor !important; stroke: none !important; }
-.video-icon-pause, .video-icon-muted, .video-icon-collapse { display: none; }
-.video-playing .video-icon-play, .video-muted .video-icon-sound,
-body.ghost-mode .video-icon-expand { display: none; }
-.video-playing .video-icon-pause, .video-muted .video-icon-muted,
-body.ghost-mode .video-icon-collapse { display: initial; }
+.video-icon-pause, .video-icon-muted { display: none; }
+.video-playing .video-icon-play, .video-muted .video-icon-sound { display: none; }
+.video-playing .video-icon-pause, .video-muted .video-icon-muted { display: initial; }
+/* Fit-to-window: dimmed while the video is already fitted, accented once the
+   zoom has been adjusted so the button reads as the way back to fit. */
+#video-fit:disabled, #video-fit:disabled:hover { opacity: .38; background: transparent; }
+#video-fit.active { background: rgba(var(--cyber-accent-rgb), 0.12); color: var(--cyber-accent-ink); }
 .video-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 #video-menu {
   position: absolute; top: auto; right: 26px; bottom: 91px;

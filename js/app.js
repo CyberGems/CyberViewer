@@ -4887,6 +4887,14 @@ function syncViewModeButtons() {
   const origBtn = $('btn-orig-hud');
   if (fitBtn) fitBtn.classList.toggle('active', state.viewMode === 'fit');
   if (origBtn) origBtn.classList.toggle('active', state.viewMode === 'original');
+  // Video bar fit button: enabled and accented only while the video zoom has
+  // been adjusted away from fit; clicking returns the video to fit.
+  const videoFit = $('video-fit');
+  if (videoFit) {
+    const zoomed = window.CVVideo.active() && !window.CVYouTube.active() && state.viewMode !== 'fit';
+    videoFit.disabled = !zoomed;
+    videoFit.classList.toggle('active', zoomed);
+  }
 }
 
 function sliderToZoom(val) {

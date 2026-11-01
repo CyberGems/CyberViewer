@@ -419,6 +419,8 @@ window.CVVideo = (() => {
       $(id).setAttribute('aria-label', text(key));
       setCyberTooltip($(id), text(key));
     }
+    $('video-fit').setAttribute('aria-label', text('menu_fit'));
+    setCyberTooltip($('video-fit'), text('fit_title'));
     delete $('video-fullscreen').dataset.fullscreenLabel;
     sync();
     syncTools();
@@ -519,6 +521,14 @@ window.CVVideo = (() => {
       sync();
     });
     $('video-fullscreen').addEventListener('click', () => { toggleFullscreen(); reveal(); });
+    // Same fit-to-window pipeline as the image viewer HUD button; only enabled
+    // while the video zoom has been adjusted away from fit (see syncViewModeButtons).
+    $('video-fit').addEventListener('click', () => {
+      if (window.CVYouTube.active()) return;
+      const fit = $('btn-fit-hud');
+      if (fit && !fit.disabled) fit.click();
+      reveal();
+    });
     $('video-more').addEventListener('click', () => setMenu($('video-menu').hidden));
     $('video-open').addEventListener('click', () => { closeMenu(); void openImageDialog(); });
     $('video-properties').addEventListener('click', () => { closeMenu(); openPropertiesForCurrent(); });
