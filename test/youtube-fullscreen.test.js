@@ -6,20 +6,20 @@ const { setImmediate } = require('node:timers');
 const { FULLSCREEN_CONTROLS, isPlayerFrame } = require('../lib/youtube-fullscreen');
 
 function harness() {
-  const listeners = [], calls = [];
+  const listeners = { click: [], dblclick: [] }, calls = [];
   const document = {
     fullscreenElement: null,
     documentElement: { requestFullscreen: () => { calls.push('enter'); return Promise.resolve(); } },
     exitFullscreen: () => { calls.push('exit'); return Promise.resolve(); },
     querySelector: () => ({ getBoundingClientRect: () => ({ left: 0, top: 0, right: 800, bottom: 450 }) }),
-    addEventListener: (type, listener, capture) => { assert.equal(type, 'dblclick'); assert.equal(capture, true); listeners.push(listener); }
+    addEventListener: (type, listener, capture) => { assert.equal(capture, true); listeners[type].push(listener); }
   };
   const context = vm.createContext({ window: {}, document, console });
   vm.runInContext(FULLSCREEN_CONTROLS, context);
-  const dispatch = (values = {}) => {
+  const dispatch = (values = {}, type = 'dblclick') => {
     const event = { button: 0, clientX: 400, clientY: 225, target: { closest: () => null },
       preventDefault: () => calls.push('prevent'), stopImmediatePropagation: () => calls.push('stop'), ...values };
-    listeners.forEach(listener => listener(event));
+    listeners[type].forEach(listener => listener(event));
   };
   return { document, calls, context, dispatch, listeners };
 }
@@ -37,7 +37,24 @@ describe('YouTube fullscreen gestures', () => {
     h.dispatch();
     assert.deepEqual(h.calls, ['prevent', 'stop', 'exit']);
     vm.runInContext(FULLSCREEN_CONTROLS, h.context);
-    assert.equal(h.listeners.length, 1);
+    assert.equal(h.listeners.dblclick.length, 1);
+    assert.equal(h.listeners.click.length, 1);
+  });
+  it('lets YouTube enter with its button and exits from the actual DOM fullscreen state', () => {
+    const h = harness();
+    const target = { closest: selector => selector === '.ytp-fullscreen-button, button.fullscreen-icon' ? {} : null };
+    h.dispatch({ target }, 'click');
+    assert.deepEqual(h.calls, [], 'Native fullscreen entry is preserved');
+    h.document.fullscreenElement = {};
+    h.dispatch({ target }, 'click');
+    assert.deepEqual(h.calls, ['prevent', 'stop', 'exit']);
+  });
+  it('keeps other controls and non-primary clicks on their normal path in fullscreen', () => {
+    const h = harness();
+    h.document.fullscreenElement = {};
+    h.dispatch({}, 'click');
+    h.dispatch({ button: 2, target: { closest: () => ({}) } }, 'click');
+    assert.deepEqual(h.calls, []);
   });
   it('preserves buttons, links, sliders, modified clicks and areas outside the video', () => {
     const h = harness();
