@@ -409,8 +409,13 @@ window.CVAudioVisuals = (() => {
 
   // An LED wall: columns climb per frequency, caps fall, top cells blink.
   function ledGrid(w, h, unit) {
-    const cols = 16, rows = 8, gap = unit * .012;
-    const cell = Math.min(w * .78 / cols - gap, unit * .34 / rows - gap, unit * .045);
+    const rows = 8, gap = unit * .012;
+    let cell = Math.min(unit * .34 / rows - gap, unit * .045);
+    // Square cells never stretch: wider windows get more columns (within the
+    // spectrum resolution) instead of wider cells.
+    let cols = Math.round((w * .9 + gap) / (cell + gap));
+    cols = Math.max(16, Math.min(40, cols));
+    cell = Math.min(cell, (w * .92 + gap) / cols - gap);
     const left = (w - (cols * (cell + gap) - gap)) / 2;
     const bottom = h * .56;
     ctx.fillStyle = palette.soft;
