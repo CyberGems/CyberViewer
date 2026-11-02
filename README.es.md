@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://cybergems.org/apps/cyberviewer/">
-    <img src="https://cybergems.org/banners/es/cyberviewer.png" alt="CyberViewer: visor de imágenes rápido con herramientas de edición esenciales" />
+    <img src="https://cybergems.org/banners/es/cyberviewer.png" alt="Imágenes, vídeo y audio: un solo visor." />
   </a>
 </p>
 
@@ -21,6 +21,12 @@
 </p>
 
 ---
+
+<div align="center">
+
+### CyberViewer: visor de imágenes rápido con herramientas de edición esenciales
+
+</div>
 
 ## 📑 Table of Contents
 
@@ -100,7 +106,7 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 
 ### Audio y visualizaciones
 - Abre MP3, WAV PCM, FLAC, Ogg Vorbis/Opus (.ogg, .oga, .opus) y AAC (.aac ADTS, .m4a MP4) directamente, sin conversión ni otro motor de reproducción. Los códecs o perfiles poco habituales dentro de estos contenedores pueden no ser compatibles.
-- El audio comparte los controles, atajos, volumen, repetición, velocidad y restauración opcional de posición del video. Anterior/siguiente recorre solo archivos de audio.
+- El audio comparte los controles, atajos, volumen, repetición, velocidad y restauración opcional de posición del video. Anterior/siguiente recorre solo archivos de audio y abre la pista vecina en la misma pestaña; activa "Abrir anterior/siguiente en pestaña nueva" en el menú del reproductor para conservar el comportamiento anterior de una pestaña por pista.
 - Elige Espectro, Osciloscopio, Radial, Partículas, Aurora, Túnel, Relieve, Hélice, Matriz, Fuegos artificiales o Efectos desactivados en el menú del reproductor. Se recuerda el estilo elegido. Cada estilo tiene una composición propia y una paleta basada en el color de acento, y todos reaccionan a los bajos, los agudos y la energía general de la pista. Los efectos aparecen suavemente al reproducir y reposan gradualmente al pausar o finalizar, tras lo cual dejan de dibujar. Funcionan hasta a 30 fps en un canvas limitado a 1440 × 810 píxeles y se detienen de inmediato al ocultar la ventana. La preferencia de movimiento reducido los mantiene estáticos. El audio en reproducción continúa al ocultar en la bandeja.
 
 ### Videos y playlists de YouTube
