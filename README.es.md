@@ -33,7 +33,7 @@
 
 ## 📑 Table of Contents
 
-- [¿Qué es CyberViewer?](#qué-es-cyberviewer)
+- [Introducción](#introducción)
 - [🎯 ¿Por qué CyberViewer?](#-por-qué-cyberviewer)
 - [✨ Funciones principales](#-funciones-principales)
 - [🚀 Primeros pasos](#-primeros-pasos)
@@ -58,7 +58,7 @@
 
 ---
 
-## ¿Qué es CyberViewer?
+## Introducción
 
 CyberViewer es un visor de imágenes y videos rápido y ligero para Windows que cubre la visualización y edición del día a día sin el peso de una suite gráfica completa. Abre imágenes grandes rápidamente, recorre carpetas completas mediante una barra lateral de miniaturas, haz zoom y desplázate con fluidez, ejecuta presentaciones y gestiona archivos recientes. Las herramientas esenciales de rotación, recorte, redimensionado, volteo y ajuste de color están integradas, junto con controles de fondo de escritorio e integración con el Explorador de Windows. La interfaz se mantiene enfocada, oscura y altamente personalizable. Construido con **Electron 35** y **JavaScript vanilla**.
 
