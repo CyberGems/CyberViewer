@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://cybergems.org/apps/cyberviewer/">
-    <img src="https://cybergems.org/banners/es/cyberviewer.png" alt="Imágenes, vídeo y audio: un solo visor." />
+    <img src="https://cybergems.org/banners/es/cyberviewer.png" alt="Imágenes, video y audio: un solo visor." />
   </a>
 </p>
 
@@ -25,7 +25,7 @@
 
 <div align="center">
 
-### CyberViewer es un visor completo y rápido de imágenes, vídeo y audio, con herramientas de edición esenciales para tus imágenes
+### CyberViewer es un visor completo y rápido de imágenes, video y audio, con herramientas de edición esenciales para tus imágenes
 
 </div>
 
@@ -60,7 +60,7 @@
 
 ## 👋 Introducción
 
-Abre una foto, un video o una pista de audio y aparece en la misma ventana, a tamaño completo, en segundos. Las imágenes se mantienen nítidas con cualquier zoom y se pueden recortar, rotar, redimensionar, voltear o corregir de color al momento; el video se reproduce en pestañas de medios junto a ellas, con control de velocidad, repetición y vista previa de fotogramas en la barra de progreso; el audio comparte reproductor, atajos y restauración de posición. Las pestañas, los favoritos y los archivos recientes mantienen la sesión unida, y cualquier carpeta puede convertirse en una presentación a pantalla completa. Cuando una imagen está lista, cópiala, imprímela, expórtala a PDF o úsala como fondo de escritorio, sin abrir un editor completo. Construido con **Electron 35** y **JavaScript vanilla**.
+Abre una foto, un video o una pista de audio y aparece en la misma ventana, a tamaño completo, en segundos. Las imágenes se mantienen nítidas con cualquier zoom y se pueden recortar, rotar, redimensionar, voltear o corregir de color al momento; el video se reproduce en pestañas de medios junto a ellas, con control de velocidad, repetición y vista previa de fotogramas en la barra de progreso; el audio comparte reproductor, atajos y restauración de posición. Las pestañas, los favoritos y los archivos recientes mantienen tu trabajo a mano, y cualquier carpeta puede convertirse en una presentación a pantalla completa; activa **Restaurar sesión anterior** y todo el espacio de trabajo se reabre tras reiniciar. Cuando una imagen está lista, cópiala, imprímela, expórtala a PDF o úsala como fondo de escritorio, sin abrir un editor completo. Construido con **Electron 35** y **JavaScript vanilla**.
 
 *Gratuito y de código abierto (GPLv3). CyberViewer no añade publicidad ni analítica. La reproducción opcional de YouTube se conecta a YouTube y usa su reproductor oficial.*
 
