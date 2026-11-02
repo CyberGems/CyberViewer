@@ -24,7 +24,7 @@
 
 <div align="center">
 
-### CyberViewer: visor de imágenes rápido con herramientas de edición esenciales
+### CyberViewer es un visor completo y rápido de imágenes, vídeo y audio, con herramientas de edición esenciales para tus imágenes
 
 </div>
 
