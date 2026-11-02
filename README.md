@@ -60,7 +60,7 @@
 
 ## 👋 Introduction
 
-Most viewers force a choice: a minimal one that only displays files, or a full editor that takes seconds to open. CyberViewer covers the everyday middle — open large images instantly, browse complete folders from the thumbnail sidebar, zoom and pan smoothly, run slideshows, and pick up recent files where you left them. The essentials for rotation, cropping, resizing, flipping, and color adjustment are built in, alongside wallpaper controls and Windows Explorer integration. The interface stays focused, dark, and highly customizable, built with **Electron 35** and **vanilla JavaScript**.
+Open a photo, a video or an audio track and it appears in the same window, at full size, in seconds. Images stay sharp at any zoom and can be cropped, rotated, resized, flipped or color-corrected on the spot; video plays in media tabs beside them, with speed control, repeat and frame previews on the progress bar; audio shares the same player, shortcuts and position restore. Tabs, favorites and recent files keep a working session together, and any folder can become a fullscreen slideshow. When an image is ready, copy it, print it, export it to PDF or set it as your wallpaper — no full editor required. Built with **Electron 35** and **vanilla JavaScript**.
 
 *Free and open source (GPLv3). CyberViewer adds no advertising or analytics. Optional YouTube playback connects to YouTube and uses its official player.*
 

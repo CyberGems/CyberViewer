@@ -60,7 +60,7 @@
 
 ## 👋 Introducción
 
-La mayoría de los visores obligan a elegir: uno mínimo que solo muestra archivos, o un editor completo que tarda segundos en abrir. CyberViewer cubre ese punto medio cotidiano: abre imágenes grandes al instante, recorre carpetas completas desde la barra lateral de miniaturas, amplía y desplázate con fluidez, ejecuta presentaciones y retoma los archivos recientes donde los dejaste. Las herramientas esenciales de rotación, recorte, redimensionado, volteo y ajuste de color están integradas, junto con controles de fondo de escritorio e integración con el Explorador de Windows. La interfaz se mantiene enfocada, oscura y altamente personalizable, construida con **Electron 35** y **JavaScript vanilla**.
+Abre una foto, un video o una pista de audio y aparece en la misma ventana, a tamaño completo, en segundos. Las imágenes se mantienen nítidas con cualquier zoom y se pueden recortar, rotar, redimensionar, voltear o corregir de color al momento; el video se reproduce en pestañas de medios junto a ellas, con control de velocidad, repetición y vista previa de fotogramas en la barra de progreso; el audio comparte reproductor, atajos y restauración de posición. Las pestañas, los favoritos y los archivos recientes mantienen la sesión unida, y cualquier carpeta puede convertirse en una presentación a pantalla completa. Cuando una imagen está lista, cópiala, imprímela, expórtala a PDF o úsala como fondo de escritorio, sin abrir un editor completo. Construido con **Electron 35** y **JavaScript vanilla**.
 
 *Gratuito y de código abierto (GPLv3). CyberViewer no añade publicidad ni analítica. La reproducción opcional de YouTube se conecta a YouTube y usa su reproductor oficial.*
 
