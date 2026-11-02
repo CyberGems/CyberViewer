@@ -468,8 +468,10 @@ window.CVVideo = (() => {
     window.addEventListener('pointercancel', () => { interacting = false; reveal(); });
     controls.querySelector('.video-transport').addEventListener('mouseleave', reveal);
     window.addEventListener('keydown', event => { if (event.key === 'Tab') keyboardFocus = true; if (active()) reveal(); }, true);
+    let menuDismissClick = false;
     window.addEventListener('pointerdown', event => {
       keyboardFocus = false;
+      menuDismissClick = !$('video-menu').hidden && !event.target.closest('#video-menu, #video-more');
       if (!event.target.closest('#video-menu, #video-more')) closeMenu();
     }, true);
     $('video-play').addEventListener('click', () => void toggle());
@@ -479,6 +481,9 @@ window.CVVideo = (() => {
     $('viewer-wrap').addEventListener('click', (event) => {
       if (!active() || window.CVYouTube.active()) return;
       if (event.target.closest('#video-controls, #video-menu, #sidebar-handle, #kbd-hint, #nav-container, #topbar, #sidebar, #ghost-close')) return;
+      // A press that just dismissed the More menu belongs to the dismissal,
+      // not to play/pause.
+      if (menuDismissClick) { menuDismissClick = false; return; }
       if (videoClickTimer) return;
       videoClickTimer = setTimeout(() => {
         videoClickTimer = null;

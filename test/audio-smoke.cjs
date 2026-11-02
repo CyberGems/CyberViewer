@@ -199,6 +199,23 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate('return !window.CVVideo.element.paused;'), true, 'Playback continues while the config dialog is open');
     await evaluate('window.closeModal("modal-config");');
     assert.equal(await evaluate("return !$('modal-config').classList.contains('active') && !window.CVVideo.element.paused;"), true, 'Playback continues after closing the config dialog');
+    // Clicking the stage to dismiss the More menu must not toggle playback.
+    const menuCheck = await evaluate(`
+      const target = $('canvas-layer');
+      $('video-more').click();
+      const opened = !$('video-menu').hidden;
+      target.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true}));
+      target.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+      return {opened, menuAfter: !$('video-menu').hidden, paused: window.CVVideo.element.paused};
+    `);
+    assert.equal(menuCheck.opened, true, 'More menu opens during playback');
+    assert.equal(menuCheck.menuAfter, false, 'A stage click closes the More menu');
+    assert.equal(menuCheck.paused, false, 'Dismissing the More menu with a stage click keeps playback running');
+    // A plain stage click still toggles play/pause.
+    await evaluate(`const t=$('canvas-layer'); t.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true})); t.dispatchEvent(new MouseEvent('click',{bubbles:true}));`);
+    await waitFor(() => evaluate('return window.CVVideo.element.paused;'), 'plain stage click pauses');
+    await evaluate('await window.CVVideo.toggle();');
+    await waitFor(() => evaluate('return !window.CVVideo.element.paused;'), 'resume after stage click check');
     const pauseFrames = await evaluate(`
       const before=window.__visualSignature(), e=window.CVVideo.element;
       const paused=new Promise(resolve=>e.addEventListener('pause',resolve,{once:true}));
