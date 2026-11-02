@@ -330,13 +330,20 @@
       <section id="youtube-panel" hidden>
         <div id="youtube-slot" data-i18n-aria="youtube_player" role="region"></div>
         <div id="youtube-footer">
-          <div class="youtube-summary"><strong id="youtube-title">YouTube</strong><span id="youtube-status" role="status"></span></div>
-          <button type="button" id="youtube-previous" data-i18n="youtube_previous">Anterior</button>
-          <button type="button" id="youtube-next" data-i18n="youtube_next">Siguiente</button>
-          <label class="youtube-loop"><input type="checkbox" id="youtube-loop"><span data-i18n="video_loop">Repetir</span></label>
-          <button type="button" id="youtube-retry" data-i18n="youtube_retry" hidden>Reintentar</button>
-          <button type="button" id="youtube-browser" data-i18n="youtube_browser">Abrir en YouTube</button>
-          <button type="button" id="youtube-fullscreen" data-i18n="menu_fullscreen">Pantalla completa</button>
+          <div class="youtube-summary">
+            <span class="youtube-source-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="4"/><path d="m10 9 5 3-5 3z"/></svg></span>
+            <div class="youtube-summary-text"><strong id="youtube-title">YouTube</strong><span id="youtube-status" role="status"></span></div>
+          </div>
+          <div class="youtube-playlist-controls">
+            <button type="button" id="youtube-previous"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14M19 5l-10 7 10 7V5Z"/></svg><span data-i18n="youtube_previous">Anterior</span></button>
+            <button type="button" id="youtube-next"><span data-i18n="youtube_next">Siguiente</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5v14M5 5l10 7-10 7V5Z"/></svg></button>
+            <label class="youtube-loop"><input type="checkbox" id="youtube-loop"><span data-i18n="video_loop">Repetir</span></label>
+          </div>
+          <div class="youtube-view-actions">
+            <button type="button" id="youtube-retry" data-i18n="youtube_retry" hidden>Reintentar</button>
+            <button type="button" id="youtube-browser" data-i18n="youtube_browser">Abrir en YouTube</button>
+            <button type="button" id="youtube-fullscreen" data-i18n="menu_fullscreen">Pantalla completa</button>
+          </div>
         </div>
       </section>
       <div id="viewer-filename" class="hud-hidden-fade"></div>
@@ -1691,12 +1698,16 @@
 <!-- CUSTOM CONTEXT MENU -->
 <div id="modal-youtube" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="youtube-dialog-title">
   <form id="youtube-form" class="modal-box youtube-dialog">
-    <h2 id="youtube-dialog-title" data-i18n="youtube_open">Abrir enlace de YouTube</h2>
-    <p data-i18n="youtube_dialog_hint">Pega el enlace de un video o una playlist pública.</p>
-    <label for="youtube-url" data-i18n="youtube_url">Enlace</label>
-    <input id="youtube-url" type="text" inputmode="url" required maxlength="4096" autocomplete="off" spellcheck="false" placeholder="https://www.youtube.com/watch?v=...">
-    <p id="youtube-url-error" role="alert" hidden></p>
-    <label class="youtube-loop"><input type="checkbox" id="youtube-autoplay"><span data-i18n="video_autoplay">Reproducir al abrir</span></label>
+    <div class="youtube-dialog-heading">
+      <span class="youtube-dialog-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="4"/><path d="m10 9 5 3-5 3z"/></svg></span>
+      <div><h2 id="youtube-dialog-title" data-i18n="youtube_open">Abrir enlace de YouTube</h2><p data-i18n="youtube_dialog_hint">Pega el enlace de un video o una playlist pública.</p></div>
+    </div>
+    <div class="youtube-dialog-body">
+      <label for="youtube-url" data-i18n="youtube_url">Enlace</label>
+      <input id="youtube-url" type="text" inputmode="url" required maxlength="4096" autocomplete="off" spellcheck="false" placeholder="https://www.youtube.com/watch?v=..." aria-describedby="youtube-url-error">
+      <p id="youtube-url-error" role="alert" hidden></p>
+      <label class="youtube-loop"><input type="checkbox" id="youtube-autoplay"><span data-i18n="video_autoplay">Reproducir al abrir</span></label>
+    </div>
     <div class="youtube-dialog-actions"><button type="button" data-close-modal="modal-youtube" class="top-btn" data-i18n="config_cancel">Cancelar</button><button type="submit" class="top-btn btn-primary" data-i18n="youtube_load">Abrir</button></div>
   </form>
 </div>

@@ -28,6 +28,7 @@ window.CVYouTube = (() => {
       : [101, 150].includes(error) ? 'youtube_embed_error' : error ? 'youtube_play_error'
       : blocked ? 'youtube_autoplay_blocked' : !info?.ready ? 'youtube_loading' : info.count ? 'youtube_playlist_status' : 'youtube_ready';
     $('youtube-status').textContent = text(key).replace('{current}', (info?.index || 0) + 1).replace('{total}', info?.count || 0);
+    $('youtube-status').classList.toggle('playlist-status', key === 'youtube_playlist_status');
     $('youtube-retry').hidden = !error;
     $('youtube-previous').disabled = !info?.ready || !window.CVYouTubeSource.from(owner)?.playlistId;
     $('youtube-next').disabled = $('youtube-previous').disabled;
