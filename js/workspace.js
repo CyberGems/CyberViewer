@@ -28,6 +28,7 @@ window.CVWorkspace = (() => {
   let tabDragPending = null; // { shell, id, pointerId, x, y }
   let tabDragClickTrap = false;
   let tabDragRaf = 0;
+  let tabFlipCleanup = 0;
   let deferredActivation = null;
   let pendingSuspend = false;
   let dialogDepth = 0;
@@ -344,7 +345,16 @@ window.CVWorkspace = (() => {
     const width = tabDrag.ghost.offsetWidth, height = tabDrag.ghost.offsetHeight;
     const x = Math.min(Math.max(tabDrag.x - tabDrag.grabX, rect.left), Math.max(rect.left, rect.right - width));
     const y = Math.min(Math.max(tabDrag.y - tabDrag.grabY, rect.top), Math.max(rect.top, rect.bottom - height));
-    tabDrag.ghost.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+    tabDrag.ghost.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px) scale(1.03)`;
+  }
+
+  // Settle any in-flight slot animation so the next FLIP starts from real
+  // layout positions instead of mid-transition transforms.
+  function settleTabFlip() {
+    if (!tabFlipCleanup) return;
+    cancelAnimationFrame(tabFlipCleanup);
+    tabFlipCleanup = 0;
+    for (const node of $('image-tab-list').children) { node.style.transition = ''; node.style.transform = ''; }
   }
 
   function previewTabDrop() {
@@ -355,9 +365,32 @@ window.CVWorkspace = (() => {
       const rect = shells[i].getBoundingClientRect();
       if (tabDrag.x < rect.left + rect.width / 2) { index = i; break; }
     }
-    if (model.tabs.findIndex(tab => tab.id === tabDrag.id) !== index) {
-      model.moveTo(tabDrag.id, index);
-      render();
+    if (model.tabs.findIndex(tab => tab.id === tabDrag.id) === index) return;
+    settleTabFlip();
+    const list = $('image-tab-list');
+    const before = new Map([...list.children].map(node => [node, node.getBoundingClientRect().left]));
+    model.moveTo(tabDrag.id, index);
+    render();
+    // FLIP: shift each moved shell back to where it was, then let the CSS
+    // transition slide it into its new slot, like the tab strips in browsers.
+    let moved = false;
+    for (const node of list.children) {
+      const prev = before.get(node);
+      if (prev === undefined) continue;
+      const delta = prev - node.getBoundingClientRect().left;
+      if (!delta) continue;
+      moved = true;
+      node.style.transition = 'none';
+      node.style.transform = `translateX(${delta}px)`;
+    }
+    if (moved) {
+      void list.offsetWidth;
+      for (const node of list.children) {
+        if (!node.style.transform) continue;
+        node.style.transition = '';
+        node.style.transform = '';
+      }
+      tabFlipCleanup = requestAnimationFrame(settleTabFlip);
     }
   }
 
@@ -376,6 +409,7 @@ window.CVWorkspace = (() => {
     if (!drag) return;
     tabDrag = null;
     if (tabDragRaf) { cancelAnimationFrame(tabDragRaf); tabDragRaf = 0; }
+    settleTabFlip();
     drag.ghost.remove();
     drag.shell.classList.remove('tab-drag-source');
     document.body.classList.remove('tab-drag-active');
@@ -401,7 +435,10 @@ window.CVWorkspace = (() => {
     });
     window.addEventListener('pointermove', event => {
       if (tabDrag) {
-        if (tabDrag.pointerId === null || event.pointerId === tabDrag.pointerId) { tabDrag.x = event.clientX; tabDrag.y = event.clientY; }
+        if (tabDrag.pointerId === null || event.pointerId === tabDrag.pointerId) {
+          tabDrag.x = event.clientX; tabDrag.y = event.clientY;
+          positionTabGhost();
+        }
         return;
       }
       if (!tabDragPending || event.pointerId !== tabDragPending.pointerId) return;
