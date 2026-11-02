@@ -3,7 +3,7 @@
    folderDirFromPath, buildSidebar, showToast, showCyberConfirm,
    stopSlideshow, getOriginalZoom, viewerFitSize, updateSaveButton,
    updateHUDStates, syncFavoritesToggleButtonState,
-   showCustomContextMenu, syncCurrentIndex, setCyberTooltip, ttBind */
+   showCustomContextMenu, syncCurrentIndex, setCyberTooltip, ttBind, ttHide */
 'use strict';
 
 // Tabs retain document metadata and compressed clipboard blobs, never a hidden
@@ -22,7 +22,12 @@ window.CVWorkspace = (() => {
   let saveErrorShown = false;
   let restoreEnabled = false;
   let allowUnload = false;
-  let dragId = null;
+  // Tab drag state. A pointer-driven drag replaces native DnD so the ghost
+  // stays inside the strip band and the strip previews the drop live.
+  let tabDrag = null;        // { id, shell, ghost, grabX, grabY, originIndex, pointerId, x, y }
+  let tabDragPending = null; // { shell, id, pointerId, x, y }
+  let tabDragClickTrap = false;
+  let tabDragRaf = 0;
   let deferredActivation = null;
   let pendingSuspend = false;
   let dialogDepth = 0;
@@ -300,6 +305,130 @@ window.CVWorkspace = (() => {
     left.disabled = list.scrollLeft <= 1;
     right.disabled = list.scrollLeft >= list.scrollWidth - list.clientWidth - 1;
   }
+  // ── Tab drag (pointer-driven) ──
+  // Native DnD let the OS ghost wander across the whole interface and hid the
+  // drop outcome. This drag keeps the ghost clamped to the strip band, shifts
+  // the tabs live while hovering, auto-scrolls at the edges, and restores the
+  // original order when the pointer is released off the strip.
+  const TAB_DRAG_THRESHOLD = 6;
+
+  function tabStripRect() {
+    return $('image-tab-list').getBoundingClientRect();
+  }
+
+  function beginTabDrag() {
+    const pending = tabDragPending;
+    tabDragPending = null;
+    const rect = pending.shell.getBoundingClientRect();
+    const ghost = pending.shell.cloneNode(true);
+    ghost.className = 'image-tab-shell image-tab-ghost';
+    ghost.style.width = rect.width + 'px';
+    document.body.append(ghost);
+    pending.shell.classList.add('tab-drag-source');
+    document.body.classList.add('tab-drag-active');
+    ttHide();
+    let pointerId = null;
+    try { pending.shell.setPointerCapture(pending.pointerId); pointerId = pending.pointerId; }
+    catch (_) { /* pointer already gone; window listeners still track it */ }
+    tabDrag = { id: pending.id, shell: pending.shell, ghost, grabX: pending.x - rect.left, grabY: pending.y - rect.top,
+      originIndex: model.tabs.findIndex(tab => tab.id === pending.id), x: pending.x, y: pending.y, pointerId };
+    tabDragClickTrap = true;
+    previewTabDrop();
+    positionTabGhost();
+    if (!tabDragRaf) tabDragRaf = requestAnimationFrame(tabDragTick);
+  }
+
+  function positionTabGhost() {
+    if (!tabDrag) return;
+    const rect = tabStripRect();
+    const width = tabDrag.ghost.offsetWidth, height = tabDrag.ghost.offsetHeight;
+    const x = Math.min(Math.max(tabDrag.x - tabDrag.grabX, rect.left), Math.max(rect.left, rect.right - width));
+    const y = Math.min(Math.max(tabDrag.y - tabDrag.grabY, rect.top), Math.max(rect.top, rect.bottom - height));
+    tabDrag.ghost.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+  }
+
+  function previewTabDrop() {
+    if (!tabDrag) return;
+    const shells = [...$('image-tab-list').children];
+    let index = shells.length;
+    for (let i = 0; i < shells.length; i++) {
+      const rect = shells[i].getBoundingClientRect();
+      if (tabDrag.x < rect.left + rect.width / 2) { index = i; break; }
+    }
+    if (model.tabs.findIndex(tab => tab.id === tabDrag.id) !== index) {
+      model.moveTo(tabDrag.id, index);
+      render();
+    }
+  }
+
+  function tabDragTick() {
+    if (!tabDrag) { tabDragRaf = 0; return; }
+    const rect = tabStripRect(), edge = 36, list = $('image-tab-list');
+    if (tabDrag.x < rect.left + edge) list.scrollLeft -= Math.ceil(10 * (1 - (tabDrag.x - rect.left) / edge));
+    else if (tabDrag.x > rect.right - edge) list.scrollLeft += Math.ceil(10 * (1 - (rect.right - tabDrag.x) / edge));
+    previewTabDrop();
+    positionTabGhost();
+    tabDragRaf = requestAnimationFrame(tabDragTick);
+  }
+
+  function endTabDrag(commit) {
+    const drag = tabDrag;
+    if (!drag) return;
+    tabDrag = null;
+    if (tabDragRaf) { cancelAnimationFrame(tabDragRaf); tabDragRaf = 0; }
+    drag.ghost.remove();
+    drag.shell.classList.remove('tab-drag-source');
+    document.body.classList.remove('tab-drag-active');
+    if (drag.pointerId !== null) {
+      try { drag.shell.releasePointerCapture(drag.pointerId); } catch (_) { /* already released */ }
+    }
+    if (commit) changed();
+    else {
+      model.moveTo(drag.id, drag.originIndex);
+      render();
+    }
+    // The click trailing the drag must not activate the tab.
+    setTimeout(() => { tabDragClickTrap = false; }, 0);
+  }
+
+  function bindTabDrag() {
+    const list = $('image-tab-list');
+    list.addEventListener('pointerdown', event => {
+      if (event.button !== 0 || !event.isPrimary) return;
+      const shell = event.target.closest('.image-tab-shell');
+      if (!shell || event.target.closest('.image-tab-close')) return;
+      tabDragPending = { shell, id: shell.dataset.tabId, pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+    });
+    window.addEventListener('pointermove', event => {
+      if (tabDrag) {
+        if (tabDrag.pointerId === null || event.pointerId === tabDrag.pointerId) { tabDrag.x = event.clientX; tabDrag.y = event.clientY; }
+        return;
+      }
+      if (!tabDragPending || event.pointerId !== tabDragPending.pointerId) return;
+      if (Math.abs(event.clientX - tabDragPending.x) < TAB_DRAG_THRESHOLD && Math.abs(event.clientY - tabDragPending.y) < TAB_DRAG_THRESHOLD) return;
+      beginTabDrag();
+    });
+    window.addEventListener('pointerup', event => {
+      if (tabDragPending && event.pointerId === tabDragPending.pointerId) tabDragPending = null;
+      if (!tabDrag) return;
+      tabDrag.x = event.clientX; tabDrag.y = event.clientY;
+      const rect = tabStripRect();
+      // Releasing over the strip commits the previewed order; anywhere else
+      // hands the tab back to its original slot.
+      endTabDrag(event.clientY >= rect.top - 10 && event.clientY <= rect.bottom + 10);
+    });
+    window.addEventListener('pointercancel', () => endTabDrag(false));
+    // Losing the window mid-drag (Alt+Tab, stray release outside) must not
+    // leave a ghost hanging until the next press.
+    window.addEventListener('blur', () => endTabDrag(false));
+    list.addEventListener('click', event => {
+      if (!tabDragClickTrap) return;
+      tabDragClickTrap = false;
+      event.stopPropagation();
+      event.preventDefault();
+    }, true);
+  }
+
   function render() {
     const bar = $('image-tabs');
     const list = $('image-tab-list');
@@ -316,7 +445,6 @@ window.CVWorkspace = (() => {
         shell.className = 'image-tab-shell';
         shell.setAttribute('role', 'presentation');
         shell.dataset.tabId = tab.id;
-        shell.draggable = true;
         const button = document.createElement('button');
         button.type = 'button'; button.className = 'image-tab'; button.setAttribute('role', 'tab');
         button.id = tab.id; button.setAttribute('aria-controls', 'viewer-wrap');
@@ -332,19 +460,6 @@ window.CVWorkspace = (() => {
         shell.append(button, close);
         shell.addEventListener('auxclick', event => { if (event.button === 1) { event.preventDefault(); closeTabs([tab.id]); } });
         shell.addEventListener('contextmenu', event => showCustomContextMenu(event, 'tab', { id: tab.id }));
-        shell.addEventListener('dragstart', event => {
-          dragId = tab.id;
-          event.dataTransfer.setData('application/x-cyberviewer-tab', tab.id);
-          event.dataTransfer.effectAllowed = 'move';
-        });
-        shell.addEventListener('dragover', event => { if (dragId) { event.preventDefault(); shell.classList.add('tab-drop-target'); } });
-        shell.addEventListener('dragleave', () => shell.classList.remove('tab-drop-target'));
-        shell.addEventListener('drop', event => {
-          if (!dragId) return;
-          event.preventDefault(); event.stopPropagation();
-          model.move(dragId, tab.id); dragId = null; render(); changed();
-        });
-        shell.addEventListener('dragend', () => { dragId = null; document.querySelectorAll('.tab-drop-target').forEach(node => node.classList.remove('tab-drop-target')); });
       }
       nodes.delete(tab.id);
       const active = tab.id === model.activeId;
@@ -679,6 +794,7 @@ window.CVWorkspace = (() => {
     };
     bindHoldScroll($('image-tabs-scroll-left'), -1);
     bindHoldScroll($('image-tabs-scroll-right'), 1);
+    bindTabDrag();
     tabList.addEventListener('scroll', syncTabOverflow, { passive: true });
     window.addEventListener('resize', syncTabOverflow);
     $('btn-relocate-tab').addEventListener('click', async () => {

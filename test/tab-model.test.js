@@ -48,6 +48,20 @@ describe('image tab model', () => {
     assert.equal(model.move(second.id, null), true);
     assert.equal(model.tabs[1], second);
   });
+  it('moveTo places a tab at an absolute index and clamps out-of-range targets', () => {
+    const model = new TabModel();
+    const first = model.open(image('C:/one.png'));
+    const second = model.open(image('C:/two.png'));
+    const third = model.open(image('C:/three.png'));
+    assert.equal(model.moveTo(second.id, 0), true);
+    assert.deepEqual(model.tabs.map(tab => tab.id), [second.id, first.id, third.id]);
+    assert.equal(model.moveTo(second.id, 99), true);
+    assert.deepEqual(model.tabs.map(tab => tab.id), [first.id, third.id, second.id]);
+    assert.equal(model.moveTo(second.id, -4), true);
+    assert.deepEqual(model.tabs.map(tab => tab.id), [second.id, first.id, third.id]);
+    assert.equal(model.moveTo('unknown', 1), false);
+    assert.equal(model.active, third);
+  });
   it('keeps hundreds of inactive tabs as metadata and limits closed history', () => {
     const model = new TabModel();
     for (let i = 0; i < 1000; i++) model.open(image('C:/images/' + i + '.png'), { activate: false });

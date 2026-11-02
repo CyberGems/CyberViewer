@@ -52,4 +52,16 @@ describe('tab bar ui', () => {
     assert.match(tabsCss, /\.tab-bar-button\s*\{[^}]*width: 28px;[^}]*height: 28px;/);
     assert.match(html, /id="image-tabs-open"[\s\S]*?<path d="M12 5v14"\/><path d="M5 12h14"\/>/);
   });
+
+  it('drags tabs with a pointer ghost clamped to the strip instead of native DnD', () => {
+    // Native drag and drop let the OS ghost wander across the whole interface.
+    assert.doesNotMatch(workspace, /shell\.draggable = true/);
+    assert.doesNotMatch(workspace, /cyberviewer-tab/);
+    assert.match(workspace, /const TAB_DRAG_THRESHOLD = 6;/);
+    assert.match(workspace, /function bindTabDrag\(\) \{/);
+    assert.match(workspace, /bindTabDrag\(\);/);
+    assert.match(workspace, /model\.moveTo\(drag\.id, drag\.originIndex\);/);
+    assert.match(tabsCss, /\.image-tab-ghost \{/);
+    assert.match(tabsCss, /body\.tab-drag-active \{ user-select: none; \}/);
+  });
 });

@@ -93,6 +93,15 @@
       this.tabs.splice(target, 0, tab);
       return true;
     }
+    // Absolute-position variant used by the drag preview, which computes a
+    // plain insertion index from pointer geometry.
+    moveTo(id, index) {
+      const from = this.tabs.findIndex(tab => tab.id === id);
+      if (from < 0) return false;
+      const [tab] = this.tabs.splice(from, 1);
+      this.tabs.splice(Math.max(0, Math.min(index, this.tabs.length)), 0, tab);
+      return true;
+    }
     snapshot() {
       return { version: 1, activeId: this.activeId, tabs: this.tabs.map(tab => ({
         id: tab.id, path: tab.image.file.path || null, draftId: tab.image.draftId || null,
