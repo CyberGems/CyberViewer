@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://cybergems.org/apps/cyberviewer/">
-    <img src="https://cybergems.org/banners/cyberviewer.png" alt="Images, video and audio — one viewer." />
+    <img src="https://cybergems.org/banners/cyberviewer.png" alt="Images, video and audio, all in one viewer" />
   </a>
 </p>
 
