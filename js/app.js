@@ -7571,6 +7571,7 @@ function getFactoryAppSettings() {
     slideshowEnterFullscreen: true,
     restoreSession: false,
     videoAutoplay: true,
+    mediaSiblingsNewTab: false,
     videoLoop: false,
     videoVolume: 1,
     videoMuted: false,

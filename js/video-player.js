@@ -1,6 +1,6 @@
 /* global state, I18N, $, spinner, mainImg, setCyberTooltip,
    displayImage, setImageError, clearImageError, showToast,
-   toggleFullscreen, openImageDialog, openPropertiesForCurrent */
+   toggleFullscreen, openImageDialog, openPropertiesForCurrent, showImage */
 'use strict';
 
 // A single decoder is shared by all tabs. Inactive tabs retain only their time
@@ -73,6 +73,7 @@ window.CVVideo = (() => {
     $('video-mute').setAttribute('aria-pressed', String(element.muted));
     $('video-loop').setAttribute('aria-checked', String(element.loop));
     $('video-autoplay').setAttribute('aria-checked', String(state.settings.app.videoAutoplay !== false));
+    $('video-sibling-tabs').setAttribute('aria-checked', String(state.settings.app.mediaSiblingsNewTab === true));
     const duration = Number.isFinite(element.duration) ? element.duration : 0;
     const current = Number.isFinite(element.currentTime) ? element.currentTime : 0;
     $('video-time').textContent = `${window.CVFormats.formatTime(current)} / ${window.CVFormats.formatTime(duration)}`;
@@ -400,7 +401,16 @@ window.CVVideo = (() => {
   }
   function openSibling(direction) {
     const sibling = videoSibling(direction);
-    if (sibling && sibling.file.path && window.openImagePath) void window.openImagePath(sibling.file.path);
+    if (!sibling || !sibling.file.path) return;
+    if (state.settings.app.mediaSiblingsNewTab) {
+      void window.openImagePath(sibling.file.path);
+      return;
+    }
+    // Same tab by default: the folder-browsing pipeline replaces a clean tab
+    // and focuses files that are already open, instead of stacking tabs.
+    const index = state.images.indexOf(sibling);
+    if (index >= 0 && showImage) showImage(index, direction > 0 ? 'left' : 'right');
+    else void window.openImagePath(sibling.file.path);
   }
 
   // ── Center overlay flash (YouTube-style play/pause and speed feedback) ──
@@ -553,6 +563,11 @@ window.CVVideo = (() => {
     $('video-loop').addEventListener('click', () => { element.loop = !element.loop; persistVideoPrefs(); sync(); });
     $('video-autoplay').addEventListener('click', () => {
       state.settings.app.videoAutoplay = state.settings.app.videoAutoplay === false;
+      window.electronAPI?.saveSettings(state.settings.app);
+      sync();
+    });
+    $('video-sibling-tabs').addEventListener('click', () => {
+      state.settings.app.mediaSiblingsNewTab = !state.settings.app.mediaSiblingsNewTab;
       window.electronAPI?.saveSettings(state.settings.app);
       sync();
     });
