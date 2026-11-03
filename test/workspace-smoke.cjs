@@ -218,10 +218,27 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 4);
     await evaluate('window.CVWorkspace.resume();'); await loaded();
     await evaluate('await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));');
+    const footerTips = () => evaluate("return ['footer-size', 'footer-weight', 'footer-zoom'].map(id => {" +
+      "const el = $(id); return { text: el.dataset.tooltip, whiteSpace: getComputedStyle(el, '::after').whiteSpace }; });");
+    const spanishTips = await footerTips();
+    assert.deepEqual(spanishTips.map(tip => tip.text), [
+      'Dimensiones en píxeles ⋅ Clic para Propiedades',
+      'Tamaño en disco ⋅ Clic para Propiedades',
+      'Nivel de escala ⋅ 100% = 1:1'
+    ]);
+    assert.ok(spanishTips.every(tip => tip.whiteSpace === 'nowrap'));
+    assert.equal(await evaluate("return $('img-dims').textContent;"), '120 × 80');
     const spanish = await win.webContents.capturePage();
     fs.writeFileSync(path.join(dataDir, 'tabs-es.png'), spanish.toPNG());
     await evaluate("state.settings.app.language = 'en'; updateLanguage('en');");
     await evaluate('await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));');
+    const englishTips = await footerTips();
+    assert.deepEqual(englishTips.map(tip => tip.text), [
+      'Dimensions in pixels ⋅ Click for Properties',
+      'Size on disk ⋅ Click for Properties',
+      'Scale level ⋅ 100% = 1:1'
+    ]);
+    assert.ok(englishTips.every(tip => tip.whiteSpace === 'nowrap'));
     const english = await win.webContents.capturePage();
     fs.writeFileSync(path.join(dataDir, 'tabs-en.png'), english.toPNG());
 

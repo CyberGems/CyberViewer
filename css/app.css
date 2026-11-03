@@ -641,10 +641,6 @@
   }
 
   /* Size: Pink glowing tooltip */
-  #footer-size.cyber-tooltip::after,
-  #footer-weight.cyber-tooltip::after {
-    white-space: pre-line;
-  }
   #footer-size.cyber-tooltip::after {
     border-color: var(--cyber-accent);
     box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.35);

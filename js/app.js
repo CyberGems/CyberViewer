@@ -5061,7 +5061,7 @@ function updateFileStats() {
   const im = state.images[state.current];
   const w = window.CVFormats.isAudio(im) ? 0 : im.w || mainImg.naturalWidth || 0;
   const h = window.CVFormats.isAudio(im) ? 0 : im.h || mainImg.naturalHeight || 0;
-  dimsEl.textContent = (w && h) ? `${w} × ${h}px` : '—';
+  dimsEl.textContent = (w && h) ? `${w} × ${h}` : '—';
 
   // Prefer known size on the image entry / File object
   let bytes = Number(im.size);
