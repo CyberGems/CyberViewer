@@ -265,6 +265,45 @@ app.whenReady().then(async () => {
     assert.ok(afterResize.tab.left >= afterResize.viewport.left - 1 && afterResize.tab.right <= afterResize.viewport.right + 1,
       'active tab should be visible after the strip is laid out again: ' + JSON.stringify(afterResize));
     console.log('PASS overflow: active tab remains visible after restoring 40 tabs and resizing');
+
+    const title = await evaluate("const rect = $('titlebar-filename').getBoundingClientRect(); return { x: Math.round(rect.x + rect.width / 2), y: Math.round(rect.y + rect.height / 2) };");
+    win.focus();
+    const startPosition = win.getPosition();
+    const input = (type, x, y) => win.webContents.sendInputEvent({
+      type, x, y, globalX: startPosition[0] + x, globalY: startPosition[1] + y, button: 'left', clickCount: 1
+    });
+    input('mouseMove', title.x, title.y);
+    input('mouseDown', title.x, title.y);
+    input('mouseUp', title.x, title.y);
+    await waitFor(() => evaluate("return $('modal-properties').classList.contains('active');"), 'title click opens properties');
+    await evaluate("closeModal('modal-properties');");
+    // sendInputEvent delivers clicks here, but Windows does not forward its
+    // mouseMove events to a captured pointer. Dispatch the drag gesture in the
+    // renderer while checking the real BrowserWindow position in main.
+    const dragTitle = async () => {
+      const point = await evaluate("const rect = $('titlebar-filename').getBoundingClientRect(); return { x: Math.round(rect.x + rect.width / 2), y: Math.round(rect.y + rect.height / 2) };");
+      const position = win.getPosition();
+      const start = { x: position[0] + point.x, y: position[1] + point.y };
+      await evaluate("const el = $('titlebar-filename');" +
+        "const fire = (type, x, y) => el.dispatchEvent(new PointerEvent(type, {" +
+        "bubbles: true, pointerId: 42, isPrimary: true, button: 0, clientX: " + point.x +
+        ", clientY: " + point.y + ", screenX: x, screenY: y }));" +
+        "fire('pointerdown', " + start.x + ", " + start.y + ");" +
+        "fire('pointermove', " + (start.x + 48) + ", " + (start.y + 28) + ");" +
+        "fire('pointerup', " + (start.x + 48) + ", " + (start.y + 28) + ");" +
+        "el.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));");
+    };
+    const beforeDrag = win.getPosition();
+    await dragTitle();
+    await waitFor(() => win.getPosition()[0] > beforeDrag[0] + 20, 'title drag moves the window');
+    assert.equal(await evaluate("return $('modal-properties').classList.contains('active');"), false,
+      'dragging the title must not open Properties');
+    win.maximize();
+    await waitFor(() => win.isMaximized(), 'window maximized for title drag');
+    await dragTitle();
+    await waitFor(() => !win.isMaximized(), 'title drag restores maximized window');
+    assert.equal(await evaluate("return $('modal-properties').classList.contains('active');"), false);
+    console.log('PASS title bar: click opens Properties, drag moves normal and maximized windows');
   }
   app.exit(0);
 }).catch(error => { console.error(error.stack || error); app.exit(1); });

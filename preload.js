@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   minimize: () => ipcRenderer.send('win-minimize'),
   maximize: () => ipcRenderer.send('win-maximize'),
   close: () => ipcRenderer.send('win-close'),
+  dragTitle: (phase, point) => ipcRenderer.send('win-title-drag', phase, point),
   setFullScreen: (flag) => ipcRenderer.invoke('win-set-fullscreen', !!flag),
   isFullScreen: () => ipcRenderer.invoke('win-is-fullscreen'),
   youtube: {

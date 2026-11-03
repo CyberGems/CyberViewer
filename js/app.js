@@ -9672,12 +9672,41 @@ $('btn-config').addEventListener('click', openConfig);
   const shortcutsPopover = $('shortcuts-popover');
 
   if (filename) {
+    let drag = null;
+    let suppressClick = false;
     filename.addEventListener('pointerdown', event => {
-      if (event.button != null && event.button !== 0) return;
-      // Electron can otherwise treat the initial press as a titlebar drag.
-      // Opening on pointerdown makes Properties reliable on the first click.
-      event.preventDefault();
-      event.stopPropagation();
+      if (!isElectron || event.button !== 0 || !event.isPrimary) return;
+      suppressClick = false;
+      drag = { id: event.pointerId, x: event.screenX, y: event.screenY, moved: false };
+      try { filename.setPointerCapture(event.pointerId); } catch (_) { /* capture unavailable */ }
+      window.electronAPI.dragTitle('start', {
+        x: event.screenX, y: event.screenY, clientX: event.clientX, clientY: event.clientY
+      });
+      ttHide();
+    });
+    filename.addEventListener('pointermove', event => {
+      if (!drag || event.pointerId !== drag.id) return;
+      if (!drag.moved && Math.hypot(event.screenX - drag.x, event.screenY - drag.y) < 5) return;
+      drag.moved = true;
+      window.electronAPI.dragTitle('move', { x: event.screenX, y: event.screenY });
+    });
+    const finishDrag = event => {
+      if (!drag || (event && event.pointerId !== drag.id)) return;
+      if (drag.moved) suppressClick = true;
+      drag = null;
+      window.electronAPI.dragTitle('end');
+    };
+    filename.addEventListener('pointerup', finishDrag);
+    filename.addEventListener('pointercancel', finishDrag);
+    filename.addEventListener('lostpointercapture', finishDrag);
+    window.addEventListener('blur', () => finishDrag());
+    filename.addEventListener('click', event => {
+      if (suppressClick && event.detail > 0) {
+        suppressClick = false;
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
       const image = state.images[state.current];
       if (image && image.file && image.file.path) showPropertiesPanel(image.file.path);
     });
