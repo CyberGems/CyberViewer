@@ -253,6 +253,7 @@ const state = {
       slideshowEnterFullscreen: true,
       restoreSession: false,
       videoAutoplay: true,
+      keepMediaPausedOnTabReturn: false,
       videoLoop: false,
       videoVolume: 1,
       videoMuted: false,
@@ -7317,6 +7318,7 @@ const CONFIG_CONTROL_ICON_BY_ID = {
   'cfg-autostart': 'play',
   'cfg-contextmenu': 'settings',
   'cfg-restore-session': 'restore',
+  'cfg-keep-media-paused': 'pause',
   'cfg-hotkey': 'keyboard',
   'cfg-export-settings': 'save',
   'cfg-autobackup-enabled': 'save',
@@ -7390,6 +7392,7 @@ function openConfig() {
   $('cfg-autostart').checked = s.autoStart;
   $('cfg-contextmenu').checked = s.contextMenuEnabled || false;
   $('cfg-restore-session').checked = s.restoreSession === true;
+  $('cfg-keep-media-paused').checked = s.keepMediaPausedOnTabReturn === true;
   if ($('cfg-animated-gifs')) $('cfg-animated-gifs').checked = s.animateGifs !== false;
   $('cfg-show-filename').checked = s.showFileName !== false;
   $('cfg-lang').value = s.language || 'en';
@@ -7517,6 +7520,7 @@ function collectConfigSettings() {
     appearanceTheme: activeTheme ? normalizeAppearanceTheme(activeTheme.dataset.themeOpt) : 'cyberviewer',
     contextMenuEnabled: $('cfg-contextmenu').checked,
     restoreSession: $('cfg-restore-session').checked,
+    keepMediaPausedOnTabReturn: $('cfg-keep-media-paused').checked,
     animateGifs: !!($('cfg-animated-gifs') && $('cfg-animated-gifs').checked),
     showFileName: $('cfg-show-filename').checked,
     toggleHotkey: $('cfg-hotkey') ? ($('cfg-hotkey').value.trim() || 'disabled') : 'disabled',
@@ -7572,6 +7576,7 @@ function getFactoryAppSettings() {
     slideshowEnterFullscreen: true,
     restoreSession: false,
     videoAutoplay: true,
+    keepMediaPausedOnTabReturn: false,
     mediaSiblingsNewTab: false,
     videoLoop: false,
     videoVolume: 1,

@@ -322,7 +322,11 @@ app.whenReady().then(async () => {
     await evaluate('window.CVVideo.element.currentTime=4;');
     await waitFor(() => evaluate('return !window.CVVideo.element.seeking;'), 'session seek');
     await evaluate('window.CVWorkspace.capture(); await window.CVWorkspace.flush();');
-    await evaluate('state.settings.app.videoAutoplay=true; await window.electronAPI.saveSettings(state.settings.app);');
+    await evaluate('state.settings.app.videoAutoplay=true; state.settings.app.keepMediaPausedOnTabReturn=true; await window.electronAPI.saveSettings(state.settings.app);');
+    await open('Silence.mp3'); await ready();
+    await open('Tone #ñ %.wav'); await ready();
+    assert.equal(await evaluate('return window.CVVideo.element.paused;'), true, 'Optional pause is preserved across audio tabs');
+    await evaluate('window.CVWorkspace.capture(); await window.CVWorkspace.flush();');
     console.log('PASS bilingual labels, damaged audio error and position across tabs');
     const unexpected = errors.filter(message => !/(DEMUXER|FFmpegDemuxer)/i.test(message));
     assert.deepEqual(unexpected, []);

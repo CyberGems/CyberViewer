@@ -172,6 +172,7 @@ function loadSettings() {
         if (data.app.showFileName === undefined) data.app.showFileName = true;
         if (data.app.animateGifs === undefined) data.app.animateGifs = true;
         if (typeof data.app.videoAutoplay !== 'boolean') data.app.videoAutoplay = true;
+        if (typeof data.app.keepMediaPausedOnTabReturn !== 'boolean') data.app.keepMediaPausedOnTabReturn = false;
         if (typeof data.app.mediaSiblingsNewTab !== 'boolean') data.app.mediaSiblingsNewTab = false;
         if (data.app.videoLoop === undefined) data.app.videoLoop = false;
         if (!Number.isFinite(data.app.videoVolume)) data.app.videoVolume = 1;
@@ -223,6 +224,7 @@ function loadSettings() {
       slideshowEnterFullscreen: true,
       restoreSession: false,
       videoAutoplay: true,
+      keepMediaPausedOnTabReturn: false,
       mediaSiblingsNewTab: false,
       showFileName: true,
       animateGifs: true,

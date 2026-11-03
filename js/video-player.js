@@ -168,6 +168,7 @@ window.CVVideo = (() => {
     window.CVAudioVisuals.attach(null);
     clearTimeout(timeout);
     timeout = null;
+    if (owner) owner.pausedOnTabReturn = element.paused;
     if (owner?.loaded && !element.seeking && Number.isFinite(element.currentTime)) owner.videoTime = element.currentTime;
     if (cleanup) cleanup();
     cleanup = null;
@@ -249,7 +250,8 @@ window.CVVideo = (() => {
       syncTools(); sync(); reveal();
       window.CVAudioVisuals.refresh();
       onReady();
-      if (live() && state.settings.app.videoAutoplay !== false && !image.suppressAutoplayUntilPlayed) void play();
+      if (live() && state.settings.app.videoAutoplay !== false && !image.suppressAutoplayUntilPlayed
+        && !(state.settings.app.keepMediaPausedOnTabReturn && image.pausedOnTabReturn)) void play();
     };
     element.addEventListener('loadeddata', ready);
     element.addEventListener('seeked', ready);

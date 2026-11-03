@@ -55,7 +55,8 @@ window.CVYouTube = (() => {
     window.CVVideo.syncTools(); status();
     const value = { ...source, videoId: view?.youtubeVideoId || source.videoId,
       index: view?.youtubeIndex ?? source.index, startSeconds: view?.videoTime ?? source.startSeconds,
-      autoplay: state.settings.app.videoAutoplay !== false && !image.suppressAutoplayUntilPlayed,
+      autoplay: state.settings.app.videoAutoplay !== false && !image.suppressAutoplayUntilPlayed
+        && !(state.settings.app.keepMediaPausedOnTabReturn && image.pausedOnTabReturn),
       language: state.settings.app.language };
     const current = id;
     window.electronAPI.youtube.open(current, value, bounds()).then(result => {
@@ -73,6 +74,7 @@ window.CVYouTube = (() => {
     else if (value.ready) {
       clearTimeout(timeout); error = null; info = value;
       if (value.state === 1) { blocked = false; delete owner.suppressAutoplayUntilPlayed; }
+      if ([0, 1, 2, 5].includes(value.state)) owner.pausedOnTabReturn = value.state !== 1;
       if (value.videoId && [0, 1, 2, 5].includes(value.state)) {
         state.videoTime = value.time; state.youtubeIndex = value.index; state.youtubeVideoId = value.videoId;
       }

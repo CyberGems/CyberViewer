@@ -46,6 +46,7 @@ app.whenReady().then(async () => {
     await evaluate('window.CVVideo.element.muted=true;');
     await open(path.basename(file)); await loaded();
     await waitFor(() => evaluate('return !window.CVVideo.element.paused && window.CVVideo.element.currentTime > .2;'), 'autoplay is enabled by default');
+    assert.equal(await evaluate("return $('titlebar-filename').querySelector('.titlebar-filename-extension').textContent;"), '.mp4', 'Local extension keeps its accent');
     assert.equal(await evaluate("return state.settings.app.videoAutoplay && $('video-autoplay').getAttribute('aria-checked') === 'true';"), true);
     await evaluate("window.CVVideo.element.pause(); $('video-more').click();");
     assert.equal(await evaluate("return getComputedStyle($('video-more'),'::after').display === 'none' && getComputedStyle($('video-more'),'::before').display === 'none';"), true, 'More tooltip is suppressed while its menu is open');
@@ -210,6 +211,16 @@ app.whenReady().then(async () => {
     await waitFor(() => JSON.parse(fs.readFileSync(path.join(dataDir,'settings.json'),'utf8')).app.videoAutoplay === true, 'autoplay enabled preference saved');
     await open('autoplay.mp4'); await loaded();
     await waitFor(() => evaluate('return !window.CVVideo.element.paused && window.CVVideo.element.currentTime > .2;'), 'autoplay starts a newly loaded video');
+    await evaluate('window.CVVideo.element.pause();');
+    await open(path.basename(file)); await loaded();
+    await waitFor(() => evaluate('return !window.CVVideo.element.paused;'), 'paused tab resumes with the default behavior');
+    await evaluate("openConfig(); $('cfg-keep-media-paused').checked=true; $('cfg-keep-media-paused').dispatchEvent(new Event('change')); closeModal('modal-config'); window.CVVideo.element.pause();");
+    assert.equal(await evaluate('return state.settings.app.keepMediaPausedOnTabReturn;'), true);
+    await open('autoplay.mp4'); await loaded();
+    await open(path.basename(file)); await loaded();
+    const tabPause = await evaluate('return {paused:window.CVVideo.element.paused, setting:state.settings.app.keepMediaPausedOnTabReturn, saved:state.images[state.current].pausedOnTabReturn, tabs:window.CVWorkspace.model.tabs.map(tab=>({name:tab.image.file.name,paused:tab.image.pausedOnTabReturn}))};');
+    assert.equal(tabPause.paused, true, 'Optional pause is preserved across video tabs: ' + JSON.stringify(tabPause));
+    await evaluate("openConfig(); $('cfg-keep-media-paused').checked=false; $('cfg-keep-media-paused').dispatchEvent(new Event('change')); closeModal('modal-config'); await window.CVVideo.toggle();");
     await evaluate("$('video-autoplay').click();");
     assert.equal(await evaluate('return window.CVVideo.element.paused;'), false, 'Changing autoplay does not interrupt current playback');
     await waitFor(() => JSON.parse(fs.readFileSync(path.join(dataDir,'settings.json'),'utf8')).app.videoAutoplay === false, 'manual playback preference saved');
