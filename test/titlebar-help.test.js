@@ -80,7 +80,8 @@ describe('title bar Help menu', () => {
     assert.match(appJs, /function syncFilenameDisplays\(image = state\.images\[state\.current\]\)/);
     assert.match(appJs, /splitFilenameExtension\(name\)/);
     assert.match(css, /\.titlebar-filename\s*\{[^}]*-webkit-app-region:\s*drag !important;/);
-    assert.match(appJs, /titlebarFilename\.dataset\.tooltip = filePath;/);
+    assert.match(appJs, /base\.scrollWidth > base\.clientWidth \+ 1/);
+    assert.match(appJs, /setCyberTooltip\(title, title\.textContent\)/);
     assert.doesNotMatch(appJs, /filename\.addEventListener\('pointerdown'|electronAPI\.dragTitle/);
   });
 
@@ -216,11 +217,11 @@ describe('title bar Help menu', () => {
     assert.match(appJs, /if \(e\.key === 'F1'\) \{ e\.preventDefault\(\); \$\('btn-about'\)\.click\(\); return; \}/);
     assert.match(appJs, /if \(e\.key === '\?'\) \{ e\.preventDefault\(\); setShortcutsPopoverOpen\(\$\('shortcuts-popover'\)\.hidden\); return; \}/);
 
-    // Every titlebar control carries a hotkey badge for its tooltip card.
+    // Titlebar controls with portaled tooltips carry a hotkey badge.
     // The update button has none: its Alt+U shortcut never existed, and F1
     // opens the same About dialog the button opens.
     const badges = [
-      ['logo-trigger', 'F1'], ['titlebar-filename', 'Ctrl+I'],
+      ['logo-trigger', 'F1'],
       ['btn-shortcuts', '?'], ['btn-config', 'Ctrl+,'], ['btn-menu', 'Alt+M'],
       ['btn-about', 'F1'], ['win-min', 'Alt+N'], ['win-max', 'Alt+X'], ['win-close', 'Alt+F4']
     ];

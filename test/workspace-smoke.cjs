@@ -285,11 +285,30 @@ app.whenReady().then(async () => {
 
     const titleRegion = await evaluate("const el = $('titlebar-filename'); return {" +
       "tag: el.tagName, region: getComputedStyle(el).getPropertyValue('-webkit-app-region')," +
-      "name: el.textContent, tooltip: el.dataset.tooltip };");
+      "name: el.textContent, tooltip: el.dataset.tooltip, cursor: getComputedStyle(el).cursor };");
     assert.equal(titleRegion.tag, 'DIV');
     assert.equal(titleRegion.region, 'drag');
     assert.equal(titleRegion.name, 'overflow-40.png');
-    assert.equal(titleRegion.tooltip, path.join(dataDir, 'overflow-40.png'));
+    assert.equal(titleRegion.tooltip, undefined, 'full title should not have a redundant tooltip');
+    assert.equal(titleRegion.cursor, 'default');
+    const clippedTitle = await evaluate(`const el = $('titlebar-filename');
+      el.style.maxWidth = '100px';
+      const base = el.querySelector('.titlebar-filename-base');
+      return { clipped: base.scrollWidth > base.clientWidth + 1,
+        title: el.getBoundingClientRect().toJSON() };`);
+    assert.equal(clippedTitle.clipped, true);
+    await waitFor(() => evaluate("return $('titlebar-filename').dataset.tooltip === 'overflow-40.png';"),
+      'clipped filename tooltip appears after layout');
+    win.webContents.sendInputEvent({ type: 'mouseMove', x: Math.round(clippedTitle.title.x + clippedTitle.title.width / 2),
+      y: Math.round(clippedTitle.title.y + clippedTitle.title.height / 2) });
+    await delay(750);
+    const hover = await evaluate(`const el = $('titlebar-filename'); return {
+      hovered: el.matches(':hover'), tooltipOpacity: getComputedStyle(el, '::after').opacity };`);
+    assert.equal(hover.hovered, true, 'the native drag region should still receive CSS hover');
+    assert.equal(hover.tooltipOpacity, '1', 'the clipped title tooltip should appear on hover');
+    await evaluate(`$('titlebar-filename').style.maxWidth = '';`);
+    await waitFor(() => evaluate("return $('titlebar-filename').dataset.tooltip === undefined;"),
+      'tooltip disappears when filename fits again');
     await evaluate("$('footer-size').click();");
     await waitFor(() => evaluate("return $('modal-properties').classList.contains('active');"),
       'footer still opens Properties');

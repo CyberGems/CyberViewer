@@ -5527,15 +5527,13 @@
     align-items: center;
     justify-content: center;
     max-width: clamp(160px, 36vw, 640px);
-    overflow: hidden;
     border: 0;
     background: transparent;
     color: var(--cyber-text);
     font: 600 12px/1.3 var(--font-ui);
     letter-spacing: 0.02em;
-    text-overflow: ellipsis;
     white-space: nowrap;
-    cursor: move;
+    cursor: default;
     padding: 5px 8px;
     border-radius: 4px;
     -webkit-app-region: drag !important;
@@ -5567,6 +5565,15 @@
     color: var(--cyber-accent-ink);
     opacity: 1;
   }
+  .titlebar-filename.cyber-tooltip::after {
+    top: calc(100% + 8px);
+    width: max-content;
+    max-width: min(420px, calc(100vw - 16px));
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+  .titlebar-filename.cyber-tooltip::before { top: calc(100% + 2px); }
   body.ghost-mode .titlebar-filename { display: none; }
 
   #btn-shortcuts.hidden { display: none; }

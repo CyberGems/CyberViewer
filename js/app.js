@@ -149,7 +149,7 @@ window.addEventListener('blur', ttHide);
 document.addEventListener('visibilitychange', () => { if (document.hidden) ttHide(); });
 
 // Bind every title bar control. Labels update via data-tooltip / data-i18n-tt.
-['logo-trigger', 'titlebar-filename', 'titlebar-update-btn', 'btn-shortcuts',
+['logo-trigger', 'titlebar-update-btn', 'btn-shortcuts',
   'btn-config', 'btn-menu', 'btn-about', 'win-min', 'win-max', 'win-close'
 ].forEach(id => ttBind($(id)));
 
@@ -683,6 +683,24 @@ function updateLanguage(lang = 'en') {
   if (document.body.classList.contains('image-error')) setImageError(state.images[state.current]);
 }
 
+function syncTitlebarFilenameTooltip() {
+  const title = $('titlebar-filename');
+  const base = title && title.querySelector('.titlebar-filename-base');
+  const truncated = base && base.clientWidth > 0 && base.scrollWidth > base.clientWidth + 1;
+  if (truncated) {
+    setCyberTooltip(title, title.textContent);
+    title.classList.add('tooltip-bottom');
+  } else if (title) {
+    title.removeAttribute('data-tooltip');
+    title.classList.remove('cyber-tooltip', 'tooltip-bottom');
+  }
+}
+
+const titlebarFilenameBase = $('titlebar-filename')?.querySelector('.titlebar-filename-base');
+if (titlebarFilenameBase && typeof ResizeObserver !== 'undefined') {
+  new ResizeObserver(syncTitlebarFilenameTooltip).observe(titlebarFilenameBase);
+}
+
 /** Keep the window title and fullscreen banner in sync with the active image. */
 function syncFilenameDisplays(image = state.images[state.current]) {
   const viewerFilename = $('viewer-filename');
@@ -707,16 +725,13 @@ function syncFilenameDisplays(image = state.images[state.current]) {
       titlebarFilename.textContent = name || '';
     }
     titlebarFilename.dataset.empty = name ? 'false' : 'true';
-    delete titlebarFilename.dataset.tooltip;
+    syncTitlebarFilenameTooltip();
   }
   if (!filePath) return;
 
   if (viewerFilename) {
     setCyberTooltip(viewerFilename, filePath);
     viewerFilename.classList.add('tooltip-bottom');
-  }
-  if (titlebarFilename) {
-    titlebarFilename.dataset.tooltip = filePath;
   }
 }
 
