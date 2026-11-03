@@ -1321,6 +1321,24 @@ ipcMain.on('youtube:command', (event, id, value) => { if (youtubePlayer?.accepts
 ipcMain.on('youtube:close', (event, id) => { if (youtubePlayer?.accepts(event)) youtubePlayer.close(id); });
 ipcMain.on('youtube:state', (event, value) => youtubePlayer?.report(event, value));
 
+ipcMain.handle('tabs:native-context-menu', (event, items) => {
+  if (!youtubePlayer?.accepts(event) || !Array.isArray(items) ||
+      items.length < 1 || items.length > 12) return null;
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win || items.some(item => !item || (item.type !== 'separator' &&
+      (typeof item.label !== 'string' || !item.label || item.label.length > 160 ||
+       (item.shortcut !== undefined && !['Ctrl+W', 'Ctrl+Shift+T', 'Ctrl+O', 'Ctrl+Shift+F'].includes(item.shortcut)))))) return null;
+  return new Promise(resolve => {
+    let selected = null;
+    const template = items.map((item, index) => item.type === 'separator' ? { type: 'separator' } : {
+      label: item.label, enabled: item.enabled !== false,
+      accelerator: item.shortcut, registerAccelerator: false,
+      click: () => { selected = index; }
+    });
+    Menu.buildFromTemplate(template).popup({ window: win, callback: () => resolve(selected) });
+  });
+});
+
 ipcMain.handle('win-set-fullscreen', (event, flag) => {
   if (!win || win.isDestroyed()) return false;
   const want = !!flag;

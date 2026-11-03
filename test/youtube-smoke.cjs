@@ -1,6 +1,6 @@
 'use strict';
 // Live integration test: requires internet and public, embeddable YouTube items.
-const { app, BrowserWindow, webContents, nativeImage, session } = require('electron');
+const { app, BrowserWindow, webContents, nativeImage, session, Menu } = require('electron');
 const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict');
 const dir = process.env.CV_YOUTUBE_TEST_DIR, phase = process.env.CV_YOUTUBE_TEST_PHASE;
 if (!dir || !path.basename(dir).startsWith('cyberviewer-youtube-test-')) throw new Error('Isolated profile required');
@@ -37,6 +37,21 @@ app.whenReady().then(async () => {
     assert.equal((await info()).videoId, 'M7lc1UVf-VE');
     assert.equal((await info()).state, 5);
     assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 2);
+    const buildMenu = Menu.buildFromTemplate;
+    const nativeMenus = [];
+    try {
+      Menu.buildFromTemplate = items => {
+        nativeMenus.push(items);
+        return { popup: ({ callback }) => { if (nativeMenus.length === 2) items[0].click(); callback(); } };
+      };
+      await evaluate("$('image-tab-list').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));");
+      await waitFor(() => nativeMenus.length === 1, 'native tab-strip menu opens');
+      await evaluate("$('image-tab-list').querySelector('.image-tab-shell.active').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));");
+      await waitFor(() => evaluate('return window.CVWorkspace.model.tabs.length === 1;'), 'native tab menu closes selected tab');
+    } finally { Menu.buildFromTemplate = buildMenu; }
+    assert.equal(nativeMenus[0][0].label, 'Abrir imágenes, videos o audio');
+    assert.equal(nativeMenus[1][0].label, 'Cerrar pestaña');
+    assert.equal(await evaluate("return $('custom-ctx-menu').classList.contains('open');"), false);
     console.log('PASS restart restores YouTube position without playing despite autoplay being enabled');
   } else {
     await evaluate("window.CVYouTube.openDialog(); $('youtube-url').value='https://evil.test/watch?v=M7lc1UVf-VE'; $('youtube-form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));");

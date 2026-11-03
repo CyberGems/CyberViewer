@@ -47,6 +47,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   autoBackupDelete: (filePath) => ipcRenderer.invoke('auto-backup:delete', filePath),
 
   showContextMenu: (props) => ipcRenderer.send('show-context-menu', props),
+  showNativeTabMenu: items => ipcRenderer.invoke('tabs:native-context-menu', items),
   openDevTools: () => ipcRenderer.send('win-devtools'),
   onOpenFile: (cb) => ipcRenderer.on('open-file', (e, path) => cb(path)),
   pathForFile: (file) => webUtils.getPathForFile(file),

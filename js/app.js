@@ -1810,6 +1810,18 @@ function showCustomContextMenu(e, type, data) {
   const template = buildMenuTemplate(type, data);
   if (!template || template.length === 0) return;
 
+  if (window.CVYouTube.active() && (type === 'tab' || type === 'tab-bar')) {
+    hideCustomContextMenu();
+    const items = template.map(item => ({
+      type: item.type === 'separator' ? 'separator' : 'normal',
+      label: item.label, enabled: item.enabled !== false, shortcut: item.shortcut
+    }));
+    void window.electronAPI.showNativeTabMenu(items).then(index => {
+      if (Number.isInteger(index) && template[index]?.enabled !== false) template[index].action?.();
+    }).catch(error => console.error('Unable to show tab context menu:', error));
+    return;
+  }
+
   renderMenuTemplate(menu, template);
 
   menu.style.display = 'block';
