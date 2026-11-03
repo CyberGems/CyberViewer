@@ -1325,14 +1325,21 @@ ipcMain.handle('tabs:native-context-menu', (event, items) => {
   if (!youtubePlayer?.accepts(event) || !Array.isArray(items) ||
       items.length < 1 || items.length > 12) return null;
   const win = BrowserWindow.fromWebContents(event.sender);
-  if (!win || items.some(item => !item || (item.type !== 'separator' &&
-      (typeof item.label !== 'string' || !item.label || item.label.length > 160 ||
-       (item.shortcut !== undefined && !['Ctrl+W', 'Ctrl+Shift+T', 'Ctrl+O', 'Ctrl+Shift+F'].includes(item.shortcut)))))) return null;
+  const validItem = item => {
+    if (!item) return false;
+    if (item.type === 'separator') return true;
+    if (item.type !== 'normal' || typeof item.label !== 'string' || !item.label || item.label.length > 160) return false;
+    if (item.shortcut !== undefined && !['Ctrl+W', 'Ctrl+Shift+T', 'Ctrl+O', 'Ctrl+Shift+F'].includes(item.shortcut)) return false;
+    return item.icon == null || (typeof item.icon === 'string' && item.icon.length <= 12000 &&
+      /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(item.icon));
+  };
+  if (!win || !items.every(validItem)) return null;
   return new Promise(resolve => {
     let selected = null;
     const template = items.map((item, index) => item.type === 'separator' ? { type: 'separator' } : {
       label: item.label, enabled: item.enabled !== false,
       accelerator: item.shortcut, registerAccelerator: false,
+      icon: item.icon ? nativeImage.createFromDataURL(item.icon) : undefined,
       click: () => { selected = index; }
     });
     Menu.buildFromTemplate(template).popup({ window: win, callback: () => resolve(selected) });

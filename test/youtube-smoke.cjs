@@ -51,6 +51,13 @@ app.whenReady().then(async () => {
     } finally { Menu.buildFromTemplate = buildMenu; }
     assert.equal(nativeMenus[0][0].label, 'Abrir imágenes, videos o audio');
     assert.equal(nativeMenus[1][0].label, 'Cerrar pestaña');
+    for (const menu of nativeMenus) for (const item of menu) {
+      if (item.type === 'separator') continue;
+      assert.ok(item.icon && !item.icon.isEmpty(), `Native icon for ${item.label}`);
+      assert.deepEqual(item.icon.getSize(), { width: 16, height: 16 });
+      assert.ok(item.icon.toBitmap().some((byte, index) => index % 4 === 3 && byte > 0),
+        `Native icon has visible pixels for ${item.label}`);
+    }
     assert.equal(await evaluate("return $('custom-ctx-menu').classList.contains('open');"), false);
     console.log('PASS restart restores YouTube position without playing despite autoplay being enabled');
   } else {

@@ -357,6 +357,7 @@ const MENU_ICONS = {
   'quit': '<path d="M18.4 6.6a9 9 0 1 1-12.8 0"/><path d="M12 3v9"/>',
   'x': '<path d="M18 6L6 18M6 6l12 12"/>',
   'rotate-ccw': '<path d="M3 12a9 9 0 1 0 2-4.6"/><path d="M3 4v5h5"/>',
+  'restore': '<path d="M3 12a9 9 0 1 0 2-4.6"/><path d="M3 4v5h5"/>',
   'rotate-cw': '<path d="M21 12a9 9 0 1 1-2-4.6"/><path d="M21 4v5h-5"/>',
   'crop': '<path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/>',
   'resize': '<path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/>',
@@ -489,6 +490,31 @@ function iconForItem(item) {
   const name = iconNameForItem(item);
   if (!name) return null;
   return iconSvg(name, item.danger || name === 'quit');
+}
+
+async function nativeMenuIconForItem(item) {
+  const svg = iconForItem(item);
+  if (!svg || svg.namespaceURI !== 'http://www.w3.org/2000/svg') return null;
+  const swatch = document.createElement('span');
+  swatch.style.color = 'var(--cyber-accent-ink)';
+  document.body.appendChild(swatch);
+  const color = getComputedStyle(swatch).color;
+  swatch.remove();
+  svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  svg.setAttribute('width', '16');
+  svg.setAttribute('height', '16');
+  svg.setAttribute('color', color);
+  svg.setAttribute('stroke', color);
+  const image = new Image();
+  image.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.outerHTML);
+  try { await image.decode(); } catch (error) {
+    console.error('Unable to render native menu icon:', error);
+    return null;
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 16;
+  canvas.getContext('2d').drawImage(image, 0, 0, 16, 16);
+  return canvas.toDataURL('image/png');
 }
 
 function isCloseToTrayEnabled() {
@@ -1812,11 +1838,11 @@ function showCustomContextMenu(e, type, data) {
 
   if (window.CVYouTube.active() && (type === 'tab' || type === 'tab-bar')) {
     hideCustomContextMenu();
-    const items = template.map(item => ({
+    void Promise.all(template.map(async item => ({
       type: item.type === 'separator' ? 'separator' : 'normal',
-      label: item.label, enabled: item.enabled !== false, shortcut: item.shortcut
-    }));
-    void window.electronAPI.showNativeTabMenu(items).then(index => {
+      label: item.label, enabled: item.enabled !== false, shortcut: item.shortcut,
+      icon: await nativeMenuIconForItem(item)
+    }))).then(items => window.electronAPI.showNativeTabMenu(items)).then(index => {
       if (Number.isInteger(index) && template[index]?.enabled !== false) template[index].action?.();
     }).catch(error => console.error('Unable to show tab context menu:', error));
     return;
