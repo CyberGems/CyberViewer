@@ -37,6 +37,7 @@ app.whenReady().then(async () => {
     await loaded();
     const restored = await evaluate('return {time:window.CVVideo.element.currentTime, paused:window.CVVideo.element.paused, view:window.CVWorkspace.model.active.view, source:window.CVVideo.element.src};');
     assert.ok(Math.abs(restored.time - 6) < .3, JSON.stringify(restored));
+    assert.equal(await evaluate('return state.settings.app.videoAutoplay;'), true, 'The autoplay preference stays enabled');
     assert.equal(await evaluate('return window.CVVideo.element.paused;'), true);
     assert.equal(await evaluate("return getComputedStyle($('kbd-hint')).display === 'none' && getComputedStyle($('statusbar')).display === 'none' && $('canvas-layer').clientHeight === $('viewer-wrap').clientHeight;"), true, 'Video fills the viewer without the image toolbar or footer');
     console.log('PASS restored video tab and playback position, paused');
@@ -233,6 +234,7 @@ app.whenReady().then(async () => {
     await evaluate('await window.CVWorkspace.flush();');
     const suspendedSession=JSON.parse(fs.readFileSync(path.join(dataDir,'session.json'),'utf8'));
     assert.ok(Math.abs(suspendedSession.tabs.find(tab=>tab.path===file).view.videoTime-6)<.3, 'Suspending preserves the captured position');
+    await evaluate('state.settings.app.videoAutoplay=true; await window.electronAPI.saveSettings(state.settings.app);');
     console.log('PASS saved session position and decoder release on suspend');
   }
   // Decoder errors for the deliberately damaged fixture are expected.

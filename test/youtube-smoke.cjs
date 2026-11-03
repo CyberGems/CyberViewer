@@ -33,10 +33,11 @@ app.whenReady().then(async () => {
   if (phase === 'restore') {
     await loaded();
     await waitFor(async () => Math.abs((await info()).time - 12) < 1, 'restored YouTube playback time');
+    assert.equal(await evaluate('return state.settings.app.videoAutoplay;'), true, 'The autoplay preference stays enabled');
     assert.equal((await info()).videoId, 'M7lc1UVf-VE');
     assert.equal((await info()).state, 5);
     assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 2);
-    console.log('PASS restart restores YouTube tabs and playback position with autoplay off');
+    console.log('PASS restart restores YouTube position without playing despite autoplay being enabled');
   } else {
     await evaluate("window.CVYouTube.openDialog(); $('youtube-url').value='https://evil.test/watch?v=M7lc1UVf-VE'; $('youtube-form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));");
     assert.equal(await evaluate("return !$('youtube-url-error').hidden && window.CVWorkspace.model.tabs.length===0;"), true);
@@ -169,6 +170,7 @@ app.whenReady().then(async () => {
     await evaluate("$('youtube-retry').click();");
     await loaded();
     await waitFor(async () => (await info())?.state === 5, 'retry reconnects to YouTube');
+    await evaluate('state.settings.app.videoAutoplay=true; await window.electronAPI.saveSettings(state.settings.app); await window.CVWorkspace.flush();');
     console.log('PASS network loading failure, actionable error and successful retry');
   }
   app.exit(0);

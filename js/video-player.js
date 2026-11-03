@@ -249,7 +249,7 @@ window.CVVideo = (() => {
       syncTools(); sync(); reveal();
       window.CVAudioVisuals.refresh();
       onReady();
-      if (live() && state.settings.app.videoAutoplay !== false) void play();
+      if (live() && state.settings.app.videoAutoplay !== false && !image.suppressAutoplayUntilPlayed) void play();
     };
     element.addEventListener('loadeddata', ready);
     element.addEventListener('seeked', ready);
@@ -273,6 +273,7 @@ window.CVVideo = (() => {
       await window.CVAudioVisuals.prepare();
       if (token !== generation || !owner?.loaded) return;
       await element.play();
+      if (token === generation) delete owner.suppressAutoplayUntilPlayed;
     }
     catch (error) {
       if (error.name !== 'AbortError') { console.error('Video playback failed:', error); showToast(text(window.CVFormats.isAudio(owner) ? 'audio_play_error' : 'video_play_error'), 'error'); }

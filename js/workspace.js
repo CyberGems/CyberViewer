@@ -647,9 +647,12 @@ window.CVWorkspace = (() => {
         if (!result.ok) showToast(text('tabs_session_load_error'), 'warning', 5000);
         if (result.recovered) showToast(text('tabs_session_recovered'), 'warning', 5000);
         for (const item of result.session.tabs) {
+          // Restored media must stay quiet until the user explicitly plays it.
+          // This runtime flag is intentionally absent from the saved session.
           const image = { file: { name: item.name || item.path?.split(/[\\/]/).pop() || text('tabs_clipboard'), path: item.path, size: 0 },
             draftId: item.draftId, url: item.draftPath ? mediaUrl(item.draftPath) : null,
-            fromClipboard: !item.path, missingDraft: !item.path && !item.draftPath, loaded: false, w: 0, h: 0, size: 0 };
+            fromClipboard: !item.path, missingDraft: !item.path && !item.draftPath, loaded: false, w: 0, h: 0, size: 0,
+            suppressAutoplayUntilPlayed: true };
           ownedImages.add(image);
           const tab = model.open(image, { activate: false, view: item.view, source: item.source });
           tab.id = item.id; tab.hiddenPaths = item.hiddenPaths; tab.scrollTop = item.scrollTop;

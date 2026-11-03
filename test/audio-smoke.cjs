@@ -124,6 +124,7 @@ app.whenReady().then(async () => {
   }
   if (restoring) {
     await ready();
+    assert.equal(await evaluate('return state.settings.app.videoAutoplay;'), true, 'The autoplay preference stays enabled');
     assert.equal(await evaluate("return document.body.classList.contains('audio-active') && window.CVVideo.element.paused;"), true);
     assert.ok(await evaluate('return Math.abs(window.CVVideo.element.currentTime - 4) < .2;'));
     assert.equal(await evaluate("return $('audio-visualizer').value;"), 'off');
@@ -321,6 +322,7 @@ app.whenReady().then(async () => {
     await evaluate('window.CVVideo.element.currentTime=4;');
     await waitFor(() => evaluate('return !window.CVVideo.element.seeking;'), 'session seek');
     await evaluate('window.CVWorkspace.capture(); await window.CVWorkspace.flush();');
+    await evaluate('state.settings.app.videoAutoplay=true; await window.electronAPI.saveSettings(state.settings.app);');
     console.log('PASS bilingual labels, damaged audio error and position across tabs');
     const unexpected = errors.filter(message => !/(DEMUXER|FFmpegDemuxer)/i.test(message));
     assert.deepEqual(unexpected, []);
