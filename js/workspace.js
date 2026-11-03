@@ -219,7 +219,12 @@ window.CVWorkspace = (() => {
   function restoreView(w, h) {
     if (!pendingView || model.active !== pendingView.tab) return false;
     Object.assign(state, pendingView.view);
-    if (state.viewMode === 'fit' && w && h) {
+    if (state.viewMode === 'auto' && w && h) {
+      const { vw, vh } = viewerFitSize();
+      const view = window.CVMedia.initialContainedView(w, h, vw, vh, getOriginalZoom(), window.CVVideo.active());
+      state.viewMode = view.viewMode;
+      state.zoom = view.zoom;
+    } else if (state.viewMode === 'fit' && w && h) {
       const { vw, vh } = viewerFitSize();
       state.zoom = Math.min(vw / w, vh / h);
     } else if (state.viewMode === 'original') state.zoom = getOriginalZoom();

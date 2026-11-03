@@ -13,13 +13,13 @@
     return typeof value === 'string' ? value.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase() : '';
   }
   function defaultView() {
-    return { viewMode: 'fit', selectedViewMode: 'fit', zoom: 1, panX: 0, panY: 0,
+    return { viewMode: 'auto', selectedViewMode: 'auto', zoom: 1, panX: 0, panY: 0,
       currentRotation: 0, visualRotation: 0, hasChanges: false, videoTime: 0, youtubeIndex: 0, youtubeVideoId: '' };
   }
   function cleanView(value = {}) {
     const result = defaultView();
     for (const key of ['viewMode', 'selectedViewMode']) {
-      if (['fit', 'original', 'custom'].includes(value[key])) result[key] = value[key];
+      if (['auto', 'fit', 'original', 'custom'].includes(value[key])) result[key] = value[key];
     }
     for (const key of ['zoom', 'panX', 'panY']) {
       if (Number.isFinite(value[key])) result[key] = key === 'zoom'

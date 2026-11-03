@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const {
   mediaUrl,
   shouldPlayMediaOnOpen,
+  initialContainedView,
   canvasExport,
   buildCssFilter,
   isIdentityAdjust,
@@ -33,6 +34,15 @@ describe('tab media playback', () => {
     assert.equal(shouldPlayMediaOnOpen({ videoAutoplay: false, keepMediaPausedOnTabReturn: false }, { pausedOnTabReturn: false }), false);
     assert.equal(shouldPlayMediaOnOpen({ videoAutoplay: true, keepMediaPausedOnTabReturn: true },
       { pausedOnTabReturn: false, suppressAutoplayUntilPlayed: true }), false);
+  });
+});
+
+describe('initial image view', () => {
+  it('keeps small captures at calibrated 1:1 and reduces images that exceed the viewport', () => {
+    assert.deepEqual(initialContainedView(270, 130, 1000, 700, 0.8), { viewMode: 'original', zoom: 0.8 });
+    assert.deepEqual(initialContainedView(2400, 1600, 1000, 700, 0.8), { viewMode: 'fit', zoom: 0.4166666666666667 });
+    assert.deepEqual(initialContainedView(270, 130, 1000, 700, 0.8, true),
+      { viewMode: 'fit', zoom: 1000 / 270 });
   });
 });
 

@@ -182,8 +182,8 @@ const state = {
   images: [],          // {file, url, w, h, loaded}
   currentIdx: -1,
   current: -1,
-  viewMode: 'fit',     // 'fit', 'original', or 'custom'
-  selectedViewMode: 'fit', // user's chosen view mode; restored on navigation when navZoomMode === 'reset'
+  viewMode: 'auto',     // initial contain, then 'fit', 'original', or 'custom'
+  selectedViewMode: 'auto', // navigation starts contained until the user selects Fit / 1:1
   zoom: 1,
   panX: 0,
   panY: 0,
@@ -781,8 +781,8 @@ function clearViewer(opts = {}) {
   state.nonFavCurrent = -1;
   state.showingFavs = false;
   syncCurrentIndex(-1);
-  state.viewMode = 'fit';
-  state.selectedViewMode = 'fit';
+  state.viewMode = 'auto';
+  state.selectedViewMode = 'auto';
   state.zoom = 1;
   state.panX = 0;
   state.panY = 0;
@@ -3368,6 +3368,13 @@ function displayImage(url, w, h, direction) {
 
   if (restoredView) {
     // Each tab restores its own viewport, independently of folder navigation preferences.
+  } else if (state.viewMode === 'auto') {
+    const { vw, vh } = viewerFitSize();
+    const view = CVMedia.initialContainedView(w, h, vw, vh, getOriginalZoom(), target !== mainImg);
+    state.viewMode = view.viewMode;
+    state.zoom = view.zoom;
+    state.panX = 0;
+    state.panY = 0;
   } else if (state.viewMode === 'original') {
     state.zoom = getOriginalZoom();
     state.panX = 0;

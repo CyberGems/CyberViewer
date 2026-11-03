@@ -52,6 +52,31 @@ app.whenReady().then(async () => {
     await loaded();
     assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 3);
     assert.equal(await evaluate('return mainImg.naturalWidth;'), 120);
+    const smallPath = path.join(dataDir, 'capture-270x130.png');
+    const largePath = path.join(dataDir, 'capture-2000x1200.png');
+    for (const [file, width, height] of [[smallPath, 270, 130], [largePath, 2000, 1200]]) {
+      fs.writeFileSync(file, nativeImage.createFromBitmap(Buffer.alloc(width * height * 4, 255), { width, height }).toPNG());
+      await evaluate('await window.CVWorkspace.openFiles([{ path: ' + JSON.stringify(file) + ', name: ' + JSON.stringify(path.basename(file)) + ', size: 0 }]);');
+      await loaded();
+      const view = await evaluate(`return { mode: state.viewMode, zoom: state.zoom, original: getOriginalZoom(),
+        bounds: mainImg.getBoundingClientRect().toJSON(), viewport: viewerFitSize(), dpr: window.devicePixelRatio };`);
+      if (width === 270) {
+        assert.equal(view.mode, 'original', 'small capture opens at 1:1');
+        assert.ok(Math.abs(view.zoom - view.original) < 1e-6);
+        assert.ok(Math.abs(view.bounds.width * view.dpr - width) < 2, 'capture pixels map to screen pixels');
+        await evaluate("$('btn-fit-hud').click();");
+        assert.equal(await evaluate('return state.viewMode === "fit" && state.zoom > getOriginalZoom();'), true,
+          'explicit Fit may enlarge a small capture');
+      } else {
+        assert.equal(view.mode, 'fit', 'large capture opens fitted');
+        assert.ok(view.zoom < view.original);
+        assert.ok(view.bounds.width <= view.viewport.vw + 1 && view.bounds.height <= view.viewport.vh + 1);
+      }
+      await evaluate('window.CVWorkspace.closeTabs([window.CVWorkspace.model.activeId]);');
+      await loaded();
+      assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 3);
+    }
+    await evaluate("await window.CVWorkspace.activate('tab-1');"); await loaded();
     await evaluate("state.viewMode = 'custom'; state.zoom = 1.75; state.panX = 31; state.panY = -22; applyTransform(false); rotate(90); await window.CVWorkspace.activate('tab-2');");
     await loaded();
     let result = await evaluate('return { view: window.CVWorkspace.model.tabs[0].view, rotation: state.currentRotation };');

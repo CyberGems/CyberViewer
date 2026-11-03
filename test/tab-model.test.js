@@ -97,6 +97,6 @@ describe('image tab model', () => {
     assert.equal(result.zoom, 1);
     assert.equal(result.currentRotation, 0);
     assert.equal(result.hasChanges, false);
-    assert.equal(result.viewMode, 'fit');
+    assert.equal(result.viewMode, 'auto');
   });
 });

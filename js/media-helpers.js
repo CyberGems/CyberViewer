@@ -44,6 +44,18 @@
     return settings?.videoAutoplay !== false;
   }
 
+  // Automatic first view contains an oversized image without enlarging a small one.
+  // The explicit Fit action remains free to enlarge either size.
+  function initialContainedView(width, height, viewportWidth, viewportHeight, originalZoom, alwaysFit = false) {
+    if (!(width > 0 && height > 0 && viewportWidth > 0 && viewportHeight > 0 && originalZoom > 0)) {
+      return { viewMode: 'original', zoom: originalZoom > 0 ? originalZoom : 1 };
+    }
+    const fitZoom = Math.min(viewportWidth / width, viewportHeight / height);
+    return alwaysFit || fitZoom < originalZoom
+      ? { viewMode: 'fit', zoom: fitZoom }
+      : { viewMode: 'original', zoom: originalZoom };
+  }
+
   /**
    * Build a CSS Canvas filter string from basic adjust controls.
    * Tone sliders use -100..100 with 0 as neutral (maps to factor 1.0).
@@ -379,6 +391,7 @@
   return {
     mediaUrl,
     shouldPlayMediaOnOpen,
+    initialContainedView,
     canvasExport,
     buildCssFilter,
     isIdentityAdjust,
