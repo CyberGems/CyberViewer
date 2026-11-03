@@ -1,7 +1,7 @@
 'use strict';
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
-const { parse, isYouTube } = require('../js/youtube-source');
+const { parse, copyUrl, isYouTube } = require('../js/youtube-source');
 const { TabModel } = require('../js/tab-model');
 const { sanitizeSession } = require('../lib/session-store');
 const formats = require('../js/media-types');
@@ -18,6 +18,12 @@ describe('YouTube sources and workspace identity', () => {
   });
   it('rejects arbitrary origins, credentials, protocols and invalid IDs', () => {
     for (const value of ['https://youtube.com.evil.test/watch?v=M7lc1UVf-VE', 'https://evil.test/youtube.com/watch?v=M7lc1UVf-VE', 'file:///C:/private.txt', 'javascript:alert(1)', 'https://youtube.com@evil.test/watch?v=M7lc1UVf-VE', 'https://user@youtube.com/watch?v=M7lc1UVf-VE', 'https://youtube.com:8443/watch?v=M7lc1UVf-VE', 'https://youtube.com/watch?v=bad', 'https://youtube.com/playlist?list=<script>', 'https://youtube.com/', 'https://youtube.com/watch?v=M7lc1UVf-VE\nmalicious']) assert.equal(parse(value), null, value);
+  });
+  it('copies a standalone video URL or the playlist itself, without the current video or tracking fields', () => {
+    assert.equal(copyUrl('https://youtu.be/M7lc1UVf-VE?t=12'), 'https://www.youtube.com/watch?v=M7lc1UVf-VE');
+    assert.equal(copyUrl({ file: { path: 'https://www.youtube.com/watch?v=M7lc1UVf-VE&list=PLC77007E23FF423C6&index=3&t=12&si=tracking' } }),
+      'https://www.youtube.com/playlist?list=PLC77007E23FF423C6');
+    assert.equal(copyUrl('https://youtube.com.evil.test/watch?v=M7lc1UVf-VE'), '');
   });
   it('deduplicates equivalent links and keeps case-sensitive video IDs distinct', () => {
     const model = new TabModel();

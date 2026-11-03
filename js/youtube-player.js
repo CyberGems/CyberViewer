@@ -24,6 +24,7 @@ window.CVYouTube = (() => {
   function status() {
     if (!owner) return;
     $('youtube-title').textContent = owner.file.name;
+    $('youtube-copy').textContent = text(isPlaylist() ? 'youtube_copy_playlist' : 'youtube_copy_video');
     const key = error === 'network' ? 'youtube_network_error' : [100].includes(error) ? 'youtube_missing_error'
       : [101, 150].includes(error) ? 'youtube_embed_error' : error ? 'youtube_play_error'
       : blocked ? 'youtube_autoplay_blocked' : !info?.ready ? 'youtube_loading' : info.count ? 'youtube_playlist_status' : 'youtube_ready';
@@ -33,6 +34,18 @@ window.CVYouTube = (() => {
     $('youtube-previous').disabled = !info?.ready || !window.CVYouTubeSource.from(owner)?.playlistId;
     $('youtube-next').disabled = $('youtube-previous').disabled;
     $('youtube-loop').disabled = $('youtube-previous').disabled;
+  }
+  function isPlaylist() { return !!(owner && window.CVYouTubeSource.from(owner)?.playlistId); }
+  async function copyLink() {
+    const url = owner && window.CVYouTubeSource.copyUrl(owner);
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast(text('youtube_link_copied'), 'success');
+    } catch (error) {
+      console.error('Unable to copy YouTube link:', error);
+      showToast(text('youtube_copy_error'), 'error');
+    }
   }
   function unload() {
     clearTimeout(timeout);
@@ -110,6 +123,7 @@ window.CVYouTube = (() => {
     $('youtube-previous').addEventListener('click', () => command('previous'));
     $('youtube-next').addEventListener('click', () => command('next'));
     $('youtube-loop').addEventListener('change', () => command('loop', { enabled: $('youtube-loop').checked }));
+    $('youtube-copy').addEventListener('click', () => void copyLink());
     $('youtube-retry').addEventListener('click', () => { if (owner) void window.CVWorkspace.activate(window.CVWorkspace.model.activeId, { force: true }); });
     $('youtube-browser').addEventListener('click', () => {
       if (!owner) return;
@@ -120,5 +134,5 @@ window.CVYouTube = (() => {
     });
     $('youtube-fullscreen').addEventListener('click', toggleFullscreen);
   }
-  return { active, load, unload, resize, command, openDialog, initialize, localize: status, get info() { return info; } };
+  return { active, load, unload, resize, command, copyLink, isPlaylist, openDialog, initialize, localize: status, get info() { return info; } };
 })();

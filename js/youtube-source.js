@@ -39,5 +39,13 @@
     const file = value?.file || value;
     return parse(typeof file === 'string' ? file : file?.path);
   }
-  return { parse, from, isYouTube: value => !!from(value), VIDEO_ID, PLAYLIST_ID };
+  function copyUrl(value) {
+    const source = from(value);
+    if (!source) return '';
+    if (!source.playlistId) return source.url;
+    const url = new URL('https://www.youtube.com/playlist');
+    url.searchParams.set('list', source.playlistId);
+    return url.href;
+  }
+  return { parse, from, copyUrl, isYouTube: value => !!from(value), VIDEO_ID, PLAYLIST_ID };
 });

@@ -1564,6 +1564,10 @@ window.addEventListener('contextmenu', (e) => {
   if (e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
   
   e.preventDefault();
+  if (e.target.closest('#youtube-footer') && window.CVYouTube.active()) {
+    showCustomContextMenu(e, 'youtube', {});
+    return;
+  }
   if (state.currentRotation !== 0 && state.hasChanges) return;
 
   if (e.target.closest('.thumb-item')) return;
@@ -1880,6 +1884,15 @@ function buildMenuTemplate(type, data) {
   if (type === 'tab') return window.CVWorkspace.contextMenu(data.id);
 
   if (type === 'tab-bar') return window.CVWorkspace.barMenu();
+
+  if (type === 'youtube') {
+    return [
+      { type: 'header', icon: 'link', label: 'YouTube', subtitle: $('youtube-title').textContent },
+      { label: getTxt(window.CVYouTube.isPlaylist() ? 'youtube_copy_playlist' : 'youtube_copy_video'),
+        icon: 'copy', action: () => void window.CVYouTube.copyLink() },
+      { label: getTxt('youtube_browser'), icon: 'globe', action: () => $('youtube-browser').click() }
+    ];
+  }
 
   if ((type === 'image' || type === 'thumb') && window.CVFormats.isPlayable(data.path || state.images[data.index ?? state.current])) {
     const filePath = data.path || state.images[state.current]?.file.path;

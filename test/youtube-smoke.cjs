@@ -43,6 +43,8 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("return !$('youtube-url-error').hidden && window.CVWorkspace.model.tabs.length===0;"), true);
     await evaluate("$('youtube-url').value='https://youtu.be/M7lc1UVf-VE?t=12'; $('youtube-form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));");
     await loaded();
+    await evaluate("Object.defineProperty(navigator.clipboard, 'writeText', { configurable: true, value: async url => { window.__copiedYouTubeLink = url; } }); $('youtube-copy').click();");
+    await waitFor(() => evaluate("return window.__copiedYouTubeLink === 'https://www.youtube.com/watch?v=M7lc1UVf-VE';"), 'standalone video link copied');
     const titleParts = await evaluate(`const image = state.images[state.current], previous = image.file.name;
       image.file.name = '¡Kimi K3.1 Pro ya está aquí!'; syncFilenameDisplays(image);
       const parts = { base: $('titlebar-filename').querySelector('.titlebar-filename-base').textContent,
@@ -142,6 +144,15 @@ app.whenReady().then(async () => {
     const firstId = await evaluate('return window.CVWorkspace.model.activeId;');
     await evaluate('return await window.CVWorkspace.openYouTube(' + JSON.stringify(process.env.CV_YOUTUBE_PLAYLIST || 'https://www.youtube.com/playlist?list=UU_x5XG1OV2P6uZZ5FSM9Ttw') + ');');
     await waitFor(async () => (await info())?.count > 1, 'complete playlist loaded');
+    const playlistUrl = await evaluate('return window.CVYouTubeSource.copyUrl(state.images[state.current]);');
+    await evaluate("window.__copiedYouTubeLink = ''; $('youtube-copy').click();");
+    await waitFor(() => evaluate('return window.__copiedYouTubeLink === ' + JSON.stringify(playlistUrl) + ';'), 'playlist link copied from footer');
+    await evaluate("$('youtube-footer').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 400, clientY: 700 }));");
+    assert.deepEqual(await evaluate("return [...$('custom-ctx-menu').querySelectorAll('.menu-item .menu-label')].map(el => el.textContent);"),
+      ['Copiar enlace de playlist', 'Abrir en YouTube'], 'Footer shows the YouTube context menu');
+    await evaluate("window.__copiedYouTubeLink = ''; $('custom-ctx-menu').querySelector('.menu-item').click();");
+    await waitFor(() => evaluate('return window.__copiedYouTubeLink === ' + JSON.stringify(playlistUrl) + ';'), 'playlist link copied from context menu');
+    await evaluate("delete navigator.clipboard.writeText;");
     await evaluate("window.CVYouTube.command('mute'); window.CVYouTube.command('next');");
     await waitFor(async () => (await info())?.index === 1 && (await info())?.state === 1, 'next playlist video');
     const second = (await info()).videoId;
