@@ -147,11 +147,13 @@ app.whenReady().then(async () => {
     const playlistUrl = await evaluate('return window.CVYouTubeSource.copyUrl(state.images[state.current]);');
     await evaluate("window.__copiedYouTubeLink = ''; $('youtube-copy').click();");
     await waitFor(() => evaluate('return window.__copiedYouTubeLink === ' + JSON.stringify(playlistUrl) + ';'), 'playlist link copied from footer');
-    await evaluate("$('youtube-footer').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 400, clientY: 700 }));");
-    assert.deepEqual(await evaluate("return [...$('custom-ctx-menu').querySelectorAll('.menu-item .menu-label')].map(el => el.textContent);"),
-      ['Copiar enlace de playlist', 'Abrir en YouTube'], 'Footer shows the YouTube context menu');
-    await evaluate("window.__copiedYouTubeLink = ''; $('custom-ctx-menu').querySelector('.menu-item').click();");
-    await waitFor(() => evaluate('return window.__copiedYouTubeLink === ' + JSON.stringify(playlistUrl) + ';'), 'playlist link copied from context menu');
+    assert.equal(await evaluate("return $('youtube-copy').textContent;"), 'Copiar enlace de playlist');
+    for (const target of ['youtube-footer', 'statusbar']) {
+      assert.equal(await evaluate(`return $('${target}').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 400, clientY: 700 }));`),
+        false, `${target} context menu is prevented`);
+      assert.equal(await evaluate("return $('custom-ctx-menu').classList.contains('open');"), false,
+        `${target} does not show a menu over the native player`);
+    }
     await evaluate("delete navigator.clipboard.writeText;");
     await evaluate("window.CVYouTube.command('mute'); window.CVYouTube.command('next');");
     await waitFor(async () => (await info())?.index === 1 && (await info())?.state === 1, 'next playlist video');
