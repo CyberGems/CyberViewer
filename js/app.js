@@ -673,7 +673,8 @@ function syncFilenameDisplays(image = state.images[state.current]) {
   if (titlebarFilename) {
     const base = titlebarFilename.querySelector('.titlebar-filename-base');
     const extension = titlebarFilename.querySelector('.titlebar-filename-extension');
-    const parts = splitFilenameExtension(name);
+    const parts = window.CVYouTubeSource.isYouTube(image)
+      ? { base: name, extension: '' } : splitFilenameExtension(name);
     if (base && extension) {
       base.textContent = parts.base;
       extension.textContent = parts.extension;

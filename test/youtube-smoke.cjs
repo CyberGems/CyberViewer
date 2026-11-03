@@ -43,6 +43,12 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("return !$('youtube-url-error').hidden && window.CVWorkspace.model.tabs.length===0;"), true);
     await evaluate("$('youtube-url').value='https://youtu.be/M7lc1UVf-VE?t=12'; $('youtube-form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));");
     await loaded();
+    const titleParts = await evaluate(`const image = state.images[state.current], previous = image.file.name;
+      image.file.name = '¡Kimi K3.1 Pro ya está aquí!'; syncFilenameDisplays(image);
+      const parts = { base: $('titlebar-filename').querySelector('.titlebar-filename-base').textContent,
+        extension: $('titlebar-filename').querySelector('.titlebar-filename-extension').textContent };
+      image.file.name = previous; syncFilenameDisplays(image); return parts;`);
+    assert.deepEqual(titleParts, { base: '¡Kimi K3.1 Pro ya está aquí!', extension: '' }, 'YouTube title is not parsed as a local filename');
     await waitFor(async () => Math.abs((await info()).time - 12) < 1, 'start time from URL');
     assert.equal(await child().executeJavaScript('typeof window.electronAPI'), 'undefined');
     assert.equal(child().getLastWebPreferences().sandbox, true);
