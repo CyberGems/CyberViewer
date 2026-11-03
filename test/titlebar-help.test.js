@@ -69,7 +69,7 @@ describe('title bar Help menu', () => {
   });
 
   it('keeps the active filename in the window title bar and reserves its banner for fullscreen', () => {
-    assert.match(html, /id="titlebar-filename"[^>]*data-i18n-aria="titlebar_filename_aria"/);
+    assert.match(html, /<div id="titlebar-filename"[^>]*role="heading" aria-level="1"/);
     assert.doesNotMatch(html, /id="top-hints"/);
     assert.match(css, /body:not\(\.ghost-mode\) #viewer-filename\s*\{\s*display:\s*none !important;/);
     assert.match(css, /body\.ghost-mode \.titlebar-filename\s*\{\s*display:\s*none;/);
@@ -79,13 +79,9 @@ describe('title bar Help menu', () => {
     assert.match(css, /\.titlebar-filename-extension\s*\{[\s\S]*?color:\s*color-mix\([\s\S]*?opacity:\s*0\.78;/);
     assert.match(appJs, /function syncFilenameDisplays\(image = state\.images\[state\.current\]\)/);
     assert.match(appJs, /splitFilenameExtension\(name\)/);
-    assert.match(appJs, /showPropertiesPanel\(image\.file\.path\)/);
-    for (const lang of ['en', 'es']) {
-      for (const key of ['titlebar_filename_aria', 'titlebar_filename_hint']) {
-        assert.equal(typeof ui[lang][key], 'string');
-        assert.ok(ui[lang][key].trim().length > 0);
-      }
-    }
+    assert.match(css, /\.titlebar-filename\s*\{[^}]*-webkit-app-region:\s*drag !important;/);
+    assert.match(appJs, /titlebarFilename\.dataset\.tooltip = filePath;/);
+    assert.doesNotMatch(appJs, /filename\.addEventListener\('pointerdown'|electronAPI\.dragTitle/);
   });
 
   it('uses distinct fullscreen and slideshow icon silhouettes', () => {

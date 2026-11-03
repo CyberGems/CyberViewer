@@ -1,6 +1,6 @@
 'use strict';
 // Run through scripts/test-workspace.cjs, never against the user's app data.
-const { app, BrowserWindow, nativeImage, screen } = require('electron');
+const { app, BrowserWindow, nativeImage } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const assert = require('node:assert/strict');
@@ -283,75 +283,18 @@ app.whenReady().then(async () => {
       'active tab should be visible after the strip is laid out again: ' + JSON.stringify(afterResize));
     console.log('PASS overflow: active tab remains visible after restoring 40 tabs and resizing');
 
-    const title = await evaluate("const rect = $('titlebar-filename').getBoundingClientRect(); return { x: Math.round(rect.x + rect.width / 2), y: Math.round(rect.y + rect.height / 2) };");
-    win.focus();
-    const startPosition = win.getPosition();
-    const input = (type, x, y) => win.webContents.sendInputEvent({
-      type, x, y, globalX: startPosition[0] + x, globalY: startPosition[1] + y, button: 'left', clickCount: 1
-    });
-    input('mouseMove', title.x, title.y);
-    input('mouseDown', title.x, title.y);
-    input('mouseUp', title.x, title.y);
-    await waitFor(() => evaluate("return $('modal-properties').classList.contains('active');"), 'title click opens properties');
+    const titleRegion = await evaluate("const el = $('titlebar-filename'); return {" +
+      "tag: el.tagName, region: getComputedStyle(el).getPropertyValue('-webkit-app-region')," +
+      "name: el.textContent, tooltip: el.dataset.tooltip };");
+    assert.equal(titleRegion.tag, 'DIV');
+    assert.equal(titleRegion.region, 'drag');
+    assert.equal(titleRegion.name, 'overflow-40.png');
+    assert.equal(titleRegion.tooltip, path.join(dataDir, 'overflow-40.png'));
+    await evaluate("$('footer-size').click();");
+    await waitFor(() => evaluate("return $('modal-properties').classList.contains('active');"),
+      'footer still opens Properties');
     await evaluate("closeModal('modal-properties');");
-    // sendInputEvent delivers clicks here, but Windows does not forward its
-    // mouseMove events to a captured pointer. Dispatch the drag gesture in the
-    // renderer while checking the real BrowserWindow position in main.
-    const dragTitle = async (dx = 48, dy = 28) => {
-      const point = await evaluate("const rect = $('titlebar-filename').getBoundingClientRect(); return { x: Math.round(rect.x + rect.width / 2), y: Math.round(rect.y + rect.height / 2) };");
-      const position = win.getPosition();
-      const start = { x: position[0] + point.x, y: position[1] + point.y };
-      await evaluate("const el = $('titlebar-filename');" +
-        "const fire = (type, x, y) => el.dispatchEvent(new PointerEvent(type, {" +
-        "bubbles: true, pointerId: 42, isPrimary: true, button: 0, clientX: " + point.x +
-        ", clientY: " + point.y + ", screenX: x, screenY: y }));" +
-        "fire('pointerdown', " + start.x + ", " + start.y + ");" +
-        "fire('pointermove', " + (start.x + dx) + ", " + (start.y + dy) + ");" +
-        "fire('pointerup', " + (start.x + dx) + ", " + (start.y + dy) + ");" +
-        "el.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));");
-    };
-    const beforeDrag = win.getPosition();
-    await dragTitle();
-    await waitFor(() => win.getPosition()[0] > beforeDrag[0] + 20, 'title drag moves the window');
-    assert.equal(await evaluate("return $('modal-properties').classList.contains('active');"), false,
-      'dragging the title must not open Properties');
-    win.maximize();
-    await waitFor(() => win.isMaximized(), 'window maximized for title drag');
-    await dragTitle();
-    await waitFor(() => !win.isMaximized(), 'title drag restores maximized window');
-    assert.equal(await evaluate("return $('modal-properties').classList.contains('active');"), false);
-    console.log('PASS title bar: click opens Properties, drag moves normal and maximized windows');
-    const displays = screen.getAllDisplays().sort((a, b) => a.scaleFactor - b.scaleFactor);
-    if (displays.length > 1 && displays[0].scaleFactor !== displays[displays.length - 1].scaleFactor) {
-      const lowDisplay = displays[0];
-      const highDisplay = displays[displays.length - 1];
-      const low = lowDisplay.workArea;
-      const high = highDisplay.workArea;
-      win.setBounds({ x: low.x + 80, y: low.y + 50, width: 900, height: 550 });
-      await delay(100);
-      const beforeCrossing = win.getBounds();
-      await dragTitle(high.x + 100 - beforeCrossing.x, high.y + 50 - beforeCrossing.y);
-      await waitFor(() => screen.getDisplayMatching(win.getBounds()).id === highDisplay.id,
-        'title drag crosses DPI boundary');
-      await delay(300);
-      const afterCrossing = win.getBounds();
-      assert.ok(Math.abs(afterCrossing.width - beforeCrossing.width) <= 2 &&
-        Math.abs(afterCrossing.height - beforeCrossing.height) <= 2,
-      'dragging between DPI scales must preserve window size: ' +
-        JSON.stringify({ beforeCrossing, afterCrossing, scales: displays.map(display => display.scaleFactor) }));
-      await dragTitle(low.x + 80 - afterCrossing.x, low.y + 50 - afterCrossing.y);
-      await waitFor(() => screen.getDisplayMatching(win.getBounds()).id === lowDisplay.id,
-        'title drag returns across DPI boundary');
-      await delay(300);
-      const afterReturn = win.getBounds();
-      // Windows rounds the nonclient frame by a few pixels on the reverse DPI
-      // crossing. The large 20% inflation must remain corrected.
-      assert.ok(Math.abs(afterReturn.width - beforeCrossing.width) <= 4 &&
-        Math.abs(afterReturn.height - beforeCrossing.height) <= 4,
-      'returning across DPI scales must preserve window size: ' +
-        JSON.stringify({ beforeCrossing, afterReturn, scales: displays.map(display => display.scaleFactor) }));
-      console.log('PASS title bar: window size stays fixed in both directions across DPI scales');
-    }
+    console.log('PASS title bar: document title uses the native drag region; Properties remain accessible from the footer');
   }
   app.exit(0);
 }).catch(error => { console.error(error.stack || error); app.exit(1); });

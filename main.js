@@ -280,8 +280,6 @@ function registerMediaProtocol() {
 }
 
 let win;
-let titlebarDrag = null;
-let stopStartupBoundsSettling = null;
 let youtubePlayer;
 let tray = null;
 let isQuitting = false;
@@ -611,7 +609,7 @@ function createWindow() {
       boundsSettling = true;
       const reassertStartupBounds = () => {
         try {
-          if (!boundsSettling || !win || win.isDestroyed() || win.isMaximized()) return;
+          if (!win || win.isDestroyed() || win.isMaximized()) return;
           if (!boundsMatch(startupWant, win.getBounds())) {
             const fixed = applyBoundsExact(win, startupWant, startupArea);
             diagWindow('reveal-bounds-reassert', { fixed });
@@ -619,17 +617,15 @@ function createWindow() {
         } catch (_) { /* ignore */ }
       };
       const settleHandler = () => reassertStartupBounds();
-      stopStartupBoundsSettling = () => {
-        boundsSettling = false;
-        if (win && !win.isDestroyed()) win.removeListener('resize', settleHandler);
-        stopStartupBoundsSettling = null;
-      };
       win.on('resize', settleHandler);
       reassertStartupBounds();
       // Second pass after the fade tick: the deferred rescale lands within the
       // first frames after show(), never later.
       setTimeout(reassertStartupBounds, 64);
-      setTimeout(() => stopStartupBoundsSettling?.(), 2500);
+      setTimeout(() => {
+        boundsSettling = false;
+        if (win && !win.isDestroyed()) win.removeListener('resize', settleHandler);
+      }, 2500);
     }
 
     const fadeIn = () => {
@@ -730,7 +726,6 @@ function createWindow() {
     updateTrayMenu();
   });
   win.on('blur', () => {
-    titlebarDrag = null;
     if (win && !win.isDestroyed()) win.webContents.send('window-blur');
   });
 
@@ -1218,43 +1213,6 @@ ipcMain.handle('open-taskbar-settings', async () => {
 
 // ── IPC ──
 ipcMain.on('win-minimize', () => win.minimize());
-ipcMain.on('win-title-drag', (event, phase, point) => {
-  if (!win || win.isDestroyed() || event.sender !== win.webContents ||
-      event.senderFrame !== win.webContents.mainFrame) return;
-  if (phase === 'end') { titlebarDrag = null; return; }
-  if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y) ||
-      Math.abs(point.x) > 100000 || Math.abs(point.y) > 100000) return;
-  if (phase === 'start') {
-    if (win.isFullScreen() || !Number.isFinite(point.clientX) || !Number.isFinite(point.clientY)) return;
-    titlebarDrag = { x: point.x, y: point.y, clientX: point.clientX, clientY: point.clientY,
-      bounds: win.getBounds() };
-    return;
-  }
-  if (phase !== 'move' || !titlebarDrag) return;
-  stopStartupBoundsSettling?.();
-  if (win.isMaximized()) {
-    const normal = win.getNormalBounds();
-    const anchorX = Math.max(20, Math.min(normal.width - 20,
-      Math.round(titlebarDrag.clientX / titlebarDrag.bounds.width * normal.width)));
-    const anchorY = Math.max(0, Math.min(48, titlebarDrag.clientY));
-    win.unmaximize();
-    const x = Math.round(point.x - anchorX);
-    const y = Math.round(point.y - anchorY);
-    applyBoundsExact(win, { x, y, width: normal.width, height: normal.height });
-    titlebarDrag = { ...titlebarDrag, x: point.x, y: point.y, bounds: win.getBounds() };
-  } else {
-    const want = {
-      x: Math.round(titlebarDrag.bounds.x + point.x - titlebarDrag.x),
-      y: Math.round(titlebarDrag.bounds.y + point.y - titlebarDrag.y),
-      width: titlebarDrag.bounds.width,
-      height: titlebarDrag.bounds.height
-    };
-    win.setPosition(want.x, want.y);
-    // Windows can inflate the window by the ratio between monitor DPI scales
-    // during setPosition. Restore the size captured before the drag began.
-    if (!boundsMatch(want, win.getBounds())) applyBoundsExact(win, want);
-  }
-});
 ipcMain.on('win-maximize', () => {
   if (!win || win.isDestroyed()) return;
   // Leave exclusive fullscreen before toggle maximize/restore

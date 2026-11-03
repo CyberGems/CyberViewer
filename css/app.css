@@ -184,7 +184,7 @@
     border-right: 1px solid rgba(var(--cyber-accent-rgb), 0.22);
   }
 
-  #topbar button, #topbar input, .titlebar-filename { -webkit-app-region: no-drag; }
+  #topbar button, #topbar input { -webkit-app-region: no-drag; }
 
   #main {
     position: absolute !important;
@@ -5535,12 +5535,13 @@
     letter-spacing: 0.02em;
     text-overflow: ellipsis;
     white-space: nowrap;
-    cursor: pointer;
+    cursor: move;
     padding: 5px 8px;
     border-radius: 4px;
-    -webkit-app-region: no-drag !important;
+    -webkit-app-region: drag !important;
     user-select: none;
   }
+  .titlebar-filename > span { pointer-events: none; }
   .titlebar-filename-base {
     min-width: 0;
     overflow: hidden;
@@ -5557,14 +5558,12 @@
   }
   .titlebar-filename:empty,
   .titlebar-filename[data-empty="true"] { display: none; }
-  .titlebar-filename:hover,
-  .titlebar-filename:focus-visible {
+  .titlebar-filename:hover {
     color: var(--cyber-accent-ink);
     background: rgba(var(--cyber-accent-rgb), 0.09);
     outline: none;
   }
-  .titlebar-filename:hover .titlebar-filename-extension,
-  .titlebar-filename:focus-visible .titlebar-filename-extension {
+  .titlebar-filename:hover .titlebar-filename-extension {
     color: var(--cyber-accent-ink);
     opacity: 1;
   }

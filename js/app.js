@@ -689,8 +689,6 @@ function syncFilenameDisplays(image = state.images[state.current]) {
   const titlebarFilename = $('titlebar-filename');
   const name = image && image.file ? image.file.name : '';
   const filePath = image && image.file ? image.file.path : '';
-  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
-  const t = I18N[lang] || I18N.en || {};
 
   if (viewerFilename) {
     viewerFilename.textContent = name || '';
@@ -718,9 +716,7 @@ function syncFilenameDisplays(image = state.images[state.current]) {
     viewerFilename.classList.add('tooltip-bottom');
   }
   if (titlebarFilename) {
-    const actionHint = t.titlebar_filename_hint || 'Click to open properties';
-    // The title bar uses the tooltip card (Ctrl+I badge), not the CSS bubble.
-    titlebarFilename.dataset.tooltip = `${filePath}\n${actionHint}`;
+    titlebarFilename.dataset.tooltip = filePath;
   }
 }
 
@@ -9667,50 +9663,8 @@ $('btn-go-end').addEventListener('click', (e) => {
 $('btn-config').addEventListener('click', openConfig);
 
 (function initTitlebarControls() {
-  const filename = $('titlebar-filename');
   const shortcutsButton = $('btn-shortcuts');
   const shortcutsPopover = $('shortcuts-popover');
-
-  if (filename) {
-    let drag = null;
-    let suppressClick = false;
-    filename.addEventListener('pointerdown', event => {
-      if (!isElectron || event.button !== 0 || !event.isPrimary) return;
-      suppressClick = false;
-      drag = { id: event.pointerId, x: event.screenX, y: event.screenY, moved: false };
-      try { filename.setPointerCapture(event.pointerId); } catch (_) { /* capture unavailable */ }
-      window.electronAPI.dragTitle('start', {
-        x: event.screenX, y: event.screenY, clientX: event.clientX, clientY: event.clientY
-      });
-      ttHide();
-    });
-    filename.addEventListener('pointermove', event => {
-      if (!drag || event.pointerId !== drag.id) return;
-      if (!drag.moved && Math.hypot(event.screenX - drag.x, event.screenY - drag.y) < 5) return;
-      drag.moved = true;
-      window.electronAPI.dragTitle('move', { x: event.screenX, y: event.screenY });
-    });
-    const finishDrag = event => {
-      if (!drag || (event && event.pointerId !== drag.id)) return;
-      if (drag.moved) suppressClick = true;
-      drag = null;
-      window.electronAPI.dragTitle('end');
-    };
-    filename.addEventListener('pointerup', finishDrag);
-    filename.addEventListener('pointercancel', finishDrag);
-    filename.addEventListener('lostpointercapture', finishDrag);
-    window.addEventListener('blur', () => finishDrag());
-    filename.addEventListener('click', event => {
-      if (suppressClick && event.detail > 0) {
-        suppressClick = false;
-        event.preventDefault();
-        event.stopPropagation();
-        return;
-      }
-      const image = state.images[state.current];
-      if (image && image.file && image.file.path) showPropertiesPanel(image.file.path);
-    });
-  }
 
   if (!shortcutsButton || !shortcutsPopover) return;
   shortcutsButton.addEventListener('click', () => {
