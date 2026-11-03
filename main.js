@@ -1240,13 +1240,19 @@ ipcMain.on('win-title-drag', (event, phase, point) => {
     win.unmaximize();
     const x = Math.round(point.x - anchorX);
     const y = Math.round(point.y - anchorY);
-    win.setPosition(x, y);
+    applyBoundsExact(win, { x, y, width: normal.width, height: normal.height });
     titlebarDrag = { ...titlebarDrag, x: point.x, y: point.y, bounds: win.getBounds() };
   } else {
-    win.setPosition(
-      Math.round(titlebarDrag.bounds.x + point.x - titlebarDrag.x),
-      Math.round(titlebarDrag.bounds.y + point.y - titlebarDrag.y)
-    );
+    const want = {
+      x: Math.round(titlebarDrag.bounds.x + point.x - titlebarDrag.x),
+      y: Math.round(titlebarDrag.bounds.y + point.y - titlebarDrag.y),
+      width: titlebarDrag.bounds.width,
+      height: titlebarDrag.bounds.height
+    };
+    win.setPosition(want.x, want.y);
+    // Windows can inflate the window by the ratio between monitor DPI scales
+    // during setPosition. Restore the size captured before the drag began.
+    if (!boundsMatch(want, win.getBounds())) applyBoundsExact(win, want);
   }
 });
 ipcMain.on('win-maximize', () => {
