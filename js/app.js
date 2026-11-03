@@ -253,7 +253,7 @@ const state = {
       slideshowEnterFullscreen: true,
       restoreSession: false,
       videoAutoplay: true,
-      keepMediaPausedOnTabReturn: false,
+      keepMediaPausedOnTabReturn: true,
       videoLoop: false,
       videoVolume: 1,
       videoMuted: false,
@@ -7433,7 +7433,7 @@ function openConfig() {
   $('cfg-autostart').checked = s.autoStart;
   $('cfg-contextmenu').checked = s.contextMenuEnabled || false;
   $('cfg-restore-session').checked = s.restoreSession === true;
-  $('cfg-keep-media-paused').checked = s.keepMediaPausedOnTabReturn === true;
+  $('cfg-keep-media-paused').checked = s.keepMediaPausedOnTabReturn !== false;
   if ($('cfg-animated-gifs')) $('cfg-animated-gifs').checked = s.animateGifs !== false;
   $('cfg-show-filename').checked = s.showFileName !== false;
   $('cfg-lang').value = s.language || 'en';
@@ -7617,7 +7617,7 @@ function getFactoryAppSettings() {
     slideshowEnterFullscreen: true,
     restoreSession: false,
     videoAutoplay: true,
-    keepMediaPausedOnTabReturn: false,
+    keepMediaPausedOnTabReturn: true,
     mediaSiblingsNewTab: false,
     videoLoop: false,
     videoVolume: 1,

@@ -36,6 +36,14 @@
     return url;
   }
 
+  function shouldPlayMediaOnOpen(settings, image) {
+    if (image?.suppressAutoplayUntilPlayed) return false;
+    if (settings?.keepMediaPausedOnTabReturn !== false && typeof image?.pausedOnTabReturn === 'boolean') {
+      return !image.pausedOnTabReturn;
+    }
+    return settings?.videoAutoplay !== false;
+  }
+
   /**
    * Build a CSS Canvas filter string from basic adjust controls.
    * Tone sliders use -100..100 with 0 as neutral (maps to factor 1.0).
@@ -370,6 +378,7 @@
 
   return {
     mediaUrl,
+    shouldPlayMediaOnOpen,
     canvasExport,
     buildCssFilter,
     isIdentityAdjust,

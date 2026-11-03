@@ -68,8 +68,7 @@ window.CVYouTube = (() => {
     window.CVVideo.syncTools(); status();
     const value = { ...source, videoId: view?.youtubeVideoId || source.videoId,
       index: view?.youtubeIndex ?? source.index, startSeconds: view?.videoTime ?? source.startSeconds,
-      autoplay: state.settings.app.videoAutoplay !== false && !image.suppressAutoplayUntilPlayed
-        && !(state.settings.app.keepMediaPausedOnTabReturn && image.pausedOnTabReturn),
+      autoplay: window.CVMedia.shouldPlayMediaOnOpen(state.settings.app, image),
       language: state.settings.app.language };
     const current = id;
     window.electronAPI.youtube.open(current, value, bounds()).then(result => {

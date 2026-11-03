@@ -250,8 +250,7 @@ window.CVVideo = (() => {
       syncTools(); sync(); reveal();
       window.CVAudioVisuals.refresh();
       onReady();
-      if (live() && state.settings.app.videoAutoplay !== false && !image.suppressAutoplayUntilPlayed
-        && !(state.settings.app.keepMediaPausedOnTabReturn && image.pausedOnTabReturn)) void play();
+      if (live() && window.CVMedia.shouldPlayMediaOnOpen(state.settings.app, image)) void play();
     };
     element.addEventListener('loadeddata', ready);
     element.addEventListener('seeked', ready);

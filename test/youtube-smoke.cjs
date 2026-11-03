@@ -180,11 +180,16 @@ app.whenReady().then(async () => {
     await evaluate("window.CVYouTube.command('mute'); window.CVYouTube.command('next');");
     await waitFor(async () => (await info())?.index === 1 && (await info())?.state === 1, 'next playlist video');
     const second = (await info()).videoId;
+    const listId = await evaluate('return window.CVWorkspace.model.activeId;');
+    await evaluate('state.settings.app.videoAutoplay=false; state.settings.app.keepMediaPausedOnTabReturn=true; await window.electronAPI.saveSettings(state.settings.app);');
+    await evaluate('await window.CVWorkspace.activate(' + JSON.stringify(firstId) + ');'); await loaded();
+    await evaluate('await window.CVWorkspace.activate(' + JSON.stringify(listId) + ');');
+    await waitFor(async () => (await info())?.videoId === second && (await info())?.state === 1,
+      'playing playlist resumes on tab return with new-media autoplay off');
+    await evaluate('state.settings.app.videoAutoplay=true; await window.electronAPI.saveSettings(state.settings.app);');
     await evaluate("window.CVYouTube.command('pause');");
     await waitFor(async () => (await info()).state === 2, 'playlist paused');
-    const listId = await evaluate('return window.CVWorkspace.model.activeId;');
     await evaluate('await window.CVWorkspace.activate(' + JSON.stringify(firstId) + ');'); await loaded();
-    await evaluate('state.settings.app.videoAutoplay=true; state.settings.app.keepMediaPausedOnTabReturn=true; await window.electronAPI.saveSettings(state.settings.app);');
     await evaluate('await window.CVWorkspace.activate(' + JSON.stringify(listId) + ');');
     await waitFor(async () => (await info())?.videoId === second && (await info())?.index === 1, 'playlist selection across tab switches');
     assert.equal((await info()).state, 5, 'Optional pause is preserved across YouTube tabs');

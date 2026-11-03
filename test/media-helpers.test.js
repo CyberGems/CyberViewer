@@ -4,6 +4,7 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const {
   mediaUrl,
+  shouldPlayMediaOnOpen,
   canvasExport,
   buildCssFilter,
   isIdentityAdjust,
@@ -20,6 +21,20 @@ const {
   folderNameFromPath,
   splitFilenameExtension
 } = require('../js/media-helpers');
+
+describe('tab media playback', () => {
+  it('restores playing and paused tabs independently of autoplay for new media', () => {
+    assert.equal(shouldPlayMediaOnOpen({ videoAutoplay: false, keepMediaPausedOnTabReturn: true }, { pausedOnTabReturn: false }), true);
+    assert.equal(shouldPlayMediaOnOpen({ videoAutoplay: true, keepMediaPausedOnTabReturn: true }, { pausedOnTabReturn: true }), false);
+    assert.equal(shouldPlayMediaOnOpen({ videoAutoplay: true }, { pausedOnTabReturn: true }), false);
+    assert.equal(shouldPlayMediaOnOpen({ videoAutoplay: false, keepMediaPausedOnTabReturn: true }, {}), false);
+    assert.equal(shouldPlayMediaOnOpen({ videoAutoplay: true, keepMediaPausedOnTabReturn: true }, {}), true);
+    assert.equal(shouldPlayMediaOnOpen({ videoAutoplay: true, keepMediaPausedOnTabReturn: false }, { pausedOnTabReturn: true }), true);
+    assert.equal(shouldPlayMediaOnOpen({ videoAutoplay: false, keepMediaPausedOnTabReturn: false }, { pausedOnTabReturn: false }), false);
+    assert.equal(shouldPlayMediaOnOpen({ videoAutoplay: true, keepMediaPausedOnTabReturn: true },
+      { pausedOnTabReturn: false, suppressAutoplayUntilPlayed: true }), false);
+  });
+});
 
 describe('mediaUrl', () => {
   it('builds cvlocal query URL from fs path', () => {
