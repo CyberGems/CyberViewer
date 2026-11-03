@@ -240,6 +240,31 @@ app.whenReady().then(async () => {
     await evaluate("$('btn-confirm-cancel').click();");
     assert.equal(win.isDestroyed(), false);
     console.log('PASS restore: actual restart, clipboard pixels, pending rotation/viewport, missing-file relocation, tray unloading, EN/ES screenshots, disable without data loss, close/quit cancellation');
+  } else if (phase === 'overflow') {
+    await loaded();
+    if (!win.isVisible()) win.show();
+    await waitFor(() => win.isVisible(), 'overflow window visible');
+    await evaluate('await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));');
+    const position = await evaluate(`const list = $('image-tab-list');
+      const active = list.querySelector('.image-tab-shell.active');
+      const viewport = list.getBoundingClientRect();
+      const tab = active.getBoundingClientRect();
+      return { count: window.CVWorkspace.model.tabs.length, activeId: window.CVWorkspace.model.activeId,
+        scrollLeft: list.scrollLeft, viewport: viewport.toJSON(), tab: tab.toJSON() };`);
+    assert.equal(position.count, 40);
+    assert.equal(position.activeId, 'tab-40');
+    assert.ok(position.tab.left >= position.viewport.left - 1 && position.tab.right <= position.viewport.right + 1,
+      'restored active tab should be visible in the tab strip: ' + JSON.stringify(position));
+    const afterResize = await evaluate(`const list = $('image-tab-list');
+      list.scrollLeft = 0;
+      window.dispatchEvent(new Event('resize'));
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const viewport = list.getBoundingClientRect();
+      const tab = list.querySelector('.image-tab-shell.active').getBoundingClientRect();
+      return { scrollLeft: list.scrollLeft, viewport: viewport.toJSON(), tab: tab.toJSON() };`);
+    assert.ok(afterResize.tab.left >= afterResize.viewport.left - 1 && afterResize.tab.right <= afterResize.viewport.right + 1,
+      'active tab should be visible after the strip is laid out again: ' + JSON.stringify(afterResize));
+    console.log('PASS overflow: active tab remains visible after restoring 40 tabs and resizing');
   }
   app.exit(0);
 }).catch(error => { console.error(error.stack || error); app.exit(1); });

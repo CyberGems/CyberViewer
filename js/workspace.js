@@ -311,6 +311,16 @@ window.CVWorkspace = (() => {
     left.disabled = list.scrollLeft <= 1;
     right.disabled = list.scrollLeft >= list.scrollWidth - list.clientWidth - 1;
   }
+  function revealActiveTab() {
+    const list = $('image-tab-list');
+    const active = list?.querySelector('.image-tab-shell.active');
+    if (!active || !list.clientWidth) return;
+    const viewport = list.getBoundingClientRect();
+    const tab = active.getBoundingClientRect();
+    if (tab.left < viewport.left) list.scrollLeft -= viewport.left - tab.left;
+    else if (tab.right > viewport.right) list.scrollLeft += tab.right - viewport.right;
+    syncTabOverflow();
+  }
   // ── Tab drag (pointer-driven) ──
   // Native DnD let the OS ghost wander across the whole interface and hid the
   // drop outcome. This drag keeps the ghost clamped to the strip band, shifts
@@ -519,8 +529,7 @@ window.CVWorkspace = (() => {
       position++;
     }
     nodes.forEach(node => node.remove());
-    const active = list.querySelector('.image-tab-shell.active');
-    active?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    revealActiveTab();
     $('image-tabs-list-btn').setAttribute('aria-label', text('tabs_list').replace('{count}', model.tabs.length));
     $('image-tabs-count').textContent = model.tabs.length;
     $('image-tabs-open').setAttribute('aria-label', text('menu_open'));
@@ -669,6 +678,7 @@ window.CVWorkspace = (() => {
     }
     ready = true;
     render();
+    requestAnimationFrame(revealActiveTab);
     if (isElectron) window.electronAPI.workspaceReady();
   }
   async function edit(callback) {
@@ -841,7 +851,10 @@ window.CVWorkspace = (() => {
     bindHoldScroll($('image-tabs-scroll-right'), 1);
     bindTabDrag();
     tabList.addEventListener('scroll', syncTabOverflow, { passive: true });
-    window.addEventListener('resize', syncTabOverflow);
+    window.addEventListener('resize', revealActiveTab);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) requestAnimationFrame(revealActiveTab);
+    });
     $('btn-relocate-tab').addEventListener('click', async () => {
       const id = model.activeId;
       const result = await window.electronAPI.openFile();
