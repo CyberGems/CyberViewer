@@ -65,6 +65,19 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("return !$('youtube-url-error').hidden && window.CVWorkspace.model.tabs.length===0;"), true);
     await evaluate("$('youtube-url').value='https://youtu.be/M7lc1UVf-VE?t=12'; $('youtube-form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));");
     await loaded();
+    const playerFrame = () => child()?.mainFrame.frames.find(frame =>
+      /^https:\/\/www\.youtube(?:-nocookie)?\.com\/embed\//.test(frame.url));
+    await waitFor(playerFrame, 'YouTube embed frame');
+    const embed = playerFrame();
+    await waitFor(() => embed.executeJavaScript('window.__cyberviewerFileDragBridge === true').catch(() => false), 'file drag bridge in embed');
+    const forwarded = await embed.executeJavaScript(`(() => {
+      const transfer = new DataTransfer();
+      transfer.items.add(new File(['test'], 'sample.png', { type: 'image/png' }));
+      return !document.body.dispatchEvent(new DragEvent('dragenter', { bubbles: true, cancelable: true, dataTransfer: transfer }));
+    })()`);
+    assert.equal(forwarded, true, 'cross-origin embed accepts the OS file drag');
+    await waitFor(() => child().executeJavaScript(`[...document.body.children].some(el =>
+      el.style.zIndex === '2147483647' && el.style.display === 'block')`), 'file drop shield appears over embed');
     const dropShield = await child().executeJavaScript(`(() => {
       const transfer = new DataTransfer();
       transfer.items.add(new File(['test'], 'sample.png', { type: 'image/png' }));
