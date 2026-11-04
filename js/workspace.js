@@ -154,10 +154,12 @@ window.CVWorkspace = (() => {
     if (!accepted.length) return false;
     capture();
     let target;
+    let insertion = Number.isInteger(options.insertAt) ? Math.max(0, options.insertAt) : null;
     try {
       for (let index = 0; index < accepted.length; index++) {
         const file = accepted[index];
         const tab = model.open(imageForFile(file), { activate: false, source: options.source, view: options.view });
+        if (insertion !== null) model.moveTo(tab.id, insertion++);
         if (index === initialIdx) target = tab;
       }
     } catch (error) {
@@ -170,6 +172,27 @@ window.CVWorkspace = (() => {
     else { render(); changed(); }
     prune();
     return !!target;
+  }
+  function dropFiles(files, { insertAt = null, replace = false } = {}) {
+    const accepted = Array.from(files).filter(window.CVFormats.isSupportedFile);
+    if (!accepted.length || !canSwitch()) return false;
+    if (!replace || !model.active) return openFiles(accepted, 0, { insertAt });
+    const previous = model.active;
+    const position = model.tabs.indexOf(previous);
+    if (accepted[0].path && pathKey(accepted[0].path) === pathKey(previous.image.file.path)) {
+      return openFiles(accepted, 0, { insertAt: position });
+    }
+    const finish = () => {
+      if (!model.tabs.includes(previous)) return;
+      capture();
+      previous.view.currentRotation = 0;
+      previous.view.visualRotation = 0;
+      previous.view.hasChanges = false;
+      model.close(previous.id);
+      void openFiles(accepted, 0, { insertAt: position });
+    };
+    confirmDiscard([previous], finish);
+    return true;
   }
   async function openPath(filePath, options = {}) {
     if (!filePath) return false;
@@ -921,7 +944,7 @@ window.CVWorkspace = (() => {
     render();
   }
   return { model, get busy() { return busy; }, get ready() { return ready; }, capture, render,
-    activate, openPath, openFiles, openYouTube, beforeShow, viewFor, restoreView, closeTabs, reopen,
+    activate, openPath, openFiles, dropFiles, openYouTube, beforeShow, viewFor, restoreView, closeTabs, reopen,
     contextMenu, barMenu, clearPreloads, release, changed, flush, settingsChanged, restore, edit, dialog,
     suspend, resume, imageBound, relocate, fileDeleted, initialize, isEditing };
 })();

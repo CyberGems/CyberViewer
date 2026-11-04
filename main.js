@@ -173,6 +173,7 @@ function loadSettings() {
         if (data.app.animateGifs === undefined) data.app.animateGifs = true;
         if (typeof data.app.videoAutoplay !== 'boolean') data.app.videoAutoplay = true;
         if (typeof data.app.keepMediaPausedOnTabReturn !== 'boolean') data.app.keepMediaPausedOnTabReturn = true;
+        if (!['new-tab', 'replace'].includes(data.app.centerDropAction)) data.app.centerDropAction = 'new-tab';
         if (typeof data.app.mediaSiblingsNewTab !== 'boolean') data.app.mediaSiblingsNewTab = false;
         if (data.app.videoLoop === undefined) data.app.videoLoop = false;
         if (!Number.isFinite(data.app.videoVolume)) data.app.videoVolume = 1;
@@ -225,6 +226,7 @@ function loadSettings() {
       restoreSession: false,
       videoAutoplay: true,
       keepMediaPausedOnTabReturn: true,
+      centerDropAction: 'new-tab',
       mediaSiblingsNewTab: false,
       showFileName: true,
       animateGifs: true,
@@ -1320,6 +1322,17 @@ ipcMain.on('youtube:resize', (event, id, bounds) => { if (youtubePlayer?.accepts
 ipcMain.on('youtube:command', (event, id, value) => { if (youtubePlayer?.accepts(event)) youtubePlayer.command(id, value); });
 ipcMain.on('youtube:close', (event, id) => { if (youtubePlayer?.accepts(event)) youtubePlayer.close(id); });
 ipcMain.on('youtube:state', (event, value) => youtubePlayer?.report(event, value));
+ipcMain.on('youtube:file-drop', (event, files) => {
+  if (!youtubePlayer?.acceptsDrop(event) || !Array.isArray(files)) return;
+  const entries = files.slice(0, 2000).filter(file => file && typeof file.path === 'string' &&
+    file.path.length > 0 && file.path.length <= 4096).map(file => ({
+    path: file.path,
+    name: typeof file.name === 'string' ? file.name.slice(0, 512) : path.basename(file.path),
+    size: Number.isFinite(file.size) ? Math.max(0, file.size) : 0,
+    type: typeof file.type === 'string' ? file.type.slice(0, 128) : ''
+  }));
+  if (entries.length) win.webContents.send('youtube:file-drop', entries);
+});
 
 ipcMain.handle('tabs:native-context-menu', (event, items) => {
   if (!youtubePlayer?.accepts(event) || !Array.isArray(items) ||

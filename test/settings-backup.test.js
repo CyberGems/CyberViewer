@@ -19,6 +19,7 @@ describe('pickSettings', () => {
       imageOutline: true,
       videoAutoplay: false,
       keepMediaPausedOnTabReturn: true,
+      centerDropAction: 'replace',
       language: 'es',
       accentColor: '#FF2D78',
       extra: 'nope',
@@ -28,6 +29,7 @@ describe('pickSettings', () => {
     assert.equal(out.imageOutline, true);
     assert.equal(out.videoAutoplay, false);
     assert.equal(out.keepMediaPausedOnTabReturn, true);
+    assert.equal(out.centerDropAction, 'replace');
     assert.equal(out.language, 'es');
     assert.equal(out.accentColor, '#ff2d78');
     assert.equal(out.hudAutoHideDelay, 2500);
@@ -39,6 +41,7 @@ describe('pickSettings', () => {
       language: 'fr',
       accentColor: 'cyan',
       navZoomMode: 'zoom-forever',
+      centerDropAction: 'delete-all',
       slideshowIntervalMs: 1234
     });
     assert.deepEqual(out, {});

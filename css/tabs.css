@@ -26,6 +26,19 @@ body.ghost-mode #image-tabs, body.ghost-mode #tab-switcher { display: none; }
   scrollbar-width: none;
 }
 #image-tab-list::-webkit-scrollbar { display: none; }
+#tab-file-drop-marker {
+  display: none;
+  position: absolute;
+  top: 3px;
+  bottom: 1px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--cyber-accent);
+  box-shadow: 0 0 10px var(--cyber-accent);
+  pointer-events: none;
+  z-index: 10;
+}
+#image-tabs.file-drop-active #tab-file-drop-marker { display: block; }
 .image-tab-shell {
   flex: 0 0 182px;
   max-width: 230px;

@@ -12,8 +12,19 @@ const html = read('CyberViewer.html');
 const workspace = read('js/workspace.js');
 const appJs = read('js/app.js');
 const tabsCss = read('css/tabs.css');
+const ui = JSON.parse(read('i18n/ui.json'));
 
 describe('tab bar ui', () => {
+  it('localizes the viewer drop choice and tab insertion cue in both languages', () => {
+    for (const lang of ['en', 'es']) {
+      for (const key of ['drop_center_action', 'drop_center_action_desc', 'drop_center_new_tab', 'drop_center_replace']) {
+        assert.ok(ui[lang][key], `${lang}.${key}`);
+      }
+    }
+    assert.match(html, /id="cfg-drop-center-action"/);
+    assert.match(html, /id="tab-file-drop-marker"/);
+    assert.match(html, /id="drag-overlay-label"/);
+  });
   it('wires the plus button to the real file dialog and the empty strip to dblclick and context menu', () => {
     // The old wiring clicked a non-existent #btn-open node, so the button did nothing.
     assert.doesNotMatch(workspace, /\$\('btn-open'\)\.click\(\)/);

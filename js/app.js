@@ -6784,27 +6784,97 @@ if (typeof document !== 'undefined' && !isElectron) {
 // ── DRAG & DROP ──
 let dragCount = 0;
 
+function tabFileDropIndex(clientX) {
+  const shells = [...$('image-tab-list').querySelectorAll('.image-tab-shell')];
+  const index = shells.findIndex(shell => {
+    const rect = shell.getBoundingClientRect();
+    return clientX < rect.left + rect.width / 2;
+  });
+  return index < 0 ? shells.length : index;
+}
+
+function updateFileDropZone(clientX, clientY) {
+  const bar = $('image-tabs');
+  const barRect = bar.getBoundingClientRect();
+  const overTabs = !bar.hidden && clientY >= barRect.top && clientY < barRect.bottom;
+  bar.classList.toggle('file-drop-active', overTabs);
+  app.classList.toggle('drag-over-viewer', !overTabs);
+  if (!overTabs) {
+    const lang = state.settings?.app?.language || 'en';
+    const key = state.settings?.app?.centerDropAction === 'replace' && window.CVWorkspace?.model.active
+      ? 'drop_center_replace' : 'drop_center_new_tab';
+    const label = (I18N[lang] || I18N.en)[key];
+    if ($('drag-overlay-label').textContent !== label) $('drag-overlay-label').textContent = label;
+  }
+  if (overTabs) {
+    const list = $('image-tab-list');
+    const listRect = list.getBoundingClientRect();
+    if (clientX < listRect.left + 28) list.scrollLeft -= 14;
+    else if (clientX > listRect.right - 28) list.scrollLeft += 14;
+    const shells = [...$('image-tab-list').querySelectorAll('.image-tab-shell')];
+    const index = tabFileDropIndex(clientX);
+    const lineX = index < shells.length ? shells[index].getBoundingClientRect().left :
+      shells.at(-1)?.getBoundingClientRect().right || listRect.left;
+    $('tab-file-drop-marker').style.left = `${Math.round(Math.max(listRect.left, Math.min(lineX, listRect.right)) - barRect.left)}px`;
+  }
+  return overTabs;
+}
+
+function clearFileDropZone() {
+  dragCount = 0;
+  app.classList.remove('drag-over', 'drag-over-viewer');
+  $('image-tabs').classList.remove('file-drop-active');
+}
+
+function droppedFileEntries(files) {
+  return Array.from(files).map(file => {
+    const filePath = file.path || (isElectron && window.electronAPI.pathForFile ? window.electronAPI.pathForFile(file) : '');
+    return filePath ? { name: file.name, path: filePath, size: file.size, type: file.type } : file;
+  });
+}
+
+function dropOnViewer(files) {
+  return window.CVWorkspace.dropFiles(files, {
+    replace: state.settings?.app?.centerDropAction === 'replace'
+  });
+}
+
 document.addEventListener('dragenter', e => {
   if (e.dataTransfer.types.includes('Files')) {
     e.preventDefault();
     dragCount++;
     app.classList.add('drag-over');
+    updateFileDropZone(e.clientX, e.clientY);
   }
 });
 
 document.addEventListener('dragleave', () => {
   dragCount--;
-  if (dragCount <= 0) { dragCount = 0; app.classList.remove('drag-over'); }
+  if (dragCount <= 0) clearFileDropZone();
 });
 
-document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('dragover', e => {
+  if (!e.dataTransfer.types.includes('Files')) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+  app.classList.add('drag-over');
+  updateFileDropZone(e.clientX, e.clientY);
+});
 
 document.addEventListener('drop', e => {
   e.preventDefault();
-  dragCount = 0;
-  app.classList.remove('drag-over');
-  if (e.dataTransfer.files.length) loadFiles(e.dataTransfer.files);
+  const overTabs = updateFileDropZone(e.clientX, e.clientY);
+  const index = overTabs ? tabFileDropIndex(e.clientX) : null;
+  clearFileDropZone();
+  if (!e.dataTransfer.files.length) return;
+  const files = droppedFileEntries(e.dataTransfer.files);
+  if (overTabs) window.CVWorkspace.dropFiles(files, { insertAt: index });
+  else dropOnViewer(files);
 });
+
+if (isElectron && window.electronAPI.onYouTubeFileDrop) {
+  window.electronAPI.onYouTubeFileDrop(files => { clearFileDropZone(); dropOnViewer(files); });
+}
 
 // ── RESIZE ──
 window.addEventListener('resize', () => {
@@ -7425,6 +7495,7 @@ const CONFIG_CONTROL_ICON_BY_ID = {
   'cfg-contextmenu': 'settings',
   'cfg-restore-session': 'restore',
   'cfg-keep-media-paused': 'pause',
+  'cfg-drop-center-action': 'copy',
   'cfg-hotkey': 'keyboard',
   'cfg-export-settings': 'save',
   'cfg-autobackup-enabled': 'save',
@@ -7499,6 +7570,7 @@ function openConfig() {
   $('cfg-contextmenu').checked = s.contextMenuEnabled || false;
   $('cfg-restore-session').checked = s.restoreSession === true;
   $('cfg-keep-media-paused').checked = s.keepMediaPausedOnTabReturn !== false;
+  $('cfg-drop-center-action').value = s.centerDropAction === 'replace' ? 'replace' : 'new-tab';
   if ($('cfg-animated-gifs')) $('cfg-animated-gifs').checked = s.animateGifs !== false;
   $('cfg-show-filename').checked = s.showFileName !== false;
   $('cfg-lang').value = s.language || 'en';
@@ -7627,6 +7699,7 @@ function collectConfigSettings() {
     contextMenuEnabled: $('cfg-contextmenu').checked,
     restoreSession: $('cfg-restore-session').checked,
     keepMediaPausedOnTabReturn: $('cfg-keep-media-paused').checked,
+    centerDropAction: $('cfg-drop-center-action').value === 'replace' ? 'replace' : 'new-tab',
     animateGifs: !!($('cfg-animated-gifs') && $('cfg-animated-gifs').checked),
     showFileName: $('cfg-show-filename').checked,
     toggleHotkey: $('cfg-hotkey') ? ($('cfg-hotkey').value.trim() || 'disabled') : 'disabled',
@@ -7683,6 +7756,7 @@ function getFactoryAppSettings() {
     restoreSession: false,
     videoAutoplay: true,
     keepMediaPausedOnTabReturn: true,
+    centerDropAction: 'new-tab',
     mediaSiblingsNewTab: false,
     videoLoop: false,
     videoVolume: 1,

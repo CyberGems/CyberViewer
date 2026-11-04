@@ -5479,7 +5479,21 @@
     pointer-events: none;
   }
 
-  #app.drag-over #drag-overlay { display: block; }
+  #app.drag-over-viewer #drag-overlay { display: block; }
+  #drag-overlay-label {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 7px 12px;
+    border: 1px solid var(--cyber-accent);
+    border-radius: 5px;
+    background: rgba(var(--cyber-shell-rgb), .94);
+    color: var(--cyber-accent-ink);
+    font: 600 12px/1.3 var(--font-ui);
+    white-space: nowrap;
+    box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), .2);
+  }
 
   /* scrollbar */
   /* Hotkey hints style — compact so topbar never feels cramped */

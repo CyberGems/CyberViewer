@@ -60,6 +60,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   clearSession: () => ipcRenderer.invoke('session:clear'),
   onWindowBlur: (cb) => ipcRenderer.on('window-blur', () => cb()),
   onWindowRestore: (cb) => ipcRenderer.on('window-restore', () => cb()),
+  onYouTubeFileDrop: (cb) => ipcRenderer.on('youtube:file-drop', (_event, files) => cb(files)),
   getPointerInWindow: () => ipcRenderer.invoke('win-pointer-position'),
   onConfirmFirstClose: (cb) => ipcRenderer.on('confirm-first-close', () => cb()),
   respondFirstClose: (action, remember) => ipcRenderer.invoke('first-close-choice', action, !!remember),

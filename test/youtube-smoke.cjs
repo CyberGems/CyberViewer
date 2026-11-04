@@ -65,6 +65,17 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("return !$('youtube-url-error').hidden && window.CVWorkspace.model.tabs.length===0;"), true);
     await evaluate("$('youtube-url').value='https://youtu.be/M7lc1UVf-VE?t=12'; $('youtube-form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));");
     await loaded();
+    const dropShield = await child().executeJavaScript(`(() => {
+      const transfer = new DataTransfer();
+      transfer.items.add(new File(['test'], 'sample.png', { type: 'image/png' }));
+      const frame = document.querySelector('iframe');
+      frame.dispatchEvent(new DragEvent('dragenter', { bubbles: true, cancelable: true, dataTransfer: transfer }));
+      const shield = [...document.body.children].find(el => el.getAttribute('aria-hidden') === 'true' && el.style.zIndex === '2147483647');
+      const visible = shield?.style.display === 'block';
+      shield.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: transfer }));
+      return { frame: !!frame, visible, cleared: shield.style.display === 'none' };
+    })()`);
+    assert.deepEqual(dropShield, { frame: true, visible: true, cleared: true }, 'YouTube view accepts file drags over its iframe');
     await evaluate("Object.defineProperty(navigator.clipboard, 'writeText', { configurable: true, value: async url => { window.__copiedYouTubeLink = url; } }); $('youtube-copy').click();");
     await waitFor(() => evaluate("return window.__copiedYouTubeLink === 'https://www.youtube.com/watch?v=M7lc1UVf-VE';"), 'standalone video link copied');
     const titleParts = await evaluate(`const image = state.images[state.current], previous = image.file.name;
@@ -199,7 +210,23 @@ app.whenReady().then(async () => {
     fs.writeFileSync(path.join(dir, 'youtube-playlist.png'), (await child().capturePage()).toPNG());
     const png = nativeImage.createFromBitmap(Buffer.alloc(80*60*4,255),{width:80,height:60}).toPNG();
     const image = path.join(dir,'still.png'); fs.writeFileSync(image,png);
-    await evaluate('await openImagePath(' + JSON.stringify(image) + ');');
+    await child().executeJavaScript(`const input = document.createElement('input'); input.type = 'file';
+      input.id = 'test-file-drop'; document.body.append(input);`);
+    child().debugger.attach('1.3');
+    try {
+      const { root } = await child().debugger.sendCommand('DOM.getDocument');
+      const { nodeId } = await child().debugger.sendCommand('DOM.querySelector', { nodeId: root.nodeId, selector: '#test-file-drop' });
+      await child().debugger.sendCommand('DOM.setFileInputFiles', { nodeId, files: [image] });
+      const accepted = await child().executeJavaScript(`(() => {
+        const transfer = new DataTransfer(); transfer.items.add(document.querySelector('#test-file-drop').files[0]);
+        const frame = document.querySelector('iframe');
+        frame.dispatchEvent(new DragEvent('dragenter', { bubbles: true, cancelable: true, dataTransfer: transfer }));
+        const shield = [...document.body.children].find(el => el.style.zIndex === '2147483647');
+        return !shield.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: transfer }));
+      })()`);
+      assert.equal(accepted, true, 'YouTube drop shield accepts a real local file');
+    } finally { if (child()?.debugger.isAttached()) child().debugger.detach(); }
+    await waitFor(() => evaluate("return window.CVWorkspace.model.active?.image.file.name === 'still.png';"), 'file dropped over YouTube opens in viewer');
     await waitFor(() => !child(), 'YouTube renderer closes on local image');
     assert.equal(await evaluate("return !$('btn-rot-l').disabled && !window.CVYouTube.active();"), true);
     await evaluate('window.CVWorkspace.closeTabs([window.CVWorkspace.model.activeId],{discard:true,remember:false});');
@@ -208,7 +235,7 @@ app.whenReady().then(async () => {
     await loaded(); await waitFor(async () => Math.abs((await info()).time - 12) < 1, 'final saved YouTube time');
     await evaluate('window.CVWorkspace.capture(); await window.CVWorkspace.flush(); window.CVWorkspace.suspend(); await window.CVWorkspace.flush();');
     await waitFor(() => !child(), 'suspend releases YouTube renderer');
-    console.log('PASS local image tools recover, session saves, tray suspension destroys the online player');
+    console.log('PASS file drop over YouTube opens a local image, session saves, tray suspension destroys the online player');
     // Real network failure must stay actionable without touching the normal session.
     await session.fromPartition('youtube-player').clearCache();
     const onlineSession = session.fromPartition('youtube-player');

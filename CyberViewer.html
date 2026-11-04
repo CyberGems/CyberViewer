@@ -236,6 +236,7 @@
     <svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
   </button>
   <div id="image-tab-list" role="tablist"></div>
+  <div id="tab-file-drop-marker" aria-hidden="true"></div>
   <button type="button" id="image-tabs-scroll-right" class="tab-bar-nav-btn" data-i18n-aria="tabs_scroll_next" aria-label="Desplazar pestañas a la derecha" hidden>
     <svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
   </button>
@@ -574,7 +575,7 @@
         </div>
       </div>
 
-      <div id="drag-overlay"></div>
+      <div id="drag-overlay"><span id="drag-overlay-label"></span></div>
 
       <!-- NAV -->
       <div id="nav-container">
@@ -1016,6 +1017,16 @@
                   <input type="checkbox" id="cfg-keep-media-paused" data-i18n-aria="media_keep_paused" aria-label="Conservar reproducción o pausa entre pestañas" checked>
                   <span class="slider"></span>
                 </label>
+              </div>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="drop_center_action">Al soltar archivos en el visor</div>
+                  <div class="config-desc" data-i18n="drop_center_action_desc">La barra de pestañas siempre abre los archivos en la posición donde se sueltan.</div>
+                </div>
+                <select id="cfg-drop-center-action" class="cfg-select" data-i18n-aria="drop_center_action" aria-label="Al soltar archivos en el visor">
+                  <option value="new-tab" data-i18n="drop_center_new_tab">Abrir en pestañas nuevas</option>
+                  <option value="replace" data-i18n="drop_center_replace">Reemplazar la pestaña actual</option>
+                </select>
               </div>
               <div class="config-row">
                 <div class="config-info">
