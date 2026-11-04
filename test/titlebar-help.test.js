@@ -82,6 +82,8 @@ describe('title bar Help menu', () => {
     assert.match(css, /\.titlebar-filename\s*\{[^}]*-webkit-app-region:\s*drag !important;/);
     assert.match(appJs, /base\.scrollWidth > base\.clientWidth \+ 1/);
     assert.match(appJs, /setCyberTooltip\(title, title\.textContent\)/);
+    assert.match(appJs, /getPointerInWindow\(\)/);
+    assert.match(css, /\.titlebar-filename\.cyber-tooltip::after\s*\{\s*content:\s*none;/);
     assert.doesNotMatch(appJs, /filename\.addEventListener\('pointerdown'|electronAPI\.dragTitle/);
   });
 

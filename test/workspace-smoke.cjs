@@ -299,13 +299,24 @@ app.whenReady().then(async () => {
     assert.equal(clippedTitle.clipped, true);
     await waitFor(() => evaluate("return $('titlebar-filename').dataset.tooltip === 'overflow-40.png';"),
       'clipped filename tooltip appears after layout');
-    win.webContents.sendInputEvent({ type: 'mouseMove', x: Math.round(clippedTitle.title.x + clippedTitle.title.width / 2),
-      y: Math.round(clippedTitle.title.y + clippedTitle.title.height / 2) });
-    await delay(750);
-    const hover = await evaluate(`const el = $('titlebar-filename'); return {
-      hovered: el.matches(':hover'), tooltipOpacity: getComputedStyle(el, '::after').opacity };`);
-    assert.equal(hover.hovered, true, 'the native drag region should still receive CSS hover');
-    assert.equal(hover.tooltipOpacity, '1', 'the clipped title tooltip should appear on hover');
+    const pointer = await evaluate('return window.electronAPI.getPointerInWindow();');
+    assert.ok(Number.isFinite(pointer.x) && Number.isFinite(pointer.y),
+      'native cursor coordinates should be available independently of title hover events');
+    assert.equal(await evaluate('return !!titlebarTooltipPoll;'), true);
+    await evaluate('clearInterval(titlebarTooltipPoll); titlebarTooltipPoll = null;');
+    const inside = { x: clippedTitle.title.x + clippedTitle.title.width / 2,
+      y: clippedTitle.title.y + clippedTitle.title.height / 2, focused: true };
+    await evaluate('updateTitlebarTooltipFromPointer(' + JSON.stringify(inside) + ');');
+    await delay(300);
+    await evaluate('updateTitlebarTooltipFromPointer(' + JSON.stringify(inside) + ');');
+    const shown = await evaluate(`return { text: $('titlebar-tooltip')?.querySelector('.tt-label')?.textContent,
+      visible: !$('titlebar-tooltip')?.hidden, anchor: ttAnchor?.id };`);
+    assert.deepEqual(shown, { text: 'overflow-40.png', visible: true, anchor: 'titlebar-filename' });
+    await waitFor(() => evaluate("return $('titlebar-tooltip').classList.contains('is-visible') && getComputedStyle($('titlebar-tooltip')).opacity === '1';"),
+      'full filename card is painted');
+    fs.writeFileSync(path.join(dataDir, 'title-tooltip.png'), (await win.webContents.capturePage()).toPNG());
+    await evaluate('updateTitlebarTooltipFromPointer({ x: -1, y: -1, focused: true });');
+    assert.equal(await evaluate("return $('titlebar-tooltip').hidden;"), true);
     await evaluate(`$('titlebar-filename').style.maxWidth = '';`);
     await waitFor(() => evaluate("return $('titlebar-filename').dataset.tooltip === undefined;"),
       'tooltip disappears when filename fits again');

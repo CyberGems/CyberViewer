@@ -570,6 +570,8 @@
 
   #titlebar-tooltip[hidden] { display: none; }
 
+  #titlebar-tooltip .tt-label { overflow-wrap: anywhere; }
+
   #titlebar-tooltip.is-visible {
     opacity: 1;
     transform: translateY(0);
@@ -5566,14 +5568,9 @@
     opacity: 1;
   }
   .titlebar-filename.cyber-tooltip::after {
-    top: calc(100% + 8px);
-    width: max-content;
-    max-width: min(420px, calc(100vw - 16px));
-    white-space: normal;
-    overflow-wrap: anywhere;
-    text-align: center;
+    content: none;
   }
-  .titlebar-filename.cyber-tooltip::before { top: calc(100% + 2px); }
+  .titlebar-filename.cyber-tooltip::before { content: none; }
   body.ghost-mode .titlebar-filename { display: none; }
 
   #btn-shortcuts.hidden { display: none; }

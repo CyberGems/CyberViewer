@@ -1368,6 +1368,18 @@ ipcMain.handle('win-is-fullscreen', () => {
   }
 });
 
+ipcMain.handle('win-pointer-position', (event) => {
+  const target = BrowserWindow.fromWebContents(event.sender);
+  if (!target || target !== win || target.isDestroyed()) return null;
+  const pointer = screen.getCursorScreenPoint();
+  const content = target.getContentBounds();
+  return {
+    x: pointer.x - content.x,
+    y: pointer.y - content.y,
+    focused: target.isFocused() && target.isVisible() && !target.isMinimized()
+  };
+});
+
 ipcMain.handle('open-file-dialog', async () => {
   const lang = getUiLang();
   const result = await dialog.showOpenDialog(win, {

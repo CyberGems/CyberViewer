@@ -683,16 +683,63 @@ function updateLanguage(lang = 'en') {
   if (document.body.classList.contains('image-error')) setImageError(state.images[state.current]);
 }
 
+// Native drag regions do not reliably deliver mouse events to the renderer.
+let titlebarTooltipPoll = null;
+let titlebarTooltipHoverSince = 0;
+let titlebarTooltipPending = false;
+
+function updateTitlebarTooltipFromPointer(pointer) {
+  const title = $('titlebar-filename');
+  const rect = title?.getBoundingClientRect();
+  const inside = title?.dataset.tooltip && pointer && pointer.focused && rect && !document.hidden &&
+    !document.body.classList.contains('no-tooltips') && !document.body.classList.contains('ghost-mode') &&
+    pointer.x >= rect.left && pointer.x < rect.right &&
+    pointer.y >= rect.top && pointer.y < rect.bottom;
+  if (!inside) {
+    titlebarTooltipHoverSince = 0;
+    if (ttAnchor === title) ttHide();
+    return;
+  }
+  if (!titlebarTooltipHoverSince) titlebarTooltipHoverSince = Date.now();
+  if (Date.now() - titlebarTooltipHoverSince >= TT_SHOW_DELAY_MS && ttAnchor !== title) ttShow(title);
+}
+
+function stopTitlebarTooltipMonitor() {
+  if (titlebarTooltipPoll) clearInterval(titlebarTooltipPoll);
+  titlebarTooltipPoll = null;
+  titlebarTooltipHoverSince = 0;
+  if (ttAnchor === $('titlebar-filename')) ttHide();
+}
+
 function syncTitlebarFilenameTooltip() {
   const title = $('titlebar-filename');
   const base = title && title.querySelector('.titlebar-filename-base');
   const truncated = base && base.clientWidth > 0 && base.scrollWidth > base.clientWidth + 1;
   if (truncated) {
+    if (title.dataset.tooltip !== title.textContent) {
+      titlebarTooltipHoverSince = 0;
+      if (ttAnchor === title) ttHide();
+    }
     setCyberTooltip(title, title.textContent);
-    title.classList.add('tooltip-bottom');
+    if (!titlebarTooltipPoll && isElectron && window.electronAPI.getPointerInWindow) {
+      titlebarTooltipPoll = setInterval(async () => {
+        if (titlebarTooltipPending) return;
+        titlebarTooltipPending = true;
+        try {
+          const pointer = document.hidden ? null : await window.electronAPI.getPointerInWindow();
+          updateTitlebarTooltipFromPointer(pointer);
+        } catch (error) {
+          stopTitlebarTooltipMonitor();
+          console.error('Title tooltip pointer check failed:', error);
+        } finally {
+          titlebarTooltipPending = false;
+        }
+      }, 100);
+    }
   } else if (title) {
+    stopTitlebarTooltipMonitor();
     title.removeAttribute('data-tooltip');
-    title.classList.remove('cyber-tooltip', 'tooltip-bottom');
+    title.classList.remove('cyber-tooltip');
   }
 }
 
