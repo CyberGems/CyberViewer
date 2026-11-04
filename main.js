@@ -1389,6 +1389,8 @@ ipcMain.handle('win-pointer-position', (event) => {
   return {
     x: pointer.x - content.x,
     y: pointer.y - content.y,
+    screenX: pointer.x,
+    screenY: pointer.y,
     focused: target.isFocused() && target.isVisible() && !target.isMinimized()
   };
 });

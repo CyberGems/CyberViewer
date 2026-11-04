@@ -112,7 +112,7 @@ describe('title bar Help menu', () => {
   it('suppresses shortcuts button tooltip when open and provides an expanded 2-column shortcuts cheat sheet', () => {
     // Tooltip suppression when open (titlebar tooltip card guard, CyberNotes style)
     assert.match(appJs, /function ttSuppressedWhileOpen\(el\)[\s\S]*?btn-shortcuts[\s\S]*?shortcuts-popover/);
-    assert.match(appJs, /function ttShow\(el\)\s*\{\s*if \(Date\.now\(\) < ttRestoreSuppressUntil\) return;\s*if \(ttSuppressedWhileOpen\(el\)\) return;/);
+    assert.match(appJs, /function ttShow\(el\)\s*\{\s*if \(restorePointerPending\) return;\s*if \(Date\.now\(\) < ttRestoreSuppressUntil\) return;\s*if \(ttSuppressedWhileOpen\(el\)\) return;/);
     assert.match(appJs, /button\.classList\.toggle\('open',\s*next\);[\s\S]*?gridImage\.hidden = video;\s*gridVideo\.hidden = !video;\s*\}\s*button\.blur\(\);/);
 
     // 2-column grid structure in HTML & CSS
@@ -202,11 +202,11 @@ describe('title bar Help menu', () => {
     assert.match(mainJs, /win\.on\('show', \(\) => \{[\s\S]*?webContents\.send\('window-restore'\)/);
     // preload bridge
     assert.match(preload, /onWindowRestore:\s*\(cb\)\s*=>\s*ipcRenderer\.on\('window-restore',\s*\(\)\s*=>\s*cb\(\)\)/);
-    // renderer hides the ghost tooltip, suppresses it briefly, and holds a
-    // pointer-events reset long enough to force a re-hit-test
-    assert.match(appJs, /onWindowRestore\(\(\) => \{[\s\S]*?ttHide\(\);[\s\S]*?ttRestoreSuppressUntil = Date\.now\(\) \+ 450;[\s\S]*?classList\.add\('hover-reset'\);[\s\S]*?setTimeout\(\(\) => document\.body\.classList\.remove\('hover-reset'\), 300\);/);
-    assert.match(appJs, /function ttShow\(el\)\s*\{[\s\S]*?if \(Date\.now\(\) < ttRestoreSuppressUntil\) return;/);
-    assert.match(css, /body\.hover-reset,\s*body\.hover-reset \*\s*\{\s*pointer-events:\s*none !important;\s*\}/);
+    assert.match(mainJs, /screenX: pointer\.x,\s*screenY: pointer\.y/);
+    assert.match(appJs, /onWindowRestore\(\(\) => \{[\s\S]*?beginRestorePointerGuard\(\)/);
+    assert.match(appJs, /function ttShow\(el\)\s*\{\s*if \(restorePointerPending\) return;/);
+    assert.match(appJs, /Math\.abs\(pointer\.screenX - restorePointerAnchor\.screenX\) < 2/);
+    assert.match(css, /body\.restore-pointer-pending #win-min:hover\s*\{[^}]*background:\s*none;/);
   });
 
   it('mirrors the CyberNotes title bar: hotkeys on every control with tooltip badges', () => {

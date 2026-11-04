@@ -302,6 +302,9 @@ app.whenReady().then(async () => {
     const pointer = await evaluate('return window.electronAPI.getPointerInWindow();');
     assert.ok(Number.isFinite(pointer.x) && Number.isFinite(pointer.y),
       'native cursor coordinates should be available independently of title hover events');
+    await evaluate(`if (restorePointerPending && restorePointerAnchor) {
+      updateRestorePointerGuard({ screenX: restorePointerAnchor.screenX + 3, screenY: restorePointerAnchor.screenY });
+    }`);
     assert.equal(await evaluate('return !!titlebarTooltipPoll;'), true);
     await evaluate('clearInterval(titlebarTooltipPoll); titlebarTooltipPoll = null;');
     const inside = { x: clippedTitle.title.x + clippedTitle.title.width / 2,
@@ -399,6 +402,19 @@ app.whenReady().then(async () => {
     fs.writeFileSync(path.join(dataDir, 'drop-setting.png'), (await win.webContents.capturePage()).toPNG());
     await evaluate("closeModal('modal-config');");
     console.log('PASS file drops: viewer preference, tab-strip insertion and replacement preserve tab order');
+    win.webContents.send('window-restore');
+    await waitFor(() => evaluate('return restorePointerPending && !!restorePointerAnchor;'), 'restore pointer guard armed');
+    await evaluate(`clearInterval(restorePointerPoll);
+      window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+      ttShow($('win-min'));`);
+    await delay(550);
+    assert.equal(await evaluate(`return restorePointerPending && document.body.classList.contains('restore-pointer-pending') &&
+      document.body.classList.contains('suppress-tooltips') && !document.querySelector('#titlebar-tooltip:not([hidden])');`), true,
+    'synthetic pointer events and elapsed time do not expose the minimize tooltip');
+    await evaluate('updateRestorePointerGuard({ screenX: restorePointerAnchor.screenX + 3, screenY: restorePointerAnchor.screenY });');
+    assert.equal(await evaluate("return !restorePointerPending && !document.body.classList.contains('restore-pointer-pending');"), true,
+      'physical pointer movement releases restore guard');
+    console.log('PASS restore keeps minimize hover and tooltip hidden until physical pointer movement');
   }
   app.exit(0);
 }).catch(error => { console.error(error.stack || error); app.exit(1); });

@@ -46,8 +46,9 @@ function setCyberTooltip(el, text) {
 const TT_SHOW_DELAY_MS = 250;
 // Restoring from the taskbar makes Chromium re-fire mouseover under the
 // stationary cursor, which would reshow the tooltip of the button that
-// minimized the window; suppressed for a short window after each restore.
+// minimized the window. The pointer guard below holds suppression until it moves.
 let ttRestoreSuppressUntil = 0;
+let restorePointerPending = false;
 const TT_VIEWPORT_MARGIN = 8;
 const TT_GAP = 8;
 let ttCard = null;
@@ -94,6 +95,7 @@ function ttPositionCard() {
 }
 
 function ttShow(el) {
+  if (restorePointerPending) return;
   if (Date.now() < ttRestoreSuppressUntil) return;
   if (ttSuppressedWhileOpen(el)) return;
   const text = ttTextFor(el);
@@ -8630,12 +8632,66 @@ function suppressTooltips() {
 function releaseTooltipsOnNextPointer() {
   if (!document.body.classList.contains('suppress-tooltips')) return;
   const unlock = () => {
+    if (restorePointerPending) return;
     document.body.classList.remove('suppress-tooltips');
     window.removeEventListener('pointermove', unlock, true);
     window.removeEventListener('pointerdown', unlock, true);
   };
   window.addEventListener('pointermove', unlock, true);
   window.addEventListener('pointerdown', unlock, true);
+}
+
+let restorePointerPoll = null;
+let restorePointerAnchor = null;
+let restorePointerGeneration = 0;
+
+function updateRestorePointerGuard(pointer) {
+  if (!restorePointerPending || !restorePointerAnchor || !pointer) return;
+  if (Math.abs(pointer.screenX - restorePointerAnchor.screenX) < 2 &&
+      Math.abs(pointer.screenY - restorePointerAnchor.screenY) < 2) return;
+  restorePointerPending = false;
+  clearInterval(restorePointerPoll);
+  restorePointerPoll = null;
+  restorePointerAnchor = null;
+  document.body.classList.remove('restore-pointer-pending', 'suppress-tooltips');
+}
+
+function failRestorePointerGuard(error) {
+  console.error('Restore pointer check failed:', error);
+  clearInterval(restorePointerPoll);
+  restorePointerPoll = null;
+  restorePointerAnchor = null;
+  restorePointerPending = false;
+  document.body.classList.remove('restore-pointer-pending');
+  releaseTooltipsOnNextPointer();
+}
+
+async function beginRestorePointerGuard() {
+  const generation = ++restorePointerGeneration;
+  clearInterval(restorePointerPoll);
+  restorePointerPoll = null;
+  restorePointerAnchor = null;
+  restorePointerPending = true;
+  ttHide();
+  suppressTooltips();
+  document.body.classList.add('restore-pointer-pending');
+  ttRestoreSuppressUntil = Date.now() + 450;
+  try {
+    const anchor = await window.electronAPI.getPointerInWindow();
+    if (generation !== restorePointerGeneration) return;
+    if (!Number.isFinite(anchor?.screenX) || !Number.isFinite(anchor?.screenY)) throw new Error('Pointer position unavailable');
+    restorePointerAnchor = anchor;
+    restorePointerPoll = setInterval(async () => {
+      try {
+        const pointer = await window.electronAPI.getPointerInWindow();
+        if (generation === restorePointerGeneration) updateRestorePointerGuard(pointer);
+      } catch (error) {
+        if (generation === restorePointerGeneration) failRestorePointerGuard(error);
+      }
+    }, 80);
+  } catch (error) {
+    if (generation === restorePointerGeneration) failRestorePointerGuard(error);
+  }
 }
 
 if (isElectron) {
@@ -8702,20 +8758,12 @@ if (isElectron) {
     window.electronAPI.onWindowBlur(hideInterfaceMenus);
   }
 
-  // On restore (minimize → taskbar/tray) Chromium still holds :hover on the
-  // minimize button until the cursor moves. Force a one-frame hit-test reset
-  // so the highlight clears (or re-applies) per the real cursor position.
+  // On restore Chromium can keep the minimizing button hovered until the
+  // physical pointer moves, regardless of synthetic mouseover events.
   if (typeof window.electronAPI.onWindowRestore === 'function') {
     window.electronAPI.onWindowRestore(() => {
       window.CVWorkspace.resume();
-      // Chromium re-fires mouseover under the stationary cursor after a
-      // restore: hide the tooltip card, suppress it briefly, and hold the
-      // hover-reset long enough that the minimizing button does not resurface
-      // hovered as if the user had touched it.
-      ttHide();
-      ttRestoreSuppressUntil = Date.now() + 450;
-      document.body.classList.add('hover-reset');
-      setTimeout(() => document.body.classList.remove('hover-reset'), 300);
+      void beginRestorePointerGuard();
     });
   }
 
