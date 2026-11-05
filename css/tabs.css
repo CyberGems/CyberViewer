@@ -95,7 +95,11 @@ body.tab-drag-active #image-tab-list .image-tab { cursor: grabbing; }
   text-align: left;
   font-size: 12px;
 }
-.image-tab-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.image-tab-media-icon { display: inline-flex; flex: 0 0 15px; align-items: center; justify-content: center; color: var(--cyber-muted); }
+.image-tab-media-icon[hidden] { display: none; }
+.image-tab-media-icon .menu-ico { width: 15px; height: 15px; }
+.image-tab-shell.active .image-tab-media-icon { color: var(--cyber-accent); }
+.image-tab-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* The shared tooltip card is portaled outside the scrolling strip. */
 .image-tab.cyber-tooltip::before, .image-tab.cyber-tooltip::after { display: none !important; }
 .image-tab-dirty { display: none; width: 6px; height: 6px; border-radius: 50%; background: var(--cyber-accent); flex-shrink: 0; }

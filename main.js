@@ -173,6 +173,7 @@ function loadSettings() {
         if (data.app.animateGifs === undefined) data.app.animateGifs = true;
         if (typeof data.app.videoAutoplay !== 'boolean') data.app.videoAutoplay = true;
         if (typeof data.app.keepMediaPausedOnTabReturn !== 'boolean') data.app.keepMediaPausedOnTabReturn = true;
+        if (typeof data.app.showTabMediaIcons !== 'boolean') data.app.showTabMediaIcons = true;
         if (!['new-tab', 'replace'].includes(data.app.centerDropAction)) data.app.centerDropAction = 'new-tab';
         if (typeof data.app.mediaSiblingsNewTab !== 'boolean') data.app.mediaSiblingsNewTab = false;
         if (data.app.videoLoop === undefined) data.app.videoLoop = false;
@@ -226,6 +227,7 @@ function loadSettings() {
       restoreSession: false,
       videoAutoplay: true,
       keepMediaPausedOnTabReturn: true,
+      showTabMediaIcons: true,
       centerDropAction: 'new-tab',
       mediaSiblingsNewTab: false,
       showFileName: true,

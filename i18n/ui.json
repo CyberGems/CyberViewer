@@ -1,6 +1,8 @@
 {
   "en": {
     "tabs_label": "Open file tabs",
+    "tabs_media_icons": "Media type icons in tabs",
+    "tabs_media_icons_desc": "Identify images, videos, audio, and YouTube in the tab bar.",
     "tabs_cycle": "Switch tabs",
     "tabs_locate": "Locate file",
     "tabs_missing": "This file is no longer available. Locate it to reconnect this tab.",
@@ -727,6 +729,8 @@
   },
   "es": {
     "tabs_label": "Pestañas de archivos abiertos",
+    "tabs_media_icons": "Iconos de tipo en las pestañas",
+    "tabs_media_icons_desc": "Identifica imágenes, videos, audio y YouTube en la barra de pestañas.",
     "tabs_cycle": "Cambiar de pestaña",
     "tabs_locate": "Localizar archivo",
     "tabs_missing": "Este archivo ya no está disponible. Localízalo para reconectar esta pestaña.",

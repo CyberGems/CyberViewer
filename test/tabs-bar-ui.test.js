@@ -15,6 +15,18 @@ const tabsCss = read('css/tabs.css');
 const ui = JSON.parse(read('i18n/ui.json'));
 
 describe('tab bar ui', () => {
+  it('offers localized media icons for image, video, audio and YouTube tabs', () => {
+    for (const lang of ['en', 'es']) {
+      assert.ok(ui[lang].tabs_media_icons);
+      assert.ok(ui[lang].tabs_media_icons_desc);
+    }
+    assert.match(html, /id="cfg-tab-media-icons"/);
+    assert.match(workspace, /CVYouTubeSource\.isYouTube\(tab\.image\)/);
+    assert.match(workspace, /CVFormats\.isAudio\(tab\.image\)/);
+    assert.match(workspace, /CVFormats\.isVideo\(tab\.image\)/);
+    assert.match(workspace, /mediaIcon\.hidden = state\.settings\.app\.showTabMediaIcons === false/);
+    assert.match(tabsCss, /\.image-tab-media-icon\[hidden\] \{ display: none; \}/);
+  });
   it('localizes the viewer drop choice and tab insertion cue in both languages', () => {
     for (const lang of ['en', 'es']) {
       for (const key of ['drop_center_action', 'drop_center_action_desc', 'drop_center_new_tab', 'drop_center_replace']) {

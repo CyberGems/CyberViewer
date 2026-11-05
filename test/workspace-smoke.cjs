@@ -415,6 +415,33 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("return !restorePointerPending && !document.body.classList.contains('restore-pointer-pending');"), true,
       'physical pointer movement releases restore guard');
     console.log('PASS restore keeps minimize hover and tooltip hidden until physical pointer movement');
+    const tabMediaIcons = await evaluate(`const model = window.CVWorkspace.model;
+      const samples = [
+        { path: 'C:/test/sample.png', name: 'sample.png', kind: 'image' },
+        { path: 'C:/test/sample.mp4', name: 'sample.mp4', kind: 'video' },
+        { path: 'C:/test/sample.mp3', name: 'sample.mp3', kind: 'audio' },
+        { path: 'https://www.youtube.com/playlist?list=UU_x5XG1OV2P6uZZ5FSM9Ttw', name: 'YouTube playlist', kind: 'youtube' }
+      ];
+      const ids = samples.map(sample => model.open({ file: sample }, { activate: false }).id);
+      window.CVWorkspace.render();
+      const icons = ids.map((id, index) => {
+        const icon = document.getElementById(id).querySelector('.image-tab-media-icon');
+        return { kind: icon.dataset.mediaType, visible: !icon.hidden, svg: !!icon.querySelector('svg'), expected: samples[index].kind };
+      });
+      ids.forEach(id => model.close(id, { remember: false }));
+      window.CVWorkspace.render();
+      return icons;`);
+    assert.equal(tabMediaIcons.every(icon => icon.kind === icon.expected && icon.visible && icon.svg), true,
+      'all four tab media types have visible icons by default');
+    await evaluate("openConfig(); $('cfg-tab-media-icons').click();");
+    await waitFor(() => evaluate("return state.settings.app.showTabMediaIcons === false && [...document.querySelectorAll('.image-tab-media-icon')].every(icon => icon.hidden);"),
+      'media icons hidden on existing tabs');
+    await waitFor(() => JSON.parse(fs.readFileSync(path.join(dataDir, 'settings.json'), 'utf8')).app.showTabMediaIcons === false,
+      'media icon preference saved');
+    await evaluate("$('cfg-tab-media-icons').click(); closeModal('modal-config');");
+    await waitFor(() => evaluate("return state.settings.app.showTabMediaIcons === true && [...document.querySelectorAll('.image-tab-media-icon')].every(icon => !icon.hidden);"),
+      'media icons restored on existing tabs');
+    console.log('PASS image, video, audio and YouTube tab icons and saved visibility preference');
   }
   app.exit(0);
 }).catch(error => { console.error(error.stack || error); app.exit(1); });

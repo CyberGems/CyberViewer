@@ -256,6 +256,7 @@ const state = {
       restoreSession: false,
       videoAutoplay: true,
       keepMediaPausedOnTabReturn: true,
+      showTabMediaIcons: true,
       videoLoop: false,
       videoVolume: 1,
       videoMuted: false,
@@ -344,6 +345,9 @@ const MENU_ICONS = {
   'monitor': '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>',
   'file': '<path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5"/>',
   'image': '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-4.5-4.5L7 19"/>',
+  'video': '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/>',
+  'audio': '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+  'youtube': '<rect x="2" y="5" width="20" height="14" rx="4"/><path d="m10 9 5 3-5 3z"/>',
   'folder': '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
   'folder-open': '<path d="M4 4h5l2 2h7a2 2 0 0 1 2 2v2H4z"/><path d="M3 9h18l-2 9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/>',
   'clock': '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
@@ -7497,6 +7501,7 @@ const CONFIG_CONTROL_ICON_BY_ID = {
   'cfg-contextmenu': 'settings',
   'cfg-restore-session': 'restore',
   'cfg-keep-media-paused': 'pause',
+  'cfg-tab-media-icons': 'image',
   'cfg-drop-center-action': 'copy',
   'cfg-hotkey': 'keyboard',
   'cfg-export-settings': 'save',
@@ -7572,6 +7577,7 @@ function openConfig() {
   $('cfg-contextmenu').checked = s.contextMenuEnabled || false;
   $('cfg-restore-session').checked = s.restoreSession === true;
   $('cfg-keep-media-paused').checked = s.keepMediaPausedOnTabReturn !== false;
+  $('cfg-tab-media-icons').checked = s.showTabMediaIcons !== false;
   $('cfg-drop-center-action').value = s.centerDropAction === 'replace' ? 'replace' : 'new-tab';
   if ($('cfg-animated-gifs')) $('cfg-animated-gifs').checked = s.animateGifs !== false;
   $('cfg-show-filename').checked = s.showFileName !== false;
@@ -7701,6 +7707,7 @@ function collectConfigSettings() {
     contextMenuEnabled: $('cfg-contextmenu').checked,
     restoreSession: $('cfg-restore-session').checked,
     keepMediaPausedOnTabReturn: $('cfg-keep-media-paused').checked,
+    showTabMediaIcons: $('cfg-tab-media-icons').checked,
     centerDropAction: $('cfg-drop-center-action').value === 'replace' ? 'replace' : 'new-tab',
     animateGifs: !!($('cfg-animated-gifs') && $('cfg-animated-gifs').checked),
     showFileName: $('cfg-show-filename').checked,
@@ -7758,6 +7765,7 @@ function getFactoryAppSettings() {
     restoreSession: false,
     videoAutoplay: true,
     keepMediaPausedOnTabReturn: true,
+    showTabMediaIcons: true,
     centerDropAction: 'new-tab',
     mediaSiblingsNewTab: false,
     videoLoop: false,

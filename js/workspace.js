@@ -3,7 +3,7 @@
    folderDirFromPath, buildSidebar, showToast, showCyberConfirm,
    stopSlideshow, getOriginalZoom, viewerFitSize, updateSaveButton,
    updateHUDStates, syncFavoritesToggleButtonState,
-   showCustomContextMenu, syncCurrentIndex, setCyberTooltip, ttBind, ttHide */
+   showCustomContextMenu, syncCurrentIndex, setCyberTooltip, ttBind, ttHide, iconSvg */
 'use strict';
 
 // Tabs retain document metadata and compressed clipboard blobs, never a hidden
@@ -524,8 +524,9 @@ window.CVWorkspace = (() => {
         button.type = 'button'; button.className = 'image-tab'; button.setAttribute('role', 'tab');
         button.id = tab.id; button.setAttribute('aria-controls', 'viewer-wrap');
         const dot = document.createElement('span'); dot.className = 'image-tab-dirty'; dot.setAttribute('aria-hidden', 'true');
+        const mediaIcon = document.createElement('span'); mediaIcon.className = 'image-tab-media-icon'; mediaIcon.setAttribute('aria-hidden', 'true');
         const label = document.createElement('span'); label.className = 'image-tab-name';
-        button.append(dot, label);
+        button.append(dot, mediaIcon, label);
         button.addEventListener('focus', () => prepareTooltip(button));
         ttBind(button);
         button.addEventListener('click', () => void activate(tab.id));
@@ -544,6 +545,15 @@ window.CVWorkspace = (() => {
       button.setAttribute('aria-selected', String(active));
       button.tabIndex = active ? 0 : -1;
       const name = tab.image.file.name;
+      const mediaType = window.CVYouTubeSource.isYouTube(tab.image) ? 'youtube'
+        : window.CVFormats.isAudio(tab.image) ? 'audio'
+        : window.CVFormats.isVideo(tab.image) ? 'video' : 'image';
+      const mediaIcon = button.querySelector('.image-tab-media-icon');
+      if (mediaIcon.dataset.mediaType !== mediaType) {
+        mediaIcon.replaceChildren(iconSvg(mediaType));
+        mediaIcon.dataset.mediaType = mediaType;
+      }
+      mediaIcon.hidden = state.settings.app.showTabMediaIcons === false;
       button.setAttribute('aria-label', name + (edited(tab) ? ` (${text('tabs_unsaved')})` : ''));
       button.querySelector('.image-tab-name').textContent = name;
       shell.querySelector('.image-tab-close').setAttribute('aria-label', text('tabs_close_named').replace('{name}', name));

@@ -19,6 +19,7 @@ describe('pickSettings', () => {
       imageOutline: true,
       videoAutoplay: false,
       keepMediaPausedOnTabReturn: true,
+      showTabMediaIcons: false,
       centerDropAction: 'replace',
       language: 'es',
       accentColor: '#FF2D78',
@@ -29,6 +30,7 @@ describe('pickSettings', () => {
     assert.equal(out.imageOutline, true);
     assert.equal(out.videoAutoplay, false);
     assert.equal(out.keepMediaPausedOnTabReturn, true);
+    assert.equal(out.showTabMediaIcons, false);
     assert.equal(out.centerDropAction, 'replace');
     assert.equal(out.language, 'es');
     assert.equal(out.accentColor, '#ff2d78');
@@ -67,6 +69,7 @@ describe('buildBackup / parseBackup', () => {
       closeToTray: true,
       videoAutoplay: false,
       keepMediaPausedOnTabReturn: true,
+      showTabMediaIcons: false,
       language: 'en',
       accentColor: '#00d4ff',
       favorites: ['C:\\pics\\one.png', 'C:\\pics\\two.jpg'],
@@ -78,6 +81,7 @@ describe('buildBackup / parseBackup', () => {
     assert.equal(backup.version, FORMAT_VERSION);
     assert.equal(backup.appVersion, '1.11.1');
     assert.equal(backup.settings.closeToTray, true);
+    assert.equal(backup.settings.showTabMediaIcons, false);
     assert.equal(backup.settings.recentFiles, undefined);
     assert.deepEqual(backup.favorites, ['C:\\pics\\one.png', 'C:\\pics\\two.jpg']);
 
