@@ -4784,6 +4784,62 @@
     border-color: var(--preview-accent);
     box-shadow: 0 0 10px rgba(var(--preview-accent-rgb), 0.35);
   }
+  #modal-config select.cfg-select.is-enhanced { display: none; }
+  #modal-config .cfg-select-shell { display: block; flex: 0 1 180px; min-width: 120px; max-width: 180px; }
+  #modal-config .cfg-select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    min-height: 34px;
+    padding: 6px 10px 6px 12px;
+    border: 1px solid var(--cyber-border);
+    border-radius: 6px;
+    background: rgba(var(--cyber-tint-rgb), 0.04);
+    color: var(--cyber-text);
+    font: 500 12px var(--font-ui);
+    text-align: left;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+  }
+  #modal-config .cfg-select-trigger:hover,
+  #modal-config .cfg-select-trigger[aria-expanded='true'] {
+    border-color: rgba(var(--preview-accent-rgb), .55);
+    background: rgba(var(--preview-accent-rgb), .08);
+  }
+  #modal-config .cfg-select-trigger:focus-visible { outline: 2px solid var(--preview-accent); outline-offset: 2px; }
+  #modal-config .cfg-select-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #modal-config .cfg-select-trigger svg { width: 15px; height: 15px; flex: 0 0 15px; color: var(--preview-accent); transition: transform .15s; }
+  #modal-config .cfg-select-trigger[aria-expanded='true'] svg { transform: rotate(180deg); }
+  #modal-config .cfg-select-menu {
+    position: fixed;
+    z-index: 2;
+    width: max-content;
+    max-width: min(320px, calc(100vw - 16px));
+    max-height: min(260px, calc(100vh - 16px));
+    overflow-y: auto;
+    padding: 4px;
+    border: 1px solid rgba(var(--preview-accent-rgb), .42);
+    border-radius: 7px;
+    background: var(--cyber-panel);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, .42);
+  }
+  #modal-config .cfg-select-menu::-webkit-scrollbar { width: 6px; }
+  #modal-config .cfg-select-menu::-webkit-scrollbar-track { background: transparent; }
+  #modal-config .cfg-select-menu::-webkit-scrollbar-thumb { background: var(--cyber-dim); border-radius: 6px; }
+  #modal-config .cfg-select-menu::-webkit-scrollbar-button { display: none; }
+  #modal-config .cfg-select-option {
+    padding: 8px 10px;
+    border-radius: 4px;
+    color: var(--cyber-text);
+    font: 500 12px/1.35 var(--font-ui);
+    cursor: pointer;
+  }
+  #modal-config .cfg-select-option[aria-selected='true'] { color: var(--preview-accent-ink, var(--cyber-accent-ink)); }
+  #modal-config .cfg-select-option:hover,
+  #modal-config .cfg-select-option.is-active { background: rgba(var(--preview-accent-rgb), .13); }
+  #modal-config .cfg-select-option[aria-disabled='true'] { opacity: .45; cursor: default; }
   #modal-config .cfg-range {
     accent-color: var(--preview-accent);
   }
@@ -4821,6 +4877,7 @@
   }
 
   #modal-config .modal-header {
+    flex: 0 0 auto;
     min-height: 78px;
     box-sizing: border-box;
     padding: 20px 28px;

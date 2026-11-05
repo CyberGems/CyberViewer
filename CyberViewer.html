@@ -1007,6 +1007,16 @@
               <label class="config-label" data-i18n="settings_nav_general">General</label>
               <div class="config-row">
                 <div class="config-info">
+                  <div class="config-name" data-i18n="language_label">Idioma</div>
+                  <div class="config-desc" data-i18n="language_desc">Idioma de la interfaz de usuario.</div>
+                </div>
+                <select id="cfg-lang" class="cfg-select">
+                  <option value="en">English</option>
+                  <option value="es">Español</option>
+                </select>
+              </div>
+              <div class="config-row">
+                <div class="config-info">
                   <div class="config-name" data-i18n="tabs_restore_session">Restaurar sesión anterior</div>
                   <div class="config-desc" data-i18n="tabs_restore_session_desc">Conservar pestañas, vistas, rotaciones pendientes e imágenes pegadas al reiniciar.</div>
                 </div>
@@ -1033,16 +1043,6 @@
                 <select id="cfg-drop-center-action" class="cfg-select" data-i18n-aria="drop_center_action" aria-label="Al soltar archivos en el visor">
                   <option value="new-tab" data-i18n="drop_center_new_tab">Abrir en pestañas nuevas</option>
                   <option value="replace" data-i18n="drop_center_replace">Reemplazar la pestaña actual</option>
-                </select>
-              </div>
-              <div class="config-row">
-                <div class="config-info">
-                  <div class="config-name" data-i18n="language_label">Idioma</div>
-                  <div class="config-desc" data-i18n="language_desc">Idioma de la interfaz de usuario.</div>
-                </div>
-                <select id="cfg-lang" class="cfg-select">
-                  <option value="en">English</option>
-                  <option value="es">Español</option>
                 </select>
               </div>
               <div class="config-row">
@@ -1768,6 +1768,7 @@
 <script src="js/video-player.js"></script>
 <script src="js/audio-visualizer.js"></script>
 <script src="js/youtube-player.js"></script>
+<script src="js/config-selects.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

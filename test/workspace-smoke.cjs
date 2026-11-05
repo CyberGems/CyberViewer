@@ -466,6 +466,19 @@ app.whenReady().then(async () => {
     assert.equal(headingState.helpers.every(Boolean), true, 'tool modals include a short helper line');
     assert.equal(headingState.section, 'none', 'modal section titles use natural case');
     await evaluate("openConfig();");
+    const originalWindowSize = win.getSize();
+    win.setSize(1180, 700);
+    const configHeaderGeometry = await evaluate(`return ['general', 'appearance', 'interface', 'slideshow', 'system', 'backup']
+      .map(id => { setActiveConfigTab(id);
+        const header = $('modal-config').querySelector('.modal-header').getBoundingClientRect();
+        const body = $('modal-config').querySelector('.config-modal-body').getBoundingClientRect();
+        return { id, headerHeight: header.height, bodyTop: body.top };
+      });`);
+    assert.equal(configHeaderGeometry.every(item =>
+      Math.abs(item.headerHeight - configHeaderGeometry[0].headerHeight) < 1 &&
+      Math.abs(item.bodyTop - configHeaderGeometry[0].bodyTop) < 1), true,
+    `settings header should stay fixed across sections: ${JSON.stringify(configHeaderGeometry)}`);
+    win.setSize(...originalWindowSize);
     const configTabGeometry = await evaluate(`return ['general', 'appearance', 'interface', 'slideshow', 'system', 'backup']
       .map(id => { setActiveConfigTab(id);
         const content = $('modal-config').querySelector('.config-content');
@@ -478,6 +491,45 @@ app.whenReady().then(async () => {
       Math.abs(item.panelWidth - firstConfigTab.panelWidth) < 1), true,
     `settings panels should not jump when their scrollbar appears: ${JSON.stringify(configTabGeometry)}`);
     await evaluate("setActiveConfigTab('general');");
+    assert.equal(await evaluate(`return $('config-tab-general').querySelector('.config-row select')?.id;`),
+      'cfg-lang', 'language selector is first in General');
+    await evaluate("document.querySelector('#cfg-drop-center-action + .cfg-select-trigger').click();");
+    assert.equal(await evaluate(`return document.querySelectorAll('#cfg-select-listbox [role="option"]').length;`),
+      2, 'settings dropdown uses the themed option list');
+    await new Promise(resolve => setTimeout(resolve, 80));
+    fs.writeFileSync(path.join(dataDir, 'config-select-open.png'), (await win.webContents.capturePage()).toPNG());
+    await evaluate(`document.querySelectorAll('#cfg-select-listbox [role="option"]')[1].click();`);
+    await waitFor(() => evaluate("return $('cfg-drop-center-action').value === 'replace';"), 'custom dropdown updates the original select');
+    await evaluate(`const trigger = document.querySelector('#cfg-drop-center-action + .cfg-select-trigger');
+      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }));
+      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true, cancelable: true }));
+      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));`);
+    await waitFor(() => evaluate("return $('cfg-drop-center-action').value === 'new-tab';"), 'settings dropdown keyboard selection');
+    await evaluate("document.querySelector('#cfg-lang + .cfg-select-trigger').click();");
+    assert.equal(await evaluate("return document.querySelectorAll('#cfg-select-listbox [role=option]').length;"),
+      2, 'language dropdown opens with two options');
+    await evaluate("document.querySelectorAll('#cfg-select-listbox [role=option]')[1].click();");
+    await waitFor(() => evaluate("return document.documentElement.lang === 'es';"), 'custom language dropdown switches to Spanish');
+    await evaluate("document.querySelector('#cfg-lang + .cfg-select-trigger').click();");
+    assert.equal(await evaluate("return document.querySelectorAll('#cfg-select-listbox [role=option]').length;"),
+      2, 'language dropdown reopens after applying Spanish');
+    await evaluate("document.querySelectorAll('#cfg-select-listbox [role=option]')[0].click();");
+    await waitFor(() => evaluate("return document.documentElement.lang === 'en';"), 'custom language dropdown switches back to English');
+    await evaluate("document.querySelector('#cfg-lang + .cfg-select-trigger').click();");
+    assert.equal(await evaluate("return !!document.querySelector('#cfg-select-listbox');"), true,
+      'language dropdown opens before Escape');
+    await evaluate(`document.querySelector('#cfg-lang + .cfg-select-trigger')
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));`);
+    const escapeState = await evaluate(`return {
+      menuClosed: !document.querySelector('#cfg-select-listbox'),
+      modalOpen: $('modal-config').classList.contains('active'),
+      focused: document.activeElement.className,
+      expanded: document.querySelector('#cfg-lang + .cfg-select-trigger').getAttribute('aria-expanded')
+    };`);
+    assert.equal(escapeState.menuClosed && escapeState.modalOpen &&
+      escapeState.focused.includes('cfg-select-trigger') && escapeState.expanded === 'false',
+    true, `Escape closes the dropdown and restores focus: ${JSON.stringify(escapeState)}`);
+    await new Promise(resolve => setTimeout(resolve, 220));
     fs.writeFileSync(path.join(dataDir, 'config-heading.png'), (await win.webContents.capturePage()).toPNG());
     await evaluate("closeModal('modal-config');");
     const closeAllCount = await evaluate('return window.CVWorkspace.model.tabs.length;');
@@ -499,7 +551,7 @@ app.whenReady().then(async () => {
       'close-all runs after inline confirmation');
     if (await evaluate("return $('modal-cyber-confirm').classList.contains('active');")) await evaluate("$('btn-confirm-ok').click();");
     await waitFor(() => evaluate('return window.CVWorkspace.model.tabs.length === 0;'), 'all tabs closed');
-    console.log('PASS natural-case modal headings, helper lines and inline close-all confirmation');
+    console.log('PASS modal headings, stable settings layout, themed selectors, and inline close-all confirmation');
   }
   app.exit(0);
 }).catch(error => { console.error(error.stack || error); app.exit(1); });

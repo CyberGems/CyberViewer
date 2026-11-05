@@ -631,6 +631,7 @@ function updateLanguage(lang = 'en') {
       }
     }
   });
+  window.CVConfigSelects.sync();
   renderTrayPinDescription(lang);
 
   document.querySelectorAll('[data-i18n-title]').forEach(el => {
@@ -7037,7 +7038,7 @@ function closeModal(id) {
   }
   el.classList.remove('active');
   el.removeAttribute('aria-modal');
-  if (id === 'modal-config') clearConfigAccentPreview();
+  if (id === 'modal-config') { window.CVConfigSelects.close(); clearConfigAccentPreview(); }
   if (id === 'modal-config') setTimeout(maybeShowPendingTrayPinReminder, 0);
 }
 window.closeModal = closeModal;
@@ -7628,6 +7629,7 @@ function openConfig() {
         select.appendChild(opt);
       });
       select.value = s.preferredDisplayId || 'auto';
+      window.CVConfigSelects.sync();
     });
   }
 
@@ -7652,12 +7654,14 @@ function openConfig() {
 
   setConfigAutosaveState(true, { visible: false });
   setActiveConfigTab('general');
+  window.CVConfigSelects.sync();
   syncConfigBrandVersion();
 
   openModal('modal-config');
 }
 
 function setActiveConfigTab(tabId) {
+  window.CVConfigSelects.close();
   const id = tabId || 'general';
   document.querySelectorAll('#modal-config [data-config-tab]').forEach(btn => {
     const active = btn.dataset.configTab === id;
