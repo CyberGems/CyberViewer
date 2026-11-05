@@ -149,7 +149,7 @@ app.whenReady().then(async () => {
     await evaluate('openPropertiesForCurrent();');
     await waitFor(() => evaluate(`const stage=$('props-preview-stage'), image=$('props-preview'), sr=stage.getBoundingClientRect(), ir=image.getBoundingClientRect();
       return $('modal-properties').dataset.previewKind==='audio' && image.complete && image.naturalWidth>0 &&
-        image.src.endsWith('/assets/audio-thumbnail.svg') && getComputedStyle(stage).backgroundImage==='none' &&
+        image.src.endsWith('/assets/audio-thumbnail.svg') && $('props-readout').hidden && getComputedStyle(stage).backgroundImage==='none' &&
         getComputedStyle(stage).backgroundColor===getComputedStyle(image).backgroundColor && ir.width>=sr.width-4 && ir.height>=sr.height-4;`),
     'audio without cover uses its full-area icon on a solid background');
     await evaluate("closeModal('modal-properties');");
@@ -315,7 +315,7 @@ app.whenReady().then(async () => {
     await evaluate("closeModal('modal-properties');");
     console.log('PASS embedded MP3 artwork is extracted and fills the preview without the image checker');
     const videoBytes = await evaluate(`
-      const c=document.createElement('canvas'); c.width=160; c.height=90;
+      const c=document.createElement('canvas'); c.width=1280; c.height=720;
       const draw=c.getContext('2d'), stream=c.captureStream(10), ac=new AudioContext();
       const tone=ac.createOscillator(), output=ac.createMediaStreamDestination();
       tone.connect(output); tone.start(); await ac.resume();
@@ -323,7 +323,7 @@ app.whenReady().then(async () => {
       const recorder=new MediaRecorder(stream,{mimeType:'video/webm;codecs=vp8,opus'}),chunks=[];
       recorder.ondataavailable=e=>chunks.push(e.data);
       const stopped=new Promise(resolve=>recorder.onstop=resolve);recorder.start();
-      for(let i=0;i<10;i++){draw.fillStyle=i%2?'#124':'#abd';draw.fillRect(0,0,160,90);await new Promise(resolve=>setTimeout(resolve,60));}
+      for(let i=0;i<10;i++){draw.fillStyle=i%2?'#124':'#abd';draw.fillRect(0,0,c.width,c.height);await new Promise(resolve=>setTimeout(resolve,60));}
       recorder.stop();await stopped;tone.stop();stream.getTracks().forEach(track=>track.stop());await ac.close();
       return Array.from(new Uint8Array(await new Blob(chunks).arrayBuffer()));
     `);
@@ -336,7 +336,7 @@ app.whenReady().then(async () => {
     await waitFor(() => evaluate(`const stageElement=$('props-preview-stage'), stage=stageElement.getBoundingClientRect();
       const image=$('props-preview'), rect=image.getBoundingClientRect();
       return $('modal-properties').classList.contains('active') && $('modal-properties').dataset.previewKind==='video' &&
-        image.complete && image.naturalWidth>0 && $('props-video-preview').hidden &&
+        image.complete && image.naturalWidth===960 && image.naturalHeight===540 && $('props-video-preview').hidden &&
         getComputedStyle(stageElement).backgroundImage==='none' &&
         getComputedStyle(stageElement).backgroundColor!=='rgba(0, 0, 0, 0)' &&
         rect.width>=stage.width-4 && rect.height>=stage.height-4;`), 'video frame fills the solid preview area');

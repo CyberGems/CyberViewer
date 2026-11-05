@@ -4408,7 +4408,7 @@
     height: 100%;
     max-width: none;
     max-height: none;
-    object-fit: cover;
+    object-fit: contain;
   }
   .props-preview--audio {
     width: 100%;

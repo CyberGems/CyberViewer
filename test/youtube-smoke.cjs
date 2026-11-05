@@ -26,10 +26,38 @@ app.whenReady().then(async () => {
   diagnostics = async () => {
     if (child()) fs.writeFileSync(path.join(dir,'failure-player.png'),(await child().capturePage()).toPNG());
     if (child()) for (const f of child().mainFrame.frames) console.error('Player frame:', f.url, await f.executeJavaScript("({fullscreen:document.fullscreenElement?.tagName,fullscreenId:document.fullscreenElement?.id,buttons:[...document.querySelectorAll('button')].map(el=>({label:el.getAttribute('aria-label'),class:el.className})).slice(-40)})"));
-    return evaluate("return {info:window.CVYouTube.info,status:$('youtube-status').textContent,hidden:document.hidden,modals:[...document.querySelectorAll('.modal-overlay.active')].map(el=>el.id)};");
+    return evaluate(`const image=$('props-youtube-thumbnail');
+      return {info:window.CVYouTube.info,status:$('youtube-status').textContent,hidden:document.hidden,
+        modals:[...document.querySelectorAll('.modal-overlay.active')].map(el=>el.id),
+        preview:{kind:$('modal-properties').dataset.previewKind,src:image.currentSrc,hidden:image.hidden,
+          complete:image.complete,width:image.naturalWidth,height:image.naturalHeight,
+          youtubeFallback:$('props-youtube-preview').hidden,videoFallback:$('props-video-preview').hidden}};`);
   };
   const loaded = () => waitFor(async () => (await info())?.videoId, 'YouTube video ready');
   await waitFor(() => evaluate('return window.CVWorkspace?.ready;'), 'workspace ready');
+  if (process.env.CV_YOUTUBE_PREVIEW_ONLY === '1') {
+    await evaluate(`state.youtubeVideoId='';
+      state.images=[{file:{path:'https://www.youtube.com/watch?v=3eyBqyXmI24',name:'YouTube preview sample'},w:16,h:9}];
+      state.current=0;state.currentIdx=0;syncEmptyState();await showPropertiesPanel();`);
+    await waitFor(() => evaluate(`const modal=$('modal-properties'),image=$('props-youtube-thumbnail');
+      return modal.classList.contains('active') && modal.dataset.previewKind==='youtube' && !image.hidden &&
+        image.complete && image.naturalWidth>=240 && $('props-youtube-preview').hidden && $('props-video-preview').hidden;`),
+    'sample YouTube thumbnail displays without either fallback');
+    const samplePreview = await evaluate(`const image=$('props-youtube-thumbnail'),stage=$('props-preview-stage').getBoundingClientRect(),rect=image.getBoundingClientRect();
+      return {width:image.naturalWidth,height:image.naturalHeight,src:image.currentSrc,
+        backgroundImage:getComputedStyle($('props-preview-stage')).backgroundImage,
+        fit:getComputedStyle(image).objectFit,stageWidth:stage.width,stageHeight:stage.height,
+        imageWidth:rect.width,imageHeight:rect.height};`);
+    assert.equal(samplePreview.backgroundImage, 'none');
+    assert.equal(samplePreview.fit, 'contain');
+    assert.ok(samplePreview.imageWidth >= samplePreview.stageWidth - 4);
+    assert.ok(samplePreview.imageHeight >= samplePreview.stageHeight - 4);
+    await evaluate(`return await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve,150))));`);
+    fs.writeFileSync(path.join(dir, 'youtube-sample-preview.png'), (await win.webContents.capturePage()).toPNG());
+    console.log(`PASS YouTube thumbnail loads and displays (${samplePreview.width}×${samplePreview.height}): ${samplePreview.src}`);
+    app.exit(0);
+    return;
+  }
   if (phase === 'restore') {
     await loaded();
     await waitFor(async () => Math.abs((await info()).time - 12) < 1, 'restored YouTube playback time');
@@ -65,6 +93,22 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("return !$('youtube-url-error').hidden && window.CVWorkspace.model.tabs.length===0;"), true);
     await evaluate("$('youtube-url').value='https://youtu.be/M7lc1UVf-VE?t=12'; $('youtube-form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));");
     await loaded();
+    await evaluate('openPropertiesForCurrent();');
+    await waitFor(() => evaluate(`const modal=$('modal-properties'), image=$('props-youtube-thumbnail');
+      const stage=$('props-preview-stage').getBoundingClientRect(), rect=image.getBoundingClientRect();
+      return modal.classList.contains('active') && modal.dataset.previewKind==='youtube' && !image.hidden &&
+        image.complete && image.naturalWidth>=240 && $('props-youtube-preview').hidden &&
+        $('props-video-preview').hidden &&
+        getComputedStyle($('props-preview-stage')).backgroundImage==='none' &&
+        getComputedStyle(image).objectFit==='contain' && rect.width>=stage.width-4 && rect.height>=stage.height-4;`),
+    'YouTube thumbnail fills the preview area');
+    fs.writeFileSync(path.join(dir, 'youtube-properties-thumbnail.png'), (await win.webContents.capturePage()).toPNG());
+    await evaluate("closeModal('modal-properties');");
+    await waitFor(() => evaluate("return !$('modal-properties').classList.contains('active');"), 'Properties closes');
+    await evaluate('openPropertiesForCurrent();');
+    await waitFor(() => evaluate("return !$('props-youtube-thumbnail').hidden && $('props-youtube-thumbnail').naturalWidth>=240;"),
+      'cached YouTube thumbnail is shown again');
+    await evaluate("closeModal('modal-properties');");
     const playerFrame = () => child()?.mainFrame.frames.find(frame =>
       /^https:\/\/www\.youtube(?:-nocookie)?\.com\/embed\//.test(frame.url));
     await waitFor(playerFrame, 'YouTube embed frame');

@@ -10862,7 +10862,7 @@ async function showPropertiesPanel(rawPath) {
   $('props-fav').closest('.props-row').hidden = youtube;
   $('props-native-btn').hidden = youtube;
   $('props-show-folder').hidden = youtube;
-  $('props-video-preview').hidden = !video;
+  $('props-video-preview').hidden = youtube || !video;
   $('props-youtube-preview').hidden = !youtube;
   const youtubeThumbnail = $('props-youtube-thumbnail');
   youtubeThumbnail.onload = null;
@@ -10871,23 +10871,69 @@ async function showPropertiesPanel(rawPath) {
   if (youtube) {
     const videoId = videoInfo?.videoId || state.youtubeVideoId || source?.videoId || '';
     if (window.CVYouTubeSource.VIDEO_ID.test(videoId)) {
+      const requestToken = (Number(youtubeThumbnail.dataset.requestToken) || 0) + 1;
+      const candidates = ['maxresdefault', 'sddefault', 'hqdefault', 'mqdefault'];
+      let candidateIndex = 0;
+      let bestLowResolution = null;
+      youtubeThumbnail.dataset.requestToken = String(requestToken);
+      youtubeThumbnail.dataset.videoId = videoId;
+      const isCurrentRequest = () => $('modal-properties').dataset.source === 'youtube' &&
+        youtubeThumbnail.dataset.videoId === videoId && youtubeThumbnail.dataset.requestToken === String(requestToken);
+      const loadNextThumbnail = () => {
+        if (!isCurrentRequest()) return;
+        if (candidateIndex >= candidates.length) {
+          if (bestLowResolution) {
+            const showAvailableThumbnail = () => {
+              if (!isCurrentRequest()) return;
+              youtubeThumbnail.hidden = false;
+              $('props-youtube-preview').hidden = true;
+            };
+            const showFallback = () => {
+              if (!isCurrentRequest()) return;
+              youtubeThumbnail.hidden = true;
+              $('props-youtube-preview').hidden = false;
+            };
+            if (youtubeThumbnail.src === bestLowResolution.src && youtubeThumbnail.complete && youtubeThumbnail.naturalWidth > 0) {
+              showAvailableThumbnail();
+            } else {
+              youtubeThumbnail.hidden = true;
+              $('props-youtube-preview').hidden = false;
+              youtubeThumbnail.onload = showAvailableThumbnail;
+              youtubeThumbnail.onerror = showFallback;
+              youtubeThumbnail.src = bestLowResolution.src;
+            }
+          } else {
+            youtubeThumbnail.hidden = true;
+            $('props-youtube-preview').hidden = false;
+          }
+          return;
+        }
+        const thumbnailUrl = `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/${candidates[candidateIndex++]}.jpg`;
+        if (youtubeThumbnail.src === thumbnailUrl && youtubeThumbnail.complete && youtubeThumbnail.naturalWidth > 0) {
+          youtubeThumbnail.onload();
+        } else {
+          youtubeThumbnail.src = thumbnailUrl;
+        }
+      };
       youtubeThumbnail.onload = () => {
-        if ($('modal-properties').dataset.source !== 'youtube' || youtubeThumbnail.dataset.videoId !== videoId) return;
+        if (!isCurrentRequest()) return;
+        // YouTube may return a tiny placeholder image with a successful HTTP
+        // response when a requested resolution is unavailable.
+        if (youtubeThumbnail.naturalWidth < 240) {
+          if (youtubeThumbnail.naturalWidth > 0 &&
+              (!bestLowResolution || youtubeThumbnail.naturalWidth > bestLowResolution.width)) {
+            bestLowResolution = { src: youtubeThumbnail.src, width: youtubeThumbnail.naturalWidth };
+          }
+          loadNextThumbnail();
+          return;
+        }
         youtubeThumbnail.hidden = false;
         $('props-youtube-preview').hidden = true;
       };
       youtubeThumbnail.onerror = () => {
-        if ($('modal-properties').dataset.source !== 'youtube' || youtubeThumbnail.dataset.videoId !== videoId) return;
-        youtubeThumbnail.hidden = true;
-        $('props-youtube-preview').hidden = false;
+        loadNextThumbnail();
       };
-      youtubeThumbnail.dataset.videoId = videoId;
-      const thumbnailUrl = `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`;
-      if (youtubeThumbnail.src === thumbnailUrl && youtubeThumbnail.complete && youtubeThumbnail.naturalWidth > 0) {
-        youtubeThumbnail.onload();
-      } else {
-        youtubeThumbnail.src = thumbnailUrl;
-      }
+      loadNextThumbnail();
     } else {
       youtubeThumbnail.removeAttribute('src');
     }
@@ -10943,6 +10989,7 @@ async function showPropertiesPanel(rawPath) {
     setCyberTooltip($('props-path'), youtube ? youtubeLink : fpath || '');
   }
   if ($('props-readout')) {
+    $('props-readout').hidden = audio;
     $('props-readout').textContent = youtube ? [sourceType, position].filter(Boolean).join(' · ') : (w && h)
       ? (w + ' × ' + h + ' PX  ·  ' + ratio + '  ·  ' + mp)
       : '—';
@@ -10979,7 +11026,7 @@ async function showPropertiesPanel(rawPath) {
     } else {
       preview.removeAttribute('src');
       preview.style.display = 'none';
-      if (video) $('props-video-preview').hidden = false;
+      if (video && !youtube) $('props-video-preview').hidden = false;
     }
   }
 

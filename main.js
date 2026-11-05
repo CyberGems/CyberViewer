@@ -2235,7 +2235,7 @@ async function renderBrowserImageThumb(abs, cacheFile) {
 
 async function renderVideoThumb(abs, cacheFile) {
   const frameWin = new BrowserWindow({
-    width: 160, height: 100, show: false,
+    width: 960, height: 540, show: false,
     webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true, backgroundThrottling: false }
   });
   try {
@@ -2260,7 +2260,7 @@ ipcMain.handle('get-thumbnail', async (event, filePath, opts) => {
     const isGif = ext === '.gif';
     const isAvif = ext === '.avif';
     const isVideo = isVideoPath(abs);
-    const thumbVersion = wantsAudioCover ? 'audio-cover-v1' : isVideo ? 'video-frame-v1' : isGif ? 'gif-frame-v2' : isAvif ? 'avif-browser-v1' : 'still-v1';
+    const thumbVersion = wantsAudioCover ? 'audio-cover-v1' : isVideo ? 'video-frame-v2' : isGif ? 'gif-frame-v2' : isAvif ? 'avif-browser-v1' : 'still-v1';
     const hash = crypto.createHash('md5').update(normalizedPath + stats.mtimeMs + thumbVersion).digest('hex');
     const cacheFile = path.join(thumbCachePath, `${hash}.jpg`);
 

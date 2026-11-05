@@ -4,7 +4,8 @@ const { spawnSync } = require('node:child_process');
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cyberviewer-youtube-test-'));
 const env = { ...process.env, CV_YOUTUBE_TEST_DIR: dataDir };
 delete env.ELECTRON_RUN_AS_NODE;
-for (const phase of ['initial', 'restore']) {
+const phases = process.env.CV_YOUTUBE_PREVIEW_ONLY === '1' ? ['initial'] : ['initial', 'restore'];
+for (const phase of phases) {
   const result = spawnSync(require('electron'), [path.join(__dirname, '..', 'test', 'youtube-smoke.cjs')], {
     env: { ...env, CV_YOUTUBE_TEST_PHASE: phase }, encoding: 'utf8', windowsHide: true, timeout: 180000
   });

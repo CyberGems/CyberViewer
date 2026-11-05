@@ -1,6 +1,7 @@
 'use strict';
 window.renderVideoThumbnail = url => new Promise(resolve => {
   const video = document.getElementById('source');
+  const maxWidth = 960, maxHeight = 540;
   let settled = false;
   const finish = value => {
     if (settled) return;
@@ -14,12 +15,14 @@ window.renderVideoThumbnail = url => new Promise(resolve => {
     if (settled || !video.videoWidth || video.readyState < 2) return;
     try {
       const canvas = document.getElementById('frame');
-      const scale = Math.min(canvas.width / video.videoWidth, canvas.height / video.videoHeight);
-      const w = video.videoWidth * scale, h = video.videoHeight * scale;
+      const scale = Math.min(maxWidth / video.videoWidth, maxHeight / video.videoHeight, 1);
+      const w = Math.max(1, Math.round(video.videoWidth * scale));
+      const h = Math.max(1, Math.round(video.videoHeight * scale));
+      canvas.width = w; canvas.height = h;
       const ctx = canvas.getContext('2d');
       ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(video, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
-      finish(canvas.toDataURL('image/jpeg', 0.8));
+      ctx.drawImage(video, 0, 0, w, h);
+      finish(canvas.toDataURL('image/jpeg', 0.92));
     } catch (error) { console.warn('Video thumbnail failed:', error); finish(null); }
   };
   const captureFrame = () => {
