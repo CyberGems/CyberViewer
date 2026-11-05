@@ -10860,6 +10860,31 @@ async function showPropertiesPanel(rawPath) {
   $('props-native-btn').hidden = youtube;
   $('props-show-folder').hidden = youtube;
   $('props-youtube-preview').hidden = !youtube;
+  const youtubeThumbnail = $('props-youtube-thumbnail');
+  youtubeThumbnail.onload = null;
+  youtubeThumbnail.onerror = null;
+  youtubeThumbnail.hidden = true;
+  if (youtube) {
+    const videoId = videoInfo?.videoId || state.youtubeVideoId || source?.videoId || '';
+    if (window.CVYouTubeSource.VIDEO_ID.test(videoId)) {
+      youtubeThumbnail.onload = () => {
+        if ($('modal-properties').dataset.source !== 'youtube' || youtubeThumbnail.dataset.videoId !== videoId) return;
+        youtubeThumbnail.hidden = false;
+        $('props-youtube-preview').hidden = true;
+      };
+      youtubeThumbnail.onerror = () => {
+        if ($('modal-properties').dataset.source !== 'youtube' || youtubeThumbnail.dataset.videoId !== videoId) return;
+        youtubeThumbnail.hidden = true;
+        $('props-youtube-preview').hidden = false;
+      };
+      youtubeThumbnail.dataset.videoId = videoId;
+      youtubeThumbnail.src = `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`;
+    } else {
+      youtubeThumbnail.removeAttribute('src');
+    }
+  } else {
+    youtubeThumbnail.removeAttribute('src');
+  }
 
   const fpath = (im.file && im.file.path) || im.path || rawPath || '';
   const name = (im.file && im.file.name) || (fpath ? fpath.split(/[\\/]/).pop() : '-');

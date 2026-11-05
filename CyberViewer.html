@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' blob: data: cvlocal:; media-src 'self' blob: cvlocal:; connect-src 'self' blob: cvlocal:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' blob: data: cvlocal: https://i.ytimg.com; media-src 'self' blob: cvlocal:; connect-src 'self' blob: cvlocal:">
 <title>CyberViewer</title>
 <style>html,body{background:#080a0e;background:var(--cyber-black,#080a0e);color:var(--cyber-text,#c8d8e8);margin:0;height:100%;overflow:hidden}</style>
 <script src="js/theme-boot.js"></script>
@@ -933,6 +933,7 @@
             </div>
             <div class="props-preview-stage" id="props-preview-stage">
               <img id="props-preview" class="props-preview" alt="">
+              <img id="props-youtube-thumbnail" class="props-youtube-thumbnail" alt="" hidden>
               <div id="props-youtube-preview" class="props-youtube-preview" hidden aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="4"/><path d="m10 9 5 3-5 3z"/></svg><span>YouTube</span></div>
             </div>
             <div class="props-preview-readout" id="props-readout">—</div>

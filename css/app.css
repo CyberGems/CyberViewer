@@ -4266,7 +4266,7 @@
     font-family: var(--font-ui);
     font-size: 12px;
   }
-  .props-row[hidden], #props-native-btn[hidden], #props-show-folder[hidden], #props-youtube-preview[hidden] { display: none; }
+  .props-row[hidden], #props-native-btn[hidden], #props-show-folder[hidden], #props-youtube-preview[hidden], #props-youtube-thumbnail[hidden] { display: none; }
   .props-section .props-row:last-child { border-bottom: none; }
   .props-key {
     color: var(--cyber-muted);
@@ -4397,6 +4397,7 @@
   #modal-properties[data-source='youtube'] .props-preview-stage { background-image: none; }
   .props-youtube-preview { display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--cyber-accent-ink); font: 700 18px var(--font-ui); }
   .props-youtube-preview svg { width: 72px; height: 72px; }
+  .props-youtube-thumbnail { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
   .props-preview-readout {
     font-family: var(--font-digits);
     font-size: 12px;
