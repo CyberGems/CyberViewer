@@ -104,7 +104,8 @@ body.tab-drag-active #image-tab-list .image-tab { cursor: grabbing; }
 .image-tab.cyber-tooltip::before, .image-tab.cyber-tooltip::after { display: none !important; }
 .image-tab-dirty { display: none; width: 6px; height: 6px; border-radius: 50%; background: var(--cyber-accent); flex-shrink: 0; }
 .dirty .image-tab-dirty { display: block; }
-.image-tab-close { font-size: 18px; width: 26px; height: 25px; margin-right: 3px; border-radius: 4px; flex-shrink: 0; opacity: .6; }
+.image-tab-close { display: inline-flex; align-items: center; justify-content: center; padding: 0; width: 26px; height: 25px; margin-right: 3px; border-radius: 4px; flex-shrink: 0; opacity: .6; }
+.image-tab-close .menu-ico { display: block; width: 14px; height: 14px; }
 .image-tab-close:hover { color: var(--cyber-accent2); background: rgba(255,255,255,.08); opacity: 1; }
 .tab-bar-button {
   align-self: center;

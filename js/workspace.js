@@ -531,7 +531,7 @@ window.CVWorkspace = (() => {
         ttBind(button);
         button.addEventListener('click', () => void activate(tab.id));
         const close = document.createElement('button');
-        close.type = 'button'; close.className = 'image-tab-close'; close.textContent = '×';
+        close.type = 'button'; close.className = 'image-tab-close'; close.append(iconSvg('x'));
         close.addEventListener('click', () => closeTabs([tab.id]));
         shell.append(button, close);
         shell.addEventListener('auxclick', event => { if (event.button === 1) { event.preventDefault(); closeTabs([tab.id]); } });

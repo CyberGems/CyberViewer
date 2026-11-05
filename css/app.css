@@ -2661,10 +2661,8 @@
   }
 
   .nav-btn:hover {
-    border-color: var(--cyber-accent);
     color: var(--cyber-accent-ink);
     background: rgba(var(--cyber-modal-rgb),0.85);
-    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.3);
   }
 
   /* Hide the tooltip once the user starts clicking a nav button; it only
@@ -4974,12 +4972,12 @@
     border-left: 3px solid transparent;
     border-radius: 4px;
     background: transparent;
-    color: var(--cyber-muted);
+    color: var(--cyber-text-soft-3);
     font-family: var(--font-ui);
     font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.055em;
-    text-transform: uppercase;
+    letter-spacing: 0;
+    text-transform: none;
     text-align: left;
     cursor: pointer;
     transition: color 0.18s, background 0.18s, border-color 0.18s, box-shadow 0.18s, transform 0.18s;
@@ -5017,8 +5015,8 @@
 
   #modal-config .config-nav-btn:not(.active) .config-nav-icon,
   #modal-config .config-nav-btn:not(.active) .config-nav-svg {
-    color: var(--cyber-muted);
-    opacity: 0.82;
+    color: var(--cyber-text-soft-7);
+    opacity: 1;
   }
 
   #modal-config .config-nav-btn.active .config-nav-icon,
