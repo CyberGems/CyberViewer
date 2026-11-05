@@ -4444,30 +4444,21 @@
     gap: 8px;
     min-width: 0;
   }
-  .props-action-btn {
-    padding: 6px 12px !important;
-    font-size: 12px !important;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-  .props-native-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
+  .props-footer-icon-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    padding: 0 !important;
+    border-radius: 6px;
     color: var(--cyber-muted);
-    font-family: var(--font-ui);
-    font-size: 11px;
-    letter-spacing: 1px;
-    padding: 6px 8px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    border-radius: 4px;
-    transition: color 150ms, background 150ms;
+    border-color: var(--cyber-border);
+    background: rgba(var(--cyber-tint-rgb), 0.025);
+    letter-spacing: 0;
   }
-  .props-native-btn:hover {
-    color: var(--cyber-accent-ink);
-    background: rgba(var(--cyber-accent-rgb), 0.08);
+  .props-footer-icon-btn svg {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 17px;
   }
   .footer-props-hit {
     cursor: pointer;
@@ -7897,6 +7888,13 @@ html[data-theme='light'] #modal-config .config-nav-btn.active .config-nav-svg {
 html[data-theme='gray'] input:checked + .slider:before,
 html[data-theme='gray'] .custom-switch.active::after {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.2 8.35 6.45 11.45 12.8 4.7' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* Modal buttons brighten slightly on hover without the neon glow. */
+.modal-overlay .modal-box button:hover:not(:disabled):not([aria-disabled='true']),
+#modal-config .modal-box button:hover:not(:disabled):not([aria-disabled='true']) {
+  box-shadow: none !important;
+  filter: brightness(1.05) !important;
 }
 
 

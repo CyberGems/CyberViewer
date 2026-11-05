@@ -11039,14 +11039,35 @@ async function showPropertiesPanel(rawPath) {
         : 'Open the native Windows dialog (may take a couple of seconds)'));
   }
 
-  propsSummaryText = youtube ? [name, sourceType, position, youtubeLink].filter(Boolean).join('\n') : [
-    name,
-    (w && h) ? (w + '×' + h + ' px') : '',
-    ratio !== '-' ? ratio : '',
-    mp !== '-' ? mp : '',
-    (im.size || im.size === 0) ? formatBytes(im.size) : '',
-    fpath
-  ].filter(Boolean).join('\n');
+  const summaryEntry = (key, value) => {
+    const text = value == null ? '' : String(value).trim();
+    return text && text !== '-' ? `${i18nLang[key] || key}: ${text}` : '';
+  };
+  const summaryFormat = youtube ? sourceType : mime ? `${ext ? ext + ' · ' : ''}${mime}` : ext;
+  const buildSummary = (sizeValue, createdValue = null, modifiedValue = null) => {
+    if (youtube) {
+      return [
+        summaryEntry('props_k_name', name),
+        summaryEntry('props_k_format', sourceType),
+        summaryEntry('props_k_link', youtubeLink),
+        playlist ? summaryEntry('props_k_playlist_position', position) : ''
+      ].filter(Boolean).join('\n');
+    }
+    return [
+      summaryEntry('props_k_name', name),
+      summaryEntry('props_k_format', summaryFormat),
+      audio && Number.isFinite(im.duration)
+        ? summaryEntry('audio_duration', window.CVFormats.formatTime(im.duration)) : '',
+      !audio && w && h ? summaryEntry('props_k_dims', `${w} × ${h} px`) : '',
+      !audio ? summaryEntry('props_k_ratio', ratio) : '',
+      !audio ? summaryEntry('props_k_mp', mp) : '',
+      (sizeValue || sizeValue === 0) ? summaryEntry('props_k_size', formatBytes(sizeValue)) : '',
+      createdValue != null ? summaryEntry('props_k_created', formatPropsDate(createdValue, lang)) : '',
+      modifiedValue != null ? summaryEntry('props_k_modified', formatPropsDate(modifiedValue, lang)) : '',
+      summaryEntry('props_k_path', fpath)
+    ].filter(Boolean).join('\n');
+  };
+  propsSummaryText = buildSummary(im.size);
 
   if (typeof pauseSlideshow === 'function') pauseSlideshow();
   openModal('modal-properties');
@@ -11093,16 +11114,7 @@ async function showPropertiesPanel(rawPath) {
   if ($('props-modified')) $('props-modified').textContent = formatPropsDate(modified, lang);
   if ($('props-created')) $('props-created').textContent = formatPropsDate(created, lang);
 
-  propsSummaryText = [
-    name,
-    (w && h) ? (w + '×' + h + ' px') : '',
-    ratio !== '-' ? ratio : '',
-    mp !== '-' ? mp : '',
-    (size || size === 0) ? formatBytes(size) : '',
-    created != null ? ('created: ' + formatPropsDate(created, lang)) : '',
-    modified != null ? ('modified: ' + formatPropsDate(modified, lang)) : '',
-    fpath
-  ].filter(Boolean).join('\n');
+  propsSummaryText = buildSummary(size, created, modified);
 }
 
 if ($('props-native-btn')) {
