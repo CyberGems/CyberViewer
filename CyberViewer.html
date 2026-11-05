@@ -28,6 +28,9 @@
       <polyline points="19 12 12 19 5 12"></polyline>
     </svg>
   </button>
+  <button type="button" class="win-btn" id="titlebar-properties-btn" data-i18n-tt="props_title" data-tooltip-kbd="Ctrl+I" data-i18n-aria="props_title" aria-label="Propiedades" hidden>
+    <svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+  </button>
   <button type="button" class="win-btn" id="btn-shortcuts" data-i18n-tt="shortcuts_title" data-i18n-aria="shortcuts_title" data-tooltip-kbd="?" aria-haspopup="dialog" aria-controls="shortcuts-popover" aria-expanded="false">
     <svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="2.5"/><path d="M6.5 9.5h.01M10 9.5h.01M14 9.5h.01M17.5 9.5h.01M6.5 13h.01M10 13h.01M14 13h.01M17.5 13h.01M8.5 15.5h7"/></svg>
   </button>
@@ -886,7 +889,7 @@
     <div class="modal-header">
       <div class="modal-title">
         <span class="modal-header-icon" data-modal-icon="info" aria-hidden="true"></span>
-        <span class="modal-title-copy"><span data-i18n="props_title">Propiedades</span><small class="modal-subtitle" data-i18n="props_intro">Consulta los datos del archivo y su vista previa.</small></span>
+        <span class="modal-title-copy"><span data-i18n="props_title">Propiedades</span><small class="modal-subtitle" id="props-intro" data-i18n="props_intro">Consulta los datos del archivo y su vista previa.</small></span>
       </div>
       <button class="win-btn modal-close-btn tooltip-bottom tooltip-align-right" data-close-modal="modal-properties" data-i18n-title="close" title="Cerrar">&#10005;</button>
     </div>
@@ -895,7 +898,7 @@
         <!-- LEFT: structured data -->
         <div class="props-left-col">
           <div class="props-section">
-            <div class="props-section-label" data-i18n="props_section_file">Archivo</div>
+            <div class="props-section-label" id="props-file-section-label" data-i18n="props_section_file">Archivo</div>
             <div class="props-row"><span class="props-key" data-i18n="props_k_name">Nombre</span><span class="props-val" id="props-name">-</span></div>
             <div class="props-row"><span class="props-key" data-i18n="props_k_format">Formato</span><span class="props-val" id="props-format">-</span></div>
             <div class="props-row"><span class="props-key" data-i18n="props_k_size">Tamaño</span><span class="props-val props-val-digit" id="props-size">-</span></div>
@@ -903,7 +906,7 @@
             <div class="props-row"><span class="props-key" data-i18n="props_k_modified">Modificado</span><span class="props-val" id="props-modified">-</span></div>
             <div class="props-row props-path-row">
               <div class="props-path-head">
-                <span class="props-key" data-i18n="props_k_path">Ruta</span>
+                <span class="props-key" id="props-path-key" data-i18n="props_k_path">Ruta</span>
                 <button type="button" class="top-btn props-mini-btn" id="props-copy-path" data-i18n="props_copy_path" data-i18n-title="props_copy_path_tooltip">Copiar</button>
               </div>
               <span class="props-val props-path-val" id="props-path">-</span>
@@ -911,12 +914,12 @@
           </div>
 
           <div class="props-section">
-            <div class="props-section-label" data-i18n="props_section_image">Imagen</div>
+            <div class="props-section-label" id="props-media-section-label" data-i18n="props_section_image">Imagen</div>
             <div class="props-row" id="props-duration-row" hidden><span class="props-key" data-i18n="audio_duration">Duración</span><span class="props-val props-val-digit" id="props-duration">-</span></div>
             <div class="props-row"><span class="props-key" data-i18n="props_k_dims">Dimensiones</span><span class="props-val props-val-digit" id="props-dims">-</span></div>
             <div class="props-row"><span class="props-key" data-i18n="props_k_ratio">Proporción</span><span class="props-val props-val-digit" id="props-ratio">-</span></div>
             <div class="props-row"><span class="props-key" data-i18n="props_k_mp">Megapíxeles</span><span class="props-val props-val-digit" id="props-mp">-</span></div>
-            <div class="props-row"><span class="props-key" data-i18n="props_k_index">En carpeta</span><span class="props-val props-val-digit" id="props-index">-</span></div>
+            <div class="props-row"><span class="props-key" id="props-index-key" data-i18n="props_k_index">En carpeta</span><span class="props-val props-val-digit" id="props-index">-</span></div>
             <div class="props-row"><span class="props-key" data-i18n="props_k_fav">Favorito</span><span class="props-val" id="props-fav">-</span></div>
           </div>
         </div>
@@ -925,11 +928,12 @@
         <div class="props-right-col">
           <div class="props-preview-panel">
             <div class="props-preview-head">
-              <span class="hud-label" data-i18n="props_preview_lbl">Vista previa</span>
+              <span class="hud-label" id="props-preview-label" data-i18n="props_preview_lbl">Vista previa</span>
               <div class="props-badges" id="props-badges"></div>
             </div>
             <div class="props-preview-stage" id="props-preview-stage">
               <img id="props-preview" class="props-preview" alt="">
+              <div id="props-youtube-preview" class="props-youtube-preview" hidden aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="4"/><path d="m10 9 5 3-5 3z"/></svg><span>YouTube</span></div>
             </div>
             <div class="props-preview-readout" id="props-readout">—</div>
           </div>

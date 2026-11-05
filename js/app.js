@@ -151,7 +151,7 @@ window.addEventListener('blur', ttHide);
 document.addEventListener('visibilitychange', () => { if (document.hidden) ttHide(); });
 
 // Bind every title bar control. Labels update via data-tooltip / data-i18n-tt.
-['logo-trigger', 'titlebar-update-btn', 'btn-shortcuts',
+['logo-trigger', 'titlebar-update-btn', 'titlebar-properties-btn', 'btn-shortcuts',
   'btn-config', 'btn-menu', 'btn-about', 'win-min', 'win-max', 'win-close'
 ].forEach(id => ttBind($(id)));
 
@@ -5628,6 +5628,7 @@ function syncEmptyState() {
     clearImageError();
   }
   document.body.classList.toggle('empty-state', empty);
+  $('titlebar-properties-btn').hidden = !hasMedia;
 
   const needs = document.querySelectorAll('#kbd-hint .needs-image, #kbd-hint .needs-image .kbd-btn');
   needs.forEach((el) => {
@@ -8846,7 +8847,7 @@ if (isElectron) {
 function syncRotationPendingState(pending) {
   document.body.classList.toggle('rotation-pending', pending);
   const allowed = new Set(['btn-rot-l', 'btn-rot-r', 'btn-commit', 'btn-discard']);
-  document.querySelectorAll('#kbd-hint button, #nav-container button, #sidebar-controls button, #btn-menu, #btn-config, #btn-shortcuts, #titlebar-update-btn').forEach((el) => {
+  document.querySelectorAll('#kbd-hint button, #nav-container button, #sidebar-controls button, #btn-menu, #btn-config, #btn-shortcuts, #titlebar-update-btn, #titlebar-properties-btn').forEach((el) => {
     if (allowed.has(el.id)) return;
     if (pending) {
       if (!el.dataset.rotationWasDisabled) el.dataset.rotationWasDisabled = el.disabled ? '1' : '0';
@@ -10688,7 +10689,6 @@ let propsNativePath = null;
 let propsSummaryText = '';
 
 function openPropertiesForCurrent() {
-  if (window.CVYouTube.active()) return;
   if (!checkImageLoaded()) return;
   const im = state.images[state.current];
   const fpath = im ? imageDiskPath(im) : '';
@@ -10778,10 +10778,17 @@ async function setAsWallpaper(targetPath, style = 'fill') {
   }
 }
 
-function buildPropsBadges(name, fpath, isFav) {
+function buildPropsBadges(name, fpath, isFav, youtube = false) {
   const host = $('props-badges');
   if (!host) return;
   host.innerHTML = '';
+  if (youtube) {
+    const badge = document.createElement('span');
+    badge.className = 'props-badge';
+    badge.textContent = 'YOUTUBE';
+    host.appendChild(badge);
+    return;
+  }
   const ext = name.includes('.') ? name.split('.').pop().toUpperCase() : '';
   if (ext) {
     const b = document.createElement('span');
@@ -10819,10 +10826,44 @@ async function showPropertiesPanel(rawPath) {
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
   const es = lang === 'es';
   const i18nLang = I18N[lang] || I18N.en || {};
+  const youtube = window.CVYouTubeSource.isYouTube(im);
+  const source = youtube ? window.CVYouTubeSource.from(im) : null;
+  const videoInfo = youtube ? window.CVYouTube.info : null;
+  const playlist = !!source?.playlistId;
+  const youtubeLink = youtube ? window.CVYouTubeSource.copyUrl(im) : '';
+  const sourceType = playlist ? i18nLang.props_youtube_playlist : i18nLang.props_youtube_video;
+  const playlistIndex = videoInfo?.index ?? state.youtubeIndex ?? 0;
+  const playlistCount = videoInfo?.count || 0;
+  const position = playlist ? (playlistCount ? `${playlistIndex + 1} / ${playlistCount}` : String(playlistIndex + 1)) : '';
+  const localizeLabel = (id, key) => {
+    const el = $(id);
+    el.dataset.i18n = key;
+    el.textContent = i18nLang[key] || key;
+  };
+  $('modal-properties').dataset.source = youtube ? 'youtube' : 'file';
+  localizeLabel('props-intro', youtube ? 'props_intro_youtube' : 'props_intro');
+  localizeLabel('props-file-section-label', youtube ? 'props_section_source' : 'props_section_file');
+  localizeLabel('props-path-key', youtube ? 'props_k_link' : 'props_k_path');
+  localizeLabel('props-index-key', youtube ? 'props_k_playlist_position' : 'props_k_index');
+  localizeLabel('props-preview-label', youtube ? 'props_section_youtube' : 'props_preview_lbl');
+  if (youtube) {
+    $('props-copy-path').removeAttribute('data-i18n-title');
+    $('props-copy-path').removeAttribute('data-tooltip');
+    $('props-copy-path').classList.remove('cyber-tooltip');
+  } else {
+    $('props-copy-path').dataset.i18nTitle = 'props_copy_path_tooltip';
+    setCyberTooltip($('props-copy-path'), i18nLang.props_copy_path_tooltip);
+  }
+  for (const id of ['props-size', 'props-created', 'props-modified']) $(id).closest('.props-row').hidden = youtube;
+  $('props-index').closest('.props-row').hidden = youtube && !playlist;
+  $('props-fav').closest('.props-row').hidden = youtube;
+  $('props-native-btn').hidden = youtube;
+  $('props-show-folder').hidden = youtube;
+  $('props-youtube-preview').hidden = !youtube;
 
   const fpath = (im.file && im.file.path) || im.path || rawPath || '';
   const name = (im.file && im.file.name) || (fpath ? fpath.split(/[\\/]/).pop() : '-');
-  propsNativePath = fpath;
+  propsNativePath = youtube ? youtubeLink : fpath;
 
   const w = im.w || mainImg.naturalWidth || 0;
   const h = im.h || mainImg.naturalHeight || 0;
@@ -10831,9 +10872,9 @@ async function showPropertiesPanel(rawPath) {
   const audio = window.CVFormats.isAudio(im);
   const mediaSection = $('props-dims').closest('.props-section');
   const sectionTitle = mediaSection.querySelector('.props-section-label');
-  sectionTitle.dataset.i18n = audio ? 'audio_label' : 'props_section_image';
+  sectionTitle.dataset.i18n = youtube ? 'props_section_youtube' : audio ? 'audio_label' : 'props_section_image';
   sectionTitle.textContent = i18nLang[sectionTitle.dataset.i18n];
-  for (const id of ['props-dims', 'props-ratio', 'props-mp']) $(id).closest('.props-row').style.display = audio ? 'none' : '';
+  for (const id of ['props-dims', 'props-ratio', 'props-mp']) $(id).closest('.props-row').style.display = audio || youtube ? 'none' : '';
   $('props-duration-row').hidden = !audio;
   $('props-duration').textContent = audio && Number.isFinite(im.duration) ? window.CVFormats.formatTime(im.duration) : '-';
   const ratio = formatAspectRatio(w, h);
@@ -10846,13 +10887,13 @@ async function showPropertiesPanel(rawPath) {
   // Instant fields
   if ($('props-name')) $('props-name').textContent = name || '-';
   if ($('props-format')) {
-    $('props-format').textContent = mime ? (ext + ' · ' + mime) : (ext || '-');
+    $('props-format').textContent = youtube ? sourceType : mime ? (ext + ' · ' + mime) : (ext || '-');
   }
   if ($('props-dims')) $('props-dims').textContent = (w && h) ? (w + ' × ' + h + ' px') : '-';
   if ($('props-ratio')) $('props-ratio').textContent = ratio;
   if ($('props-mp')) $('props-mp').textContent = mp;
   if ($('props-index')) {
-    $('props-index').textContent = total ? (idx + ' / ' + total) : '-';
+    $('props-index').textContent = youtube ? position : total ? (idx + ' / ' + total) : '-';
   }
   if ($('props-fav')) {
     $('props-fav').textContent = isFav
@@ -10865,19 +10906,19 @@ async function showPropertiesPanel(rawPath) {
   if ($('props-created')) $('props-created').textContent = '…';
   if ($('props-modified')) $('props-modified').textContent = '…';
   if ($('props-path')) {
-    $('props-path').textContent = fpath || '-';
-    setCyberTooltip($('props-path'), fpath || '');
+    $('props-path').textContent = youtube ? youtubeLink : fpath || '-';
+    setCyberTooltip($('props-path'), youtube ? youtubeLink : fpath || '');
   }
   if ($('props-readout')) {
-    $('props-readout').textContent = (w && h)
+    $('props-readout').textContent = youtube ? [sourceType, position].filter(Boolean).join(' · ') : (w && h)
       ? (w + ' × ' + h + ' PX  ·  ' + ratio + '  ·  ' + mp)
       : '—';
   }
-  buildPropsBadges(name, fpath, isFav);
+  buildPropsBadges(name, fpath, isFav, youtube);
 
   const preview = $('props-preview');
   if (preview) {
-    const previewUrl = audio ? 'assets/audio-thumbnail.svg' : window.CVVideo.active() ? im.thumbUrl : mainImg.getAttribute('src');
+    const previewUrl = youtube ? '' : audio ? 'assets/audio-thumbnail.svg' : window.CVVideo.active() ? im.thumbUrl : mainImg.getAttribute('src');
     if (previewUrl) {
       preview.src = previewUrl;
       preview.style.display = '';
@@ -10896,7 +10937,7 @@ async function showPropertiesPanel(rawPath) {
         : 'Open the native Windows dialog (may take a couple of seconds)'));
   }
 
-  propsSummaryText = [
+  propsSummaryText = youtube ? [name, sourceType, position, youtubeLink].filter(Boolean).join('\n') : [
     name,
     (w && h) ? (w + '×' + h + ' px') : '',
     ratio !== '-' ? ratio : '',
@@ -10907,6 +10948,7 @@ async function showPropertiesPanel(rawPath) {
 
   if (typeof pauseSlideshow === 'function') pauseSlideshow();
   openModal('modal-properties');
+  if (youtube) return;
 
   // Fresh size / dates from disk
   let size = im.size;
@@ -10971,7 +11013,7 @@ if ($('props-copy-path')) {
       } else {
         throw new Error('no clipboard');
       }
-      showToast(i18nLang.toast_path_copied || 'PATH COPIED', 'success');
+      showToast(i18nLang[$('modal-properties').dataset.source === 'youtube' ? 'youtube_link_copied' : 'toast_path_copied'] || 'COPIED', 'success');
     } catch (_) {
       showToast(i18nLang.toast_copy_error || 'ERROR COPYING', 'error');
     }
@@ -11012,6 +11054,7 @@ if ($('props-show-folder')) {
 if ($('btn-props')) {
   $('btn-props').addEventListener('click', openPropertiesForCurrent);
 }
+$('titlebar-properties-btn').addEventListener('click', openPropertiesForCurrent);
 
 function wireFooterPropsHit(id) {
   const el = $(id);

@@ -331,6 +331,55 @@ app.whenReady().then(async () => {
     await evaluate("closeModal('modal-properties');");
     console.log('PASS title bar: document title uses the native drag region; Properties remain accessible from the footer');
 
+    const mediaProperties = await evaluate(`const previousImages = state.images;
+      const previousCurrent = state.current;
+      const previousCurrentIdx = state.currentIdx;
+      const samples = [
+        { path: 'C:/test/sample.png', name: 'sample.png', kind: 'image' },
+        { path: 'C:/test/sample.mp4', name: 'sample.mp4', kind: 'video' },
+        { path: 'C:/test/sample.mp3', name: 'sample.mp3', kind: 'audio' },
+        { path: 'https://www.youtube.com/watch?v=abcdefghijk&list=UU_x5XG1OV2P6uZZ5FSM9Ttw', name: 'Playlist video', kind: 'youtube' }
+      ];
+      const results = [];
+      try {
+        for (const sample of samples) {
+          state.images = [{ file: { path: sample.path, name: sample.name }, w: 120, h: 80 }];
+          state.current = 0;
+          state.currentIdx = 0;
+          syncEmptyState();
+          $('titlebar-properties-btn').click();
+          results.push({ kind: sample.kind,
+            buttonVisible: !$('titlebar-properties-btn').hidden,
+            modalOpen: $('modal-properties').classList.contains('active'),
+            name: $('props-name').textContent,
+            path: $('props-path').textContent,
+            source: $('modal-properties').dataset.source,
+            fileSizeHidden: $('props-size').closest('.props-row').hidden,
+            nativeHidden: $('props-native-btn').hidden,
+            youtubePreviewVisible: !$('props-youtube-preview').hidden });
+          if (sample.kind !== 'youtube') closeModal('modal-properties');
+        }
+      } finally {
+        state.images = previousImages;
+        state.current = previousCurrent;
+        state.currentIdx = previousCurrentIdx;
+        syncEmptyState();
+      }
+      return results;`);
+    assert.equal(mediaProperties.every(item => item.buttonVisible && item.modalOpen && item.name), true,
+      'the title bar opens Properties for every media type');
+    assert.equal(mediaProperties.slice(0, 3).every(item => item.source === 'file' && !item.fileSizeHidden && !item.nativeHidden && !item.youtubePreviewVisible), true,
+      'local media retain file properties and native actions');
+    assert.deepEqual(mediaProperties[3], {
+      kind: 'youtube', buttonVisible: true, modalOpen: true, name: 'Playlist video',
+      path: 'https://www.youtube.com/playlist?list=UU_x5XG1OV2P6uZZ5FSM9Ttw',
+      source: 'youtube', fileSizeHidden: true, nativeHidden: true, youtubePreviewVisible: true
+    }, 'YouTube Properties show the playlist link and hide file-only actions');
+    await delay(350);
+    fs.writeFileSync(path.join(dataDir, 'youtube-properties.png'), (await win.webContents.capturePage()).toPNG());
+    await evaluate("closeModal('modal-properties');");
+    console.log('PASS title bar Properties: image, video, audio and YouTube use relevant details');
+
     assert.equal(await evaluate("return state.settings.app.centerDropAction;"), 'new-tab');
     const centerLabel = await evaluate(`const rect = $('viewer-wrap').getBoundingClientRect();
       updateFileDropZone(rect.left + rect.width / 2, rect.top + rect.height / 2);

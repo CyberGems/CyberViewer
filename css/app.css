@@ -4266,6 +4266,7 @@
     font-family: var(--font-ui);
     font-size: 12px;
   }
+  .props-row[hidden], #props-native-btn[hidden], #props-show-folder[hidden], #props-youtube-preview[hidden] { display: none; }
   .props-section .props-row:last-child { border-bottom: none; }
   .props-key {
     color: var(--cyber-muted);
@@ -4393,6 +4394,9 @@
     object-fit: contain;
     display: block;
   }
+  #modal-properties[data-source='youtube'] .props-preview-stage { background-image: none; }
+  .props-youtube-preview { display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--cyber-accent-ink); font: 700 18px var(--font-ui); }
+  .props-youtube-preview svg { width: 72px; height: 72px; }
   .props-preview-readout {
     font-family: var(--font-digits);
     font-size: 12px;
@@ -5656,6 +5660,7 @@
   body.ghost-mode .titlebar-filename { display: none; }
 
   #btn-shortcuts.hidden { display: none; }
+  #titlebar-properties-btn[hidden] { display: none; }
   #btn-shortcuts.open { color: var(--cyber-accent-ink); background: rgba(var(--cyber-accent-rgb), 0.10); }
 
   /* Shortcuts-guide tooltip suppression while open is handled in ttSuppressedWhileOpen() */
