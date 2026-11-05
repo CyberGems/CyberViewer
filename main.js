@@ -2636,6 +2636,24 @@ ipcMain.handle('get-file-info', (event, filePath) => {
   }
 });
 
+ipcMain.handle('get-video-audio-codec', async (event, filePath) => {
+  try {
+    const absPath = resolveAllowedPath(filePath);
+    if (!isVideoPath(absPath)) return null;
+
+    const metadataModule = await (audioMetadataModulePromise ||= import('music-metadata'));
+    const metadata = await metadataModule.parseFile(absPath, {
+      duration: false,
+      skipCovers: true,
+      maxMemoryAllocation: 16 * 1024 * 1024
+    });
+    const audioTrack = metadata.format.trackInfo?.find(track => track.type === metadataModule.TrackType.audio);
+    return audioTrack?.codecName || audioTrack?.codecId || null;
+  } catch (_) {
+    return null;
+  }
+});
+
 /**
  * Check which paths still exist as image files.
  * Does NOT expand the allowlist — call register-paths after for paths you will open.

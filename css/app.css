@@ -4309,14 +4309,6 @@
     max-height: 3.2em;
     overflow: hidden;
   }
-  .props-mini-btn {
-    padding: 2px 8px !important;
-    font-size: 10px !important;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    height: 22px !important;
-    flex-shrink: 0;
-  }
   .props-preview-panel {
     background: rgba(var(--cyber-shell-deep-rgb), 0.95);
     border: 1px solid rgba(var(--cyber-accent-rgb), 0.25);
@@ -4459,6 +4451,46 @@
     width: 17px;
     height: 17px;
     flex: 0 0 17px;
+  }
+  .props-mini-btn {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    padding: 0 !important;
+    flex-shrink: 0;
+    border-radius: 5px;
+    letter-spacing: 0;
+  }
+  .props-mini-btn svg {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 14px;
+  }
+  .props-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 14px;
+    margin-bottom: 6px;
+  }
+  .props-section-heading .props-section-label {
+    margin-bottom: 0;
+  }
+  .props-audio-codec-badge {
+    max-width: 70%;
+    overflow: hidden;
+    color: var(--cyber-accent-ink);
+    font-family: var(--font-ui);
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 14px;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #props-audio-codec-badge[hidden] {
+    display: none;
   }
   .footer-props-hit {
     cursor: pointer;

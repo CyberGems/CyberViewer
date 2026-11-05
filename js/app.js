@@ -10849,14 +10849,10 @@ async function showPropertiesPanel(rawPath) {
   localizeLabel('props-path-key', youtube ? 'props_k_link' : 'props_k_path');
   localizeLabel('props-index-key', youtube ? 'props_k_playlist_position' : 'props_k_index');
   localizeLabel('props-preview-label', youtube ? 'props_section_youtube' : 'props_preview_lbl');
-  if (youtube) {
-    $('props-copy-path').removeAttribute('data-i18n-title');
-    $('props-copy-path').removeAttribute('data-tooltip');
-    $('props-copy-path').classList.remove('cyber-tooltip');
-  } else {
-    $('props-copy-path').dataset.i18nTitle = 'props_copy_path_tooltip';
-    setCyberTooltip($('props-copy-path'), i18nLang.props_copy_path_tooltip);
-  }
+  const copyPathButton = $('props-copy-path');
+  copyPathButton.dataset.i18nTitle = 'props_copy_path_tooltip';
+  copyPathButton.setAttribute('aria-label', i18nLang.props_copy_path || (es ? 'Copiar' : 'Copy'));
+  setCyberTooltip(copyPathButton, i18nLang.props_copy_path_tooltip);
   for (const id of ['props-size', 'props-created', 'props-modified']) $(id).closest('.props-row').hidden = youtube;
   $('props-index').closest('.props-row').hidden = youtube && !playlist;
   $('props-fav').closest('.props-row').hidden = youtube;
@@ -10953,6 +10949,10 @@ async function showPropertiesPanel(rawPath) {
   const sectionTitle = mediaSection.querySelector('.props-section-label');
   sectionTitle.dataset.i18n = youtube ? 'props_section_youtube' : audio ? 'audio_label' : video ? 'video_label' : 'props_section_image';
   sectionTitle.textContent = i18nLang[sectionTitle.dataset.i18n];
+  const audioCodecBadge = $('props-audio-codec-badge');
+  audioCodecBadge.hidden = true;
+  audioCodecBadge.textContent = '';
+  audioCodecBadge.removeAttribute('title');
   for (const id of ['props-dims', 'props-ratio', 'props-mp']) $(id).closest('.props-row').style.display = audio || youtube ? 'none' : '';
   $('props-duration-row').hidden = !audio;
   $('props-duration').textContent = audio && Number.isFinite(im.duration) ? window.CVFormats.formatTime(im.duration) : '-';
@@ -11072,6 +11072,15 @@ async function showPropertiesPanel(rawPath) {
   if (typeof pauseSlideshow === 'function') pauseSlideshow();
   openModal('modal-properties');
   if (youtube) return;
+
+  if (video && isElectron && fpath && window.electronAPI.getVideoAudioCodec) {
+    window.electronAPI.getVideoAudioCodec(fpath).then(codec => {
+      if (!codec || !$('modal-properties').classList.contains('active') || propsNativePath !== fpath ||
+          state.images[state.current] !== im || $('modal-properties').dataset.previewKind !== 'video') return;
+      audioCodecBadge.textContent = `${i18nLang.props_audio_codec || (es ? 'Códec de audio' : 'Audio codec')}: ${codec}`;
+      audioCodecBadge.hidden = false;
+    }).catch(() => { /* codec metadata is optional */ });
+  }
 
   if ((audio || video) && isElectron && fpath && window.electronAPI.getThumbnail) {
     window.electronAPI.getThumbnail(fpath, { priority: true, coverArt: audio }).then(thumbUrl => {
