@@ -252,10 +252,17 @@
   </div>
   <input id="tab-search" type="search" autocomplete="off" spellcheck="false" aria-label="Buscar pestañas">
   <div id="tab-switcher-list"></div>
-  <button type="button" id="tab-switcher-close-all" class="tab-switcher-close-all">
+  <button type="button" id="tab-switcher-close-all" class="tab-switcher-close-all" aria-controls="tab-switcher-close-confirm" aria-expanded="false">
     <svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
     <span data-i18n="tabs_close_all">Cerrar todas las pestañas</span>
   </button>
+  <div id="tab-switcher-close-confirm" class="tab-switcher-close-confirm" role="group" aria-labelledby="tab-switcher-close-confirm-text" hidden>
+    <span id="tab-switcher-close-confirm-text"></span>
+    <div class="tab-switcher-close-confirm-actions">
+      <button type="button" id="tab-switcher-close-cancel" data-i18n="config_cancel">Cancelar</button>
+      <button type="button" id="tab-switcher-close-confirm-btn" data-i18n="tabs_close_all_confirm_action">Cerrar todas</button>
+    </div>
+  </div>
 </section>
 <div id="app">
 
@@ -710,7 +717,7 @@
 <div id="modal-cyber-confirm" class="modal-overlay">
   <div class="modal-box confirm-modal-box">
     <div class="modal-header confirm-modal-header">
-      <div class="modal-title" id="confirm-title"><span class="modal-header-icon" id="confirm-header-icon" aria-hidden="true"></span><span id="confirm-title-text">MOVER A LA PAPELERA</span></div>
+      <div class="modal-title" id="confirm-title"><span class="modal-header-icon" id="confirm-header-icon" aria-hidden="true"></span><span id="confirm-title-text">Mover a la papelera</span></div>
       <button class="win-btn modal-close-btn" data-close-modal="modal-cyber-confirm">&#10005;</button>
     </div>
     <div class="modal-body confirm-modal-body">
@@ -816,7 +823,7 @@
     <div class="modal-header">
       <div class="modal-title">
         <span class="modal-header-icon" data-modal-icon="printer" aria-hidden="true"></span>
-        <span data-i18n="print_export_title">EXPORT & PRINT</span>
+        <span class="modal-title-copy"><span data-i18n="print_export_title">Imprimir o exportar PDF</span><small class="modal-subtitle" data-i18n="print_export_intro">Configura la página antes de imprimir o guardar un PDF.</small></span>
       </div>
       <button class="win-btn modal-close-btn tooltip-bottom tooltip-align-right" data-close-modal="modal-print-export" data-i18n-title="close" title="Close">&#10005;</button>
     </div>
@@ -879,7 +886,7 @@
     <div class="modal-header">
       <div class="modal-title">
         <span class="modal-header-icon" data-modal-icon="info" aria-hidden="true"></span>
-        <span data-i18n="props_title">PROPIEDADES</span>
+        <span class="modal-title-copy"><span data-i18n="props_title">Propiedades</span><small class="modal-subtitle" data-i18n="props_intro">Consulta los datos del archivo y su vista previa.</small></span>
       </div>
       <button class="win-btn modal-close-btn tooltip-bottom tooltip-align-right" data-close-modal="modal-properties" data-i18n-title="close" title="Cerrar">&#10005;</button>
     </div>
@@ -949,7 +956,7 @@
     <div class="modal-header">
       <div class="modal-title">
         <svg class="config-header-icon titlebar-config-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-        <span data-i18n="config_title">Configuración</span>
+        <span class="modal-title-copy"><span data-i18n="config_title">Configuración</span><small class="modal-subtitle" data-i18n="config_intro">Personaliza el aspecto y el comportamiento del visor.</small></span>
       </div>
       <button class="win-btn modal-close-btn" data-close-modal="modal-config">&#10005;</button>
     </div>
@@ -1509,7 +1516,7 @@
     <div class="modal-header">
       <div class="modal-title">
         <span class="modal-header-icon" data-modal-icon="resize" aria-hidden="true"></span>
-        <span data-i18n="resize_title">REDIMENSIONAR</span>
+        <span class="modal-title-copy"><span data-i18n="resize_title">Redimensionar</span><small class="modal-subtitle" data-i18n="resize_intro">Elige dimensiones y calidad antes de guardar.</small></span>
       </div>
       <button class="win-btn modal-close-btn tooltip-bottom tooltip-align-right" data-close-modal="modal-resize" data-i18n-title="close" title="Cerrar">&#10005;</button>
     </div>
@@ -1637,7 +1644,7 @@
     <div class="modal-header">
       <div class="modal-title">
         <span class="modal-header-icon adjust-modal-icon" aria-hidden="true">&#9681;</span>
-        <span id="adjust-modal-title" data-i18n="adjust_title">MODIFICAR</span>
+        <span class="modal-title-copy"><span id="adjust-modal-title" data-i18n="adjust_title">Modificar</span><small class="modal-subtitle" data-i18n="adjust_intro">Ajusta color y tono con una vista previa en vivo.</small></span>
       </div>
       <div class="adjust-header-actions">
         <button type="button" class="top-btn adjust-reset-btn tooltip-bottom" id="btn-adjust-reset" data-i18n="adjust_reset" data-i18n-title="adjust_reset_tooltip">Reset</button>

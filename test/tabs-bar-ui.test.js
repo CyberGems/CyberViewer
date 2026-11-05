@@ -77,13 +77,33 @@ describe('tab bar ui', () => {
   });
 
   it('gives the switcher a header with count and a close-all footer', () => {
+    for (const lang of ['en', 'es']) {
+      for (const key of ['tabs_close_all_confirm', 'tabs_close_all_confirm_one', 'tabs_close_all_confirm_action']) {
+        assert.ok(ui[lang][key], `${lang}.${key}`);
+      }
+    }
     assert.match(html, /id="tab-switcher-close-all"/);
+    assert.match(html, /id="tab-switcher-close-confirm"/);
+    assert.match(html, /id="tab-switcher-close-cancel"/);
+    assert.match(html, /id="tab-switcher-close-confirm-btn"/);
     assert.match(html, /id="tab-switcher-count"/);
     assert.match(workspace, /\$\('tab-switcher-count'\)\.textContent = model\.tabs\.length;/);
     assert.match(workspace, /\$\('tab-switcher-close-all'\)\.disabled = !model\.tabs\.length;/);
-    assert.match(workspace, /\$\('tab-switcher-close-all'\)\.addEventListener\('click', \(\) => \{\s*\$\('tab-switcher'\)\.hidden = true;\s*closeTabs\(model\.tabs\.map\(tab => tab\.id\)\);/);
+    assert.match(workspace, /\$\('tab-switcher-close-all'\)\.addEventListener\('click', \(\) => \{\s*setCloseAllConfirmation\(true, true\);/);
+    assert.match(workspace, /\$\('tab-switcher-close-confirm-btn'\)\.addEventListener\('click', \(\) => \{[\s\S]*?closeTabs\(model\.tabs\.map\(tab => tab\.id\)\);/);
     assert.match(tabsCss, /\.tab-switcher-head \{/);
     assert.match(tabsCss, /\.tab-switcher-close-all \{/);
+    assert.match(tabsCss, /#tab-switcher-list::-webkit-scrollbar \{ width: 6px; \}/);
+    assert.match(tabsCss, /#tab-switcher-list::-webkit-scrollbar-button \{ display: none; \}/);
+  });
+
+  it('localizes the modal helper lines in both languages', () => {
+    for (const lang of ['en', 'es']) {
+      for (const key of ['config_intro', 'props_intro', 'resize_intro', 'adjust_intro', 'print_export_intro']) {
+        assert.ok(ui[lang][key], `${lang}.${key}`);
+        assert.match(html, new RegExp(`data-i18n="${key}"`));
+      }
+    }
   });
 
   it('styles the plus button as a square bordered action like the suite', () => {

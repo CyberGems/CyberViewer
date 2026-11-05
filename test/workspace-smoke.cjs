@@ -456,6 +456,38 @@ app.whenReady().then(async () => {
     await waitFor(() => evaluate("return state.settings.app.showTabMediaIcons === true && [...document.querySelectorAll('.image-tab-media-icon')].every(icon => !icon.hidden);"),
       'media icons restored on existing tabs');
     console.log('PASS image, video, audio and YouTube tab icons and saved visibility preference');
+    const headingState = await evaluate(`return {
+      titles: [...document.querySelectorAll('.modal-overlay .modal-title')].map(el => getComputedStyle(el).textTransform),
+      helpers: ['modal-config', 'modal-print-export', 'modal-properties', 'modal-resize', 'modal-adjust']
+        .map(id => $(id).querySelector('.modal-subtitle')?.textContent),
+      section: getComputedStyle($('modal-properties').querySelector('.props-section-label')).textTransform
+    };`);
+    assert.equal(headingState.titles.every(value => value === 'none'), true, 'modal titles use natural case');
+    assert.equal(headingState.helpers.every(Boolean), true, 'tool modals include a short helper line');
+    assert.equal(headingState.section, 'none', 'modal section titles use natural case');
+    await evaluate("openConfig();");
+    fs.writeFileSync(path.join(dataDir, 'config-heading.png'), (await win.webContents.capturePage()).toPNG());
+    await evaluate("closeModal('modal-config');");
+    const closeAllCount = await evaluate('return window.CVWorkspace.model.tabs.length;');
+    await evaluate("$('tab-switcher').hidden = true; $('image-tabs-list-btn').click(); $('tab-switcher-close-all').click();");
+    fs.writeFileSync(path.join(dataDir, 'tab-close-confirm.png'), (await win.webContents.capturePage()).toPNG());
+    assert.equal(await evaluate(`return !$('tab-switcher-close-confirm').hidden && $('tab-switcher-close-all').hidden &&
+      $('tab-switcher-close-confirm-text').textContent.includes(String(window.CVWorkspace.model.tabs.length));`), true,
+    'close-all opens an inline confirmation with the current tab count');
+    assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), closeAllCount,
+      'first click leaves all tabs open');
+    await evaluate("$('tab-switcher-close-cancel').click();");
+    assert.equal(await evaluate("return $('tab-switcher-close-confirm').hidden && !$('tab-switcher-close-all').hidden;"), true,
+      'Cancel restores the close-all action');
+    await evaluate("$('tab-switcher-close-all').click(); document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));");
+    assert.equal(await evaluate("return $('tab-switcher-close-confirm').hidden && !$('tab-switcher').hidden;"), true,
+      'Escape dismisses only the inline confirmation');
+    await evaluate("$('tab-switcher-close-all').click(); $('tab-switcher-close-confirm-btn').click();");
+    await waitFor(() => evaluate("return window.CVWorkspace.model.tabs.length === 0 || $('modal-cyber-confirm').classList.contains('active');"),
+      'close-all runs after inline confirmation');
+    if (await evaluate("return $('modal-cyber-confirm').classList.contains('active');")) await evaluate("$('btn-confirm-ok').click();");
+    await waitFor(() => evaluate('return window.CVWorkspace.model.tabs.length === 0;'), 'all tabs closed');
+    console.log('PASS natural-case modal headings, helper lines and inline close-all confirmation');
   }
   app.exit(0);
 }).catch(error => { console.error(error.stack || error); app.exit(1); });

@@ -583,12 +583,27 @@ window.CVWorkspace = (() => {
       : window.CVFormats.isAudio(tab.image) ? 'audio'
       : window.CVFormats.isVideo(tab.image) ? 'video' : 'image';
   }
+  function setCloseAllConfirmation(open, focus = false) {
+    const button = $('tab-switcher-close-all');
+    const confirmation = $('tab-switcher-close-confirm');
+    const showing = open && model.tabs.length > 0;
+    button.hidden = showing;
+    button.setAttribute('aria-expanded', String(showing));
+    confirmation.hidden = !showing;
+    if (showing) {
+      const key = model.tabs.length === 1 ? 'tabs_close_all_confirm_one' : 'tabs_close_all_confirm';
+      $('tab-switcher-close-confirm-text').textContent = text(key).replace('{count}', model.tabs.length);
+      if (focus) $('tab-switcher-close-cancel').focus();
+    } else if (focus) button.focus();
+  }
   function renderSwitcher() {
     const query = $('tab-search').value.toLowerCase();
     $('tab-search').placeholder = text('tabs_search');
     $('tab-search').setAttribute('aria-label', text('tabs_search'));
     $('tab-switcher-count').textContent = model.tabs.length;
     $('tab-switcher-close-all').disabled = !model.tabs.length;
+    if (!model.tabs.length) setCloseAllConfirmation(false);
+    else if (!$('tab-switcher-close-confirm').hidden) setCloseAllConfirmation(true);
     const list = $('tab-switcher-list');
     list.replaceChildren();
     const fragment = document.createDocumentFragment();
@@ -606,7 +621,7 @@ window.CVWorkspace = (() => {
       title.append(icon, name);
       const filePath = document.createElement('small'); filePath.textContent = tab.image.file.path || text('tabs_clipboard');
       row.append(title, filePath);
-      row.addEventListener('click', () => { $('tab-switcher').hidden = true; void activate(tab.id); });
+      row.addEventListener('click', () => { setCloseAllConfirmation(false); $('tab-switcher').hidden = true; void activate(tab.id); });
       fragment.append(row);
     }
     if (!fragment.childNodes.length) {
@@ -846,10 +861,16 @@ window.CVWorkspace = (() => {
     });
     $('image-tabs-list-btn').addEventListener('click', () => {
       const switcher = $('tab-switcher'); switcher.hidden = !switcher.hidden;
+      setCloseAllConfirmation(false);
       if (!switcher.hidden) { $('tab-search').value = ''; renderSwitcher(); $('tab-search').focus(); }
     });
     $('image-tabs-open').addEventListener('click', () => window.openImageDialog && window.openImageDialog());
     $('tab-switcher-close-all').addEventListener('click', () => {
+      setCloseAllConfirmation(true, true);
+    });
+    $('tab-switcher-close-cancel').addEventListener('click', () => setCloseAllConfirmation(false, true));
+    $('tab-switcher-close-confirm-btn').addEventListener('click', () => {
+      setCloseAllConfirmation(false);
       $('tab-switcher').hidden = true;
       closeTabs(model.tabs.map(tab => tab.id));
     });
@@ -916,10 +937,17 @@ window.CVWorkspace = (() => {
         items[(index + (event.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length]?.focus();
       }
     });
-    document.addEventListener('pointerdown', event => { if (!event.target.closest('#tab-switcher, #image-tabs-list-btn')) $('tab-switcher').hidden = true; });
+    document.addEventListener('pointerdown', event => {
+      if (!event.target.closest('#tab-switcher, #image-tabs-list-btn')) {
+        $('tab-switcher').hidden = true;
+        setCloseAllConfirmation(false);
+      }
+    });
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape' && !$('tab-switcher').hidden) {
-        event.preventDefault(); event.stopImmediatePropagation(); $('tab-switcher').hidden = true; $('image-tabs-list-btn').focus();
+        event.preventDefault(); event.stopImmediatePropagation();
+        if (!$('tab-switcher-close-confirm').hidden) setCloseAllConfirmation(false, true);
+        else { $('tab-switcher').hidden = true; $('image-tabs-list-btn').focus(); }
       }
       if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
       if (event.key === 'Tab' || event.key.toLowerCase() === 'w' || (event.shiftKey && event.key.toLowerCase() === 't')) {

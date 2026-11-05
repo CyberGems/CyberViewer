@@ -3740,9 +3740,18 @@
     gap: 10px;
     font-family: var(--font-ui);
     font-size: 16px;
-    color: var(--cyber-accent-ink);
-    letter-spacing: 2px;
-    text-transform: uppercase;
+    color: var(--cyber-text);
+    font-weight: 700;
+    letter-spacing: 0;
+    line-height: 1.25;
+  }
+  .modal-title-copy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .modal-subtitle {
+    color: var(--cyber-muted);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: 1.4;
   }
 
   .modal-body {
@@ -4244,8 +4253,8 @@
   .props-section-label {
     font-size: 10px;
     color: var(--cyber-muted);
-    text-transform: uppercase;
-    letter-spacing: 2px;
+    text-transform: none;
+    letter-spacing: .03em;
     font-weight: 700;
     margin-bottom: 6px;
   }
@@ -4326,6 +4335,10 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
+  }
+  #modal-properties .props-preview-head .hud-label {
+    text-transform: none;
+    letter-spacing: .03em;
   }
   .props-badges {
     display: flex;
@@ -4457,7 +4470,7 @@
     display: block;
     font-size: 11px;
     color: var(--cyber-muted);
-    text-transform: uppercase;
+    text-transform: none;
     letter-spacing: 2px;
     margin-bottom: 12px;
     font-weight: 700;
@@ -4819,7 +4832,7 @@
   #modal-config .modal-title {
     gap: 12px;
     font-size: 18px;
-    letter-spacing: 0.14em;
+    letter-spacing: 0;
   }
 
   #modal-config .modal-close-btn {
@@ -5181,8 +5194,8 @@
     color: var(--cyber-text);
     font-size: 13px;
     font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    letter-spacing: 0;
+    text-transform: none;
   }
 
   #modal-config .config-tab-intro-desc {
@@ -5199,7 +5212,7 @@
     margin-bottom: 13px;
     color: var(--cyber-text-soft-4);
     font-size: 12px;
-    letter-spacing: 0.13em;
+    letter-spacing: .03em;
   }
 
   #modal-config .config-label::before {
@@ -5976,8 +5989,8 @@
   .hud-label {
     font-size: 10px;
     color: var(--cyber-muted);
-    text-transform: uppercase;
-    letter-spacing: 2px;
+    text-transform: none;
+    letter-spacing: .03em;
     font-weight: bold;
   }
   
@@ -6773,8 +6786,8 @@
   font-size: 11px;
   font-family: var(--font-ui);
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--cyber-accent-ink);
 }
 .about-section-rule {
@@ -7176,8 +7189,8 @@
 .update-popup-changelog-header {
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--cyber-muted);
   margin-bottom: 6px;
 }
@@ -7284,8 +7297,8 @@
   font-size: 10px;
   font-family: var(--font-ui);
   font-weight: 600;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--cyber-muted);
 }
 .about-update-version-card.latest .about-update-version-label {
