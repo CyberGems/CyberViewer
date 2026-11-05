@@ -4974,7 +4974,7 @@
     background: transparent;
     color: var(--cyber-text-soft-3);
     font-family: var(--font-ui);
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 700;
     letter-spacing: 0;
     text-transform: none;
@@ -5085,7 +5085,7 @@
     border-radius: 4px;
     border: 1px solid var(--cyber-border);
     background: rgba(var(--cyber-tint-rgb),0.03);
-    color: var(--cyber-muted);
+    color: var(--cyber-text-soft-3);
     cursor: pointer;
     font-family: var(--font-ui);
     transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
@@ -5095,7 +5095,14 @@
     width: 13px;
     height: 13px;
     flex: 0 0 13px;
-    opacity: 0.72;
+    opacity: 1;
+  }
+
+  #modal-config .config-nav-close .btn-key-hint {
+    color: var(--cyber-text-soft-2);
+    opacity: 1;
+    border-color: rgba(var(--cyber-tint-rgb), 0.28);
+    background: rgba(var(--cyber-tint-rgb), 0.09);
   }
 
   #modal-config .config-nav-close:hover {
@@ -5114,6 +5121,7 @@
     min-width: 0;
     overflow-x: hidden;
     overflow-y: auto;
+    scrollbar-gutter: stable;
     padding: 30px 34px 44px;
     background: rgba(var(--cyber-shell-7-rgb), 0.18);
   }
@@ -6295,11 +6303,11 @@
     box-shadow: 0 0 10px rgba(var(--preview-accent-rgb), 0.25) !important;
   }
 
-  /* Dialog close & cancel buttons reddish hover (match window close X) */
+  /* Dialog close buttons use a quiet hover without a glow. */
   .modal-close-btn:hover {
     color: var(--cyber-accent2-ink) !important;
     background: rgba(var(--cyber-accent2-rgb), 0.12) !important;
-    box-shadow: 0 0 12px rgba(var(--cyber-accent2-rgb), 0.4) !important;
+    box-shadow: none !important;
   }
 
   /* Modal tooltips: sit just outside the control (not the statusbar 64px offset) */

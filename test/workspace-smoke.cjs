@@ -466,6 +466,18 @@ app.whenReady().then(async () => {
     assert.equal(headingState.helpers.every(Boolean), true, 'tool modals include a short helper line');
     assert.equal(headingState.section, 'none', 'modal section titles use natural case');
     await evaluate("openConfig();");
+    const configTabGeometry = await evaluate(`return ['general', 'appearance', 'interface', 'slideshow', 'system', 'backup']
+      .map(id => { setActiveConfigTab(id);
+        const content = $('modal-config').querySelector('.config-content');
+        const panel = $('config-tab-' + id).getBoundingClientRect();
+        return { id, contentWidth: content.clientWidth, panelLeft: panel.left, panelWidth: panel.width };
+      });`);
+    const firstConfigTab = configTabGeometry[0];
+    assert.equal(configTabGeometry.every(item => item.contentWidth === firstConfigTab.contentWidth &&
+      Math.abs(item.panelLeft - firstConfigTab.panelLeft) < 1 &&
+      Math.abs(item.panelWidth - firstConfigTab.panelWidth) < 1), true,
+    `settings panels should not jump when their scrollbar appears: ${JSON.stringify(configTabGeometry)}`);
+    await evaluate("setActiveConfigTab('general');");
     fs.writeFileSync(path.join(dataDir, 'config-heading.png'), (await win.webContents.capturePage()).toPNG());
     await evaluate("closeModal('modal-config');");
     const closeAllCount = await evaluate('return window.CVWorkspace.model.tabs.length;');
