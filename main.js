@@ -2109,6 +2109,7 @@ const THUMB_CONCURRENCY = 3;
 let thumbInFlight = 0;
 /** @type {{ resolve: () => void, priority: boolean }[]} */
 const thumbWaiters = [];
+let audioMetadataModulePromise = null;
 
 let evictTimer = null;
 function scheduleThumbCacheEviction() {
@@ -2147,6 +2148,31 @@ function releaseThumbSlot() {
   thumbInFlight = Math.max(0, thumbInFlight - 1);
   const next = thumbWaiters.shift();
   if (next) next.resolve();
+}
+
+async function renderAudioCoverThumb(filePath) {
+  try {
+    const metadataModule = await (audioMetadataModulePromise ||= import('music-metadata'));
+    const metadata = await metadataModule.parseFile(filePath, {
+      duration: false,
+      maxMemoryAllocation: 16 * 1024 * 1024
+    });
+    const picture = metadataModule.selectCover(metadata.common?.picture);
+    if (!picture?.data?.length || picture.data.length > 16 * 1024 * 1024) return null;
+
+    let image = nativeImage.createFromBuffer(Buffer.from(picture.data));
+    if (image.isEmpty()) return null;
+    const { width, height } = image.getSize();
+    const longestEdge = Math.max(width, height);
+    if (longestEdge > 640) {
+      image = width >= height
+        ? image.resize({ width: 640, quality: 'good' })
+        : image.resize({ height: 640, quality: 'good' });
+    }
+    return image.toJPEG(84);
+  } catch (_) {
+    return null;
+  }
 }
 
 async function renderBrowserImageThumb(abs, cacheFile) {
@@ -2224,7 +2250,9 @@ async function renderVideoThumb(abs, cacheFile) {
 ipcMain.handle('get-thumbnail', async (event, filePath, opts) => {
   try {
     const abs = resolveAllowedPath(filePath);
-    if (isAudioPath(abs)) return pathToFileURL(path.join(__dirname, 'assets', 'audio-thumbnail.svg')).href;
+    const isAudio = isAudioPath(abs);
+    const wantsAudioCover = isAudio && !!(opts && opts.coverArt);
+    if (isAudio && !wantsAudioCover) return pathToFileURL(path.join(__dirname, 'assets', 'audio-thumbnail.svg')).href;
     const priority = !!(opts && opts.priority);
     const stats = await fs.promises.stat(abs);
     const normalizedPath = abs.toLowerCase();
@@ -2232,7 +2260,7 @@ ipcMain.handle('get-thumbnail', async (event, filePath, opts) => {
     const isGif = ext === '.gif';
     const isAvif = ext === '.avif';
     const isVideo = isVideoPath(abs);
-    const thumbVersion = isVideo ? 'video-frame-v1' : isGif ? 'gif-frame-v2' : isAvif ? 'avif-browser-v1' : 'still-v1';
+    const thumbVersion = wantsAudioCover ? 'audio-cover-v1' : isVideo ? 'video-frame-v1' : isGif ? 'gif-frame-v2' : isAvif ? 'avif-browser-v1' : 'still-v1';
     const hash = crypto.createHash('md5').update(normalizedPath + stats.mtimeMs + thumbVersion).digest('hex');
     const cacheFile = path.join(thumbCachePath, `${hash}.jpg`);
 
@@ -2248,6 +2276,10 @@ ipcMain.handle('get-thumbnail', async (event, filePath, opts) => {
       }
       if (isVideo) {
         if (!await renderVideoThumb(abs, cacheFile)) return null;
+      } else if (wantsAudioCover) {
+        const cover = await renderAudioCoverThumb(abs);
+        if (!cover) return null;
+        await fs.promises.writeFile(cacheFile, cover);
       } else if ((isGif || isAvif) && await renderBrowserImageThumb(abs, cacheFile)) {
         // Browser-decoded formats use a static thumbnail so animated sources
         // do not keep repainting the sidebar. Chromium also provides the AVIF

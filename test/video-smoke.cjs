@@ -70,6 +70,16 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate('return state.hasChanges || state.isCropping;'), false);
     await evaluate('ensureSidebarOpen();');
     await waitFor(() => evaluate('return state.images.find(im=>im.file.name===' + JSON.stringify(path.basename(file)) + ')?.thumbUrl;'), 'video thumbnail', 25000);
+    await evaluate('openPropertiesForCurrent();');
+    await waitFor(() => evaluate(`const stageElement=$('props-preview-stage'), stage=stageElement.getBoundingClientRect();
+      const image=$('props-preview'), rect=image.getBoundingClientRect();
+      return $('modal-properties').classList.contains('active') && $('modal-properties').dataset.previewKind==='video' &&
+        image.complete && image.naturalWidth>0 && $('props-video-preview').hidden &&
+        getComputedStyle(stageElement).backgroundImage==='none' && rect.width>=stage.width-4 && rect.height>=stage.height-4;`),
+    'video frame fills the solid properties preview area');
+    await delay(350);
+    fs.writeFileSync(path.join(dataDir, 'video-properties.png'), (await win.webContents.capturePage()).toPNG());
+    await evaluate("closeModal('modal-properties');");
     console.log('PASS playback, audio, seeking, exact byte range, edit guards and thumbnail');
 
     for (const name of ['compatible.mov','compatible.mkv','compatible.m4v','compatible.webm']) {

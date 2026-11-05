@@ -4266,7 +4266,7 @@
     font-family: var(--font-ui);
     font-size: 12px;
   }
-  .props-row[hidden], #props-native-btn[hidden], #props-show-folder[hidden], #props-youtube-preview[hidden], #props-youtube-thumbnail[hidden] { display: none; }
+  .props-row[hidden], #props-native-btn[hidden], #props-show-folder[hidden], #props-video-preview[hidden], #props-youtube-preview[hidden], #props-youtube-thumbnail[hidden] { display: none; }
   .props-section .props-row:last-child { border-bottom: none; }
   .props-key {
     color: var(--cyber-muted);
@@ -4377,6 +4377,11 @@
     border-radius: 4px;
     border: 1px dashed rgba(var(--cyber-accent-rgb), 0.18);
     background-color: var(--cyber-inset-2);
+    background-image: none;
+    position: relative;
+    overflow: hidden;
+  }
+  #modal-properties[data-preview-kind='image'] .props-preview-stage {
     background-image:
       linear-gradient(45deg, var(--cyber-raise-hex) 25%, transparent 25%),
       linear-gradient(-45deg, var(--cyber-raise-hex) 25%, transparent 25%),
@@ -4384,7 +4389,10 @@
       linear-gradient(-45deg, transparent 75%, var(--cyber-raise-hex) 75%);
     background-size: 16px 16px;
     background-position: 0 0, 0 8px, 8px -8px, -8px 0;
-    overflow: hidden;
+  }
+  #modal-properties:not([data-preview-kind='image']) .props-preview-stage {
+    background-color: var(--cyber-black);
+    background-image: none !important;
   }
   .props-preview {
     max-width: 100%;
@@ -4394,10 +4402,26 @@
     object-fit: contain;
     display: block;
   }
-  #modal-properties[data-source='youtube'] .props-preview-stage { background-image: none; }
+  .props-preview--video,
+  .props-youtube-thumbnail {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    object-fit: cover;
+  }
+  .props-preview--audio {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    object-fit: contain;
+    background-color: var(--cyber-black) !important;
+  }
+  .props-video-preview { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--cyber-muted); background: var(--cyber-inset-2); }
+  .props-video-preview svg { width: 72px; height: 72px; }
   .props-youtube-preview { display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--cyber-accent-ink); font: 700 18px var(--font-ui); }
   .props-youtube-preview svg { width: 72px; height: 72px; }
-  .props-youtube-thumbnail { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
   .props-preview-readout {
     font-family: var(--font-digits);
     font-size: 12px;

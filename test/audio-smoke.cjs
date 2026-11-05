@@ -58,6 +58,14 @@ if (!restoring) {
   // coefficients. These valid silent frames exercise the actual MP3 decoder.
   const mp3Frame = Buffer.alloc(417); mp3Frame.set([0xff, 0xfb, 0x90, 0x00]);
   fs.writeFileSync(path.join(dataDir, 'Silence.mp3'), Buffer.concat(Array(230).fill(mp3Frame)));
+  const artwork = fs.readFileSync(path.join(__dirname, '..', 'assets', 'icon.png'));
+  const picture = Buffer.concat([Buffer.from([0]), Buffer.from('image/png\0', 'ascii'), Buffer.from([3, 0]), artwork]);
+  const pictureFrameHead = Buffer.alloc(10); pictureFrameHead.write('APIC'); pictureFrameHead.writeUInt32BE(picture.length, 4);
+  const pictureFrame = Buffer.concat([pictureFrameHead, picture]);
+  const tagSize = pictureFrame.length;
+  const id3Header = Buffer.from([0x49, 0x44, 0x33, 3, 0, 0, (tagSize >> 21) & 0x7f,
+    (tagSize >> 14) & 0x7f, (tagSize >> 7) & 0x7f, tagSize & 0x7f]);
+  fs.writeFileSync(path.join(dataDir, 'Cover.mp3'), Buffer.concat([id3Header, pictureFrame, ...Array(230).fill(mp3Frame)]));
   fs.writeFileSync(path.join(dataDir, 'Broken.wav'), 'not a wav');
   fs.writeFileSync(path.join(dataDir, 'Picture.png'), nativeImage.createFromBitmap(Buffer.from([50, 100, 170, 255]), { width: 1, height: 1 }).resize({ width: 120, height: 80 }).toPNG());
 }
@@ -136,6 +144,15 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate('return window.CVVideo.element.videoWidth;'), 0);
     const thumb = await evaluate('return await window.electronAPI.getThumbnail(' + JSON.stringify(wav) + ');');
     assert.ok(thumb.endsWith('audio-thumbnail.svg'));
+    assert.equal(await evaluate('return await window.electronAPI.getThumbnail(' + JSON.stringify(wav) + ', { coverArt: true });'), null,
+      'Audio without embedded artwork reports no cover');
+    await evaluate('openPropertiesForCurrent();');
+    await waitFor(() => evaluate(`const stage=$('props-preview-stage'), image=$('props-preview'), sr=stage.getBoundingClientRect(), ir=image.getBoundingClientRect();
+      return $('modal-properties').dataset.previewKind==='audio' && image.complete && image.naturalWidth>0 &&
+        image.src.endsWith('/assets/audio-thumbnail.svg') && getComputedStyle(stage).backgroundImage==='none' &&
+        getComputedStyle(stage).backgroundColor===getComputedStyle(image).backgroundColor && ir.width>=sr.width-4 && ir.height>=sr.height-4;`),
+    'audio without cover uses its full-area icon on a solid background');
+    await evaluate("closeModal('modal-properties');");
     const range = await evaluate('const r=await fetch(mediaUrl(' + JSON.stringify(wav) + '), {headers:{Range:"bytes=0-43"}});return {status:r.status,mime:r.headers.get("content-type"),size:(await r.arrayBuffer()).byteLength};');
     assert.deepEqual(range, { status: 206, mime: 'audio/wav', size: 44 });
     // Test uses an offscreen/hidden app profile; visibility is controlled here
@@ -284,6 +301,19 @@ app.whenReady().then(async () => {
     await waitFor(() => evaluate('return window.CVVideo.element.currentTime > .15 && window.CVVideo.element.webkitAudioDecodedByteCount > 0;'), 'MP3 decoder');
     await evaluate('window.CVVideo.element.pause();');
     console.log('PASS direct MP3 decoding without conversion');
+    await open('Cover.mp3'); await ready();
+    await evaluate('openPropertiesForCurrent();');
+    await waitFor(() => evaluate(`const stageElement=$('props-preview-stage'); const stage=stageElement.getBoundingClientRect();
+      const image=$('props-preview'); const rect=image.getBoundingClientRect();
+      return $('modal-properties').classList.contains('active') && image.complete && image.naturalWidth > 0 &&
+        !image.src.endsWith('/assets/audio-thumbnail.svg') &&
+        $('modal-properties').dataset.previewKind === 'audio' && getComputedStyle(stageElement).backgroundImage === 'none' &&
+        getComputedStyle(stageElement).backgroundColor === getComputedStyle(image).backgroundColor &&
+        rect.width >= stage.width-4 && rect.height >= stage.height-4;`), 'audio cover fills the solid preview area');
+    await delay(350);
+    fs.writeFileSync(path.join(dataDir, 'audio-cover-properties.png'), (await win.webContents.capturePage()).toPNG());
+    await evaluate("closeModal('modal-properties');");
+    console.log('PASS embedded MP3 artwork is extracted and fills the preview without the image checker');
     const videoBytes = await evaluate(`
       const c=document.createElement('canvas'); c.width=160; c.height=90;
       const draw=c.getContext('2d'), stream=c.captureStream(10), ac=new AudioContext();
@@ -299,6 +329,21 @@ app.whenReady().then(async () => {
     `);
     fs.writeFileSync(path.join(dataDir, 'Video.webm'), Buffer.from(videoBytes));
     await open('Video.webm'); await ready();
+    const videoPath = path.join(dataDir, 'Video.webm');
+    assert.ok(await evaluate('return await window.electronAPI.getThumbnail(' + JSON.stringify(videoPath) + ', { priority: true });'),
+      'Generated video frame thumbnail exists');
+    await evaluate('openPropertiesForCurrent();');
+    await waitFor(() => evaluate(`const stageElement=$('props-preview-stage'), stage=stageElement.getBoundingClientRect();
+      const image=$('props-preview'), rect=image.getBoundingClientRect();
+      return $('modal-properties').classList.contains('active') && $('modal-properties').dataset.previewKind==='video' &&
+        image.complete && image.naturalWidth>0 && $('props-video-preview').hidden &&
+        getComputedStyle(stageElement).backgroundImage==='none' &&
+        getComputedStyle(stageElement).backgroundColor!=='rgba(0, 0, 0, 0)' &&
+        rect.width>=stage.width-4 && rect.height>=stage.height-4;`), 'video frame fills the solid preview area');
+    await delay(350);
+    fs.writeFileSync(path.join(dataDir, 'video-cover-properties.png'), (await win.webContents.capturePage()).toPNG());
+    await evaluate("closeModal('modal-properties');");
+    console.log('PASS local video frame fills the preview area without the image checker');
     assert.equal(await evaluate("return !$('audio-stage').hidden || !$('audio-visualizer-row').hidden || document.body.classList.contains('audio-active');"), false);
     await evaluate('await window.CVVideo.toggle();');
     await waitFor(() => evaluate('return window.CVVideo.element.currentTime>.1 && window.CVVideo.element.webkitAudioDecodedByteCount>0;'), 'video with audio after audio playback');
@@ -306,6 +351,10 @@ app.whenReady().then(async () => {
     await open('Picture.png');
     await waitFor(() => evaluate('return !state.transitioning && mainImg.naturalWidth===120;'), 'image after audio and video');
     assert.equal(await evaluate("return !$('audio-stage').hidden || window.CVVideo.active();"), false);
+    await evaluate('openPropertiesForCurrent();');
+    assert.equal(await evaluate("return $('modal-properties').dataset.previewKind==='image' && getComputedStyle($('props-preview-stage')).backgroundImage!=='none';"), true,
+      'The checker remains available for ordinary image previews');
+    await evaluate("closeModal('modal-properties');");
     assert.equal(await evaluate('return window.__sourceCount;'), 1, 'All local media share a single audio graph');
     console.log('PASS audio/video/image switches preserve decoding and release the visualizer');
     for (const name of formatSamples) await checkFormat(name);
