@@ -326,6 +326,8 @@ app.whenReady().then(async () => {
     await evaluate("$('footer-size').click();");
     await waitFor(() => evaluate("return $('modal-properties').classList.contains('active');"),
       'footer still opens Properties');
+    assert.equal(await evaluate("const button = $('props-close-btn'); return !button.hasAttribute('data-tooltip') && !button.hasAttribute('title');"), true,
+      'Properties Close has no redundant tooltip');
     await evaluate("closeModal('modal-properties');");
     console.log('PASS title bar: document title uses the native drag region; Properties remain accessible from the footer');
 
@@ -428,16 +430,28 @@ app.whenReady().then(async () => {
         const icon = document.getElementById(id).querySelector('.image-tab-media-icon');
         return { kind: icon.dataset.mediaType, visible: !icon.hidden, svg: !!icon.querySelector('svg'), expected: samples[index].kind };
       });
+      $('tab-switcher').hidden = true;
+      $('image-tabs-list-btn').click();
+      const pickerIcons = [...$('tab-switcher-list').querySelectorAll('.tab-switcher-item')].slice(-ids.length)
+        .map((row, index) => ({ icon: !!row.querySelector('.tab-switcher-item-icon svg'),
+          title: row.querySelector('.tab-switcher-item-name')?.textContent, expected: samples[index].name }));
+      $('tab-switcher').hidden = true;
       ids.forEach(id => model.close(id, { remember: false }));
       window.CVWorkspace.render();
-      return icons;`);
-    assert.equal(tabMediaIcons.every(icon => icon.kind === icon.expected && icon.visible && icon.svg), true,
+      return { icons, pickerIcons };`);
+    assert.equal(tabMediaIcons.icons.every(icon => icon.kind === icon.expected && icon.visible && icon.svg), true,
       'all four tab media types have visible icons by default');
+    assert.equal(tabMediaIcons.pickerIcons.every(row => row.icon && row.title === row.expected), true,
+      'tab picker shows the same four icons beside their titles');
     await evaluate("openConfig(); $('cfg-tab-media-icons').click();");
     await waitFor(() => evaluate("return state.settings.app.showTabMediaIcons === false && [...document.querySelectorAll('.image-tab-media-icon')].every(icon => icon.hidden);"),
       'media icons hidden on existing tabs');
     await waitFor(() => JSON.parse(fs.readFileSync(path.join(dataDir, 'settings.json'), 'utf8')).app.showTabMediaIcons === false,
       'media icon preference saved');
+    assert.equal(await evaluate(`$('tab-switcher').hidden = true; $('image-tabs-list-btn').click();
+      const hidden = [...$('tab-switcher-list').querySelectorAll('.tab-switcher-item-icon')].every(icon => icon.hidden);
+      $('tab-switcher').hidden = true; return hidden;`), true,
+    'tab picker respects the visibility setting');
     await evaluate("$('cfg-tab-media-icons').click(); closeModal('modal-config');");
     await waitFor(() => evaluate("return state.settings.app.showTabMediaIcons === true && [...document.querySelectorAll('.image-tab-media-icon')].every(icon => !icon.hidden);"),
       'media icons restored on existing tabs');

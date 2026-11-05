@@ -213,7 +213,12 @@ body.tab-drag-active #image-tab-list .image-tab { cursor: grabbing; }
 #tab-switcher-list { max-height: min(420px, calc(100vh - 195px)); overflow-y: auto; margin-top: 7px; }
 .tab-switcher-item { display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 9px; text-align: left; border-radius: 4px; }
 .tab-switcher-item:hover, .tab-switcher-item.active { background: rgba(var(--cyber-accent-rgb), .08); }
-.tab-switcher-item span, .tab-switcher-item small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab-switcher-item-title { display: flex; align-items: center; gap: 7px; min-width: 0; max-width: 100%; }
+.tab-switcher-item-icon { display: inline-flex; flex: 0 0 15px; color: var(--cyber-muted); }
+.tab-switcher-item-icon[hidden] { display: none; }
+.tab-switcher-item-icon .menu-ico { width: 15px; height: 15px; }
+.tab-switcher-item.active .tab-switcher-item-icon { color: var(--cyber-accent); }
+.tab-switcher-item-name, .tab-switcher-item small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tab-switcher-item small { color: var(--cyber-muted); font-size: 11px; }
 .tab-switcher-empty { font-size: 12px; color: var(--cyber-text); padding: 15px 9px; }
 .workspace-busy #kbd-hint, .workspace-busy #sidebar { cursor: progress; }

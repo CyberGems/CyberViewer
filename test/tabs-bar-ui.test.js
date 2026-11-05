@@ -26,6 +26,21 @@ describe('tab bar ui', () => {
     assert.match(workspace, /CVFormats\.isVideo\(tab\.image\)/);
     assert.match(workspace, /mediaIcon\.hidden = state\.settings\.app\.showTabMediaIcons === false/);
     assert.match(tabsCss, /\.image-tab-media-icon\[hidden\] \{ display: none; \}/);
+    assert.match(workspace, /title\.append\(icon, name\)/);
+    assert.match(workspace, /icon\.append\(iconSvg\(mediaTypeForTab\(tab\)\)\)/);
+    assert.match(tabsCss, /\.tab-switcher-item-icon\[hidden\] \{ display: none; \}/);
+  });
+  it('omits tooltips that only restate visible modal actions', () => {
+    for (const id of ['props-close-btn', 'preset-pct25', 'preset-pct50', 'preset-pct200']) {
+      const tag = html.match(new RegExp(`<button[^>]*id="${id}"[^>]*>`))?.[0];
+      assert.ok(tag, id);
+      assert.doesNotMatch(tag, /data-i18n-title=|data-tooltip=|title=/, id);
+    }
+    for (const modal of ['modal-resize', 'modal-adjust']) {
+      const tag = html.match(new RegExp(`<button[^>]*class="top-btn btn-cancel modal-cancel-btn"[^>]*data-close-modal="${modal}"[^>]*>`))?.[0];
+      assert.ok(tag, modal);
+      assert.doesNotMatch(tag, /data-i18n-title=|data-tooltip=|title=/, modal);
+    }
   });
   it('localizes the viewer drop choice and tab insertion cue in both languages', () => {
     for (const lang of ['en', 'es']) {

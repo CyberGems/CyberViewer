@@ -545,9 +545,7 @@ window.CVWorkspace = (() => {
       button.setAttribute('aria-selected', String(active));
       button.tabIndex = active ? 0 : -1;
       const name = tab.image.file.name;
-      const mediaType = window.CVYouTubeSource.isYouTube(tab.image) ? 'youtube'
-        : window.CVFormats.isAudio(tab.image) ? 'audio'
-        : window.CVFormats.isVideo(tab.image) ? 'video' : 'image';
+      const mediaType = mediaTypeForTab(tab);
       const mediaIcon = button.querySelector('.image-tab-media-icon');
       if (mediaIcon.dataset.mediaType !== mediaType) {
         mediaIcon.replaceChildren(iconSvg(mediaType));
@@ -580,6 +578,11 @@ window.CVWorkspace = (() => {
       setCyberTooltip(button, tab.image.file.path || tab.image.file.name);
     } else { button.classList.remove('cyber-tooltip'); delete button.dataset.tooltip; }
   }
+  function mediaTypeForTab(tab) {
+    return window.CVYouTubeSource.isYouTube(tab.image) ? 'youtube'
+      : window.CVFormats.isAudio(tab.image) ? 'audio'
+      : window.CVFormats.isVideo(tab.image) ? 'video' : 'image';
+  }
   function renderSwitcher() {
     const query = $('tab-search').value.toLowerCase();
     $('tab-search').placeholder = text('tabs_search');
@@ -594,9 +597,15 @@ window.CVWorkspace = (() => {
       const row = document.createElement('button');
       row.type = 'button'; row.className = 'tab-switcher-item';
       row.classList.toggle('active', tab.id === model.activeId);
-      const name = document.createElement('span'); name.textContent = tab.image.file.name;
+      const title = document.createElement('span'); title.className = 'tab-switcher-item-title';
+      const icon = document.createElement('span'); icon.className = 'tab-switcher-item-icon';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.hidden = state.settings.app.showTabMediaIcons === false;
+      if (!icon.hidden) icon.append(iconSvg(mediaTypeForTab(tab)));
+      const name = document.createElement('span'); name.className = 'tab-switcher-item-name'; name.textContent = tab.image.file.name;
+      title.append(icon, name);
       const filePath = document.createElement('small'); filePath.textContent = tab.image.file.path || text('tabs_clipboard');
-      row.append(name, filePath);
+      row.append(title, filePath);
       row.addEventListener('click', () => { $('tab-switcher').hidden = true; void activate(tab.id); });
       fragment.append(row);
     }
