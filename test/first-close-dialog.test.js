@@ -141,8 +141,8 @@ describe('modal hotkey badges audit', () => {
     assert.ok(svgs.length >= 8, 'audit covers all modals with Enter actions');
   });
 
-  it('uses one enlarged badge style for all hints', () => {
-    assert.match(css, /\.btn-key-hint \{[\s\S]*?font-size: 11px;[\s\S]*?min-width: 20px;[\s\S]*?padding: 2px 6px;[\s\S]*?border-radius: 4px;[\s\S]*?\}/);
+  it('uses one compact shared badge style for all hints', () => {
+    assert.match(css, /\.btn-key-hint \{[\s\S]*?font-size: 9px;[\s\S]*?min-width: 22px;[\s\S]*?min-height: 17px;[\s\S]*?padding: 2px 5px;[\s\S]*?border-radius: 4px;[\s\S]*?\}/);
     assert.match(css, /\.btn-enter-icon \{[\s\S]*?width: 13px;[\s\S]*?height: 13px;/);
     // No per-dialog opacity overrides remain
     assert.doesNotMatch(css, /\.first-close-key-hint/);

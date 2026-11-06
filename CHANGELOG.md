@@ -3,7 +3,7 @@
 Notable user-facing changes per release. Earlier versions are documented in the
 [GitHub Releases](https://github.com/CyberGems/CyberViewer/releases) page.
 
-## [1.21.0] - 2026-11-06
+## [1.21.1] - 2026-11-06
 
 ### Added
 

@@ -8,38 +8,39 @@
 
 <!-- IMPORTANT FOR AGENTS & MAINTAINERS: Always rewrite this entire section and highlights with the ACTUAL release notes for this specific new version before tagging. NEVER leave or copy previous version notes! Use 25-45 words for the summary, lead with user-facing changes, and do not repeat the app name or version. -->
 <!-- changelog-summary:start -->
-Audio joins the viewer with native playback and responsive visualizations. YouTube playlists now show thumbnails and clearer position details; media properties expose useful previews, metadata and copy actions. Tab icons, playback-state preferences, drag-and-drop rules and modal controls round out the updated workspace.
+Native audio playback and reactive visualizations now sit alongside images, local video and YouTube. Media properties provide useful previews, metadata and copy actions; playlist positions and tab icons are clearer, playback and drop behavior are configurable, and modal and crop controls share a consistent style.
 <!-- changelog-summary:end -->
 
 ---
 
-Audio playback and reactive visualizations join images, local video, and isolated YouTube. Properties now include useful media previews and metadata; tab icons, playback-state and drag-and-drop preferences, playlist details, and a more consistent interface make everyday browsing clearer.
+Local audio now plays beside images, video, and isolated YouTube, with reactive visualizations and shared controls. Media properties add useful previews and metadata; clearer playlist positions, tab icons, playback and drop preferences, and consistent modal controls make browsing and file handling easier.
 
 ---
 
 ### ✨ Key Features & Highlights
 
-- 🎵 **Audio playback and visualizations**: play MP3, WAV, FLAC, Ogg, Opus, and AAC files directly with shared media controls, remembered playback preferences, and reactive visualization styles.
+- 🎵 **Audio and visualizations**: open MP3, WAV, FLAC, Ogg, Opus, and AAC tracks without conversion, share controls with video, and choose reactive visualizations.
 
-- ℹ️ **Media properties**: inspect file details for images, local video and audio, or YouTube. Properties show local video frames and YouTube thumbnails when available, playlist position and count, and copy actions for the source and summary.
+- ℹ️ **Properties for every media type**: inspect image, local video, audio, or YouTube details. Previews use local video frames or YouTube thumbnails when available; playlist details include position and total, with source and summary copy actions.
 
-- 🗂️ **Media tabs and drop behavior**: optional type icons identify images, video, audio, and YouTube in tabs and the switcher. Playback state is remembered between tabs by default, and center drops can open new tabs or replace the current one; tab-strip drops open at the release position.
+- 🗂️ **Tabs and file drops**: optional icons distinguish images, video, audio, and YouTube. Tabs remember playing or paused state by default; choose whether drops in the viewer center open new tabs or replace the current tab, while tab-strip drops insert at the release position.
 
-- ▶️ **YouTube and viewing refinements**: playlist links can be copied, position details include the total when available, restored playback stays paused until started, and images open at 1:1 when they fit the viewer.
+- ▶️ **YouTube and image viewing**: copy video or playlist links, see playlist position and total when available, keep restored media paused until you start it, and open images at 1:1 when they fit.
 
-- ✨ **Interface polish**: consistent modal actions, clearer property metadata, refined settings controls, crop actions, tooltips, and window or file dragging.
+- ✨ **Interface refinements**: clearer property metadata, refreshed settings and modal controls, improved crop actions and tooltips, and more predictable window and file dragging.
 
 <details>
 <summary><b>🌐 Ver notas de la versión en Español</b></summary>
 
 ### 🚀 Novedades de esta versión
 
-El audio se suma a las imágenes, los videos locales y YouTube con reproducción nativa y visualizaciones reactivas. Las propiedades muestran vistas previas y metadatos útiles; los iconos de pestaña, las opciones de reproducción y arrastre, los detalles de playlist y la interfaz renovada hacen más claro el trabajo diario.
+El audio ya se reproduce junto a las imágenes, los videos locales y YouTube, con controles compartidos y visualizaciones reactivas. Las propiedades añaden vistas previas y metadatos; las posiciones de playlist, los iconos de pestaña y las opciones de reproducción y arrastre quedan más claros, junto con controles modales coherentes.
 
-- **Audio y visualizaciones**: reproduce MP3, WAV, FLAC, Ogg, Opus y AAC directamente, con controles compartidos y visualizaciones que reaccionan a la música.
-- **Propiedades de medios**: consulta metadatos y vistas previas de imágenes y videos locales; YouTube muestra miniaturas y la posición dentro de la playlist, incluyendo el total cuando está disponible.
-- **Pestañas y reproducción**: identifica imágenes, videos, audio y YouTube con iconos opcionales; conserva el estado de reproducción al cambiar de pestaña y configura cómo se abren los archivos soltados.
-- **Pulido y fiabilidad**: mejoras en listas y controles de YouTube, propiedades, menús, arrastre de ventanas y archivos, restauración de sesión y disposición de los controles de recorte.
+- **Audio y visualizaciones**: abre pistas MP3, WAV, FLAC, Ogg, Opus y AAC sin conversión, comparte controles con el video y elige efectos reactivos.
+- **Propiedades para cada medio**: revisa imágenes, videos locales, audio o YouTube. Las vistas previas usan fotogramas o miniaturas cuando están disponibles; las playlists muestran posición y total, con opciones para copiar origen y resumen.
+- **Pestañas y archivos soltados**: los iconos opcionales distinguen cada tipo de medio. El estado de reproducción o pausa se conserva al cambiar de pestaña; configura qué hacen los archivos soltados en el centro, mientras que la barra inserta en la posición elegida.
+- **Mejoras de visualización**: copia enlaces de video o playlist, conserva los medios pausados al restaurar la sesión hasta que se inicien y abre imágenes a 1:1 cuando caben en la ventana.
+- **Interfaz más coherente**: mejoras en propiedades, ajustes, controles modales, recorte, tooltips y arrastre de ventanas y archivos.
 
 </details>
 

@@ -154,10 +154,10 @@ describe('About modal redesign (CyberFeeds pattern)', () => {
     assert.match(css, /\.about-formats\s*\{[^}]*margin: 8px 0 0;/);
     // uppercase version label
     assert.match(css, /\.about-version-label\s*\{[\s\S]*?text-transform: uppercase;\s*letter-spacing: 0\.1em;/);
-    // section rules + bordered maintenance box + full-width buttons
+    // section rules + bordered maintenance box + full-width shared modal buttons
     assert.match(css, /\.about-section-rule\s*\{\s*height: 1px;\s*flex: 1;/);
     assert.match(css, /\.about-maintenance\s*\{[\s\S]*?border: 1px solid var\(--cyber-border\);\s*border-radius: 10px;/);
-    assert.match(css, /\.about-action-btn\s*\{[\s\S]*?min-height: 38px;/);
+    assert.match(css, /\.about-action-btn\s*\{[\s\S]*?min-height: 40px;/);
     // custom switch (44x24, accent when active)
     assert.match(css, /\.custom-switch\s*\{[\s\S]*?width: 44px;[\s\S]*?height: 24px;/);
     assert.match(css, /\.custom-switch\.active\s*\{\s*background: var\(--cyber-accent\);/);
@@ -178,18 +178,18 @@ describe('About modal redesign (CyberFeeds pattern)', () => {
     }
   });
 
-  it('update actions use CyberFeeds ghost/primary buttons with icons', () => {
+  it('update actions use shared cancel/primary buttons with icons', () => {
     const start = appJs.indexOf('overlay.innerHTML = `');
     const end = appJs.indexOf('overlay.querySelector(\'#about-close-btn\')', start);
     const tpl = appJs.slice(start, end);
     // idle check button: ghost class + refresh icon + sentence-case label
-    assert.match(tpl, /id="about-btn-update" class="top-btn about-action-btn about-action-ghost">\s*\$\{iconHtml\('rotate-cw'\)\}\s*<span>\$\{t\.about_check_updates\}<\/span>/);
+    assert.match(tpl, /id="about-btn-update" class="top-btn btn-cancel about-action-btn about-action-ghost">\s*\$\{iconHtml\('rotate-cw'\)\}\s*<span>\$\{t\.about_check_updates\}<\/span>/);
     // download: primary + download icon
-    assert.match(tpl, /id="about-btn-download" class="top-btn about-action-btn about-action-primary"[\s\S]*?\$\{iconHtml\('download'\)\}/);
+    assert.match(tpl, /id="about-btn-download" class="top-btn btn-primary about-action-btn about-action-primary"[\s\S]*?\$\{iconHtml\('download'\)\}/);
     // install: primary + check icon
-    assert.match(tpl, /id="about-btn-install" class="top-btn about-action-btn about-action-primary"[\s\S]*?\$\{iconHtml\('check-circle'\)\}/);
+    assert.match(tpl, /id="about-btn-install" class="top-btn btn-primary about-action-btn about-action-primary"[\s\S]*?\$\{iconHtml\('check-circle'\)\}/);
     // release page link stays ghost
-    assert.match(tpl, /id="about-btn-release" class="top-btn about-action-btn about-action-ghost about-release-btn"/);
+    assert.match(tpl, /id="about-btn-release" class="top-btn btn-cancel about-action-btn about-action-ghost about-release-btn"/);
     // old all-caps outline variants are gone
     assert.doesNotMatch(tpl, /about-action-accent/);
     assert.doesNotMatch(tpl, /id="about-btn-(download|install)" class="top-btn active/);
@@ -214,14 +214,12 @@ describe('About modal redesign (CyberFeeds pattern)', () => {
     assert.ok(uiI18n.es.about_auto_updates_hint, 'missing ES about_auto_updates_hint');
   });
 
-  it('keeps About action buttons sentence-case with ghost/primary styling', () => {
-    // .top-btn is uppercase app-wide; About must override it (CyberFeeds look)
+  it('keeps About actions sentence-case with shared CyberLauncher button styling', () => {
+    // .top-btn is uppercase app-wide; About uses sentence-case shared modal buttons.
     assert.match(css, /\.about-action-btn\s*\{[\s\S]*?text-transform: none;/);
-    assert.match(css, /\.about-action-btn\s*\{[\s\S]*?font-weight: 500;/);
-    // ghost: transparent, no border, muted
-    assert.match(css, /\.about-action-ghost,\s*\.about-action-ghost:hover\s*\{\s*border-color: transparent;\s*background: transparent;\s*color: var\(--cyber-muted\);/);
-    // primary: solid accent fill with dark label
-    assert.match(css, /\.about-action-primary,\s*\.about-action-primary:hover\s*\{\s*border-color: var\(--cyber-accent\);\s*background: var\(--cyber-accent\);\s*color: var\(--cyber-on-accent-2\);/);
+    assert.match(css, /\.top-btn\.btn-primary,\s*\.top-btn\.btn-cancel,\s*\.top-btn\.btn-danger\s*\{[\s\S]*?min-height: 40px;[\s\S]*?padding: 9px 16px;[\s\S]*?border-radius: 12px;[\s\S]*?font-size: 14px;[\s\S]*?font-weight: 500;[\s\S]*?text-transform: none;/);
+    assert.match(css, /\.top-btn\.btn-cancel\s*\{\s*border-color: rgba\(var\(--cyber-tint-rgb\), 0\.14\);\s*color: var\(--cyber-text-soft-2\);\s*background: rgba\(var\(--cyber-tint-rgb\), 0\.025\);/);
+    assert.match(css, /\.top-btn\.btn-primary\s*\{\s*border-color: rgba\(var\(--cyber-accent-rgb\), 0\.4\);\s*color: var\(--cyber-accent-ink\);\s*background: rgba\(var\(--cyber-accent-rgb\), 0\.2\);\s*font-weight: 700;/);
   });
 
   it('renders the logo plain: no halo, no pulsing glow (CyberFeeds style)', () => {
