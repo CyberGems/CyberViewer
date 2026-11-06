@@ -259,10 +259,14 @@ describe('title bar Help menu', () => {
     assert.match(updateBtn[0], /<svg viewBox="0 0 24 24"[\s\S]*?<line x1="12" y1="5" x2="12" y2="19"[\s\S]*?<polyline points="19 12 12 19 5 12"/);
     assert.doesNotMatch(updateBtn[0], /titlebar-update-label|titlebar-update-icon/);
 
-    // CSS CyberPaste square button: h-8 w-8 rounded-lg, cyan primary border and background
+    // Square update button keeps its accent fill without a border or glow.
     assert.match(css, /\.titlebar-update-btn\s*\{[\s\S]*?height:\s*32px;[\s\S]*?width:\s*32px;[\s\S]*?border-radius:\s*8px;/);
-    assert.match(css, /\.titlebar-update-btn\s*\{[\s\S]*?border:\s*1px solid rgba\(var\(--cyber-accent-rgb\),\s*0\.5\);[\s\S]*?background:\s*rgba\(var\(--cyber-accent-rgb\),\s*0\.1\);/);
-    assert.match(css, /\.titlebar-update-btn:hover,\s*\.titlebar-update-btn:focus-visible\s*\{[\s\S]*?border-color:\s*var\(--cyber-accent\);/);
+    const updateButtonStyle = css.match(/\.titlebar-update-btn\s*\{([^}]*)\}/)[1];
+    const updateHoverStyle = css.match(/\.titlebar-update-btn:hover,\s*\.titlebar-update-btn:focus-visible\s*\{([^}]*)\}/)[1];
+    assert.match(updateButtonStyle, /border:\s*0;/);
+    assert.match(updateButtonStyle, /background:\s*rgba\(var\(--cyber-accent-rgb\),\s*0\.1\);/);
+    assert.doesNotMatch(updateButtonStyle + updateHoverStyle, /box-shadow|border-color/);
+    assert.doesNotMatch(css, /\.titlebar-update-btn:hover svg\s*\{/);
     assert.match(css, /\.titlebar-update-btn:active\s*\{[\s\S]*?transform:\s*scale\(0\.95\);/);
     // Soft, relaxed motion-safe pulse (3.5s ease-in-out), no badges, no per-state recolor
     assert.match(css, /@media \(prefers-reduced-motion: no-preference\)\s*\{\s*\.titlebar-update-btn\s*\{[^}]*?animation:\s*titlebar-update-pulse 3\.5s ease-in-out infinite;/);

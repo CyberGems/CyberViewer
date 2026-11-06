@@ -915,27 +915,20 @@
     align-self: center;
     flex-shrink: 0;
     border-radius: 8px;
-    border: 1px solid rgba(var(--cyber-accent-rgb), 0.5);
+    border: 0;
     background: rgba(var(--cyber-accent-rgb), 0.1);
     color: var(--cyber-accent-ink);
-    box-shadow: 0 0 8px rgba(var(--cyber-accent-rgb), 0.25);
     padding: 0;
     margin: 0 2px 0 0;
     cursor: pointer;
     -webkit-app-region: no-drag;
-    transition: all 0.3s ease;
+    transition: background-color 0.3s ease, transform 0.2s ease;
   }
 
   .titlebar-update-btn:hover,
   .titlebar-update-btn:focus-visible {
-    border-color: var(--cyber-accent);
     background: rgba(var(--cyber-accent-rgb), 0.25);
-    box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.45);
     outline: none;
-  }
-
-  .titlebar-update-btn:focus-visible {
-    box-shadow: 0 0 0 1px var(--cyber-accent), 0 0 12px rgba(var(--cyber-accent-rgb), 0.45);
   }
 
   .titlebar-update-btn:active {
@@ -948,11 +941,6 @@
     width: 14px;
     height: 14px;
     flex-shrink: 0;
-    transition: transform 0.2s ease;
-  }
-
-  .titlebar-update-btn:hover svg {
-    transform: translateY(2px);
   }
 
   @media (prefers-reduced-motion: no-preference) {
