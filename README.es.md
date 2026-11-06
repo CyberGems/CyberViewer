@@ -114,6 +114,22 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 - El audio comparte los controles, atajos, volumen, repetición, velocidad y restauración opcional de posición del video. Anterior/siguiente recorre solo archivos de audio y abre la pista vecina en la misma pestaña; activa "Abrir anterior/siguiente en pestaña nueva" en el menú del reproductor para conservar el comportamiento anterior de una pestaña por pista.
 - Elige Espectro, Osciloscopio, Radial, Partículas, Aurora, Túnel, Relieve, Hélice, Matriz, Fuegos artificiales o Efectos desactivados en el menú del reproductor. Se recuerda el estilo elegido. Cada estilo tiene una composición propia y una paleta basada en el color de acento, y todos reaccionan a los bajos, los agudos y la energía general de la pista. Los efectos aparecen suavemente al reproducir y reposan gradualmente al pausar o finalizar, tras lo cual dejan de dibujar. Funcionan hasta a 30 fps en un canvas limitado a 1440 × 810 píxeles y se detienen de inmediato al ocultar la ventana. La preferencia de movimiento reducido los mantiene estáticos. El audio en reproducción continúa al ocultar en la bandeja.
 
+### Compatibilidad de códecs
+
+Estas son las combinaciones de contenedor y códec que cubren las pruebas de reproducción local de CyberViewer. Sirven como referencia práctica, no garantizan que se pueda decodificar cualquier archivo con la misma extensión o perfil.
+
+| Medio | Contenedor / extensión | Combinación cubierta por las pruebas de reproducción |
+|---|---|---|
+| Video | MP4, M4V, MOV, MKV | Video H.264/AVC con audio AAC-LC; probado desde MP4 y remultiplexado a los demás contenedores |
+| Video | WebM | Video VP9 con audio Opus |
+| Audio | MP3 | MPEG-1 Layer III, 128 kb/s |
+| Audio | WAV | PCM de 16 bits, 44,1 kHz, estéreo |
+| Audio | FLAC | FLAC de 16 bits, 16 kHz |
+| Audio | OGG, OGA, OPUS | Ogg Vorbis a 16 kHz; Ogg Opus mono, modo de voz |
+| Audio | AAC, M4A | AAC-LC en ADTS (`.aac`) y MP4 (`.m4a`) |
+
+La reproducción también puede variar según el perfil del códec, la tasa de bits, la frecuencia de muestreo, la disposición de canales y los decodificadores disponibles para la compilación de Electron/Windows. HEVC y el audio multicanal no tienen compatibilidad universal; CyberViewer no convierte archivos.
+
 ### Videos y playlists de YouTube
 - Selecciona **Abrir enlace de YouTube** en el menú principal o pulsa **Ctrl+L**. Pega el enlace de un video, Short, directo o playlist pública. Los enlaces con video y playlist conservan ese contexto; se admiten marcas de tiempo e índices de playlist.
 - El reproductor oficial de YouTube ofrece reproducción, volumen, subtítulos, calidad y su selector de playlist. CyberViewer añade anterior/siguiente, repetir playlist, reintentar, abrir el video actual en YouTube y pantalla completa nativa (**Ctrl+F**, **Esc** para salir). La barra inferior queda fuera del video y desaparece en pantalla completa.

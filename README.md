@@ -114,6 +114,22 @@ Most image viewers are either bloated with features you never use or so barebone
 - Audio shares the video playback controls, shortcuts, volume, loop, speed and optional session position restoration. Previous/next stays within audio files and opens the neighboring track in the same tab; enable "Open previous/next in a new tab" in the player menu to keep one tab per track.
 - Choose Spectrum, Oscilloscope, Radial, Particles, Aurora, Tunnel, Terrain, Helix, Matrix, Fireworks or Effects off from the playback menu. The selected style is remembered. Each style has its own composition and an accent-based color palette, and they all react to the track's bass, highs and overall energy. Visuals ease in when playback starts and settle smoothly when paused or finished, then stop drawing. They run at up to 30 fps on a canvas capped at 1440 × 810 pixels and stop immediately while hidden. Reduced-motion preferences keep them static. Playing audio continues when hidden to the tray.
 
+### Codec compatibility
+
+These are the container and codec combinations exercised by CyberViewer's local playback smoke tests. They are a practical reference, not a guarantee that every file using the same extension or codec profile will decode.
+
+| Media | Container / extension | Combination covered by playback tests |
+|---|---|---|
+| Video | MP4, M4V, MOV, MKV | H.264/AVC video with AAC-LC audio; tested from MP4 and remuxed into the other containers |
+| Video | WebM | VP9 video with Opus audio |
+| Audio | MP3 | MPEG-1 Layer III, 128 kb/s |
+| Audio | WAV | 16-bit PCM, 44.1 kHz, stereo |
+| Audio | FLAC | 16-bit FLAC, 16 kHz |
+| Audio | OGG, OGA, OPUS | Ogg Vorbis at 16 kHz; Ogg Opus, mono voice encoding |
+| Audio | AAC, M4A | AAC-LC in ADTS (`.aac`) and MP4 (`.m4a`) |
+
+Playback can still vary with codec profile, bitrate, sample rate, channel layout, and the decoders available to the Electron/Windows build. HEVC and multichannel audio are not universally supported; CyberViewer does not transcode media.
+
 ### YouTube videos and playlists
 - Choose **Open YouTube link** in the main menu or press **Ctrl+L**. Paste a video, Shorts, live stream, or public playlist link. Links containing a video and a playlist retain that context; timestamps and playlist indexes are supported.
 - The official YouTube player provides playback, volume, captions, quality, and its playlist selector. CyberViewer adds previous/next, playlist repeat, retry, opening the current video in YouTube, and native fullscreen (**Ctrl+F**, **Esc** to exit). Its footer stays outside the video and disappears in fullscreen.
