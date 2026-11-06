@@ -4249,10 +4249,10 @@
     min-width: 0;
   }
   .props-section-label {
-    font-size: 10px;
-    color: var(--cyber-muted);
+    font-size: 13px;
+    color: var(--cyber-text);
     text-transform: none;
-    letter-spacing: .03em;
+    letter-spacing: .01em;
     font-weight: 700;
     margin-bottom: 6px;
   }
@@ -4270,11 +4270,11 @@
   .props-section .props-row:last-child { border-bottom: none; }
   .props-key {
     color: var(--cyber-muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    text-transform: none;
+    letter-spacing: 0;
     white-space: nowrap;
     flex-shrink: 0;
-    font-size: 11px;
+    font-size: 12px;
   }
   .props-val {
     color: var(--cyber-text);
@@ -4452,27 +4452,39 @@
     height: 17px;
     flex: 0 0 17px;
   }
-  .props-mini-btn {
-    width: 28px;
-    height: 28px;
-    min-width: 28px;
-    padding: 0 !important;
+  #modal-properties .props-path-copy-btn {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+    padding: 3px !important;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
+    border: 1px solid transparent;
     border-radius: 5px;
+    background: transparent;
+    color: var(--cyber-text);
     letter-spacing: 0;
   }
-  .props-mini-btn svg {
+  #modal-properties .props-path-copy-btn svg {
     width: 14px;
     height: 14px;
     flex: 0 0 14px;
+  }
+  #modal-properties .props-path-copy-btn:hover {
+    border-color: rgba(var(--cyber-accent-rgb), 0.35);
+    background: rgba(var(--cyber-accent-rgb), 0.07);
+    box-shadow: none;
+    color: var(--cyber-accent-ink);
   }
   .props-section-heading {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    min-height: 14px;
-    margin-bottom: 6px;
+    min-height: 18px;
+    margin-bottom: 8px;
   }
   .props-section-heading .props-section-label {
     margin-bottom: 0;
