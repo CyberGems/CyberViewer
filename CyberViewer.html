@@ -900,23 +900,23 @@
           <div class="props-section">
             <div class="props-section-label" id="props-file-section-label" data-i18n="props_section_file">Archivo</div>
             <div class="props-row"><span class="props-key" data-i18n="props_k_name">Nombre</span><span class="props-val" id="props-name">-</span></div>
-            <div class="props-row"><span class="props-key" data-i18n="props_k_format">Formato</span><span class="props-val" id="props-format">-</span></div>
-            <div class="props-row"><span class="props-key" data-i18n="props_k_size">Tamaño</span><span class="props-val props-val-digit" id="props-size">-</span></div>
-            <div class="props-row"><span class="props-key" data-i18n="props_k_created">Creado</span><span class="props-val" id="props-created">-</span></div>
             <div class="props-row"><span class="props-key" data-i18n="props_k_modified">Modificado</span><span class="props-val" id="props-modified">-</span></div>
+            <div class="props-row"><span class="props-key" data-i18n="props_k_created">Creado</span><span class="props-val" id="props-created">-</span></div>
             <div class="props-row props-path-row">
-              <div class="props-path-head">
-                <span class="props-key" id="props-path-key" data-i18n="props_k_path">Ruta</span>
-                <button type="button" class="top-btn props-path-copy-btn cyber-tooltip tooltip-align-right" id="props-copy-path" data-i18n-aria="props_copy_path" data-i18n-title="props_copy_path_tooltip" aria-label="Copiar">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
-                </button>
-              </div>
-              <span class="props-val props-path-val" id="props-path">-</span>
+              <span class="props-key" id="props-path-key" data-i18n="props_k_path">Ruta</span>
+              <span class="props-path-val-wrap tooltip-align-left tooltip-path-value" id="props-path-tooltip">
+                <span class="props-val props-path-val" id="props-path"><span class="props-path-base" id="props-path-base"></span><span class="props-path-extension" id="props-path-extension"></span></span>
+              </span>
+              <button type="button" class="top-btn props-path-copy-btn cyber-tooltip tooltip-align-right tooltip-single-line" id="props-copy-path" data-i18n-aria="props_copy_path" data-i18n-title="props_copy_path_tooltip" aria-label="Copiar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+              </button>
             </div>
           </div>
 
           <div class="props-section">
-            <div class="props-section-label" id="props-media-section-label" data-i18n="props_section_image">Imagen</div>
+            <div class="props-section-label" id="props-media-section-label" data-i18n="props_section_properties">Propiedades</div>
+            <div class="props-row"><span class="props-key" data-i18n="props_k_format">Formato</span><span class="props-val" id="props-format">-</span></div>
+            <div class="props-row"><span class="props-key" data-i18n="props_k_size">Tamaño</span><span class="props-val props-val-digit" id="props-size">-</span></div>
             <div class="props-row" id="props-audio-codec-row" hidden><span class="props-key" data-i18n="props_audio_codec">Códec de audio</span><span class="props-val" id="props-audio-codec">-</span></div>
             <div class="props-row" id="props-duration-row" hidden><span class="props-key" data-i18n="audio_duration">Duración</span><span class="props-val props-val-digit" id="props-duration">-</span></div>
             <div class="props-row"><span class="props-key" data-i18n="props_k_dims">Dimensiones</span><span class="props-val props-val-digit" id="props-dims">-</span></div>

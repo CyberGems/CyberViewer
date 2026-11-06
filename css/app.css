@@ -4213,7 +4213,8 @@
     overflow: visible;
   }
   #modal-properties .modal-body {
-    overflow: visible;
+    overflow-x: hidden;
+    overflow-y: auto;
     padding: 18px 20px;
   }
   #modal-properties .modal-header,
@@ -4289,28 +4290,39 @@
     letter-spacing: 0.5px;
   }
   .props-path-row {
-    flex-direction: column;
-    gap: 4px;
-    align-items: stretch;
-  }
-  .props-path-head {
-    display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    width: 100%;
+    min-width: 0;
+  }
+  .props-path-val-wrap {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: visible;
   }
   .props-path-val {
     text-align: left !important;
     color: var(--cyber-accent-ink) !important;
     font-size: 11px;
-    display: block;
     width: 100%;
-    word-break: normal;
     line-height: 1.35;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    min-width: 0;
     overflow: hidden;
+    white-space: nowrap;
+  }
+  .props-path-base {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .props-path-extension {
+    flex: 0 0 auto;
+    white-space: nowrap;
   }
   .props-preview-panel {
     background: rgba(var(--cyber-shell-deep-rgb), 0.95);
@@ -6472,6 +6484,14 @@
   .modal-box .cyber-tooltip.tooltip-align-right:hover::after,
   .modal-box .cyber-tooltip.tooltip-align-right:hover::before {
     transform: translateY(0) !important;
+  }
+  .modal-box .cyber-tooltip.tooltip-single-line::after {
+    max-width: none !important;
+    white-space: nowrap !important;
+  }
+  .modal-box .cyber-tooltip.tooltip-path-value::after {
+    overflow-wrap: anywhere;
+    text-align: left;
   }
 
   /* Top-of-modal controls: open tooltips below (avoid header clip) */

@@ -39,13 +39,14 @@ function setCyberTooltip(el, text) {
 }
 
 const overflowTooltipObservers = new WeakMap();
-function setCyberTooltipWhenTruncated(el, text) {
+function setCyberTooltipWhenTruncated(el, text, measureEl = el) {
   if (typeof el === 'string') el = $(el);
-  if (!el) return;
+  if (typeof measureEl === 'string') measureEl = $(measureEl);
+  if (!el || !measureEl) return;
   el.dataset.tooltipCandidate = text == null ? '' : String(text);
   const refresh = () => {
     const fullText = el.dataset.tooltipCandidate;
-    if (fullText && el.clientWidth > 0 && el.scrollWidth > el.clientWidth) {
+    if (fullText && measureEl.clientWidth > 0 && measureEl.scrollWidth > measureEl.clientWidth + 1) {
       setCyberTooltip(el, fullText);
     } else {
       el.removeAttribute('data-tooltip');
@@ -53,10 +54,10 @@ function setCyberTooltipWhenTruncated(el, text) {
       el.classList.remove('cyber-tooltip');
     }
   };
-  if (typeof ResizeObserver === 'function' && !overflowTooltipObservers.has(el)) {
+  if (typeof ResizeObserver === 'function' && !overflowTooltipObservers.has(measureEl)) {
     const observer = new ResizeObserver(refresh);
-    observer.observe(el);
-    overflowTooltipObservers.set(el, observer);
+    observer.observe(measureEl);
+    overflowTooltipObservers.set(measureEl, observer);
   }
   requestAnimationFrame(refresh);
 }
@@ -10970,7 +10971,7 @@ async function showPropertiesPanel(rawPath) {
   const mime = mimeFromPath(name || fpath);
   const mediaSection = $('props-dims').closest('.props-section');
   const sectionTitle = mediaSection.querySelector('.props-section-label');
-  sectionTitle.dataset.i18n = youtube ? 'props_section_youtube' : audio ? 'audio_label' : video ? 'video_label' : 'props_section_image';
+  sectionTitle.dataset.i18n = 'props_section_properties';
   sectionTitle.textContent = i18nLang[sectionTitle.dataset.i18n];
   const audioCodecRow = $('props-audio-codec-row');
   const audioCodecValue = $('props-audio-codec');
@@ -11008,8 +11009,14 @@ async function showPropertiesPanel(rawPath) {
   if ($('props-created')) $('props-created').textContent = '…';
   if ($('props-modified')) $('props-modified').textContent = '…';
   if ($('props-path')) {
-    $('props-path').textContent = youtube ? youtubeLink : fpath || '-';
-    setCyberTooltipWhenTruncated($('props-path'), youtube ? youtubeLink : fpath || '');
+    const fullPath = youtube ? youtubeLink : fpath || '-';
+    const extension = youtube ? '' : splitFilenameExtension(name).extension;
+    const pathParts = extension && fullPath.toLowerCase().endsWith(extension.toLowerCase())
+      ? { base: fullPath.slice(0, -extension.length), extension }
+      : { base: fullPath, extension: '' };
+    $('props-path-base').textContent = pathParts.base || '-';
+    $('props-path-extension').textContent = pathParts.extension;
+    setCyberTooltipWhenTruncated($('props-path-tooltip'), fullPath, $('props-path-base'));
   }
   if ($('props-readout')) {
     $('props-readout').hidden = audio;
