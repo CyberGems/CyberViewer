@@ -3430,6 +3430,7 @@
     justify-content: center;
     gap: 6px;
   }
+  #crop-actions .top-btn.btn-cancel { gap: 8px; }
   #crop-actions .switch {
     transform: scale(0.92);
     transform-origin: right center;
@@ -3441,71 +3442,131 @@
     width: 13px;
     height: 13px;
     flex-shrink: 0;
-    opacity: 0.75;
+    opacity: 0.85;
   }
   .btn-key-hint {
-    font-size: 11px;
-    font-weight: 600;
-    opacity: 0.55;
-    letter-spacing: 0.02em;
+    font-family: var(--font-mono, monospace);
+    font-size: 9px;
+    font-weight: 700;
+    opacity: 0.85;
+    letter-spacing: 0;
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 20px;
-    padding: 2px 6px;
-    line-height: 1.25;
-    border: 1px solid rgba(var(--cyber-tint-rgb),0.16);
+    min-width: 22px;
+    min-height: 17px;
+    box-sizing: border-box;
+    padding: 2px 5px;
+    line-height: 1;
+    border: 1px solid rgba(255, 255, 255, 0.16);
     border-radius: 4px;
-    background: rgba(var(--cyber-tint-rgb),0.05);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
     text-transform: none;
+    user-select: none;
+    pointer-events: none;
   }
   .btn-label {
     flex-shrink: 0;
     text-transform: none;
   }
-  .top-btn.btn-primary:hover .btn-enter-icon {
-    opacity: 0.9;
+  /* Shared modal and confirmation actions, aligned with CyberLauncher controls. */
+  .top-btn.btn-primary,
+  .top-btn.btn-cancel,
+  .top-btn.btn-danger {
+    box-sizing: border-box;
+    min-height: 40px;
+    height: auto;
+    padding: 9px 16px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: var(--font-ui);
+    font-weight: 500;
+    letter-spacing: 0;
+    line-height: 1.25;
+    text-transform: none;
+    gap: 8px;
+    transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
   }
-  .top-btn.btn-cancel:hover .btn-key-hint,
-  .top-btn.btn-primary:hover .btn-key-hint {
-    opacity: 0.6;
-    border-color: rgba(var(--cyber-tint-rgb),0.2);
-  }
-
-  /* Shared primary / cancel actions (crop, resize, etc.) */
   .top-btn.btn-primary {
-    border-color: var(--cyber-accent) !important;
-    color: var(--cyber-accent-ink) !important;
-    background: rgba(var(--cyber-accent-rgb), 0.08) !important;
+    border-color: rgba(var(--cyber-accent-rgb), 0.4);
+    color: var(--cyber-accent-ink);
+    background: rgba(var(--cyber-accent-rgb), 0.2);
+    font-weight: 700;
+    box-shadow: 0 0 15px rgba(var(--cyber-accent-rgb), 0.2);
   }
-  .top-btn.btn-primary:hover {
-    border-color: var(--cyber-accent) !important;
-    color: var(--cyber-accent-ink) !important;
-    background: rgba(var(--cyber-accent-rgb), 0.16) !important;
-    box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.35) !important;
+  .top-btn.btn-primary:hover:not(:disabled) {
+    border-color: rgba(var(--cyber-accent-rgb), 0.55);
+    color: var(--cyber-accent-ink);
+    background: rgba(var(--cyber-accent-rgb), 0.3);
+    box-shadow: 0 0 18px rgba(var(--cyber-accent-rgb), 0.24);
   }
   .top-btn.btn-cancel {
-    border-color: var(--cyber-accent2) !important;
-    color: var(--cyber-accent2-ink) !important;
-    background: rgba(var(--cyber-accent2-rgb), 0.08) !important;
+    border-color: rgba(var(--cyber-tint-rgb), 0.14);
+    color: var(--cyber-text-soft-2);
+    background: rgba(var(--cyber-tint-rgb), 0.025);
   }
-  .top-btn.btn-cancel:hover {
-    border-color: var(--cyber-accent2) !important;
-    color: var(--cyber-accent2-ink) !important;
-    background: rgba(var(--cyber-accent2-rgb), 0.16) !important;
-    box-shadow: 0 0 12px rgba(var(--cyber-accent2-rgb), 0.35) !important;
+  .top-btn.btn-cancel:hover:not(:disabled) {
+    border-color: rgba(var(--cyber-accent2-rgb), 0.3);
+    color: var(--cyber-accent2-ink);
+    background: rgba(var(--cyber-accent2-rgb), 0.1);
+    box-shadow: none;
   }
-  /* "Apagado" / disabled "Guardar" actions (crop, resize, adjust): no changes yet → dimmed + inert. */
+  .top-btn.btn-danger {
+    border-color: rgba(var(--cyber-accent2-rgb), 0.4);
+    color: var(--cyber-accent2-ink);
+    background: rgba(var(--cyber-accent2-rgb), 0.2);
+    font-weight: 700;
+    box-shadow: 0 0 15px rgba(var(--cyber-accent2-rgb), 0.2);
+  }
+  .top-btn.btn-danger:hover:not(:disabled) {
+    border-color: rgba(var(--cyber-accent2-rgb), 0.55);
+    color: var(--cyber-accent2-ink);
+    background: rgba(var(--cyber-accent2-rgb), 0.3);
+    box-shadow: 0 0 18px rgba(var(--cyber-accent2-rgb), 0.24);
+  }
+  .top-btn.btn-primary .btn-key-hint {
+    border-color: rgba(var(--cyber-accent-rgb), 0.45);
+    color: var(--cyber-accent-ink);
+    background: rgba(var(--cyber-accent-rgb), 0.22);
+    box-shadow: 0 0 6px rgba(var(--cyber-accent-rgb), 0.2);
+  }
+  .top-btn.btn-danger .btn-key-hint {
+    border-color: rgba(var(--cyber-accent2-rgb), 0.45);
+    color: var(--cyber-accent2-ink);
+    background: rgba(var(--cyber-accent2-rgb), 0.22);
+    box-shadow: 0 0 6px rgba(var(--cyber-accent2-rgb), 0.2);
+  }
+  .top-btn.btn-primary:disabled,
+  .top-btn.btn-danger:disabled,
+  .top-btn.btn-cancel:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+  }
   .top-btn.btn-primary:disabled {
-    opacity: 0.32 !important;
-    filter: saturate(0.2) !important;
-    cursor: not-allowed !important;
-    pointer-events: none !important;
-    border-color: var(--cyber-border) !important;
-    color: var(--cyber-muted) !important;
-    background: none !important;
-    box-shadow: none !important;
+    border-color: rgba(var(--cyber-accent-rgb), 0.18);
+    color: var(--cyber-muted);
+    background: rgba(var(--cyber-accent-rgb), 0.04);
+  }
+  .top-btn.btn-danger:disabled {
+    border-color: rgba(var(--cyber-accent2-rgb), 0.18);
+    color: var(--cyber-muted);
+    background: rgba(var(--cyber-accent2-rgb), 0.04);
+  }
+  .top-btn.btn-cancel:disabled {
+    border-color: rgba(var(--cyber-tint-rgb), 0.08);
+    color: var(--cyber-muted);
+    background: rgba(var(--cyber-tint-rgb), 0.015);
+  }
+  .top-btn.btn-primary:active:not(:disabled),
+  .top-btn.btn-cancel:active:not(:disabled),
+  .top-btn.btn-danger:active:not(:disabled) {
+    transform: scale(0.95);
   }
   /* Generic kbd-btn hover (sidebar, etc.) — toolbar uses #kbd-hint rules above */
   .kbd-btn:hover:not(:disabled):not(.is-disabled) {
@@ -3947,6 +4008,9 @@
     gap: 6px;
     text-transform: none;
   }
+  .modal-footer .top-btn.btn-primary,
+  .modal-footer .top-btn.btn-danger { gap: 6px; }
+  .modal-footer .top-btn.btn-cancel { gap: 8px; }
   .modal-footer .copy-toggle-row {
     display: flex;
     align-items: center;
@@ -4021,15 +4085,6 @@
     word-break: break-all;
   }
   
-  #btn-confirm-ok {
-    border-color: var(--cyber-accent2) !important;
-    color: var(--cyber-accent2-ink) !important;
-  }
-  #btn-confirm-ok:hover {
-    background: rgba(var(--cyber-accent2-rgb), 0.15) !important;
-    box-shadow: 0 0 12px rgba(var(--cyber-accent2-rgb), 0.4) !important;
-  }
-
   /* ── TRAY ICON VISIBILITY REMINDER ── */
   .tray-pin-modal-box {
     max-width: 480px;
@@ -5187,18 +5242,21 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-weight: 700;
-    font-size: 11px;
-    padding: 9px 12px;
-    border-radius: 4px;
-    border: 1px solid var(--cyber-border);
-    background: rgba(var(--cyber-tint-rgb),0.03);
-    color: var(--cyber-text-soft-3);
+    min-height: 40px;
+    box-sizing: border-box;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.25;
+    padding: 9px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(var(--cyber-tint-rgb), 0.14);
+    background: rgba(var(--cyber-tint-rgb), 0.025);
+    color: var(--cyber-text-soft-2);
     cursor: pointer;
     font-family: var(--font-ui);
-    transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
+    transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
   }
 
   #modal-config .config-close-enter {
@@ -5209,22 +5267,21 @@
   }
 
   #modal-config .config-nav-close .btn-key-hint {
-    color: var(--cyber-text-soft-2);
-    opacity: 1;
-    border-color: rgba(var(--cyber-tint-rgb), 0.28);
-    background: rgba(var(--cyber-tint-rgb), 0.09);
+    color: inherit;
   }
 
   #modal-config .config-nav-close:hover {
-    color: var(--cyber-text);
-    background: rgba(var(--preview-accent-rgb), 0.08);
-    border-color: var(--preview-accent);
+    color: var(--cyber-accent2-ink);
+    background: rgba(var(--cyber-accent2-rgb), 0.1);
+    border-color: rgba(var(--cyber-accent2-rgb), 0.3);
+    box-shadow: none;
   }
 
   #modal-config .config-nav-close:hover .config-close-enter {
-    color: var(--preview-accent);
+    color: var(--cyber-accent2-ink);
     opacity: 1;
   }
+  #modal-config .config-nav-close:active { transform: scale(0.95); }
 
   #modal-config .config-content {
     flex: 1;
@@ -7052,46 +7109,14 @@
 }
 .about-action-btn {
   width: 100%;
-  padding: 9px 10px;
-  font-size: 12px;
   gap: 6px;
-  letter-spacing: 0.6px;
   cursor: pointer;
   justify-content: center;
   text-align: center;
   white-space: normal;
   line-height: 1.25;
-  min-height: 38px;
-  /* CyberFeeds sentence-case ghost/primary buttons: override .top-btn caps */
   text-transform: none;
-  font-weight: 500;
-}
-/* Ghost (idle check): transparent, no border, muted text (CyberFeeds .btn-ghost) */
-.about-action-ghost,
-.about-action-ghost:hover {
-  border-color: transparent;
-  background: transparent;
-  color: var(--cyber-muted);
-}
-.about-action-ghost:hover:not(:disabled) {
-  background: rgba(var(--cyber-tint-rgb), 0.05);
-  color: var(--cyber-text);
-}
-/* Primary (download/install): solid accent fill, dark label (CyberFeeds .btn-primary) */
-.about-action-primary,
-.about-action-primary:hover {
-  border-color: var(--cyber-accent);
-  background: var(--cyber-accent);
-  color: var(--cyber-on-accent-2);
-  box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.25);
-}
-.about-action-primary:hover:not(:disabled) {
-  filter: brightness(1.12);
-}
-.about-action-primary:disabled,
-.about-action-ghost:disabled {
-  opacity: 0.5;
-  cursor: default;
+  min-height: 40px;
 }
 .about-action-btn .menu-ico {
   width: 14px;

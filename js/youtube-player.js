@@ -2,7 +2,7 @@
    syncFilenameDisplays, toggleFullscreen, applyImmersiveFullscreen, showToast */
 'use strict';
 window.CVYouTube = (() => {
-  let owner = null, id = 0, timeout = null, error = null, blocked = false, info = null, frame = null, lastBounds = '';
+  let owner = null, id = 0, timeout = null, error = null, blocked = false, info = null, frame = null, lastBounds = '', lastPlaylistState = '';
   let onReady = null;
   const text = key => (I18N[state.settings.app.language || 'en'] || I18N.en)[key];
   const active = () => window.CVYouTubeSource.isYouTube(state.images[state.current]);
@@ -50,7 +50,7 @@ window.CVYouTube = (() => {
   function unload() {
     clearTimeout(timeout);
     if (owner) window.electronAPI.youtube.close(id);
-    owner = null; info = null; error = null; onReady = null; lastBounds = '';
+    owner = null; info = null; error = null; onReady = null; lastBounds = ''; lastPlaylistState = '';
     $('youtube-panel').hidden = true;
     document.body.classList.remove('youtube-active');
   }
@@ -85,6 +85,11 @@ window.CVYouTube = (() => {
     } else if (value.blocked) { blocked = true; clearTimeout(timeout); }
     else if (value.ready) {
       clearTimeout(timeout); error = null; info = value;
+      const playlistState = `${value.videoId || ''}:${value.index ?? ''}:${value.count ?? ''}`;
+      if (playlistState !== lastPlaylistState) {
+        lastPlaylistState = playlistState;
+        window.dispatchEvent(new CustomEvent('cv-youtube-info', { detail: value }));
+      }
       if (value.state === 1) { blocked = false; delete owner.suppressAutoplayUntilPlayed; }
       if ([0, 1, 2, 5].includes(value.state)) owner.pausedOnTabReturn = value.state !== 1;
       if (value.videoId && [0, 1, 2, 5].includes(value.state)) {

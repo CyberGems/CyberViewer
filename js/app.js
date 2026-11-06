@@ -9613,15 +9613,15 @@ $('btn-go-end').addEventListener('click', (e) => {
             <div class="about-maintenance">
               <div id="about-update-banner" class="about-update-banner" aria-live="polite"></div>
               <div class="about-update-actions">
-                <button type="button" id="about-btn-update" class="top-btn about-action-btn about-action-ghost">
+                <button type="button" id="about-btn-update" class="top-btn btn-cancel about-action-btn about-action-ghost">
                   ${iconHtml('rotate-cw')}
                   <span>${t.about_check_updates}</span>
                 </button>
-                <button type="button" id="about-btn-download" class="top-btn about-action-btn about-action-primary" style="display:none">
+                <button type="button" id="about-btn-download" class="top-btn btn-primary about-action-btn about-action-primary" style="display:none">
                   ${iconHtml('download')}
                   <span>${t.about_download_btn}</span>
                 </button>
-                <button type="button" id="about-btn-install" class="top-btn about-action-btn about-action-primary" style="display:none">
+                <button type="button" id="about-btn-install" class="top-btn btn-primary about-action-btn about-action-primary" style="display:none">
                   ${iconHtml('check-circle')}
                   <span>${t.about_install_btn}</span>
                 </button>
@@ -9645,7 +9645,7 @@ $('btn-go-end').addEventListener('click', (e) => {
                 <div class="about-release-notes-heading">${t.about_release_notes || "What's new"}</div>
                 <div id="about-release-notes-body" class="about-release-notes-body"></div>
               </div>
-              <button type="button" id="about-btn-release" class="top-btn about-action-btn about-action-ghost about-release-btn" style="display:none">
+              <button type="button" id="about-btn-release" class="top-btn btn-cancel about-action-btn about-action-ghost about-release-btn" style="display:none">
                 ${t.about_view_release || 'View release page'}
               </button>
               ${!updateInfo.canUpdate && updateInfo.portable ? `<div class="about-update-hint">${t.about_portable_hint}</div>` : ''}
@@ -10685,8 +10685,6 @@ function showCyberConfirm({ title, message, detail, danger = true, onConfirm }) 
     headerIcon.innerHTML = trashGlyph;
     headerIcon.style.color = 'var(--cyber-accent2-ink)';
 
-    okBtn.style.borderColor = 'var(--cyber-accent2)';
-    okBtn.style.color = 'var(--cyber-accent2-ink)';
   } else {
     box.style.borderColor = 'var(--cyber-accent)';
     box.style.boxShadow = '0 0 25px rgba(var(--cyber-accent-rgb), 0.25)';
@@ -10697,13 +10695,13 @@ function showCyberConfirm({ title, message, detail, danger = true, onConfirm }) 
     headerIcon.innerHTML = '&#9888;&#xFE0E;';
     headerIcon.style.color = 'var(--cyber-accent-ink)';
 
-    okBtn.style.borderColor = 'var(--cyber-accent)';
-    okBtn.style.color = 'var(--cyber-accent-ink)';
   }
   
   const lang = state.settings.app.language || 'en';
-  $('btn-confirm-cancel').textContent = lang === 'es' ? 'ABORTAR' : 'ABORT';
-  okBtn.textContent = lang === 'es' ? 'CONFIRMAR' : 'CONFIRM';
+  $('btn-confirm-cancel').querySelector('.btn-label').textContent = (I18N[lang] || I18N.en).config_cancel;
+  okBtn.querySelector('.btn-label').textContent = (I18N[lang] || I18N.en).confirm_action;
+  okBtn.classList.toggle('btn-danger', danger);
+  okBtn.classList.toggle('btn-primary', !danger);
   
   openModal('modal-cyber-confirm');
 }
@@ -10711,6 +10709,42 @@ function showCyberConfirm({ title, message, detail, danger = true, onConfirm }) 
 // ── PROPERTIES PANEL ──
 let propsNativePath = null;
 let propsSummaryText = '';
+let propsYoutubePosition = '';
+
+function formatYoutubePlaylistPosition(index, count, i18nLang) {
+  const current = Math.max(0, Number.isSafeInteger(index) ? index : 0) + 1;
+  if (!Number.isSafeInteger(count) || count <= 0) return String(current);
+  return (i18nLang.props_playlist_position_format || '{current} of {total}')
+    .replace('{current}', String(current))
+    .replace('{total}', String(count));
+}
+
+window.addEventListener('cv-youtube-info', event => {
+  const modal = $('modal-properties');
+  if (!modal?.classList.contains('active') || modal.dataset.source !== 'youtube') return;
+  const image = state.images[state.current];
+  const source = image && window.CVYouTubeSource.from(image);
+  if (!source?.playlistId) return;
+
+  const lang = state.settings?.app?.language || 'en';
+  const i18nLang = I18N[lang] || I18N.en || {};
+  const info = event.detail || {};
+  const index = Number.isSafeInteger(info.index) ? info.index : state.youtubeIndex;
+  const count = Number.isSafeInteger(info.count) ? info.count : 0;
+  const position = formatYoutubePlaylistPosition(index, count, i18nLang);
+  if (position === propsYoutubePosition) return;
+
+  propsYoutubePosition = position;
+  $('props-index').textContent = position;
+  $('props-readout').textContent = `${i18nLang.props_youtube_playlist || 'YouTube playlist'} · ${position}`;
+  const label = `${i18nLang.props_k_playlist_position || 'Playlist position'}:`;
+  const lines = propsSummaryText ? propsSummaryText.split('\n') : [];
+  const lineIndex = lines.findIndex(line => line.startsWith(label));
+  const summaryLine = `${label} ${position}`;
+  if (lineIndex >= 0) lines[lineIndex] = summaryLine;
+  else lines.push(summaryLine);
+  propsSummaryText = lines.filter(Boolean).join('\n');
+});
 
 function openPropertiesForCurrent() {
   if (!checkImageLoaded()) return;
@@ -10860,7 +10894,8 @@ async function showPropertiesPanel(rawPath) {
   const sourceType = playlist ? i18nLang.props_youtube_playlist : i18nLang.props_youtube_video;
   const playlistIndex = videoInfo?.index ?? state.youtubeIndex ?? 0;
   const playlistCount = videoInfo?.count || 0;
-  const position = playlist ? (playlistCount ? `${playlistIndex + 1} / ${playlistCount}` : String(playlistIndex + 1)) : '';
+  const position = playlist ? formatYoutubePlaylistPosition(playlistIndex, playlistCount, i18nLang) : '';
+  propsYoutubePosition = youtube && playlist ? position : '';
   const localizeLabel = (id, key) => {
     const el = $(id);
     el.dataset.i18n = key;
@@ -11080,7 +11115,7 @@ async function showPropertiesPanel(rawPath) {
         summaryEntry('props_k_name', name),
         summaryEntry('props_k_format', sourceType),
         summaryEntry('props_k_link', youtubeLink),
-        playlist ? summaryEntry('props_k_playlist_position', position) : ''
+        playlist ? summaryEntry('props_k_playlist_position', propsYoutubePosition) : ''
       ].filter(Boolean).join('\n');
     }
     return [
