@@ -8,38 +8,38 @@
 
 <!-- IMPORTANT FOR AGENTS & MAINTAINERS: Always rewrite this entire section and highlights with the ACTUAL release notes for this specific new version before tagging. NEVER leave or copy previous version notes! Use 25-45 words for the summary, lead with user-facing changes, and do not repeat the app name or version. -->
 <!-- changelog-summary:start -->
-A YouTube-style video player arrives: overlay flash, prev/next video, click-to-pause, a persistent speed panel and a seek preview with frame thumbnail. The tab bar gains edge navigation, a context menu and a richer switcher, with video defaults in the installer and per-format association status.
+Audio joins the viewer with native playback and responsive visualizations. YouTube playlists now show thumbnails and clearer position details; media properties expose useful previews, metadata and copy actions. Tab icons, playback-state preferences, drag-and-drop rules and modal controls round out the updated workspace.
 <!-- changelog-summary:end -->
+
+---
+
+Audio playback and reactive visualizations join images, local video, and isolated YouTube. Properties now include useful media previews and metadata; tab icons, playback-state and drag-and-drop preferences, playlist details, and a more consistent interface make everyday browsing clearer.
 
 ---
 
 ### ✨ Key Features & Highlights
 
-- ▶️ **YouTube-style video playback**:
-  - An overlay flash on play/pause, previous and next video buttons driven by the folder contents, and click-to-pause on the video with double-click fullscreen.
-  - A speed panel with display, slider and presets (0.25×–3×) that persists across sessions, plus > / < shortcuts and a seek-bar hover preview with timestamp and frame thumbnail.
+- 🎵 **Audio playback and visualizations**: play MP3, WAV, FLAC, Ogg, Opus, and AAC files directly with shared media controls, remembered playback preferences, and reactive visualization styles.
 
-- 🗂️ **Tab bar overhaul**:
-  - Double-clicking the empty strip opens files; the strip has its own context menu with reopen closed tab and close all, and a working "+" button with the suite look.
-  - Edge navigation buttons appear only while the tabs overflow, and the switcher gains a header, a live count and a close-all footer.
+- ℹ️ **Media properties**: inspect file details for images, local video and audio, or YouTube. Properties show local video frames and YouTube thumbnails when available, playlist position and count, and copy actions for the source and summary.
 
-- 🔗 **File associations**:
-  - A video default-viewer option joins the installer alongside the image one.
-  - The System tab shows the current viewer per supported format, read live from the registry, with a shortcut to the Windows settings.
+- 🗂️ **Media tabs and drop behavior**: optional type icons identify images, video, audio, and YouTube in tabs and the switcher. Playback state is remembered between tabs by default, and center drops can open new tabs or replace the current one; tab-strip drops open at the release position.
 
-- 🛠️ **Persistence and reliability**:
-  - Video loop, volume and mute now persist across sessions alongside speed and autoplay.
-  - Windows no longer reopen wider than the screen after mixed-DPI inflation, tray quits work with dialogs open, ghost tooltips after restore are gone, and the confirm dialog keeps the paused video frame recognizable.
+- ▶️ **YouTube and viewing refinements**: playlist links can be copied, position details include the total when available, restored playback stays paused until started, and images open at 1:1 when they fit the viewer.
+
+- ✨ **Interface polish**: consistent modal actions, clearer property metadata, refined settings controls, crop actions, tooltips, and window or file dragging.
 
 <details>
 <summary><b>🌐 Ver notas de la versión en Español</b></summary>
 
 ### 🚀 Novedades de esta versión
 
-- **Reproducción estilo YouTube**: destello del overlay en play/pausa, botones de video anterior y siguiente según la carpeta, clic sobre el video para pausar con doble clic a pantalla completa, panel de velocidad persistente (0.25×–3×) con display, slider y presets, atajos > / < y vista previa en la barra de progreso con miniatura del fotograma.
-- **Barra de pestañas renovada**: doble clic en la franja vacía abre archivos, menú contextual propio con reabrir cerradas y cerrar todas, botón "+" funcional, navegación en los extremos solo cuando las pestañas desbordan y un switcher con encabezado, contador y cierre total.
-- **Asociaciones de archivos**: opción de reproductor de video predeterminado en el instalador y panel de estado por formato en la pestaña Sistema, leído del registro, con acceso directo a los ajustes de Windows.
-- **Persistencia y fiabilidad**: repetir, volumen y silencio ahora sobreviven sesiones, las ventanas ya no se abren más anchas que la pantalla por inflado de DPI, salir desde la bandeja funciona con diálogos abiertos, y el diálogo de confirmación mantiene reconocible el fotograma pausado.
+El audio se suma a las imágenes, los videos locales y YouTube con reproducción nativa y visualizaciones reactivas. Las propiedades muestran vistas previas y metadatos útiles; los iconos de pestaña, las opciones de reproducción y arrastre, los detalles de playlist y la interfaz renovada hacen más claro el trabajo diario.
+
+- **Audio y visualizaciones**: reproduce MP3, WAV, FLAC, Ogg, Opus y AAC directamente, con controles compartidos y visualizaciones que reaccionan a la música.
+- **Propiedades de medios**: consulta metadatos y vistas previas de imágenes y videos locales; YouTube muestra miniaturas y la posición dentro de la playlist, incluyendo el total cuando está disponible.
+- **Pestañas y reproducción**: identifica imágenes, videos, audio y YouTube con iconos opcionales; conserva el estado de reproducción al cambiar de pestaña y configura cómo se abren los archivos soltados.
+- **Pulido y fiabilidad**: mejoras en listas y controles de YouTube, propiedades, menús, arrastre de ventanas y archivos, restauración de sesión y disposición de los controles de recorte.
 
 </details>
 

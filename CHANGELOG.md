@@ -3,6 +3,27 @@
 Notable user-facing changes per release. Earlier versions are documented in the
 [GitHub Releases](https://github.com/CyberGems/CyberViewer/releases) page.
 
+## [1.21.0] - 2026-11-06
+
+### Added
+
+- Native local audio playback for MP3, WAV, FLAC, Ogg, Opus, and AAC files, with shared media controls, saved playback preferences, and reactive audio visualizations.
+- Media properties for images, videos, audio, and YouTube: useful metadata, local video frame previews, YouTube thumbnails and playlist position/total when available, plus concise copy actions.
+- Optional media type icons in tabs, a searchable tab list with matching icons, playlist link copying, and clearer YouTube playlist position details.
+- Settings for remembering playback state across tabs and choosing whether center drops replace the current tab or open new tabs. Dropping directly on the tab strip opens at that position.
+
+### Changed
+
+- Updated tab, settings, properties, and modal controls to use a more consistent CyberViewer visual style, with clearer labels, metadata hierarchy, and localized tooltips.
+- Image viewing now opens at 1:1 when it fits the viewport and scales down only when necessary.
+
+### Fixed
+
+- YouTube playlist titles retain one color style, thumbnails load in properties, and context menus remain visible above embedded playback.
+- Media paused and playing states are restored predictably when switching tabs or relaunching the app; media remains paused after session restore until playback is explicitly started.
+- Restored windows no longer reactivate the minimize button hover until the pointer moves, and dragging files over YouTube embeds is accepted.
+- Crop controls and confirmation actions have more consistent spacing and hover behavior.
+
 ## [1.20.0] - 2026-10-31
 
 ### Added

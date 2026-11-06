@@ -87,6 +87,8 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 ### 🖼️ Visualización
 - **Pestañas de imágenes:** abre varios archivos a la vez, reordena pestañas, busca por nombre o ruta y reabre las cerradas. Cada pestaña conserva su zoom, desplazamiento y rotación pendiente. La navegación por carpeta permanece en la pestaña actual; usa el menú contextual de una miniatura o el clic central para abrir otra pestaña. Si hay cambios sin guardar, la pestaña se conserva al navegar a otra imagen.
 - **Extras de la franja:** doble clic sobre la zona vacía para abrir archivos, clic derecho para el menú con reabrir cerradas y cerrar todas, flechas en los extremos cuando las pestañas desbordan, y el listador con búsqueda y cierre total.
+- **Pestañas de medios:** los iconos opcionales distinguen imágenes, videos, audio y YouTube. Puedes ocultarlos en **Configuración → Interfaz**. **Configuración → General → Conservar reproducción o pausa entre pestañas** viene activado; el medio se reanuda o permanece pausado al volver.
+- **Arrastrar y soltar:** por defecto, soltar en el centro del visor abre pestañas nuevas; también puedes reemplazar la pestaña actual. Soltar sobre la barra abre los archivos en la posición donde los sueltes.
 - **Restauración opcional de sesión:** activa **Configuración → General → Restaurar sesión anterior** para recuperar el orden, la pestaña activa, las vistas, las rotaciones pendientes y las imágenes pegadas al reiniciar. Los archivos ausentes conservan su pestaña y se pueden localizar de nuevo. La sesión se almacena localmente, separada de los respaldos de configuración; desactivar la opción elimina la sesión guardada.
 - **Apertura ultrarrápida:** protocolo de streaming propio que carga imágenes sin agotar la RAM
 - **Formatos admitidos:** JPG, JPEG, PNG, GIF, WebP, BMP, TIFF, TIF, ICO y AVIF
@@ -118,6 +120,10 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 - **Reproducir al abrir**, en el diálogo del enlace, comparte la preferencia guardada de los videos locales. YouTube puede exigir un clic en su propio botón Reproducir. Solo queda un reproductor en línea activo; cambiar de pestaña o suspender la aplicación lo libera. La restauración opcional de sesión conserva el elemento actual y la posición de reproducción.
 - Se necesita internet y permiso de inserción. Los elementos privados, restringidos por edad o región, eliminados o que no permiten inserción pueden estar indisponibles. Los errores ofrecen reintentar o abrir en YouTube. Esta fase usa directamente la playlist del reproductor, sin catálogo independiente con búsqueda, inicio de sesión ni descargas.
 - YouTube controla la transmisión, las recomendaciones, la publicidad y el tratamiento de datos según sus propias políticas. El contenido remoto se ejecuta en un entorno aislado sin acceso a las API de archivos o ajustes de CyberViewer.
+
+### Propiedades de medios
+- Abre **Propiedades** en una imagen, video local, pista de audio, video de YouTube o playlist para consultar el origen y los datos del medio. Los videos locales muestran un fotograma del archivo y YouTube usa su miniatura cuando está disponible.
+- Las propiedades de playlists indican la posición actual y el total cuando se conoce. Las acciones de copia permiten copiar la ruta o enlace de origen y un resumen conciso.
 
 ### ✏️ Edición
 - **Rotar:** 90° a la izquierda (`Q`) o a la derecha (`E`) con flujo de guardar/descartar

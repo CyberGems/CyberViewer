@@ -87,6 +87,8 @@ Most image viewers are either bloated with features you never use or so barebone
 ### 🖼️ Viewing
 - **Image tabs:** open multiple files together, reorder tabs, search by name or path, and reopen closed tabs. Each tab keeps its zoom, pan, and pending rotation. Folder navigation stays in the current tab; use the thumbnail context menu or middle-click to open another tab. A tab with unsaved changes stays open when navigating to another image.
 - **Tab strip extras:** double-click the empty strip to open files, right-click it for a context menu with reopen-closed-tab and close-all, use the edge arrows while the tabs overflow, and open the switcher for a searchable list with a close-all footer.
+- **Media tabs:** optional type icons distinguish images, video, audio, and YouTube. In **Configuration → Interface**, you can hide them. **Configuration → General → Remember playback state between tabs** is on by default, so media resumes or stays paused when you return.
+- **Drag and drop:** the center of the viewer opens dropped files in new tabs by default, or can replace the current tab. Dropping on the tab strip always opens files at the release position.
 - **Optional session restore:** enable **Configuration → General → Restore previous session** to recover tab order, the active image, views, pending rotations, and pasted images after restarting. Missing files stay in their tabs and can be located again. Session data stays local and separate from settings backups; disabling the option removes the saved session.
 - **Lightning-fast open:** custom streaming protocol loads images without hogging RAM
 - **Supported formats:** JPG, JPEG, PNG, GIF, WebP, BMP, TIFF, TIF, ICO, and AVIF
@@ -118,6 +120,10 @@ Most image viewers are either bloated with features you never use or so barebone
 - **Autoplay on open** in the link dialog shares the saved local-video preference. YouTube can still require a click on its own Play button. One online player is active at a time; changing tabs or suspending the application releases it. Optional session restore retains the current item and playback position.
 - Internet access and permission to embed are required. Private, age-restricted, removed, region-blocked, and embedding-disabled items may be unavailable. Errors offer retry or opening in YouTube. This phase uses the embedded playlist directly, without a separate searchable playlist catalog, account sign-in, or downloads.
 - YouTube controls its stream, recommendations, advertising, and data processing under its own policies. Remote content runs in a separate sandbox without access to CyberViewer's file or settings APIs.
+
+### Media properties
+- Open **Properties** for an image, local video, audio track, YouTube video, or playlist to inspect its source and media details. Local video previews use a frame from the file; YouTube previews use the video's thumbnail when available.
+- YouTube playlist properties show the current position and total count when available. Copy actions provide the source path or link and a concise properties summary.
 
 ### ✏️ Editing
 - **Rotate:** left 90° (`Q`) or right 90° (`E`) with save/discard workflow
