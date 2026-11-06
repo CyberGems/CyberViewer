@@ -123,7 +123,7 @@ Estas son las combinaciones de contenedor y códec que cubren las pruebas de rep
 | Video | MP4, M4V, MOV, MKV | Video H.264/AVC con audio AAC-LC; probado desde MP4 y remultiplexado a los demás contenedores |
 | Video | WebM | Video VP9 con audio Opus |
 | Audio | MP3 | MPEG-1 Layer III, 128 kb/s |
-| Audio | WAV | PCM de 16 bits, 44,1 kHz, estéreo |
+| Audio | WAV | PCM de 16 bits, 44,1 kHz, mono |
 | Audio | FLAC | FLAC de 16 bits, 16 kHz |
 | Audio | OGG, OGA, OPUS | Ogg Vorbis a 16 kHz; Ogg Opus mono, modo de voz |
 | Audio | AAC, M4A | AAC-LC en ADTS (`.aac`) y MP4 (`.m4a`) |

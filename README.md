@@ -123,7 +123,7 @@ These are the container and codec combinations exercised by CyberViewer's local 
 | Video | MP4, M4V, MOV, MKV | H.264/AVC video with AAC-LC audio; tested from MP4 and remuxed into the other containers |
 | Video | WebM | VP9 video with Opus audio |
 | Audio | MP3 | MPEG-1 Layer III, 128 kb/s |
-| Audio | WAV | 16-bit PCM, 44.1 kHz, stereo |
+| Audio | WAV | 16-bit PCM, 44.1 kHz, mono |
 | Audio | FLAC | 16-bit FLAC, 16 kHz |
 | Audio | OGG, OGA, OPUS | Ogg Vorbis at 16 kHz; Ogg Opus, mono voice encoding |
 | Audio | AAC, M4A | AAC-LC in ADTS (`.aac`) and MP4 (`.m4a`) |
