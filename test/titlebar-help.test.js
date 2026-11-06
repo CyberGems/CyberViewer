@@ -266,10 +266,12 @@ describe('title bar Help menu', () => {
     assert.match(updateButtonStyle, /border:\s*0;/);
     assert.match(updateButtonStyle, /background:\s*rgba\(var\(--cyber-accent-rgb\),\s*0\.1\);/);
     assert.doesNotMatch(updateButtonStyle + updateHoverStyle, /box-shadow|border-color/);
-    assert.doesNotMatch(css, /\.titlebar-update-btn:hover svg\s*\{/);
+    assert.match(css, /\.titlebar-update-btn svg\s*\{[^}]*transform-origin:\s*center;/);
     assert.match(css, /\.titlebar-update-btn:active\s*\{[\s\S]*?transform:\s*scale\(0\.95\);/);
     // Soft, relaxed motion-safe pulse (3.5s ease-in-out), no badges, no per-state recolor
     assert.match(css, /@media \(prefers-reduced-motion: no-preference\)\s*\{\s*\.titlebar-update-btn\s*\{[^}]*?animation:\s*titlebar-update-pulse 3\.5s ease-in-out infinite;/);
+    assert.match(css, /@media \(prefers-reduced-motion: no-preference\)\s*\{\s*\.titlebar-update-btn\s*\{[^}]*\}\s*\.titlebar-update-btn svg\s*\{[^}]*transition:\s*transform 0\.2s ease;[^}]*\}\s*\.titlebar-update-btn:hover svg\s*\{\s*transform:\s*scale\(1\.1\);/);
+    assert.doesNotMatch(css, /\.titlebar-update-btn:hover svg\s*\{[^}]*translateY/);
     assert.match(css, /@keyframes titlebar-update-pulse\s*\{\s*0%,\s*100%\s*\{\s*opacity:\s*1;\s*\}\s*50%\s*\{\s*opacity:\s*0\.5;\s*\}\s*\}/);
     assert.doesNotMatch(css, /\.titlebar-update-btn\.ready\s*\{/);
     assert.doesNotMatch(css, /\.titlebar-update-label-wrap\s*\{/);

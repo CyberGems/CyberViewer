@@ -941,11 +941,20 @@
     width: 14px;
     height: 14px;
     flex-shrink: 0;
+    transform-origin: center;
   }
 
   @media (prefers-reduced-motion: no-preference) {
     .titlebar-update-btn {
       animation: titlebar-update-pulse 3.5s ease-in-out infinite;
+    }
+
+    .titlebar-update-btn svg {
+      transition: transform 0.2s ease;
+    }
+
+    .titlebar-update-btn:hover svg {
+      transform: scale(1.1);
     }
   }
 
