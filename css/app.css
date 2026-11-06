@@ -3366,11 +3366,11 @@
     transform: translateX(-50%);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0;
     background: var(--cyber-panel);
-    padding: 8px 12px;
+    padding: 10px 12px;
     border: 1px solid var(--cyber-border);
-    border-radius: 4px;
+    border-radius: 12px;
     box-shadow: 0 5px 25px rgba(0,0,0,0.8);
     white-space: nowrap;
     z-index: 2100;
@@ -3381,8 +3381,8 @@
   .crop-copy-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    justify-content: center;
+    gap: 12px;
   }
 
   /* Shared single-line "Apply to a copy" toggle (crop / resize / adjust) */
@@ -3394,7 +3394,7 @@
     align-items: center;
     justify-content: flex-start;
     gap: 8px;
-    cursor: help;
+    cursor: default;
   }
   .copy-toggle-info {
     display: flex;
@@ -3404,6 +3404,7 @@
     flex: 0 1 auto;
     white-space: nowrap;
     overflow: hidden;
+    cursor: pointer;
   }
   .copy-toggle-info .config-name {
     font-size: 13px;
@@ -3413,28 +3414,47 @@
     color: var(--cyber-text);
   }
   #crop-actions .copy-toggle-info .config-name {
-    font-size: 11px;
+    font-size: 13px;
   }
   .crop-actions-btns {
     display: flex;
-    gap: 12px;
-    justify-content: center;
+    align-items: stretch;
+    width: 100%;
+    gap: 10px;
+    justify-content: space-between;
   }
   #crop-actions .top-btn {
     font-size: 14px !important;
-    padding: 8px 16px !important;
+    padding: 8px 12px !important;
     height: auto !important;
-    min-width: 120px;
+    min-width: 132px;
+    flex: 1 1 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
   }
   #crop-actions .top-btn.btn-cancel { gap: 8px; }
+  #crop-actions .crop-copy-row {
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 8px !important;
+    padding: 10px 0 2px !important;
+    border-top: 1px solid var(--cyber-border);
+  }
+  #crop-actions .copy-toggle-info {
+    flex: 0 0 auto;
+    min-width: 0;
+    overflow: visible;
+    cursor: pointer;
+  }
   #crop-actions .switch {
-    transform: scale(0.92);
-    transform-origin: right center;
+    transform: none;
+    transform-origin: center;
     flex-shrink: 0;
+    cursor: pointer;
   }
 
   /* Enter icon + key hint in action buttons */
@@ -3496,13 +3516,13 @@
     color: var(--cyber-accent-ink);
     background: rgba(var(--cyber-accent-rgb), 0.2);
     font-weight: 700;
-    box-shadow: 0 0 15px rgba(var(--cyber-accent-rgb), 0.2);
+    box-shadow: none;
   }
   .top-btn.btn-primary:hover:not(:disabled) {
     border-color: rgba(var(--cyber-accent-rgb), 0.55);
     color: var(--cyber-accent-ink);
     background: rgba(var(--cyber-accent-rgb), 0.3);
-    box-shadow: 0 0 18px rgba(var(--cyber-accent-rgb), 0.24);
+    box-shadow: 0 0 16px rgba(var(--cyber-accent-rgb), 0.3);
   }
   .top-btn.btn-cancel {
     border-color: rgba(var(--cyber-tint-rgb), 0.14);
@@ -3520,24 +3540,30 @@
     color: var(--cyber-accent2-ink);
     background: rgba(var(--cyber-accent2-rgb), 0.2);
     font-weight: 700;
-    box-shadow: 0 0 15px rgba(var(--cyber-accent2-rgb), 0.2);
+    box-shadow: none;
   }
   .top-btn.btn-danger:hover:not(:disabled) {
     border-color: rgba(var(--cyber-accent2-rgb), 0.55);
     color: var(--cyber-accent2-ink);
     background: rgba(var(--cyber-accent2-rgb), 0.3);
-    box-shadow: 0 0 18px rgba(var(--cyber-accent2-rgb), 0.24);
+    box-shadow: 0 0 16px rgba(var(--cyber-accent2-rgb), 0.3);
   }
   .top-btn.btn-primary .btn-key-hint {
     border-color: rgba(var(--cyber-accent-rgb), 0.45);
     color: var(--cyber-accent-ink);
     background: rgba(var(--cyber-accent-rgb), 0.22);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  }
+  .top-btn.btn-primary:hover:not(:disabled) .btn-key-hint {
     box-shadow: 0 0 6px rgba(var(--cyber-accent-rgb), 0.2);
   }
   .top-btn.btn-danger .btn-key-hint {
     border-color: rgba(var(--cyber-accent2-rgb), 0.45);
     color: var(--cyber-accent2-ink);
     background: rgba(var(--cyber-accent2-rgb), 0.22);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  }
+  .top-btn.btn-danger:hover:not(:disabled) .btn-key-hint {
     box-shadow: 0 0 6px rgba(var(--cyber-accent2-rgb), 0.2);
   }
   .top-btn.btn-primary:disabled,
@@ -4017,7 +4043,7 @@
     justify-content: flex-start;
     gap: 10px;
     flex: 1 1 auto;
-    cursor: help;
+    cursor: default;
   }
   .modal-footer .copy-toggle-row .copy-toggle-info {
     display: flex;

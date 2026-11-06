@@ -527,11 +527,11 @@
               <button class="top-btn btn-cancel" id="btn-crop-cancel"><span class="btn-label" data-i18n="crop_cancel">Cancelar</span><span class="btn-key-hint">Esc</span></button>
               <button class="top-btn btn-primary" id="btn-crop-confirm" disabled><span class="btn-label" data-i18n="crop_confirm">Aplicar</span><span class="btn-key-hint" aria-hidden="true"><svg class="btn-enter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 4v7a3 3 0 0 1-3 3H4m0 0l5-5m-5 5l5 5"/></svg></span></button>
             </div>
-            <div class="crop-copy-row copy-toggle-row" data-i18n-title="crop_copy_tooltip">
-              <div class="copy-toggle-info">
+            <div class="crop-copy-row copy-toggle-row">
+              <label class="copy-toggle-info" for="cfg-crop-copy" data-i18n-title="crop_copy_tooltip">
                 <span class="config-name" data-i18n="crop_create_copy">Aplicar a una copia</span>
-              </div>
-              <label class="switch">
+              </label>
+              <label class="switch" data-i18n-title="crop_copy_tooltip">
                 <input type="checkbox" id="cfg-crop-copy" checked>
                 <span class="slider"></span>
               </label>
@@ -1635,11 +1635,11 @@
 
     </div>
     <div class="modal-footer">
-      <div class="copy-toggle-row resize-footer-copy" data-i18n-title="resize_copy_tooltip">
-        <div class="copy-toggle-info">
+      <div class="copy-toggle-row resize-footer-copy">
+        <label class="copy-toggle-info" for="cfg-resize-copy" data-i18n-title="resize_copy_tooltip">
           <span class="config-name" data-i18n="resize_create_copy">Aplicar a una copia</span>
-        </div>
-        <label class="switch">
+        </label>
+        <label class="switch" data-i18n-title="resize_copy_tooltip">
           <input type="checkbox" id="cfg-resize-copy" checked>
           <span class="slider"></span>
         </label>
@@ -1735,11 +1735,11 @@
       </div>
     </div>
     <div class="modal-footer">
-      <div class="copy-toggle-row adjust-footer-copy" data-i18n-title="adjust_copy_tooltip">
-        <div class="copy-toggle-info">
+      <div class="copy-toggle-row adjust-footer-copy">
+        <label class="copy-toggle-info" for="cfg-adjust-copy" data-i18n-title="adjust_copy_tooltip">
           <span class="config-name" data-i18n="adjust_create_copy">Aplicar a una copia</span>
-        </div>
-        <label class="switch">
+        </label>
+        <label class="switch" data-i18n-title="adjust_copy_tooltip">
           <input type="checkbox" id="cfg-adjust-copy" checked data-i18n-aria="adjust_create_copy">
           <span class="slider"></span>
         </label>
