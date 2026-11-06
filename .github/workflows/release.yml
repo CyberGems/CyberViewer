@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Refresh About icons from official app repositories
         uses: CyberGems/CyberSnap/.github/actions/sync-suite-icons@80266c5b4ad7fa4c5768e2543a4c7c7a461fc8f7
@@ -27,7 +27,7 @@ jobs:
         run: node .github/scripts/validate-release-summary.mjs
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
@@ -48,7 +48,7 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Upload Build Artifacts to Actions Run
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: CyberViewer-Windows-Installer
           path: |
