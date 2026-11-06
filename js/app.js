@@ -38,6 +38,29 @@ function setCyberTooltip(el, text) {
   el.classList.add('cyber-tooltip');
 }
 
+const overflowTooltipObservers = new WeakMap();
+function setCyberTooltipWhenTruncated(el, text) {
+  if (typeof el === 'string') el = $(el);
+  if (!el) return;
+  el.dataset.tooltipCandidate = text == null ? '' : String(text);
+  const refresh = () => {
+    const fullText = el.dataset.tooltipCandidate;
+    if (fullText && el.clientWidth > 0 && el.scrollWidth > el.clientWidth) {
+      setCyberTooltip(el, fullText);
+    } else {
+      el.removeAttribute('data-tooltip');
+      el.removeAttribute('title');
+      el.classList.remove('cyber-tooltip');
+    }
+  };
+  if (typeof ResizeObserver === 'function' && !overflowTooltipObservers.has(el)) {
+    const observer = new ResizeObserver(refresh);
+    observer.observe(el);
+    overflowTooltipObservers.set(el, observer);
+  }
+  requestAnimationFrame(refresh);
+}
+
 // ── TITLEBAR TOOLTIPS WITH HOTKEY BADGES (CyberNotes pattern) ──
 // The CSS tooltips (attr(data-tooltip)) cannot render a chip badge inside the
 // bubble, so the title bar uses a portaled card: same look as CyberNotes,
@@ -10949,10 +10972,10 @@ async function showPropertiesPanel(rawPath) {
   const sectionTitle = mediaSection.querySelector('.props-section-label');
   sectionTitle.dataset.i18n = youtube ? 'props_section_youtube' : audio ? 'audio_label' : video ? 'video_label' : 'props_section_image';
   sectionTitle.textContent = i18nLang[sectionTitle.dataset.i18n];
-  const audioCodecBadge = $('props-audio-codec-badge');
-  audioCodecBadge.hidden = true;
-  audioCodecBadge.textContent = '';
-  audioCodecBadge.removeAttribute('title');
+  const audioCodecRow = $('props-audio-codec-row');
+  const audioCodecValue = $('props-audio-codec');
+  audioCodecRow.hidden = true;
+  audioCodecValue.textContent = '-';
   for (const id of ['props-dims', 'props-ratio', 'props-mp']) $(id).closest('.props-row').style.display = audio || youtube ? 'none' : '';
   $('props-duration-row').hidden = !audio;
   $('props-duration').textContent = audio && Number.isFinite(im.duration) ? window.CVFormats.formatTime(im.duration) : '-';
@@ -10986,7 +11009,7 @@ async function showPropertiesPanel(rawPath) {
   if ($('props-modified')) $('props-modified').textContent = '…';
   if ($('props-path')) {
     $('props-path').textContent = youtube ? youtubeLink : fpath || '-';
-    setCyberTooltip($('props-path'), youtube ? youtubeLink : fpath || '');
+    setCyberTooltipWhenTruncated($('props-path'), youtube ? youtubeLink : fpath || '');
   }
   if ($('props-readout')) {
     $('props-readout').hidden = audio;
@@ -11077,8 +11100,8 @@ async function showPropertiesPanel(rawPath) {
     window.electronAPI.getVideoAudioCodec(fpath).then(codec => {
       if (!codec || !$('modal-properties').classList.contains('active') || propsNativePath !== fpath ||
           state.images[state.current] !== im || $('modal-properties').dataset.previewKind !== 'video') return;
-      audioCodecBadge.textContent = `${i18nLang.props_audio_codec || (es ? 'Códec de audio' : 'Audio codec')}: ${codec}`;
-      audioCodecBadge.hidden = false;
+      audioCodecValue.textContent = codec;
+      audioCodecRow.hidden = false;
     }).catch(() => { /* codec metadata is optional */ });
   }
 

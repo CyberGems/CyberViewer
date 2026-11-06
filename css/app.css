@@ -4284,7 +4284,7 @@
   }
   .props-val-digit {
     font-family: var(--font-digits);
-    color: var(--cyber-accent-ink);
+    color: var(--cyber-text);
     font-weight: 600;
     letter-spacing: 0.5px;
   }
@@ -4304,9 +4304,12 @@
     text-align: left !important;
     color: var(--cyber-accent-ink) !important;
     font-size: 11px;
-    word-break: break-all;
+    display: block;
+    width: 100%;
+    word-break: normal;
     line-height: 1.35;
-    max-height: 3.2em;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     overflow: hidden;
   }
   .props-preview-panel {
@@ -4477,32 +4480,6 @@
     background: rgba(var(--cyber-accent-rgb), 0.07);
     box-shadow: none;
     color: var(--cyber-accent-ink);
-  }
-  .props-section-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    min-height: 18px;
-    margin-bottom: 8px;
-  }
-  .props-section-heading .props-section-label {
-    margin-bottom: 0;
-  }
-  .props-audio-codec-badge {
-    max-width: 70%;
-    overflow: hidden;
-    color: var(--cyber-accent-ink);
-    font-family: var(--font-ui);
-    font-size: 10px;
-    font-weight: 600;
-    line-height: 14px;
-    text-align: right;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  #props-audio-codec-badge[hidden] {
-    display: none;
   }
   .footer-props-hit {
     cursor: pointer;
