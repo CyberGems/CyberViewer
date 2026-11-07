@@ -2897,8 +2897,11 @@ function executeAction(data) {
   }
 
 async function saveWorkspaceImage(data) {
-  const target = window.CVWorkspace.model.findPath(data.filePath);
-  if (!data.createCopy && target && target !== window.CVWorkspace.model.active && target.view.hasChanges) {
+  const path = window.CVTabs.pathKey(data.filePath);
+  const conflict = window.CVWorkspace.model.tabs.some(tab =>
+    tab !== window.CVWorkspace.model.active &&
+    window.CVTabs.pathKey(tab.image.file.path) === path && tab.view.hasChanges);
+  if (!data.createCopy && conflict) {
     return { success: false, error: I18N[state.settings.app.language || 'en'].tabs_save_conflict };
   }
   return window.electronAPI.saveImage(data);

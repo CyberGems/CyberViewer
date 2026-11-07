@@ -47,8 +47,8 @@
       const key = pathKey(filePath);
       return key ? this.tabs.find(tab => pathKey(tab.image.file.path) === key) : null;
     }
-    open(image, { activate = true, view, source = 'folder' } = {}) {
-      let tab = this.findPath(image.file.path);
+    open(image, { activate = true, view, source = 'folder', reusePath = true } = {}) {
+      let tab = reusePath ? this.findPath(image.file.path) : null;
       if (!tab) {
         if (this.tabs.length >= MAX_TABS) throw new Error('TAB_LIMIT');
         tab = { id: `tab-${this.nextId++}`, image, view: cleanView(view), source,
@@ -68,6 +68,7 @@
       if (index < 0) return null;
       const [tab] = this.tabs.splice(index, 1);
       if (remember) {
+        tab.reopenAsDuplicate = !!this.findPath(tab.image.file.path);
         this.closed.push(tab);
         if (this.closed.length > 20) this.closed.shift();
       }
@@ -77,7 +78,7 @@
     reopen() {
       const tab = this.closed.pop();
       if (!tab) return null;
-      const existing = this.findPath(tab.image.file.path);
+      const existing = tab.reopenAsDuplicate ? null : this.findPath(tab.image.file.path);
       if (existing) { this.activeId = existing.id; return existing; }
       if (this.tabs.length >= MAX_TABS) { this.closed.push(tab); throw new Error('TAB_LIMIT'); }
       this.tabs.push(tab);

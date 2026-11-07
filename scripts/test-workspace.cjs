@@ -14,10 +14,9 @@ for (const phase of ['initial', 'restore', 'overflow']) {
     settings.app.restoreSession = true;
     fs.writeFileSync(settingsFile, JSON.stringify(settings));
     const tabs = Array.from({ length: 40 }, (_, index) => {
-      const name = `overflow-${index + 1}.png`;
-      const file = path.join(dataDir, name);
-      fs.copyFileSync(path.join(dataDir, 'one.png'), file);
-      return { id: `tab-${index + 1}`, path: file, name, view: {} };
+      const file = path.join(dataDir, `overflow-${index === 38 ? 1 : index + 1}.png`);
+      if (index !== 38) fs.copyFileSync(path.join(dataDir, 'one.png'), file);
+      return { id: `tab-${index + 1}`, path: file, name: path.basename(file), view: {} };
     });
     fs.writeFileSync(path.join(dataDir, 'session.json'), JSON.stringify({
       version: 1, tabs, activeId: tabs[tabs.length - 1].id

@@ -405,11 +405,10 @@ window.CVVideo = (() => {
     const sibling = videoSibling(direction);
     if (!sibling || !sibling.file.path) return;
     if (state.settings.app.mediaSiblingsNewTab) {
-      void window.openImagePath(sibling.file.path);
+      void window.openImagePath(sibling.file.path, { reusePath: false });
       return;
     }
-    // Same tab by default: the folder-browsing pipeline replaces a clean tab
-    // and focuses files that are already open, instead of stacking tabs.
+    // Same tab by default, including when another tab shows the target file.
     const index = state.images.indexOf(sibling);
     if (index >= 0 && showImage) showImage(index, direction > 0 ? 'left' : 'right');
     else void window.openImagePath(sibling.file.path);

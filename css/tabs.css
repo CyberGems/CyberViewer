@@ -100,6 +100,9 @@ body.tab-drag-active #image-tab-list .image-tab { cursor: grabbing; }
 .image-tab-media-icon .menu-ico { width: 15px; height: 15px; }
 .image-tab-shell.active .image-tab-media-icon { color: var(--cyber-accent); }
 .image-tab-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.image-tab-duplicate { display: none; width: 12px; height: 12px; flex-shrink: 0; color: var(--cyber-accent-ink); opacity: .7; }
+.image-tab-shell.duplicate .image-tab-duplicate { display: inline-flex; }
+.image-tab-duplicate .menu-ico { width: 12px; height: 12px; }
 /* The shared tooltip card is portaled outside the scrolling strip. */
 .image-tab.cyber-tooltip::before, .image-tab.cyber-tooltip::after { display: none !important; }
 .image-tab-dirty { display: none; width: 6px; height: 6px; border-radius: 50%; background: var(--cyber-accent); flex-shrink: 0; }

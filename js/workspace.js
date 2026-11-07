@@ -66,8 +66,8 @@ window.CVWorkspace = (() => {
     showToast(text('tabs_finish_edit'), 'info');
     return false;
   }
-  function imageForFile(file) {
-    const existing = model.findPath(file.path);
+  function imageForFile(file, { reusePath = true } = {}) {
+    const existing = reusePath ? model.findPath(file.path) : null;
     if (existing) return existing.image;
     const image = { file, url: null, thumbUrl: null, w: 0, h: 0, loaded: false, size: file.size || 0, fromClipboard: !file.path };
     ownedImages.add(image);
@@ -158,7 +158,9 @@ window.CVWorkspace = (() => {
     try {
       for (let index = 0; index < accepted.length; index++) {
         const file = accepted[index];
-        const tab = model.open(imageForFile(file), { activate: false, source: options.source, view: options.view });
+        const tab = model.open(imageForFile(file, options), {
+          activate: false, source: options.source, view: options.view, reusePath: options.reusePath !== false
+        });
         if (insertion !== null) model.moveTo(tab.id, insertion++);
         if (index === initialIdx) target = tab;
       }
@@ -214,18 +216,23 @@ window.CVWorkspace = (() => {
     const result = await openFiles([file], 0, { source: 'youtube', view: { videoTime: source.startSeconds, youtubeIndex: source.index, youtubeVideoId: source.videoId || '' } });
     return result;
   }
-  // Folder browsing replaces only a clean tab. A pending edit/paste stays open;
-  // a target already in the workspace is focused instead of duplicated.
+  // Folder browsing stays in the current clean tab, even if another tab shows
+  // the same path. A pending edit/paste opens a separate tab for the target.
   function beforeShow(image) {
     const tab = model.active;
     if (tab?.image === image) return true;
     if (busy) return false;
     if (tab && state.images[state.current] === tab.image) capture();
-    const existing = model.findPath(image.file.path);
-    if (existing && existing !== tab) { void activate(existing.id); return false; }
     if (!tab || edited(tab)) {
-      void openFiles([image.file], 0, { source: state.showingFavs ? 'favorites' : 'folder' });
+      void openFiles([image.file], 0, { source: state.showingFavs ? 'favorites' : 'folder', reusePath: false });
       return false;
+    }
+    // Favorites may borrow another tab's image object. Keep the two documents
+    // independent before replacing this tab's current image.
+    if (model.tabs.some(other => other !== tab && other.image === image)) {
+      const index = state.images.indexOf(image);
+      image = imageForFile(image.file, { reusePath: false });
+      state.images[index] = image;
     }
     const previous = tab.image;
     tab.image = image;
@@ -512,6 +519,13 @@ window.CVWorkspace = (() => {
     document.body.classList.toggle('has-image-tabs', !!model.tabs.length);
     bar.setAttribute('aria-label', text('tabs_label'));
     const nodes = new Map([...list.children].map(node => [node.dataset.tabId, node]));
+    const pathCounts = new Map();
+    for (const tab of model.tabs) {
+      const path = tab.image.file.path;
+      if (!path || window.CVYouTubeSource.isYouTube(tab.image)) continue;
+      const key = pathKey(path);
+      pathCounts.set(key, (pathCounts.get(key) || 0) + 1);
+    }
     let position = 0;
     for (const tab of model.tabs) {
       let shell = nodes.get(tab.id);
@@ -526,7 +540,9 @@ window.CVWorkspace = (() => {
         const dot = document.createElement('span'); dot.className = 'image-tab-dirty'; dot.setAttribute('aria-hidden', 'true');
         const mediaIcon = document.createElement('span'); mediaIcon.className = 'image-tab-media-icon'; mediaIcon.setAttribute('aria-hidden', 'true');
         const label = document.createElement('span'); label.className = 'image-tab-name';
-        button.append(dot, mediaIcon, label);
+        const duplicateIcon = document.createElement('span'); duplicateIcon.className = 'image-tab-duplicate'; duplicateIcon.setAttribute('aria-hidden', 'true');
+        duplicateIcon.append(iconSvg('copy'));
+        button.append(dot, mediaIcon, label, duplicateIcon);
         button.addEventListener('focus', () => prepareTooltip(button));
         ttBind(button);
         button.addEventListener('click', () => void activate(tab.id));
@@ -541,6 +557,8 @@ window.CVWorkspace = (() => {
       const active = tab.id === model.activeId;
       shell.classList.toggle('active', active);
       shell.classList.toggle('dirty', edited(tab));
+      const duplicate = (pathCounts.get(pathKey(tab.image.file.path)) || 0) > 1;
+      shell.classList.toggle('duplicate', duplicate);
       const button = shell.querySelector('.image-tab');
       button.setAttribute('aria-selected', String(active));
       button.tabIndex = active ? 0 : -1;
@@ -552,7 +570,8 @@ window.CVWorkspace = (() => {
         mediaIcon.dataset.mediaType = mediaType;
       }
       mediaIcon.hidden = state.settings.app.showTabMediaIcons === false;
-      button.setAttribute('aria-label', name + (edited(tab) ? ` (${text('tabs_unsaved')})` : ''));
+      button.setAttribute('aria-label', name + (edited(tab) ? ` (${text('tabs_unsaved')})` : '') +
+        (duplicate ? ` (${text('tabs_also_open')})` : ''));
       button.querySelector('.image-tab-name').textContent = name;
       shell.querySelector('.image-tab-close').setAttribute('aria-label', text('tabs_close_named').replace('{name}', name));
       shell.querySelector('.image-tab-close').tabIndex = active ? 0 : -1;
@@ -574,8 +593,10 @@ window.CVWorkspace = (() => {
   function prepareTooltip(button) {
     const label = button.querySelector('.image-tab-name');
     const tab = model.tabs.find(item => item.id === button.id);
-    if (tab && label.scrollWidth > label.clientWidth) {
-      setCyberTooltip(button, tab.image.file.path || tab.image.file.name);
+    const duplicate = button.closest('.image-tab-shell')?.classList.contains('duplicate');
+    if (tab && (duplicate || label.scrollWidth > label.clientWidth)) {
+      const fullName = tab.image.file.path || tab.image.file.name;
+      setCyberTooltip(button, duplicate ? `${fullName} · ${text('tabs_also_open')}` : fullName);
     } else { button.classList.remove('cyber-tooltip'); delete button.dataset.tooltip; }
   }
   function mediaTypeForTab(tab) {
@@ -725,7 +746,7 @@ window.CVWorkspace = (() => {
             fromClipboard: !item.path, missingDraft: !item.path && !item.draftPath, loaded: false, w: 0, h: 0, size: 0,
             suppressAutoplayUntilPlayed: true };
           ownedImages.add(image);
-          const tab = model.open(image, { activate: false, view: item.view, source: item.source });
+          const tab = model.open(image, { activate: false, view: item.view, source: item.source, reusePath: false });
           tab.id = item.id; tab.hiddenPaths = item.hiddenPaths; tab.scrollTop = item.scrollTop;
         }
         model.nextId = Math.max(0, ...model.tabs.map(tab => Number(tab.id.slice(4)))) + 1;
@@ -799,8 +820,12 @@ window.CVWorkspace = (() => {
   function imageBound(image) {
     const tab = model.tabs.find(item => item.image === image);
     if (!tab) return;
-    const duplicate = model.findPath(image.file.path);
-    if (duplicate && duplicate !== tab) model.close(duplicate.id, { remember: false });
+    for (const other of model.tabs) {
+      if (other === tab || pathKey(other.image.file.path) !== pathKey(image.file.path)) continue;
+      other.image.loaded = false;
+      other.image.url = null;
+      other.image.thumbUrl = null;
+    }
     folderScanCache.delete(pathKey(folderDirFromPath(image.file.path)));
     if (model.active === tab) buildSidebar();
     render(); changed();
@@ -845,9 +870,8 @@ window.CVWorkspace = (() => {
       if (!event.ctrlKey && list.scrollWidth > list.clientWidth) { event.preventDefault(); list.scrollLeft += event.deltaY || event.deltaX; }
     }, { passive: false });
     list.addEventListener('pointerover', event => {
-      const name = event.target.closest('.image-tab-name');
-      if (!name) return;
-      prepareTooltip(name.closest('.image-tab'));
+      const button = event.target.closest('.image-tab');
+      if (button) prepareTooltip(button);
     });
     list.addEventListener('keydown', event => {
       if (event.altKey || event.ctrlKey || event.metaKey) return;

@@ -18,6 +18,19 @@ describe('image tab model', () => {
     assert.equal(model.tabs.length, 2);
     assert.equal(model.active.view.panX, 42);
   });
+  it('allows explicit local duplicates and reopens each tab independently', () => {
+    const model = new TabModel();
+    const reference = model.open(image('C:/Photos/one.png'));
+    const browsing = model.open(image('c:\\photos\\ONE.png'), { reusePath: false });
+    browsing.view.zoom = 2;
+    assert.notEqual(reference.image, browsing.image);
+    assert.equal(model.tabs.length, 2);
+    assert.equal(model.open(image('C:/Photos/one.png')), reference);
+    model.close(reference.id);
+    assert.equal(model.reopen(), reference);
+    assert.equal(model.tabs.length, 2);
+    assert.equal(browsing.view.zoom, 2);
+  });
   it('closes adjacent tabs, reopens in order, and never duplicates a reopened path', () => {
     const model = new TabModel();
     const first = model.open(image('C:/one.png'));

@@ -55,14 +55,28 @@ describe('workspace session persistence', () => {
     assert.equal(store.read().ok, false);
     assert.equal(store.read().session.tabs.length, 0);
   });
-  it('rejects duplicate identities and paths and resolves a missing active ID', () => {
+  it('retains separate local tabs with the same path while rejecting duplicate identities', () => {
     const input = snapshot('C:/one.png');
     input.tabs.push({ ...input.tabs[0], id: 'tab-2', path: 'c:\\ONE.png' });
-    assert.throws(() => sanitizeSession(input), /DUPLICATE_SESSION_PATH/);
+    const sanitized = sanitizeSession(input);
+    assert.equal(sanitized.tabs.length, 2);
+    assert.equal(sanitized.tabs[1].path, 'c:\\ONE.png');
     input.tabs[1].path = 'C:/two.png'; input.tabs[1].id = 'tab-1';
     assert.throws(() => sanitizeSession(input), /DUPLICATE_SESSION_ID/);
     input.tabs.pop(); input.activeId = 'tab-999';
     assert.equal(sanitizeSession(input).activeId, 'tab-1');
+  });
+  it('keeps online sources and clipboard drafts unique', () => {
+    const input = { version: 1, activeId: 'tab-1', tabs: [
+      { id: 'tab-1', path: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+      { id: 'tab-2', path: 'https://youtu.be/dQw4w9WgXcQ' }
+    ] };
+    assert.throws(() => sanitizeSession(input), /DUPLICATE_SESSION_PATH/);
+    input.tabs = [
+      { id: 'tab-1', draftId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa.png' },
+      { id: 'tab-2', draftId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa.png' }
+    ];
+    assert.throws(() => sanitizeSession(input), /DUPLICATE_SESSION_PATH/);
   });
   it('stores clipboard bytes using opaque IDs and prevents path traversal', t => {
     const { store } = fixture(t);

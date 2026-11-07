@@ -52,6 +52,31 @@ app.whenReady().then(async () => {
     await loaded();
     assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 3);
     assert.equal(await evaluate('return mainImg.naturalWidth;'), 120);
+    await waitFor(() => evaluate('return state.images.length === 3;'), 'folder scan');
+    await evaluate("$('btn-next').click();");
+    await loaded();
+    assert.equal(await evaluate('return window.CVWorkspace.model.activeId;'), 'tab-1',
+      'folder navigation must keep the current tab even when the target is already open');
+    assert.equal(await evaluate('return window.CVWorkspace.model.tabs[1].image.file.name;'), 'two.png');
+    assert.equal(await evaluate("return document.querySelectorAll('.image-tab-shell.duplicate').length;"), 2);
+    assert.equal(await evaluate("return $('tab-1').getAttribute('aria-label').includes('También abierto en otra pestaña');"), true);
+    assert.equal(await evaluate("state.settings.app.language='en'; updateLanguage('en'); const translated=$('tab-1').getAttribute('aria-label').includes('Also open in another tab'); state.settings.app.language='es'; updateLanguage('es'); return translated;"), true);
+    assert.equal(await evaluate("return $('nav-container').classList.contains('nav-useless');"), false);
+    assert.equal(await evaluate("return getComputedStyle(document.querySelector('.image-tab-shell.duplicate .image-tab-duplicate')).display;"), 'flex');
+    fs.writeFileSync(path.join(dataDir, 'duplicate-tabs.png'), (await win.webContents.capturePage()).toPNG());
+    assert.equal(await evaluate(`const workspace=window.CVWorkspace, active=workspace.model.active;
+      const reference=workspace.model.tabs.find(tab=>tab!==active &&
+        window.CVTabs.pathKey(tab.image.file.path)===window.CVTabs.pathKey(active.image.file.path));
+      reference.view.hasChanges=true;
+      const result=await saveWorkspaceImage({filePath:active.image.file.path,buffer:''});
+      reference.view.hasChanges=false;
+      return result.success===false;`), true, 'saving must respect pending edits in another tab for the same file');
+    await evaluate('window.CVWorkspace.imageBound(window.CVWorkspace.model.active.image);');
+    assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 3,
+      'binding a saved file must preserve other tabs showing that file');
+    await evaluate("$('btn-prev').click();");
+    await loaded();
+    assert.equal(await evaluate("return document.querySelectorAll('.image-tab-shell.duplicate').length;"), 0);
     const smallPath = path.join(dataDir, 'capture-270x130.png');
     const largePath = path.join(dataDir, 'capture-2000x1200.png');
     for (const [file, width, height] of [[smallPath, 270, 130], [largePath, 2000, 1200]]) {
@@ -270,6 +295,11 @@ app.whenReady().then(async () => {
         scrollLeft: list.scrollLeft, viewport: viewport.toJSON(), tab: tab.toJSON() };`);
     assert.equal(position.count, 40);
     assert.equal(position.activeId, 'tab-40');
+    assert.equal(await evaluate(`const tabs=window.CVWorkspace.model.tabs;
+      return tabs[0].image.file.path===tabs[38].image.file.path && tabs[0].image!==tabs[38].image &&
+        document.querySelectorAll('.image-tab-shell.duplicate').length===2 &&
+        $('tab-39').getAttribute('aria-label').includes(I18N[state.settings.app.language].tabs_also_open);`), true,
+    'session restore retains independent tabs for the same local file');
     assert.ok(position.tab.left >= position.viewport.left - 1 && position.tab.right <= position.viewport.right + 1,
       'restored active tab should be visible in the tab strip: ' + JSON.stringify(position));
     const afterResize = await evaluate(`const list = $('image-tab-list');
@@ -283,6 +313,8 @@ app.whenReady().then(async () => {
       'active tab should be visible after the strip is laid out again: ' + JSON.stringify(afterResize));
     console.log('PASS overflow: active tab remains visible after restoring 40 tabs and resizing');
 
+    await waitFor(() => evaluate("return $('titlebar-filename').textContent === 'overflow-40.png';"),
+      'title bar reflects the restored active file');
     const titleRegion = await evaluate("const el = $('titlebar-filename'); return {" +
       "tag: el.tagName, region: getComputedStyle(el).getPropertyValue('-webkit-app-region')," +
       "name: el.textContent, tooltip: el.dataset.tooltip, cursor: getComputedStyle(el).cursor };");
@@ -292,7 +324,7 @@ app.whenReady().then(async () => {
     assert.equal(titleRegion.tooltip, undefined, 'full title should not have a redundant tooltip');
     assert.equal(titleRegion.cursor, 'default');
     const clippedTitle = await evaluate(`const el = $('titlebar-filename');
-      el.style.maxWidth = '100px';
+      el.style.maxWidth = '60px';
       const base = el.querySelector('.titlebar-filename-base');
       return { clipped: base.scrollWidth > base.clientWidth + 1,
         title: el.getBoundingClientRect().toJSON() };`);
