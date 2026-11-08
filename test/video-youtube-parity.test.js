@@ -119,10 +119,13 @@ describe('video player youtube parity (phase 1)', () => {
   });
 
   it('keeps every More menu row iconized and the confirm overlay readable on video', () => {
-    for (const id of ['video-speed-row', 'video-open', 'video-youtube', 'video-properties', 'video-autoplay', 'video-loop', 'video-audio-info']) {
+    for (const id of ['video-open', 'video-youtube', 'video-properties', 'video-autoplay', 'video-loop', 'video-audio-info']) {
       const row = html.match(new RegExp(`id="${id}"[\\s\\S]*?</button>`));
       assert.ok(row && row[0].includes('menu-ico'), `${id} must carry a menu icon`);
     }
+    // Speed left the More menu for the transport bar (next to forward).
+    assert.doesNotMatch(html, /id="video-speed-row"/);
+    assert.match(html, /id="video-speed"[^>]*data-tooltip-kbd="&gt; &lt;"/);
     assert.match(css, /#video-menu \.menu-ico \{ width: 14px; height: 14px;/);
     // Titlebar filename keeps room for descenders (g, y)
     assert.match(read('css/app.css'), /\.titlebar-filename\s*\{[^}]*font: 600 12px\/1\.3 var\(--font-ui\);/);

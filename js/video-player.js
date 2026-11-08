@@ -115,8 +115,18 @@ window.CVVideo = (() => {
     const sound = document.querySelector('.video-sound');
     sound.classList.toggle('audio-unavailable', unavailable);
     sound.setAttribute('aria-label', text(unavailable ? 'video_audio_unavailable' : 'video_volume'));
-    if (unavailable) setCyberTooltip(sound, text('video_audio_unavailable'));
-    else { sound.removeAttribute('data-tooltip'); sound.classList.remove('cyber-tooltip'); }
+    // Card-only hints: the old CSS bubble on the group overlapped the mute
+    // button's badge card, so the unavailable notice now replaces the mute
+    // hint (badge included) and marks the group's own card instead.
+    if (unavailable) {
+      sound.dataset.tooltip = text('video_audio_unavailable');
+      $('video-mute').dataset.tooltip = text('video_audio_unavailable');
+      delete $('video-mute').dataset.tooltipKbd;
+    } else {
+      delete sound.dataset.tooltip;
+      $('video-mute').dataset.tooltip = text('video_mute_shortcut');
+      $('video-mute').dataset.tooltipKbd = 'M';
+    }
     const audioKey = audioStatus === 'available' ? 'video_audio_available'
       : unavailable ? 'video_no_audio' : 'video_audio_pending';
     $('video-audio-note').textContent = text(audioKey);
@@ -337,7 +347,6 @@ window.CVVideo = (() => {
   }
   function syncSpeedUi() {
     const rate = currentRate();
-    $('video-speed-value').textContent = rate === 1 ? text('video_speed_normal') : `${rate}×`;
     $('video-speed-display').textContent = `${rate.toFixed(2)}×`;
     setSpeedVisual(rate);
   }
@@ -455,7 +464,6 @@ window.CVVideo = (() => {
   }
   function localize() {
     for (const [id, key] of [['video-controls', 'video_controls'], ['video-seek', 'video_seek'], ['video-volume', 'video_volume']]) $(id).setAttribute('aria-label', text(key));
-    $('video-mute').dataset.tooltip = text('video_mute_shortcut');
     const audio = window.CVFormats.isAudio(state.images[state.current]);
     for (const direction of ['prev', 'next']) {
       const label = text(`${audio ? 'audio' : 'video'}_${direction}`);
@@ -463,7 +471,7 @@ window.CVVideo = (() => {
       $(`video-${direction}`).querySelector('span').textContent = label;
     }
     window.CVAudioVisuals.localize();
-    for (const [id, key] of [['video-back', 'video_back'], ['video-forward', 'video_forward'], ['video-more', 'video_more']]) {
+    for (const [id, key] of [['video-back', 'video_back'], ['video-forward', 'video_forward'], ['video-speed', 'video_speed'], ['video-more', 'video_more']]) {
       $(id).setAttribute('aria-label', text(key));
       $(id).dataset.tooltip = text(key);
     }
@@ -494,8 +502,8 @@ window.CVVideo = (() => {
     let menuDismissClick = false;
     window.addEventListener('pointerdown', event => {
       keyboardFocus = false;
-      menuDismissClick = !$('video-menu').hidden && !event.target.closest('#video-menu, #video-more');
-      if (!event.target.closest('#video-menu, #video-more')) closeMenu();
+      menuDismissClick = !$('video-menu').hidden && !event.target.closest('#video-menu, #video-more, #video-speed');
+      if (!event.target.closest('#video-menu, #video-more, #video-speed')) closeMenu();
     }, true);
     $('video-play').addEventListener('click', () => void toggle());
     // Click on the video pauses immediately (YouTube); a double-click undoes
@@ -517,7 +525,12 @@ window.CVVideo = (() => {
     element.addEventListener('pause', () => flashOverlay(FLASH_PAUSE));
     $('video-prev').addEventListener('click', () => openSibling(-1));
     $('video-next').addEventListener('click', () => openSibling(1));
-    $('video-speed-row').addEventListener('click', () => setSpeedPanel(true));
+    $('video-speed').addEventListener('click', () => {
+      const opening = $('video-menu').hidden;
+      setMenu(opening);
+      if (opening) setSpeedPanel(true);
+      reveal();
+    });
     $('video-speed-back').addEventListener('click', () => setSpeedPanel(false));
     // YouTube-style track: pointer-driven with 0.05 snapping, fully controlled
     // visuals so the fill and the thumb can never drift apart. The move

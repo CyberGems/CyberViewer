@@ -196,7 +196,6 @@ html[data-theme='light'] #video-audio-note {
   color: var(--cyber-text);
 }
 .video-speed-row .menu-ico { width: 14px; height: 14px; color: var(--cyber-muted); }
-.video-speed-value { margin-left: auto; color: var(--cyber-text); font-size: 11px; }
 #video-speed-display {
   text-align: center;
   font-size: 20px;

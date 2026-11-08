@@ -43,6 +43,7 @@ describe('nav arrow badge tooltips', () => {
       ['video-mute', 'M'],
       ['video-back', '&#8592;'],
       ['video-forward', '&#8594;'],
+      ['video-speed', '&gt; &lt;'],
       ['video-fit', 'B'],
       ['video-fullscreen', 'Ctrl\\+F']
     ];
@@ -51,14 +52,24 @@ describe('nav arrow badge tooltips', () => {
     }
     // Sync/localize feed the card labels through dataset, not the CSS bubble.
     assert.match(videoJs, /\$\('video-play'\)\.dataset\.tooltip = text\(/);
-    assert.match(videoJs, /\$\('video-mute'\)\.dataset\.tooltip = text\(/);
-    // back/forward/more labels are assigned through the shared id/key loop.
+    // back/forward/speed/more labels are assigned through the shared id/key loop.
     assert.match(videoJs, /\[\['video-back', 'video_back'\][\s\S]*?\$\(id\)\.dataset\.tooltip = text\(key\);/);
     assert.match(videoJs, /\$\('video-fit'\)\.dataset\.tooltip = text\('menu_fit'\)/);
     // The fullscreen label swaps with the ghost state inside reveal().
     assert.match(videoJs, /\$\('video-fullscreen'\)\.dataset\.tooltip = text\(fsKey\)/);
     // B is the fit key since the rework; the stale F hint must stay out.
     assert.doesNotMatch(tagById('video-fit'), /aria-keyshortcuts="F"/);
+  });
+
+  it('keeps the no-audio notice on the card instead of a CSS bubble', () => {
+    // The old bubble on the sound group overlapped the mute badge card; the
+    // notice now replaces the mute hint and marks the group's own card.
+    assert.doesNotMatch(videoJs, /setCyberTooltip\(sound/);
+    assert.match(videoJs, /sound\.dataset\.tooltip = text\('video_audio_unavailable'\)/);
+    assert.match(videoJs, /\$\('video-mute'\)\.dataset\.tooltip = text\('video_audio_unavailable'\)/);
+    assert.match(videoJs, /delete \$\('video-mute'\)\.dataset\.tooltipKbd/);
+    assert.match(videoJs, /\$\('video-mute'\)\.dataset\.tooltip = text\('video_mute_shortcut'\)/);
+    assert.match(appJs, /'video-speed', 'video-more', 'video-fit', 'video-fullscreen', 'video-sound'/);
   });
 
   it('swaps the nav badges contextually while video or audio is active', () => {
