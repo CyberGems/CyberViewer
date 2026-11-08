@@ -379,6 +379,7 @@
       </section>
 
       <div id="video-controls" role="group" data-i18n-aria="video_controls" hidden>
+        <div id="speed-indicator" role="status" hidden>1.00×</div>
         <div id="video-heading"></div>
         <div class="video-transport">
           <div class="video-timeline">
@@ -389,7 +390,7 @@
             </div>
           </div>
           <div class="video-actions">
-            <button type="button" id="video-prev" hidden>
+            <button type="button" id="video-prev">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5v14L8 12Z"/><path d="M6 5h2v14H6z"/></svg>
               <span class="video-sr-only" data-i18n="video_prev">Video anterior</span>
             </button>
@@ -397,15 +398,15 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path class="video-icon-play" d="m9 5 11 7-11 7Z"/><path class="video-icon-pause" d="M8 5h3v14H8zM15 5h3v14h-3z"/></svg>
               <span id="video-play-label" class="video-sr-only">Reproducir</span>
             </button>
-            <button type="button" id="video-next" hidden>
+            <button type="button" id="video-next">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l11 7-11 7Z"/><path d="M16 5h2v14h-2z"/></svg>
               <span class="video-sr-only" data-i18n="video_next">Video siguiente</span>
             </button>
             <button type="button" id="video-back" data-tooltip-kbd="&#8592;">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8a8.5 8.5 0 1 1-.5 7M4 3v5h5"/><path d="M14.6 8.2H9.6v4.4h2.9a2.6 2.6 0 1 1-2.6 2.6v-.5"/></svg>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8a8.5 8.5 0 1 1-.5 7M4 3v5h5"/><path d="M14 9.2h-3.7v3.5h2.3a2 2 0 1 1-2 2v-.3"/></svg>
             </button>
             <button type="button" id="video-forward" data-tooltip-kbd="&#8594;">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8a8.5 8.5 0 1 0 .5 7M20 3v5h-5"/><path d="M14.6 8.2H9.6v4.4h2.9a2.6 2.6 0 1 1-2.6 2.6v-.5"/></svg>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8a8.5 8.5 0 1 0 .5 7M20 3v5h-5"/><path d="M14 9.2h-3.7v3.5h2.3a2 2 0 1 1-2 2v-.3"/></svg>
             </button>
             <button type="button" id="video-speed" data-tooltip-kbd="&gt; &lt;">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>

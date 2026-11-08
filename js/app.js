@@ -11242,10 +11242,20 @@ async function showPropertiesPanel(rawPath) {
   if (youtube) return;
 
   if (video && isElectron && fpath && window.electronAPI.getVideoAudioCodec) {
-    window.electronAPI.getVideoAudioCodec(fpath).then(codec => {
-      if (!codec || !$('modal-properties').classList.contains('active') || propsNativePath !== fpath ||
+    // Cached verdicts paint the row instantly; silent videos show it too.
+    if (im.audioProbe === 'unavailable') {
+      audioCodecValue.textContent = i18nLang.props_no_audio || (es ? 'Sin audio' : 'No audio');
+      audioCodecRow.hidden = false;
+    } else if (im.audioProbe === 'available' && im.audioCodec) {
+      audioCodecValue.textContent = im.audioCodec;
+      audioCodecRow.hidden = false;
+    }
+    window.electronAPI.getVideoAudioCodec(fpath).then(result => {
+      if (!result || !result.ok || !$('modal-properties').classList.contains('active') || propsNativePath !== fpath ||
           state.images[state.current] !== im || $('modal-properties').dataset.previewKind !== 'video') return;
-      audioCodecValue.textContent = codec;
+      im.audioProbe = result.codec ? 'available' : 'unavailable';
+      im.audioCodec = result.codec;
+      audioCodecValue.textContent = result.codec || i18nLang.props_no_audio || (es ? 'Sin audio' : 'No audio');
       audioCodecRow.hidden = false;
     }).catch(() => { /* codec metadata is optional */ });
   }

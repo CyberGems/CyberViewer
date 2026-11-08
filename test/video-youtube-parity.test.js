@@ -15,12 +15,14 @@ const css = read('css/video.css');
 
 describe('video player youtube parity (phase 1)', () => {
   it('adds prev/next video transport buttons driven by folder siblings', () => {
-    assert.match(html, /id="video-prev" hidden/);
-    assert.match(html, /id="video-next" hidden/);
+    // Both arrows stay in the bar; without a sibling they render disabled
+    // with their own hint instead of disappearing.
+    assert.match(html, /<button type="button" id="video-prev">/);
+    assert.match(html, /<button type="button" id="video-next">/);
     assert.match(player, /function videoSibling\(direction\) \{/);
     assert.match(player, /window\.CVFormats\.isVideo\(candidate\.file\.path\)/);
     assert.match(player, /function syncSiblings\(\) \{/);
-    assert.match(player, /prev\.hidden = !videoSibling\(-1\);/);
+    assert.match(player, /classList\.toggle\('is-disabled', !hasPrev\)/);
     assert.match(player, /\$\('video-prev'\)\.addEventListener\('click', \(\) => openSibling\(-1\)\)/);
   });
 
@@ -133,6 +135,9 @@ describe('video player youtube parity (phase 1)', () => {
     for (const lang of ['en', 'es']) {
       for (const key of ['video_audio_info', 'video_audio_available', 'video_audio_pending', 'video_no_audio']) {
         assert.ok(!(key in ui[lang]), `${lang}.${key} should be gone`);
+      }
+      for (const key of ['video_no_prev', 'video_no_next', 'props_no_audio']) {
+        assert.ok(typeof ui[lang][key] === 'string' && ui[lang][key].trim().length > 0, `${lang}.${key} should be defined`);
       }
     }
     assert.match(css, /#video-menu \.menu-ico \{ width: 14px; height: 14px;/);

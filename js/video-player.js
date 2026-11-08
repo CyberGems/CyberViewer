@@ -17,7 +17,6 @@ window.CVVideo = (() => {
   let keyboardFocus = false;
   let speedRepeatTimer = null;
   let audioStatus = 'pending';
-  let probingAudio = false;
   let loadedAt = 0;
   const text = key => (I18N[state.settings.app.language || 'en'] || I18N.en)[key];
   const active = () => window.CVFormats.isPlayable(state.images[state.current]);
@@ -97,7 +96,7 @@ window.CVVideo = (() => {
     $('video-volume').style.setProperty('--video-progress', `${element.muted ? 0 : element.volume * 100}%`);
     syncSiblings();
     syncSpeedUi();
-    if (owner?.loaded && !element.seeking && !probingAudio && state.images[state.current] === owner) {
+    if (owner?.loaded && !element.seeking && state.images[state.current] === owner) {
       state.videoTime = current;
       owner.videoTime = current;
       const second = Math.floor(current);
@@ -108,8 +107,12 @@ window.CVVideo = (() => {
     for (let i = 0; i < played.length; i++) playedSeconds += played.end(i) - played.start(i);
     // Decoded-byte counts cannot distinguish a silent file from an unsupported
     // audio codec. Keep this neutral diagnostic behind an explicit user action.
-    audioStatus = !owner?.loaded ? 'pending' : element.webkitAudioDecodedByteCount > 0 ? 'available'
+    // The container verdict from music-metadata (cached on the tab) is
+    // authoritative; the decode-based detection only fills the gap while a
+    // probe is still pending, and must not overwrite it on every sync.
+    const decodedStatus = !owner?.loaded ? 'pending' : element.webkitAudioDecodedByteCount > 0 ? 'available'
       : typeof element.webkitAudioDecodedByteCount === 'number' && (playedSeconds > .75 || (element.ended && playedSeconds > 0)) ? 'unavailable' : 'pending';
+    audioStatus = owner && (owner.audioProbe === 'available' || owner.audioProbe === 'unavailable') ? owner.audioProbe : decodedStatus;
     const unavailable = audioStatus === 'unavailable';
     $('video-mute').disabled = unavailable;
     $('video-volume').disabled = unavailable;
@@ -206,7 +209,6 @@ window.CVVideo = (() => {
     clearTimeout(idleTimer);
     interacting = false;
     closeMenu();
-    probingAudio = false;
     document.body.classList.remove('video-idle');
     $('video-controls').inert = false;
     $('ghost-close').inert = false;
@@ -284,7 +286,6 @@ window.CVVideo = (() => {
       window.CVAudioVisuals.refresh();
       onReady();
       if (live() && window.CVMedia.shouldPlayMediaOnOpen(state.settings.app, image)) void play();
-      else if (live() && !window.CVYouTubeSource.isYouTube(image)) void probeAudioAvailability(image, token);
     };
     element.addEventListener('loadeddata', ready);
     element.addEventListener('seeked', ready);
@@ -297,46 +298,25 @@ window.CVVideo = (() => {
     element.src = url;
     element.load();
     sync(); syncTools();
-  }
-
-  // webkitAudioDecodedByteCount only reports once decoding has started, so a
-  // media file opened paused showed volume as available until played. A short
-  // muted decode settles the state right at load; the result is cached on the
-  // tab so later visits apply it instantly.
-  async function probeAudioAvailability(image, token) {
-    if (typeof element.webkitAudioDecodedByteCount !== 'number') return;
-    const live = () => token === generation && owner === image;
-    const startAt = Number.isFinite(element.currentTime) ? element.currentTime : 0;
-    probingAudio = true;
-    const wasMuted = element.muted;
-    try {
-      element.muted = true;
-      await element.play();
-      await new Promise(resolve => setTimeout(resolve, 350));
-      // A user-initiated play or a tab switch cancels the probe; the normal
-      // played-seconds detection takes over from there.
-      if (!probingAudio || !live()) return;
-      const decoded = element.webkitAudioDecodedByteCount;
-      image.audioProbe = decoded > 0 ? 'available' : 'unavailable';
-      element.pause();
-      if (Number.isFinite(element.duration) && Math.abs(element.currentTime - startAt) > 0.05) element.currentTime = startAt;
-      lastSavedSecond = Math.floor(startAt);
-    } catch (_) { /* play refused (quick tab switch): leave pending */ }
-    finally {
-      element.muted = live() ? wasMuted : state.settings.app.videoMuted === true;
-      probingAudio = false;
-      if (live()) { audioStatus = image.audioProbe || 'pending'; sync(); }
+    // music-metadata decides audio availability from the container's tracks
+    // (verified: silent files expose no audio track and no sampleRate), so a
+    // silent file disables volume right away without decoding anything.
+    const probePath = image.file && image.file.path;
+    if (probePath && window.electronAPI?.getVideoAudioCodec && !image.audioProbe) {
+      window.electronAPI.getVideoAudioCodec(probePath).then(result => {
+        if (!result || !result.ok || token !== generation || owner !== image) return;
+        image.audioProbe = result.codec ? 'available' : 'unavailable';
+        image.audioCodec = result.codec;
+        audioStatus = image.audioProbe;
+        sync();
+      }).catch(() => { /* keep pending */ });
     }
   }
+
   async function play() {
     if (!owner || !owner.loaded || document.body.classList.contains('image-error')) return;
     const token = generation;
     reveal();
-    if (probingAudio) {
-      // Cancel the muted probe: the user asked for real playback.
-      probingAudio = false;
-      element.muted = state.settings.app.videoMuted === true;
-    }
     if (element.ended) element.currentTime = 0;
     try {
       await window.CVAudioVisuals.prepare();
@@ -396,6 +376,12 @@ window.CVVideo = (() => {
   function syncSpeedUi() {
     const rate = currentRate();
     $('video-speed-display').textContent = `${rate.toFixed(2)}×`;
+    // Persistent top-left chip: only meaningful while the rate differs from 1×.
+    const indicator = $('speed-indicator');
+    if (indicator) {
+      indicator.hidden = rate === 1;
+      indicator.textContent = `${Math.round(rate * 100) / 100}×`;
+    }
     setSpeedVisual(rate);
   }
   function setPlaybackRate(rate) {
@@ -455,18 +441,24 @@ window.CVVideo = (() => {
   }
   function syncSiblings() {
     const audio = window.CVFormats.isAudio(owner);
-    for (const direction of ['prev', 'next']) {
-      const button = $(`video-${direction}`);
-      const label = text(`${audio ? 'audio' : 'video'}_${direction}`);
-      setCyberTooltip(button, label);
-      button.querySelector('span').textContent = label;
-    }
     const prev = $('video-prev');
     const next = $('video-next');
     if (!prev || !next) return;
     if (window.CVYouTube.active()) { prev.hidden = true; next.hidden = true; return; }
-    prev.hidden = !videoSibling(-1);
-    next.hidden = !videoSibling(1);
+    // Both arrows stay visible: without a sibling they render disabled with
+    // their own hint instead of vanishing from the bar.
+    prev.hidden = false;
+    next.hidden = false;
+    const hasPrev = !!videoSibling(-1);
+    const hasNext = !!videoSibling(1);
+    prev.classList.toggle('is-disabled', !hasPrev);
+    prev.setAttribute('aria-disabled', String(!hasPrev));
+    setCyberTooltip(prev, hasPrev ? text(audio ? 'audio_prev' : 'video_prev') : text('video_no_prev'));
+    prev.querySelector('span').textContent = text(audio ? 'audio_prev' : 'video_prev');
+    next.classList.toggle('is-disabled', !hasNext);
+    next.setAttribute('aria-disabled', String(!hasNext));
+    setCyberTooltip(next, hasNext ? text(audio ? 'audio_next' : 'video_next') : text('video_no_next'));
+    next.querySelector('span').textContent = text(audio ? 'audio_next' : 'video_next');
   }
   function openSibling(direction) {
     const sibling = videoSibling(direction);

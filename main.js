@@ -2639,7 +2639,7 @@ ipcMain.handle('get-file-info', (event, filePath) => {
 ipcMain.handle('get-video-audio-codec', async (event, filePath) => {
   try {
     const absPath = resolveAllowedPath(filePath);
-    if (!isVideoPath(absPath)) return null;
+    if (!isVideoPath(absPath)) return { ok: false, codec: null };
 
     const metadataModule = await (audioMetadataModulePromise ||= import('music-metadata'));
     const metadata = await metadataModule.parseFile(absPath, {
@@ -2648,9 +2648,13 @@ ipcMain.handle('get-video-audio-codec', async (event, filePath) => {
       maxMemoryAllocation: 16 * 1024 * 1024
     });
     const audioTrack = metadata.format.trackInfo?.find(track => track.type === metadataModule.TrackType.audio);
-    return audioTrack?.codecName || audioTrack?.codecId || null;
+    // Containers that never fill trackInfo (some MP4s) still expose the audio
+    // stream through format.sampleRate; video-only files leave both empty.
+    const codec = audioTrack?.codecName || audioTrack?.codecId
+      || (metadata.format.sampleRate ? (metadata.format.codec || null) : null);
+    return { ok: true, codec };
   } catch (_) {
-    return null;
+    return { ok: false, codec: null };
   }
 });
 

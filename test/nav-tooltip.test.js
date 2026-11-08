@@ -7,6 +7,7 @@ const root = path.join(__dirname, '..');
 const appJs = fs.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
 const html = fs.readFileSync(path.join(root, 'CyberViewer.html'), 'utf8');
 const videoJs = fs.readFileSync(path.join(root, 'js', 'video-player.js'), 'utf8');
+const videoCss = fs.readFileSync(path.join(root, 'css', 'video.css'), 'utf8');
 
 function tagById(id) {
   const match = html.match(new RegExp(`<button[^>]*id="${id}"[^>]*>`));
@@ -83,16 +84,34 @@ describe('nav arrow badge tooltips', () => {
     assert.match(videoJs, /setSpeedPanel\(false\);\s*if \(hadMenu\) setMenu\(false\);/);
   });
 
-  it('settles the audio state at load with a muted decode probe', () => {
-    // webkitAudioDecodedByteCount reports only after decoding starts, so a
-    // paused file opened from a session showed volume as available. The probe
-    // plays ~350ms muted at load and caches the verdict on the tab.
-    assert.match(videoJs, /async function probeAudioAvailability\(image, token\)/);
+  it('settles audio availability from container metadata, without playback', () => {
+    // music-metadata reads the container's tracks (verified against generated
+    // silent/voiced fixtures), so volume shows its real state right at open
+    // and no decode probe ever plays the video.
+    assert.doesNotMatch(videoJs, /probeAudioAvailability/);
+    assert.match(videoJs, /getVideoAudioCodec\(probePath\)/);
+    assert.match(videoJs, /image\.audioProbe = result\.codec \? 'available' : 'unavailable';/);
     assert.match(videoJs, /audioStatus = image\.audioProbe \|\| 'pending';/);
-    assert.match(videoJs, /!probingAudio && state\.images\[state\.current\] === owner/);
-    assert.match(videoJs, /image\.audioProbe = decoded > 0 \? 'available' : 'unavailable';/);
     assert.doesNotMatch(videoJs, /video-audio-note/);
     assert.doesNotMatch(videoJs, /video-audio-info/);
+  });
+
+  it('keeps the sibling arrows visible, disabled with their own hint', () => {
+    // Without a sibling video the arrow stays in the bar, dimmed via
+    // aria-disabled (the tooltip must keep working on it).
+    assert.match(videoJs, /classList\.toggle\('is-disabled', !hasPrev\)/);
+    assert.match(videoJs, /setCyberTooltip\(prev, hasPrev \? text\(audio \? 'audio_prev' : 'video_prev'\) : text\('video_no_prev'\)\)/);
+    assert.doesNotMatch(html, /id="video-prev" hidden/);
+    assert.doesNotMatch(html, /id="video-next" hidden/);
+    assert.match(videoCss, /#video-prev\.is-disabled, #video-next\.is-disabled \{ opacity: \.38;/);
+  });
+
+  it('shows a persistent speed chip that fades with the controls', () => {
+    // Top-left, mirrored from the fullscreen close button (top-right); only
+    // meaningful while the rate differs from 1×.
+    assert.match(html, /id="speed-indicator" role="status" hidden/);
+    assert.match(videoJs, /indicator\.hidden = rate === 1;/);
+    assert.match(videoCss, /body\.video-active #speed-indicator:not\(\[hidden\]\) \{ display: block; \}/);
   });
 
   it('swaps the nav badges contextually while video or audio is active', () => {

@@ -23,6 +23,9 @@ const { app, BrowserWindow } = require('electron');
 // The fixture is recorded from an offscreen canvas in a hidden test window.
 // Use software rendering so frame delivery does not depend on GPU visibility.
 app.disableHardwareAcceleration();
+// Occluded background windows get throttled and visibility-changed on Windows,
+// which nondeterministically kills the hold-repeat input sections.
+app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
 const dataDir = process.env.CV_SPEED_TEST_DIR;
 if (!dataDir || !path.basename(dataDir).startsWith('cyberviewer-speed-test-')) throw new Error('Isolated profile required');
 app.setPath('userData', dataDir);
@@ -43,6 +46,8 @@ async function waitFor(callback, description) {
 app.whenReady().then(async () => {
   let win;
   await waitFor(() => (win = BrowserWindow.getAllWindows().find(item => item.webContents.getURL().includes('CyberViewer.html'))), 'main window');
+  win.show();
+  win.focus();
   const evaluate = body => win.webContents.executeJavaScript('(async()=>{' + body + '})()');
   await waitFor(() => evaluate('return window.CVWorkspace?.ready;'), 'workspace');
   // Generate a real decodable fixture without requiring FFmpeg on the host.
