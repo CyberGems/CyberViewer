@@ -55,6 +55,28 @@ describe('media byte ranges', () => {
       assert.equal((await createMediaResponse(request(), allowlist)).status, 404);
     } finally { fs.rmSync(dir, { recursive: true, force: true }); }
   });
+  it('grants canvas CORS only to the local file renderer', async () => {
+    // Chromium 156 refuses to export a canvas holding an image served without
+    // CORS, which broke every edit. Pin the header policy so it cannot regress.
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cv-media-cors-'));
+    try {
+      const file = path.join(dir, 'photo.png');
+      fs.writeFileSync(file, 'png-bytes');
+      const allowlist = createPathAllowlist();
+      assert.equal(allowlist.allowMediaFile(file), file);
+      const request = origin => ({ url: toMediaUrl(file), method: 'GET', headers: new Map(origin ? [['origin', origin]] : []) });
+      for (const origin of ['file://', 'null']) {
+        const response = await createMediaResponse(request(origin), allowlist);
+        assert.equal(response.headers.get('access-control-allow-origin'), origin, origin);
+        assert.equal(response.headers.get('vary'), 'Origin', origin);
+      }
+      for (const origin of ['https://example.com', 'https://evil.test', '']) {
+        const response = await createMediaResponse(request(origin), allowlist);
+        assert.equal(response.headers.get('access-control-allow-origin'), null, origin || 'no origin');
+        assert.equal(response.headers.get('vary'), null, origin || 'no origin');
+      }
+    } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  });
 });
 
 describe('mixed media tabs', () => {

@@ -36,6 +36,25 @@ function setCyberTooltip(el, text) {
   el.setAttribute('data-tooltip', text);
   el.removeAttribute('title');
   el.classList.add('cyber-tooltip');
+  applyHudHotkeyBadge(el);
+}
+
+/**
+ * Action-bar buttons show their shortcut as the same <kbd> badge the title bar
+ * uses, instead of a parenthesized suffix inside the label. The hint is split
+ * off the localized text ("Fit to Window (F)") so both languages keep a single
+ * string and the badge is never stale.
+ */
+function applyHudHotkeyBadge(el) {
+  if (!el.closest || !el.closest('#kbd-hint')) return;
+  const match = (el.getAttribute('data-tooltip') || '').match(/^(.+?)\s*\(([A-Za-z0-9+]{1,16})\)$/);
+  if (!match) return;
+  el.dataset.tooltip = match[1];
+  el.dataset.tooltipKbd = match[2];
+  el.classList.add('tt-hotkey');
+  if (el.dataset.ttBound) return;
+  el.dataset.ttBound = '1';
+  ttBind(el);
 }
 
 const overflowTooltipObservers = new WeakMap();
@@ -111,8 +130,12 @@ function ttPositionCard() {
   const card = ttCard.getBoundingClientRect();
   let left = rect.left + rect.width / 2 - card.width / 2;
   left = Math.max(TT_VIEWPORT_MARGIN, Math.min(left, window.innerWidth - card.width - TT_VIEWPORT_MARGIN));
-  const top = rect.bottom + TT_GAP;
+  // Anchors in the lower half (action bar, status bar) open their card upward so
+  // it never covers the status bar; the arrow follows to the opposite edge.
+  const above = rect.top > window.innerHeight / 2 && rect.top - TT_GAP - card.height >= TT_VIEWPORT_MARGIN;
+  const top = above ? rect.top - TT_GAP - card.height : rect.bottom + TT_GAP;
   const arrowX = Math.max(12, Math.min(rect.left + rect.width / 2 - left, card.width - 12));
+  ttCard.classList.toggle('is-above', above);
   ttCard.style.left = `${Math.round(left)}px`;
   ttCard.style.top = `${Math.round(top)}px`;
   ttCard.style.setProperty('--tt-arrow-x', `${Math.round(arrowX)}px`);
@@ -121,6 +144,9 @@ function ttPositionCard() {
 function ttShow(el) {
   if (restorePointerPending) return;
   if (Date.now() < ttRestoreSuppressUntil) return;
+  // Action-bar buttons honored the "disable all tooltips" setting through the CSS
+  // bubble; the badge card keeps that behavior.
+  if (el.closest('#kbd-hint') && document.body.classList.contains('no-tooltips')) return;
   if (ttSuppressedWhileOpen(el)) return;
   const text = ttTextFor(el);
   if (!text) return;
@@ -3070,6 +3096,9 @@ function freezeGifFrame(im, sourceUrl) {
     const source = mainImg && mainImg.naturalWidth > 0 && mainImg.src === sourceUrl
       ? mainImg
       : new Image();
+    // cvlocal media is cross-origin to the file:// document, so the canvas stays
+    // tainted unless the image is requested in CORS mode (Chromium 156+).
+    source.crossOrigin = 'anonymous';
     const capture = () => {
       try {
         const width = source.naturalWidth || source.width;
@@ -6494,9 +6523,13 @@ function showToast(txt, type = 'info', durationMs = 2500) {
   const duration = Math.max(400, Number(durationMs) || 2500);
   const fadeAt = Math.max(200, duration - 300);
 
-  // Keep toasts near the top so they don't cover crop/action panels
+  // Keep toasts near the top so they don't cover crop/action panels, but clear
+  // the chrome: a fixed 64px now lands behind the tab strip.
+  const tabStrip = $('image-tabs');
+  const chromeBottom = tabStrip && tabStrip.offsetHeight > 0 ? tabStrip.getBoundingClientRect().bottom : 0;
+  const toastTop = Math.round(Math.max(64, chromeBottom + 12));
   t.style.cssText = `
-    position:fixed;top:64px;bottom:auto;left:50%;transform:translateX(-50%);
+    position:fixed;top:${toastTop}px;bottom:auto;left:50%;transform:translateX(-50%);
     background:${bg};color:#000;padding:8px 24px;
     border-radius:2px;font-family:var(--font-ui);
     font-size:12px;font-weight:700;z-index:12000;

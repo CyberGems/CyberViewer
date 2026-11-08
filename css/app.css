@@ -67,6 +67,10 @@
     /* Semantic accents: user accent, its partners, and status colours. Gray
        neutralises the whole family; light keeps them and darkens the ink. */
     --cyber-accent-ink: var(--cyber-accent);
+    /* Tooltip edge and halo. Neon cyan reads as a smudge on a pale surface, so
+       the light theme swaps the darkened accent in and the glow for a shadow. */
+    --cyber-tip-edge: var(--cyber-accent-ink);
+    --cyber-tip-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.3);
     --cyber-accent-bright: #33dfff;
     --cyber-accent2-bright: #ff5594;
     --cyber-brand-accent: #02CEFD;
@@ -418,8 +422,8 @@
     transition: opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1), transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1000000;
     letter-spacing: 0.5px;
-    border: 1px solid var(--cyber-accent);
-    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.3);
+    border: 1px solid var(--cyber-tip-edge);
+    box-shadow: var(--cyber-tip-shadow);
     text-transform: none;
   }
 
@@ -431,7 +435,7 @@
     transform: translateX(-50%) translateY(8px);
     border-width: 6px 6px 0;
     border-style: solid;
-    border-color: var(--cyber-accent) transparent transparent transparent;
+    border-color: var(--cyber-tip-edge) transparent transparent transparent;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1), transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
@@ -460,7 +464,7 @@
     top: 58px;
     transform: translateX(-50%) translateY(-8px) !important;
     border-width: 0 6px 6px 6px;
-    border-color: transparent transparent var(--cyber-accent) transparent;
+    border-color: transparent transparent var(--cyber-tip-edge) transparent;
   }
   .cyber-tooltip.tooltip-bottom:hover::after,
   .cyber-tooltip.tooltip-bottom:hover::before {
@@ -553,8 +557,11 @@
     padding: 6px 10px;
     border-radius: 6px;
     background: rgba(var(--cyber-shell-rgb), 0.96);
-    border: 1px solid var(--cyber-accent);
-    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.3);
+    /* Neon cyan nearly vanishes on a pale card, so light theme swaps the edge
+       for the accent ink that already backs accent text on white. */
+    --tt-border: var(--cyber-tip-edge);
+    border: 1px solid var(--tt-border);
+    box-shadow: var(--cyber-tip-shadow);
     color: var(--cyber-text-on-panel);
     font-family: var(--font-ui);
     font-size: 11px;
@@ -586,8 +593,8 @@
     width: 8px;
     height: 8px;
     background: rgba(var(--cyber-shell-rgb), 0.96);
-    border-left: 1px solid var(--cyber-accent);
-    border-top: 1px solid var(--cyber-accent);
+    border-left: 1px solid var(--tt-border);
+    border-top: 1px solid var(--tt-border);
     transform: translateX(-50%) rotate(45deg);
   }
 
@@ -596,19 +603,37 @@
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    padding: 0 4px;
-    border: 1px solid var(--cyber-border);
+    padding: 0 5px;
+    border: 1px solid rgba(var(--cyber-tint-rgb), 0.16);
     border-radius: 4px;
-    background: rgba(var(--cyber-tint-rgb), 0.04);
-    color: var(--cyber-muted);
+    background: rgba(var(--cyber-tint-rgb), 0.06);
+    /* --cyber-muted sat at 2.8:1 (dark) and 4.2:1 (light) on this chip. */
+    color: var(--cyber-text-soft-3);
     font-family: var(--font-mono, monospace);
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 700;
     line-height: 1.4;
     white-space: nowrap;
   }
 
   #titlebar-tooltip .tooltip-shortcut-key[hidden] { display: none; }
+
+  /* Card opened above its anchor (action bar): arrow points down */
+  #titlebar-tooltip.is-above::before {
+    top: auto;
+    bottom: -4px;
+    border-left: none;
+    border-top: none;
+    border-right: 1px solid var(--tt-border);
+    border-bottom: 1px solid var(--tt-border);
+  }
+
+  /* Action-bar buttons use the portaled badge card: no duplicate CSS bubble */
+  #kbd-hint .tt-hotkey.cyber-tooltip::after,
+  #kbd-hint .tt-hotkey.cyber-tooltip::before {
+    content: none !important;
+    display: none !important;
+  }
 
   /* Statusbar tooltips: sit just above the bar (not 64px away into the HUD) */
   #statusbar .cyber-tooltip::after {
@@ -644,29 +669,29 @@
 
   /* Size: Pink glowing tooltip */
   #footer-size.cyber-tooltip::after {
-    border-color: var(--cyber-accent);
-    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.35);
+    border-color: var(--cyber-tip-edge);
+    box-shadow: var(--cyber-tip-shadow);
   }
   #footer-size.cyber-tooltip::before {
-    border-color: var(--cyber-accent) transparent transparent transparent;
+    border-color: var(--cyber-tip-edge) transparent transparent transparent;
   }
 
   /* Weight: Cyan glowing tooltip */
   #footer-weight.cyber-tooltip::after {
-    border-color: var(--cyber-accent);
-    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.35);
+    border-color: var(--cyber-tip-edge);
+    box-shadow: var(--cyber-tip-shadow);
   }
   #footer-weight.cyber-tooltip::before {
-    border-color: var(--cyber-accent) transparent transparent transparent;
+    border-color: var(--cyber-tip-edge) transparent transparent transparent;
   }
 
   /* Zoom: Lime glowing tooltip */
   #footer-zoom.cyber-tooltip::after {
-    border-color: var(--cyber-accent);
-    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.35);
+    border-color: var(--cyber-tip-edge);
+    box-shadow: var(--cyber-tip-shadow);
   }
   #footer-zoom.cyber-tooltip::before {
-    border-color: var(--cyber-accent) transparent transparent transparent;
+    border-color: var(--cyber-tip-edge) transparent transparent transparent;
   }
   /* Zoom lives at the right end of the statusbar — right-align its tooltip so it
      doesn't clip past the window's right edge (mirrors footer-radar left-alignment). */
@@ -1528,8 +1553,8 @@
     max-width: min(220px, calc(100vw - 16px));
     padding: 5px 8px;
     background: rgba(var(--cyber-shell-rgb), 0.98) !important;
-    border: 1px solid var(--cyber-accent);
-    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.3);
+    border: 1px solid var(--cyber-tip-edge);
+    box-shadow: var(--cyber-tip-shadow);
     transform: translateX(-25%) translateY(-4px) !important;
   }
   #sidebar-folder #btn-toggle-favs.cyber-tooltip::before,
@@ -1540,7 +1565,7 @@
     right: auto !important;
     transform: translateX(-50%) translateY(-4px) !important;
     border-width: 0 6px 6px 6px;
-    border-color: transparent transparent var(--cyber-accent) transparent;
+    border-color: transparent transparent var(--cyber-tip-edge) transparent;
   }
   #sidebar-folder #btn-toggle-favs.cyber-tooltip:hover::after,
   #sidebar-folder #btn-toggle-favs.cyber-tooltip:focus-visible::after,
@@ -1810,8 +1835,8 @@
   #sidebar-controls .kbd-btn:active {
     outline: none;
     /* keep cyber border; never native white focus ring */
-    border-color: var(--cyber-accent);
-    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.35);
+    border-color: var(--cyber-tip-edge);
+    box-shadow: var(--cyber-tip-shadow);
   }
   #img-counter {
     font-family: var(--font-ui);
@@ -1879,8 +1904,8 @@
     letter-spacing: 0.2px;
     padding: 5px 6px;
     background: rgba(var(--cyber-shell-rgb), 0.98) !important;
-    border: 1px solid var(--cyber-accent);
-    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.3);
+    border: 1px solid var(--cyber-tip-edge);
+    box-shadow: var(--cyber-tip-shadow);
     z-index: 40;
   }
   #sidebar-controls .cyber-tooltip::before {
@@ -2980,7 +3005,7 @@
     right: auto !important;
     transform: translateX(-50%) translateY(4px) !important;
     border-width: 6px 6px 0 !important;
-    border-color: var(--cyber-accent) transparent transparent transparent !important;
+    border-color: var(--cyber-tip-edge) transparent transparent transparent !important;
     z-index: 1000020 !important;
   }
   #toolbar-handle.cyber-tooltip:hover::after,
@@ -3686,7 +3711,7 @@
     left: 50%;
     transform: translateX(-50%) translateY(6px);
     border-width: 6px 6px 0;
-    border-color: var(--cyber-accent) transparent transparent transparent;
+    border-color: var(--cyber-tip-edge) transparent transparent transparent;
   }
   .pending-actions .cyber-tooltip:hover::after,
   .pending-actions .cyber-tooltip:hover::before {
@@ -4701,8 +4726,8 @@
   }
   .cfg-select:focus {
     outline: none;
-    border-color: var(--cyber-accent);
-    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.35);
+    border-color: var(--cyber-tip-edge);
+    box-shadow: var(--cyber-tip-shadow);
   }
 
   .cfg-range {
@@ -4879,8 +4904,8 @@
   .cfg-hotkey-input:hover { border-color: rgba(var(--cyber-accent-rgb), 0.5); }
   .cfg-hotkey-input:focus {
     outline: none;
-    border-color: var(--cyber-accent);
-    box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.35);
+    border-color: var(--cyber-tip-edge);
+    box-shadow: var(--cyber-tip-shadow);
   }
   .cfg-hotkey-input.capturing {
     border-color: var(--cyber-accent);
@@ -6541,7 +6566,7 @@
     right: auto !important;
     transform: translateX(-50%) translateY(4px) !important;
     border-width: 6px 6px 0 !important;
-    border-color: var(--cyber-accent) transparent transparent transparent !important;
+    border-color: var(--cyber-tip-edge) transparent transparent transparent !important;
     z-index: 1000010 !important;
   }
   .modal-box .cyber-tooltip:hover::after,
@@ -6609,7 +6634,7 @@
     right: auto !important;
     transform: translateX(-50%) translateY(-4px) !important;
     border-width: 0 6px 6px 6px !important;
-    border-color: transparent transparent var(--cyber-accent) transparent !important;
+    border-color: transparent transparent var(--cyber-tip-edge) transparent !important;
   }
   .modal-box .cyber-tooltip.tooltip-bottom:hover::after,
   .modal-box .cyber-tooltip.tooltip-bottom:hover::before {
@@ -6727,7 +6752,7 @@
   right: 12px !important;
   transform: translateX(0) translateY(-4px) !important;
   border-width: 0 6px 6px 6px !important;
-  border-color: transparent transparent var(--cyber-accent) transparent !important;
+  border-color: transparent transparent var(--cyber-tip-edge) transparent !important;
 }
 .about-modal .modal-close-btn.cyber-tooltip:hover::after,
 .about-modal .modal-close-btn.cyber-tooltip:hover::before {
@@ -7890,6 +7915,8 @@ html[data-theme='light'] {
   --cyber-check-b: #eef2f7;
 
   --cyber-accent-bright: #0596c4;
+  /* Pale surfaces: a soft dark shadow reads as a tooltip edge, a cyan halo does not. */
+  --cyber-tip-shadow: 0 4px 16px rgba(15, 23, 42, 0.14);
   --cyber-accent2: #e11d64;
   --cyber-accent2-rgb: 225, 29, 100;
   --cyber-accent2-ink: #c01a58;
@@ -7935,10 +7962,7 @@ html[data-theme='light'] #main-img {
 html[data-theme='light'] #viewer-wrap::before {
   opacity: 0.5;
 }
-html[data-theme='light'] .cyber-tooltip::after,
-html[data-theme='light'] #titlebar-tooltip {
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
-}
+
 /* Neon glows read as smudges on a pale surface: drop the text halos. */
 html[data-theme='light'] #st-size,
 html[data-theme='light'] #img-counter,
