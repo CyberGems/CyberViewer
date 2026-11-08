@@ -446,18 +446,19 @@ window.CVVideo = (() => {
     if (!prev || !next) return;
     if (window.CVYouTube.active()) { prev.hidden = true; next.hidden = true; return; }
     // Both arrows stay visible: without a sibling they render disabled with
-    // their own hint instead of vanishing from the bar.
+    // their own hint instead of vanishing from the bar. Card tooltips clamp
+    // to the viewport, unlike the CSS bubble that clipped at the left edge.
     prev.hidden = false;
     next.hidden = false;
     const hasPrev = !!videoSibling(-1);
     const hasNext = !!videoSibling(1);
     prev.classList.toggle('is-disabled', !hasPrev);
     prev.setAttribute('aria-disabled', String(!hasPrev));
-    setCyberTooltip(prev, hasPrev ? text(audio ? 'audio_prev' : 'video_prev') : text('video_no_prev'));
+    prev.dataset.tooltip = hasPrev ? text(audio ? 'audio_prev' : 'video_prev') : text('video_no_prev');
     prev.querySelector('span').textContent = text(audio ? 'audio_prev' : 'video_prev');
     next.classList.toggle('is-disabled', !hasNext);
     next.setAttribute('aria-disabled', String(!hasNext));
-    setCyberTooltip(next, hasNext ? text(audio ? 'audio_next' : 'video_next') : text('video_no_next'));
+    next.dataset.tooltip = hasNext ? text(audio ? 'audio_next' : 'video_next') : text('video_no_next');
     next.querySelector('span').textContent = text(audio ? 'audio_next' : 'video_next');
   }
   function openSibling(direction) {

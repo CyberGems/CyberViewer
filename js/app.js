@@ -212,7 +212,8 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) ttHid
 ['logo-trigger', 'titlebar-update-btn', 'titlebar-properties-btn', 'btn-shortcuts',
   'btn-config', 'btn-menu', 'btn-about', 'win-min', 'win-max', 'win-close',
   'btn-prev', 'btn-next', 'video-play', 'video-mute', 'video-back', 'video-forward',
-  'video-speed', 'video-more', 'video-fit', 'video-fullscreen', 'video-sound'
+  'video-speed', 'video-more', 'video-fit', 'video-fullscreen', 'video-sound',
+  'video-prev', 'video-next'
 ].forEach(id => ttBind($(id)));
 
 const ZOOM_MIN = 0.05;

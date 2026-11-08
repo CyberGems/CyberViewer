@@ -98,20 +98,28 @@ describe('nav arrow badge tooltips', () => {
 
   it('keeps the sibling arrows visible, disabled with their own hint', () => {
     // Without a sibling video the arrow stays in the bar, dimmed via
-    // aria-disabled (the tooltip must keep working on it).
+    // aria-disabled (the tooltip must keep working on it). Hints ride the
+    // badge card so they clamp to the viewport instead of clipping.
     assert.match(videoJs, /classList\.toggle\('is-disabled', !hasPrev\)/);
-    assert.match(videoJs, /setCyberTooltip\(prev, hasPrev \? text\(audio \? 'audio_prev' : 'video_prev'\) : text\('video_no_prev'\)\)/);
+    assert.match(videoJs, /prev\.dataset\.tooltip = hasPrev \? text\(audio \? 'audio_prev' : 'video_prev'\) : text\('video_no_prev'\)/);
+    assert.match(appJs, /'video-prev', 'video-next'/);
     assert.doesNotMatch(html, /id="video-prev" hidden/);
     assert.doesNotMatch(html, /id="video-next" hidden/);
     assert.match(videoCss, /#video-prev\.is-disabled, #video-next\.is-disabled \{ opacity: \.38;/);
   });
 
   it('shows a persistent speed chip that fades with the controls', () => {
-    // Top-left, mirrored from the fullscreen close button (top-right); only
-    // meaningful while the rate differs from 1×.
+    // Top-left, mirrored from the fullscreen close button (top-right): below
+    // the chrome in windowed mode, up next to the close X in true fullscreen,
+    // and only meaningful while the rate differs from 1×.
     assert.match(html, /id="speed-indicator" role="status" hidden/);
     assert.match(videoJs, /indicator\.hidden = rate === 1;/);
+    assert.match(videoCss, /top: 92px;\s*\n\s*left: 20px;/);
+    assert.match(videoCss, /body\.ghost-mode #speed-indicator \{ top: 16px; \}/);
     assert.match(videoCss, /body\.video-active #speed-indicator:not\(\[hidden\]\) \{ display: block; \}/);
+    // The fullscreen video title is centered so it never competes with the
+    // chip (left) or the close button (right).
+    assert.match(videoCss, /#video-heading \{[\s\S]*?text-align: center;/);
   });
 
   it('swaps the nav badges contextually while video or audio is active', () => {

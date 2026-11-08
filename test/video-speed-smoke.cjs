@@ -23,9 +23,12 @@ const { app, BrowserWindow } = require('electron');
 // The fixture is recorded from an offscreen canvas in a hidden test window.
 // Use software rendering so frame delivery does not depend on GPU visibility.
 app.disableHardwareAcceleration();
-// Occluded background windows get throttled and visibility-changed on Windows,
-// which nondeterministically kills the hold-repeat input sections.
+// Occluded/backgrounded windows get throttled and visibility-changed on
+// Windows, which nondeterministically kills the hold-repeat input sections.
 app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
+app.commandLine.appendSwitch('disable-background-timer-throttling');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
 const dataDir = process.env.CV_SPEED_TEST_DIR;
 if (!dataDir || !path.basename(dataDir).startsWith('cyberviewer-speed-test-')) throw new Error('Isolated profile required');
 app.setPath('userData', dataDir);
