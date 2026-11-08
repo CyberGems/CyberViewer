@@ -120,6 +120,11 @@ describe('nav arrow badge tooltips', () => {
     // The fullscreen video title is centered so it never competes with the
     // chip (left) or the close button (right).
     assert.match(videoCss, /#video-heading \{[\s\S]*?text-align: center;/);
+    // The seek preview hides with visibility, not display: cycling the box's
+    // display mounts and unmounts a second hardware decoder on every hover,
+    // which subtly churns the main video's rendered size on GPU decode.
+    assert.match(videoCss, /#video-seek-preview\[hidden\] \{ visibility: hidden; \}/);
+    assert.doesNotMatch(videoCss, /#video-seek-preview\[hidden\] \{ display: none; \}/);
   });
 
   it('swaps the nav badges contextually while video or audio is active', () => {

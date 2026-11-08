@@ -364,7 +364,10 @@ body.video-active #speed-indicator:not([hidden]) { display: block; }
   pointer-events: none;
   z-index: 5;
 }
-#video-seek-preview[hidden] { display: none; }
+/* Visibility (not display) keeps the preview video's decoder pipeline alive:
+   toggling display on every hover mounts/unmounts a second hardware decoder,
+   which visibly churns the main video's compositor surface on GPU decode. */
+#video-seek-preview[hidden] { visibility: hidden; }
 #video-preview {
   width: 160px;
   height: 90px;
