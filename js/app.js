@@ -3710,6 +3710,8 @@ function exitCropMode() {
   state.isCropping = false;
   const overlay = $('crop-overlay');
   if (overlay) overlay.classList.remove('active');
+  const cropSize = $('crop-size');
+  if (cropSize) cropSize.hidden = true;
   const kbd = $('kbd-hint');
   if (kbd) kbd.classList.remove('hud-hidden');
   const filename = $('viewer-filename');
@@ -3758,8 +3760,6 @@ function startCrop() {
   state.panY = (ABOVE - BELOW) / 2;
   applyTransform(true);
   
-  showToast(I18N[state.settings.app.language || 'en'].toast_focusing_workspace, 'info', 700);
-  
   // Wait for transform, then calibrate crop overlay to the visible image
   const cropSeq = cropState.sequence = (cropState.sequence || 0) + 1;
   const cropImage = state.images[state.current];
@@ -3806,20 +3806,32 @@ function calibrateAndShowCrop() {
   updateHUDStates();
 }
 
+/** Placed position of the crop action panel, in viewer-wrap coordinates. */
+let cropActionsBox = null;
+
 function updateCropActionsPlacement() {
   const actions = $('crop-actions');
-  if (!actions || !cropState.active) return;
+  if (!actions || !cropState.active) { cropActionsBox = null; return; }
+  const wrapW = viewerWrap.clientWidth;
   const wrapH = viewerWrap.clientHeight;
   const gap = 14;
-  const needed = actions.offsetHeight + gap;
-  const spaceBelow = wrapH - (cropState.y + cropState.h);
-  if (spaceBelow < needed + 4) {
-    actions.style.top = 'auto';
-    actions.style.bottom = `calc(100% + ${gap}px)`;
-  } else {
-    actions.style.top = `calc(100% + ${gap}px)`;
-    actions.style.bottom = 'auto';
-  }
+  const panelW = actions.offsetWidth;
+  const panelH = actions.offsetHeight;
+  const rectTop = cropState.y;
+  const rectBottom = cropState.y + cropState.h;
+  const need = panelH + gap + 4;
+  const roomBelow = wrapH - rectBottom;
+  const roomAbove = rectTop;
+  const side = roomBelow >= need ? 'below' : (roomAbove >= need ? 'above' : (roomBelow >= roomAbove ? 'below' : 'above'));
+  // A frame that fills the viewer leaves no room on either side. Clamping keeps
+  // the buttons inside #crop-overlay (which clips) instead of losing them.
+  const absTop = Math.max(8, Math.min(side === 'below' ? rectBottom + gap : rectTop - gap - panelH, wrapH - panelH - 8));
+  const absLeft = Math.max(8, Math.min(cropState.x + cropState.w / 2 - panelW / 2, wrapW - panelW - 8));
+  actions.style.top = `${absTop - rectTop}px`;
+  actions.style.left = `${absLeft - cropState.x}px`;
+  actions.style.bottom = 'auto';
+  actions.style.transform = 'none';
+  cropActionsBox = { top: absTop, bottom: absTop + panelH };
 }
 
 function updateCropSaveEnabled() {
@@ -3837,6 +3849,53 @@ function updateCropSaveEnabled() {
   btn.disabled = !changed;
 }
 
+/** Pixel size of the full image and of the current crop selection, using the
+ *  same scale the crop export uses so the readout matches the saved result. */
+function cropPixelSize() {
+  const img = cropState.imgRealRect;
+  if (!img || !img.w || !img.h || !mainImg.naturalWidth) return null;
+  const vertical = state.currentRotation === 90 || state.currentRotation === 270;
+  const fullW = vertical ? mainImg.naturalHeight : mainImg.naturalWidth;
+  const fullH = vertical ? mainImg.naturalWidth : mainImg.naturalHeight;
+  const scale = fullW / img.w;
+  return {
+    fullW, fullH,
+    width: Math.max(1, Math.round(cropState.w * scale)),
+    height: Math.max(1, Math.round(cropState.h * scale))
+  };
+}
+
+function updateCropSizeReadout() {
+  const el = $('crop-size');
+  if (!el) return;
+  const size = cropState.active ? cropPixelSize() : null;
+  if (!size) { el.hidden = true; return; }
+  el.hidden = false;
+  el.textContent = `${size.fullW} × ${size.fullH} → ${size.width} × ${size.height} px`;
+
+  const wrapW = viewerWrap.clientWidth;
+  const wrapH = viewerWrap.clientHeight;
+  const chipW = el.offsetWidth;
+  const chipH = el.offsetHeight;
+  const gap = 10;
+  const min = 8;
+  const maxTop = Math.max(min, wrapH - chipH - min);
+  const rectTop = cropState.y;
+  const rectBottom = cropState.y + cropState.h;
+  const panel = cropActionsBox;
+  const clearOfPanel = (top) => top >= min && top <= maxTop &&
+    (!panel || top + chipH + 4 <= panel.top || top - 4 >= panel.bottom);
+  // Prefer the side the action panel is not using, then inside the frame, so the
+  // readout never hides under the buttons or leaves the viewer.
+  const outside = panel && panel.top >= rectBottom
+    ? [rectTop - gap - chipH, rectBottom + gap]
+    : [rectBottom + gap, rectTop - gap - chipH];
+  const candidates = [...outside, rectTop + 6, rectBottom - chipH - 6];
+  const top = candidates.find(clearOfPanel) ?? Math.max(min, Math.min(rectTop + 6, maxTop));
+  el.style.top = `${top}px`;
+  el.style.left = `${Math.max(4, Math.min(cropState.x, wrapW - chipW - 4))}px`;
+}
+
 function updateCropUI() {
   const rect = $('crop-rect');
   rect.style.left = cropState.x + 'px';
@@ -3845,6 +3904,7 @@ function updateCropUI() {
   rect.style.height = cropState.h + 'px';
   updateCropActionsPlacement();
   updateCropSaveEnabled();
+  updateCropSizeReadout();
 }
 
 $('btn-crop').onclick = startCrop;
@@ -5792,6 +5852,9 @@ window.addEventListener('mouseup', () => {
 
 // Double click action (configurable: fullscreen / toggle zoom (fit<->1:1) / fit / original / none)
 viewerWrap.addEventListener('dblclick', e => {
+  // Cropping owns the pointer: a double-click while adjusting the selection
+  // would fullscreen or zoom the image mid-crop. Ignore it until Apply/Cancel.
+  if (state.isCropping) return;
   if (window.CVYouTube.active()) return;
   if (e.target.closest('#video-controls')) return;
   // In video mode double-click always fullscreens (YouTube behavior); the

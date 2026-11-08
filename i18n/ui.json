@@ -274,7 +274,6 @@
     "toast_invalid_crop": "INVALID CROP AREA",
     "toast_crop_saved": "CROP SAVED",
     "toast_initializing_engine": "INITIALIZING ENGINE...",
-    "toast_focusing_workspace": "FOCUSING WORKSPACE...",
     "toast_saving_changes": "SAVING CHANGES...",
     "toast_changes_saved": "CHANGES SAVED",
     "toast_path_not_found": "PATH NOT FOUND",
@@ -740,7 +739,8 @@
     "audio_terrain": "Terrain",
     "audio_helix": "Helix",
     "audio_grid": "Matrix",
-    "audio_flares": "Fireworks"
+    "audio_flares": "Fireworks",
+    "crop_size_aria": "Original size and crop result"
   },
   "es": {
     "tabs_label": "Pestañas de archivos abiertos",
@@ -1017,7 +1017,6 @@
     "toast_invalid_crop": "ÁREA DE RECORTE INVÁLIDA",
     "toast_crop_saved": "RECORTE GUARDADO",
     "toast_initializing_engine": "INICIALIZANDO MOTOR...",
-    "toast_focusing_workspace": "ENFOCANDO ÁREA DE TRABAJO...",
     "toast_saving_changes": "GUARDANDO CAMBIOS...",
     "toast_changes_saved": "CAMBIOS GUARDADOS",
     "toast_path_not_found": "RUTA NO ENCONTRADA",
@@ -1483,6 +1482,7 @@
     "audio_terrain": "Relieve",
     "audio_helix": "Hélice",
     "audio_grid": "Matriz",
-    "audio_flares": "Fuegos artificiales"
+    "audio_flares": "Fuegos artificiales",
+    "crop_size_aria": "Tamaño original y resultado"
   }
 }

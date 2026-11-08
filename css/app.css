@@ -3321,6 +3321,26 @@
     overflow: hidden;
   }
   #crop-overlay.active { display: block; }
+
+  /* Live readout: full image size → size the current selection will produce. */
+  #crop-size {
+    position: absolute;
+    z-index: 2001;
+    padding: 4px 9px;
+    border: 1px solid var(--cyber-accent);
+    border-radius: 6px;
+    background: var(--cyber-panel);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+    color: var(--cyber-text);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.35;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+  }
+  #crop-size[hidden] { display: none; }
   
   #crop-rect {
     position: absolute;
