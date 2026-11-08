@@ -122,8 +122,8 @@ describe('title bar Help menu', () => {
 
     // Key combinations present
     const expectedKeys = [
-      '<kbd>F</kbd>', '<kbd>1</kbd>', '<kbd>S</kbd>', '<kbd>Ctrl</kbd><kbd>O</kbd>',
-      '<kbd>Ctrl</kbd><kbd>D</kbd>', '<kbd>Q</kbd><kbd>E</kbd>', '<kbd>H</kbd>',
+      '<kbd>B</kbd>', '<kbd>A</kbd>', '<kbd>S</kbd>', '<kbd>Ctrl</kbd><kbd>O</kbd>',
+      '<kbd>F</kbd>', '<kbd>Q</kbd><kbd>E</kbd>', '<kbd>H</kbd>',
       '<kbd>C</kbd>', '<kbd>R</kbd>', '<kbd>J</kbd>', '<kbd>Ctrl</kbd><kbd>C</kbd>',
       '<kbd>Ctrl</kbd><kbd>V</kbd>', '<kbd>Del</kbd>', '<kbd>Esc</kbd>'
     ];

@@ -36,7 +36,7 @@ test('menu favorites separation', async (t) => {
     const favMenu = getMenuCategory('menu_favorites');
     assert.ok(favMenu.includes('data-action="favorite-add"'), 'Favoritos menu should contain favorite-add');
     assert.ok(favMenu.includes('data-i18n="menu_favorite_add"'), 'favorite-add should have i18n key');
-    assert.ok(favMenu.includes('Ctrl+D'), 'favorite-add should display Ctrl+D shortcut');
+    assert.ok(favMenu.includes('<span class="menu-shortcut">F</span>'), 'favorite-add should display F shortcut');
     assert.ok(favMenu.includes('data-action="favorite-remove"'), 'Favoritos menu should contain favorite-remove');
     assert.ok(favMenu.includes('data-i18n="menu_favorite_remove"'), 'favorite-remove should have i18n key');
     assert.ok(favMenu.includes('data-action="favorites-view"'), 'Favoritos menu should contain favorites-view');

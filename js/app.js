@@ -2240,7 +2240,7 @@ function buildMenuTemplate(type, data) {
           { type: 'separator' },
           {
             label: isFav ? getTxt('favorite_remove') : getTxt('favorite_add'),
-            shortcut: 'Ctrl+D',
+            shortcut: 'F',
             action: () => toggleFavorite()
           }
         ]
@@ -2251,12 +2251,12 @@ function buildMenuTemplate(type, data) {
         items: [
           {
             label: getTxt('menu_next'),
-            shortcut: 'D',
+            shortcut: 'Space',
             action: () => next()
           },
           {
             label: getTxt('menu_prev'),
-            shortcut: 'A',
+            shortcut: 'Backspace',
             action: () => prev()
           },
           { type: 'separator' },
@@ -2307,7 +2307,7 @@ function buildMenuTemplate(type, data) {
       },
       {
         label: getTxt('menu_props'),
-        shortcut: 'Ctrl+I',
+        shortcut: 'P',
         action: () => showPropertiesPanel(data.path)
       },
       {
@@ -2336,12 +2336,12 @@ function buildMenuTemplate(type, data) {
       { type: 'separator' },
       {
         label: getTxt('menu_prev'),
-        shortcut: 'A',
+        shortcut: 'Backspace',
         action: () => slideshowAdvance(-1)
       },
       {
         label: getTxt('menu_next'),
-        shortcut: 'D',
+        shortcut: 'Space',
         action: () => slideshowAdvance(1)
       },
       { type: 'separator' },
@@ -2401,13 +2401,13 @@ function buildMenuTemplate(type, data) {
         items: [
           {
             label: getTxt('menu_fit'),
-            shortcut: 'F',
+            shortcut: 'B',
             enabled: hasImages,
             action: () => { const b = $('btn-fit-hud'); if (b) b.click(); }
           },
           {
             label: getTxt('menu_original'),
-            shortcut: '1',
+            shortcut: 'A',
             enabled: hasImages,
             action: () => { const b = $('btn-orig-hud'); if (b) b.click(); }
           },
@@ -6072,13 +6072,9 @@ document.addEventListener('keydown', e => {
   // Shortcuts globales
   if (isCtrl) {
     switch (e.key.toLowerCase()) {
-      case 'o': 
-        e.preventDefault(); 
-        if (e.shiftKey) {
-          if (checkImageLoaded()) $('btn-show-folder').click();
-        } else {
-          openImageDialog();
-        }
+      case 'o':
+        e.preventDefault();
+        openImageDialog();
         break;
       case 'f':
         e.preventDefault();
@@ -6090,16 +6086,11 @@ document.addEventListener('keydown', e => {
       case 'p': e.preventDefault(); if (checkImageLoaded()) openPrintExportModal(); break;
       case 'c': e.preventDefault(); if (checkImageLoaded()) copyToClipboard(); break;
       case 'v': e.preventDefault(); pasteFromClipboard(); break;
-      case 'd': e.preventDefault(); if (checkImageLoaded()) toggleFavorite(); break;
       case ',': e.preventDefault(); openConfig(); break;
       case 'i':
         e.preventDefault();
-        if (e.shiftKey) {
-          if (isElectron && window.electronAPI && window.electronAPI.openDevTools) {
-            window.electronAPI.openDevTools();
-          }
-        } else if (checkImageLoaded()) {
-          openPropertiesForCurrent();
+        if (e.shiftKey && isElectron && window.electronAPI && window.electronAPI.openDevTools) {
+          window.electronAPI.openDevTools();
         }
         break;
     }
@@ -6113,14 +6104,14 @@ document.addEventListener('keydown', e => {
         else next();
       }
       break;
-    case 'arrowright': case 'arrowdown': case 'd':
+    case 'arrowright': case 'arrowdown':
       if (!isCtrl) {
         e.preventDefault();
         if (state.slideshowActive) slideshowAdvance(1);
         else next();
       }
       break;
-    case 'arrowleft':  case 'arrowup':   case 'a': 
+    case 'arrowleft':  case 'arrowup':   case 'backspace':
       if (!isCtrl) {
         e.preventDefault();
         if (state.slideshowActive) slideshowAdvance(-1);
@@ -6169,8 +6160,11 @@ document.addEventListener('keydown', e => {
         toggleSlideshowPlay();
       }
       break;
-    case 'f': if (!isCtrl && checkImageLoaded()) $('btn-fit-hud').click(); break;
-    case '1': if (!isCtrl && checkImageLoaded()) $('btn-orig-hud').click(); break;
+    case 'b': if (!isCtrl && checkImageLoaded()) $('btn-fit-hud').click(); break;
+    case 'a': if (!isCtrl && checkImageLoaded()) $('btn-orig-hud').click(); break;
+    case 'f': if (!isCtrl && checkImageLoaded()) toggleFavorite(); break;
+    case 'w': if (!isCtrl && checkImageLoaded()) $('btn-show-folder').click(); break;
+    case 'p': if (!isCtrl && checkImageLoaded()) openPropertiesForCurrent(); break;
     case 'delete':
       if (checkImageLoaded()) trashCurrentImage();
       break;

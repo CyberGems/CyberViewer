@@ -322,16 +322,16 @@ npm run build:portable   # portable only
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
 | `Ctrl+W` | Close tab |
 | `Ctrl+Shift+T` | Reopen closed tab |
-| `Ctrl+Shift+O` | Open containing folder |
+| `W` | Open containing folder |
 | `Ctrl+Shift+F` | Open folder |
 | `Ctrl+S` | Save As |
 | `Ctrl+P` | Print / Export PDF |
 | `Ctrl+C` | Copy image to clipboard |
 | `Ctrl+V` | Paste image from clipboard |
-| `Ctrl+D` | Toggle favorite |
+| `F` | Toggle favorite |
 | `Ctrl+,` | Open settings |
-| `Ctrl+I` | Properties |
-| `← → ↑ ↓` / `A` `D` | Navigate files; in video, `← →` seek 5 seconds |
+| `P` | Properties |
+| `← → ↑ ↓` / `Backspace` | Navigate files; in video, `← →` seek 5 seconds |
 | `Space` | Next image, play/pause video, or play/pause slideshow |
 | `M` | Mute/unmute video |
 | `Q` / `E` | Rotate left / right 90° |
@@ -339,8 +339,8 @@ npm run build:portable   # portable only
 | `R` | Resize |
 | `J` | Adjust (color/tone) |
 | `H` / `Shift+H` | Flip horizontal / vertical |
-| `F` | Fit to window |
-| `1` | Original size (1:1) |
+| `B` | Fit to window |
+| `A` | View at actual size (1:1) |
 | `Enter` / `G` | Toggle fullscreen |
 | `S` | Start/pause slideshow |
 | `Delete` | Move to trash |

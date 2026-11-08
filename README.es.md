@@ -319,16 +319,16 @@ npm run build:portable   # solo portable
 | `Ctrl+Tab` / `Ctrl+Mayús+Tab` | Pestaña siguiente / anterior |
 | `Ctrl+W` | Cerrar pestaña |
 | `Ctrl+Mayús+T` | Reabrir pestaña cerrada |
-| `Ctrl+Mayús+O` | Abrir la carpeta que la contiene |
+| `W` | Abrir la carpeta que la contiene |
 | `Ctrl+Mayús+F` | Abrir carpeta |
 | `Ctrl+S` | Guardar como |
 | `Ctrl+P` | Imprimir / Exportar a PDF |
 | `Ctrl+C` | Copiar imagen al portapapeles |
 | `Ctrl+V` | Pegar imagen desde el portapapeles |
-| `Ctrl+D` | Alternar favorito |
+| `F` | Alternar favorito |
 | `Ctrl+,` | Abrir la configuración |
-| `Ctrl+I` | Propiedades |
-| `← → ↑ ↓` / `A` `D` | Navegar entre archivos; en video, `← →` saltan 5 segundos |
+| `P` | Propiedades |
+| `← → ↑ ↓` / `Retroceso` | Navegar entre archivos; en video, `← →` saltan 5 segundos |
 | `Espacio` | Siguiente imagen, reproducir/pausar video o iniciar/pausar presentación |
 | `M` | Silenciar/activar sonido del video |
 | `Q` / `E` | Rotar 90° a la izquierda / derecha |
@@ -336,8 +336,8 @@ npm run build:portable   # solo portable
 | `R` | Redimensionar |
 | `J` | Ajustar (color/tono) |
 | `H` / `Mayús+H` | Voltear horizontal / vertical |
-| `F` | Ajustar a la ventana |
-| `1` | Tamaño original (1:1) |
+| `B` | Ajustar a la ventana |
+| `A` | Ver al tamaño real (1:1) |
 | `Intro` / `G` | Alternar pantalla completa |
 | `S` | Iniciar/pausar presentación |
 | `Supr` | Mover a la papelera |

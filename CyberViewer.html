@@ -28,7 +28,7 @@
       <polyline points="19 12 12 19 5 12"></polyline>
     </svg>
   </button>
-  <button type="button" class="win-btn" id="titlebar-properties-btn" data-i18n-tt="props_title" data-tooltip-kbd="Ctrl+I" data-i18n-aria="props_title" aria-label="Propiedades" hidden>
+  <button type="button" class="win-btn" id="titlebar-properties-btn" data-i18n-tt="props_title" data-tooltip-kbd="P" data-i18n-aria="props_title" aria-label="Propiedades" hidden>
     <svg class="win-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
   </button>
   <button type="button" class="win-btn" id="btn-shortcuts" data-i18n-tt="shortcuts_title" data-i18n-aria="shortcuts_title" data-tooltip-kbd="?" aria-haspopup="dialog" aria-controls="shortcuts-popover" aria-expanded="false">
@@ -47,12 +47,12 @@
           <div><dt><kbd data-i18n="key_scroll">Rueda</kbd></dt><dd data-i18n="zoom_hint">ZOOM</dd></div>
           <div><dt><kbd data-i18n="key_drag">Arrastrar</kbd></dt><dd data-i18n="pan_hint">MOVER</dd></div>
           <div><dt><kbd data-i18n="key_enter">Intro</kbd></dt><dd data-i18n="fullscreen">PANTALLA</dd></div>
-          <div><dt><kbd>F</kbd></dt><dd data-i18n="fit_to_window">AJUSTAR</dd></div>
-          <div><dt><kbd>1</kbd></dt><dd data-i18n="shortcuts_1_1">1:1 REAL</dd></div>
+          <div><dt><kbd>B</kbd></dt><dd data-i18n="fit_to_window">AJUSTAR</dd></div>
+          <div><dt><kbd>A</kbd></dt><dd data-i18n="shortcuts_1_1">TAMAÑO REAL</dd></div>
           <div><dt><kbd>S</kbd></dt><dd data-i18n="shortcuts_slideshow">PRESENTACIÓN</dd></div>
           <div><dt><kbd>Ctrl</kbd><kbd>O</kbd></dt><dd data-i18n="open_dir">ABRIR</dd></div>
-          <div><dt><kbd>Ctrl</kbd><kbd>D</kbd></dt><dd data-i18n="shortcuts_favorite">FAVORITO</dd></div>
-          <div><dt><kbd>Ctrl</kbd><kbd>I</kbd></dt><dd data-i18n="shortcuts_props">PROPIEDADES</dd></div>
+          <div><dt><kbd>F</kbd></dt><dd data-i18n="shortcuts_favorite">FAVORITO</dd></div>
+          <div><dt><kbd>P</kbd></dt><dd data-i18n="shortcuts_props">PROPIEDADES</dd></div>
           <div><dt><kbd>F1</kbd></dt><dd data-i18n="shortcuts_about">ACERCA DE</dd></div>
           <div><dt><kbd>?</kbd></dt><dd data-i18n="shortcuts_help">ATAJOS</dd></div>
         </dl>
@@ -130,13 +130,13 @@
           <div class="menu-divider"></div>
           <button class="menu-item" data-action="close-image" data-needs-image><span class="menu-label" data-i18n="menu_close_image">Cerrar pestaña</span><span class="menu-shortcut">Ctrl+W</span></button>
           <button class="menu-item" data-action="reopen-tab"><span class="menu-label" data-i18n="tabs_reopen">Reabrir pestaña cerrada</span><span class="menu-shortcut">Ctrl+&#8679;T</span></button>
-          <button class="menu-item" data-action="show-folder" data-needs-image><span class="menu-label" data-i18n="menu_open_containing_folder">Abrir carpeta contenedora</span><span class="menu-shortcut">Ctrl+&#8679;O</span></button>
+          <button class="menu-item" data-action="show-folder" data-needs-image><span class="menu-label" data-i18n="menu_open_containing_folder">Abrir carpeta contenedora</span><span class="menu-shortcut">W</span></button>
           <div class="menu-divider"></div>
           <button class="menu-item" data-action="save-as" data-needs-image><span class="menu-label" data-i18n="menu_save_as">Guardar Como...</span></button>
           <button class="menu-item" data-action="export-pdf" data-needs-image><span class="menu-label" data-i18n="menu_export_pdf">Exportar PDF</span></button>
           <button class="menu-item" data-action="print" data-needs-image><span class="menu-label" data-i18n="menu_print">Imprimir</span><span class="menu-shortcut">Ctrl+P</span></button>
           <button class="menu-item" data-action="copy" data-needs-image><span class="menu-label" data-i18n="menu_copy">Copiar imagen</span><span class="menu-shortcut">Ctrl+C</span></button>
-          <button class="menu-item" data-action="properties" data-needs-image><span class="menu-label" data-i18n="menu_props">Propiedades</span><span class="menu-shortcut">Ctrl+I</span></button>
+          <button class="menu-item" data-action="properties" data-needs-image><span class="menu-label" data-i18n="menu_props">Propiedades</span><span class="menu-shortcut">P</span></button>
           <div class="menu-cat" data-sub data-needs-image>
             <span class="menu-label" data-i18n="menu_set_wallpaper">Establecer como fondo de pantalla</span><span class="menu-arrow">&#8250;</span>
             <div class="menu-sub">
@@ -169,8 +169,8 @@
       <div class="menu-cat" data-sub>
         <span class="menu-label" data-i18n="menu_view">Vista</span><span class="menu-arrow">&#8250;</span>
         <div class="menu-sub">
-          <button class="menu-item" data-action="fit" data-needs-image><span class="menu-label" data-i18n="menu_fit">Ajustar a ventana</span><span class="menu-shortcut">F</span></button>
-          <button class="menu-item" data-action="original" data-needs-image><span class="menu-label" data-i18n="menu_original">Tamaño real (1:1)</span><span class="menu-shortcut">1</span></button>
+          <button class="menu-item" data-action="fit" data-needs-image><span class="menu-label" data-i18n="menu_fit">Ajustar a ventana</span><span class="menu-shortcut">B</span></button>
+          <button class="menu-item" data-action="original" data-needs-image><span class="menu-label" data-i18n="menu_original">Ver al tamaño real</span><span class="menu-shortcut">A</span></button>
           <button class="menu-item" data-action="fullscreen" data-needs-image><span class="menu-label" data-i18n="menu_fullscreen">Pantalla completa</span><span class="menu-shortcut">Enter</span></button>
           <div class="menu-divider"></div>
           <button class="menu-item" data-action="sidebar"><span class="menu-check">&#10003;</span><span class="menu-label" data-i18n="menu_sidebar">Barra lateral</span></button>
@@ -193,15 +193,15 @@
       <div class="menu-cat" data-sub>
         <span class="menu-label" data-i18n="menu_go">Navegar</span><span class="menu-arrow">&#8250;</span>
         <div class="menu-sub">
-          <button class="menu-item" data-action="next" data-needs-image><span class="menu-label" data-i18n="menu_next">Imagen siguiente</span><span class="menu-shortcut">D</span></button>
-          <button class="menu-item" data-action="prev" data-needs-image><span class="menu-label" data-i18n="menu_prev">Imagen anterior</span><span class="menu-shortcut">A</span></button>
+          <button class="menu-item" data-action="next" data-needs-image><span class="menu-label" data-i18n="menu_next">Imagen siguiente</span><span class="menu-shortcut">Space</span></button>
+          <button class="menu-item" data-action="prev" data-needs-image><span class="menu-label" data-i18n="menu_prev">Imagen anterior</span><span class="menu-shortcut">Backspace</span></button>
         </div>
       </div>
 
       <div class="menu-cat" data-sub>
         <span class="menu-label" data-i18n="menu_favorites">Favoritos</span><span class="menu-arrow">&#8250;</span>
         <div class="menu-sub">
-          <button class="menu-item" data-action="favorite-add" data-needs-image><span class="menu-label" data-i18n="menu_favorite_add">Agregar</span><span class="menu-shortcut">Ctrl+D</span></button>
+          <button class="menu-item" data-action="favorite-add" data-needs-image><span class="menu-label" data-i18n="menu_favorite_add">Agregar</span><span class="menu-shortcut">F</span></button>
           <button class="menu-item" data-action="favorite-remove" data-needs-image><span class="menu-label" data-i18n="menu_favorite_remove">Eliminar</span></button>
           <div class="menu-divider"></div>
           <button class="menu-item" data-action="favorites-view"><span class="menu-label" data-i18n="menu_favs_view">Ver favoritos</span></button>
@@ -457,7 +457,7 @@
               </button>
               <button type="button" id="video-properties">
                 <svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01"/><path d="M11 12h1v4h1"/></svg>
-                <span data-i18n="menu_props">Propiedades</span><kbd>Ctrl+I</kbd>
+                <span data-i18n="menu_props">Propiedades</span><kbd>P</kbd>
               </button>
               <div class="video-menu-divider"></div>
               <button type="button" id="video-autoplay" role="switch" aria-checked="true">
@@ -635,12 +635,12 @@
       <!-- INTERACTIVE HUD: docked chrome in window mode, floating in fullscreen -->
       <div id="kbd-hint" role="toolbar" aria-label="Image tools">
         <button class="kbd-btn kbd-always" id="btn-open-hud" data-i18n-title="open_title" title="Abrir imagen (Ctrl+O)"><svg class="kbd-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/></svg><span data-i18n="open_dir">ABRIR</span></button>
-        <button class="kbd-btn needs-image" id="btn-show-folder" data-i18n-title="show_folder_title" title="Mostrar en Carpeta (Ctrl+Shift+O)"><svg class="kbd-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><path d="m9.5 14.5 5-5"/><path d="M11 9.5h3.5V13"/></svg><span data-i18n="show_folder">SHOW</span></button>
+        <button class="kbd-btn needs-image" id="btn-show-folder" data-i18n-title="show_folder_title" title="Mostrar en Carpeta (W)"><svg class="kbd-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><path d="m9.5 14.5 5-5"/><path d="M11 9.5h3.5V13"/></svg><span data-i18n="show_folder">SHOW</span></button>
         <div class="kbd-sep needs-image"></div>
-        <button class="kbd-btn needs-image kbd-icon" id="btn-fit-hud" data-i18n-title="fit_title" data-tooltip="Ajustar a la ventana (F)" aria-label="Ajustar">
+        <button class="kbd-btn needs-image kbd-icon" id="btn-fit-hud" data-i18n-title="fit_title" data-tooltip="Ajustar a la ventana (B)" aria-label="Ajustar">
           <svg class="kbd-ico kbd-ico-solo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
         </button>
-        <button class="kbd-btn needs-image kbd-icon" id="btn-orig-hud" data-i18n-title="orig_title" data-tooltip="Tamaño de captura en pantalla 1:1 (1)" aria-label="1:1">1:1</button>
+        <button class="kbd-btn needs-image kbd-icon" id="btn-orig-hud" data-i18n-title="orig_title" data-tooltip="Ver al tamaño real (A)" aria-label="1:1">1:1</button>
         <button class="kbd-btn needs-image kbd-icon" id="btn-fs-hud" data-i18n-title="fs_title" data-i18n-aria="fs_title" data-tooltip="Pantalla completa (Enter)" aria-label="Pantalla completa">
           <svg class="kbd-ico kbd-ico-solo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4H4v5M4 4l5 5M15 4h5v5M20 4l-5 5M4 15v5h5M4 20l5-5M15 20h5v-5M20 20l-5-5"/></svg>
         </button>
@@ -670,8 +670,8 @@
         <button class="kbd-btn needs-image kbd-icon" id="btn-trash" data-i18n-title="trash_title" title="Mover a la Papelera (Delete)"><svg class="kbd-ico kbd-ico-solo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3"/><path d="M5 6l1 14a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l1-14M10 10v7M14 10v7"/></svg></button>
         <button class="kbd-btn needs-image kbd-icon" id="btn-print" data-i18n-title="print_title_btn" title="Imprimir / Exportar PDF (Ctrl+P)"><svg class="kbd-ico kbd-ico-solo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg></button>
         <div class="kbd-sep needs-image"></div>
-        <button class="kbd-btn needs-image kbd-icon" id="btn-fav" data-i18n-title="fav_title" title="Favorito (Ctrl+D)"><svg class="kbd-ico kbd-ico-solo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z"/></svg></button>
-        <button class="kbd-btn needs-image kbd-icon tooltip-align-right" id="btn-props" data-i18n-title="props_title_btn" title="Propiedades (Ctrl+I)"><svg class="kbd-ico kbd-ico-solo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></button>
+        <button class="kbd-btn needs-image kbd-icon" id="btn-fav" data-i18n-title="fav_title" title="Favorito (F)"><svg class="kbd-ico kbd-ico-solo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z"/></svg></button>
+        <button class="kbd-btn needs-image kbd-icon tooltip-align-right" id="btn-props" data-i18n-title="props_title_btn" title="Propiedades (P)"><svg class="kbd-ico kbd-ico-solo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></button>
       </div>
     </div>
 
