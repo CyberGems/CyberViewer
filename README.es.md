@@ -34,6 +34,7 @@
 ## 📑 Table of Contents
 
 - [👋 Introducción](#-introducción)
+- [📸 Capturas](#-capturas)
 - [🎯 ¿Por qué CyberViewer?](#-por-qué-cyberviewer)
 - [✨ Funciones principales](#-funciones-principales)
 - [🚀 Primeros pasos](#-primeros-pasos)
@@ -63,6 +64,14 @@
 Abre una foto, un video o una pista de audio y aparece en la misma ventana, a tamaño completo, en segundos. Las imágenes se mantienen nítidas con cualquier zoom y se pueden recortar, rotar, redimensionar, voltear o corregir de color al momento; el video se reproduce en pestañas de medios junto a ellas, con control de velocidad, repetición y vista previa de fotogramas en la barra de progreso; el audio comparte reproductor, atajos y restauración de posición. Las pestañas, los favoritos y los archivos recientes mantienen tu trabajo a mano, y cualquier carpeta puede convertirse en una presentación a pantalla completa; activa **Restaurar sesión anterior** y todo el espacio de trabajo se reabre tras reiniciar. Cuando una imagen está lista, cópiala, imprímela, expórtala a PDF o úsala como fondo de escritorio, sin abrir un editor completo. Tus ajustes y favoritos se respaldan de forma programada en la carpeta que elijas, para que una reinstalación no te cueste la configuración. Construido con **Electron 35** y **JavaScript vanilla**.
 
 *Gratuito y de código abierto (GPLv3). CyberViewer no añade publicidad ni analítica. La reproducción opcional de YouTube se conecta a YouTube y usa su reproductor oficial.*
+
+---
+
+<!-- Capturas: pendiente de la galería bilingüe ES/EN del plan en https://github.com/CyberGems/CyberGems.github.io/blob/main/docs/screenshots.md — sustituir la cita, conservar este título y su entrada en el índice. -->
+
+## 📸 Capturas
+
+> Próximamente...
 
 ---
 
