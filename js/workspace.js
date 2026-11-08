@@ -630,9 +630,11 @@ window.CVWorkspace = (() => {
     const fragment = document.createDocumentFragment();
     for (const tab of model.tabs) {
       if (!(tab.image.file.name + ' ' + (tab.image.file.path || '')).toLowerCase().includes(query)) continue;
-      const row = document.createElement('button');
-      row.type = 'button'; row.className = 'tab-switcher-item';
+      const row = document.createElement('div');
+      row.className = 'tab-switcher-item';
       row.classList.toggle('active', tab.id === model.activeId);
+      const open = document.createElement('button');
+      open.type = 'button'; open.className = 'tab-switcher-item-open';
       const title = document.createElement('span'); title.className = 'tab-switcher-item-title';
       const icon = document.createElement('span'); icon.className = 'tab-switcher-item-icon';
       icon.setAttribute('aria-hidden', 'true');
@@ -641,8 +643,14 @@ window.CVWorkspace = (() => {
       const name = document.createElement('span'); name.className = 'tab-switcher-item-name'; name.textContent = tab.image.file.name;
       title.append(icon, name);
       const filePath = document.createElement('small'); filePath.textContent = tab.image.file.path || text('tabs_clipboard');
-      row.append(title, filePath);
-      row.addEventListener('click', () => { setCloseAllConfirmation(false); $('tab-switcher').hidden = true; void activate(tab.id); });
+      open.append(title, filePath);
+      open.addEventListener('click', () => { setCloseAllConfirmation(false); $('tab-switcher').hidden = true; void activate(tab.id); });
+      const close = document.createElement('button');
+      close.type = 'button'; close.className = 'tab-switcher-item-close';
+      close.setAttribute('aria-label', text('tabs_close_named').replace('{name}', tab.image.file.name));
+      close.append(iconSvg('x'));
+      close.addEventListener('click', event => { event.stopPropagation(); closeTabs([tab.id]); });
+      row.append(open, close);
       fragment.append(row);
     }
     if (!fragment.childNodes.length) {

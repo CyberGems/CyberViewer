@@ -30,6 +30,17 @@ describe('tab bar ui', () => {
     assert.match(workspace, /icon\.append\(iconSvg\(mediaTypeForTab\(tab\)\)\)/);
     assert.match(tabsCss, /\.tab-switcher-item-icon\[hidden\] \{ display: none; \}/);
   });
+  it('reveals a close button per switcher row on hover', () => {
+    // Row is a shell (open button + close button) so the X never nests inside
+    // an interactive element; closing reuses the same closeTabs confirm flow
+    // as the strip tabs.
+    assert.match(workspace, /const open = document\.createElement\('button'\);\s*\n\s*open\.type = 'button'; open\.className = 'tab-switcher-item-open';/);
+    assert.match(workspace, /close\.className = 'tab-switcher-item-close';/);
+    assert.match(workspace, /close\.setAttribute\('aria-label', text\('tabs_close_named'\)\.replace\('\{name\}', tab\.image\.file\.name\)\)/);
+    assert.match(workspace, /close\.addEventListener\('click', event => \{ event\.stopPropagation\(\); closeTabs\(\[tab\.id\]\); \}\)/);
+    assert.match(tabsCss, /\.tab-switcher-item:hover \.tab-switcher-item-close, \.tab-switcher-item-close:focus-visible \{ opacity: \.6; \}/);
+    for (const lang of ['en', 'es']) assert.ok(ui[lang].tabs_close_named.includes('{name}'));
+  });
   it('omits tooltips that only restate visible modal actions', () => {
     for (const id of ['props-close-btn', 'preset-pct25', 'preset-pct50', 'preset-pct200']) {
       const tag = html.match(new RegExp(`<button[^>]*id="${id}"[^>]*>`))?.[0];
