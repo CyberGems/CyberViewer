@@ -125,6 +125,10 @@ describe('nav arrow badge tooltips', () => {
     // which subtly churns the main video's rendered size on GPU decode.
     assert.match(videoCss, /#video-seek-preview\[hidden\] \{ visibility: hidden; \}/);
     assert.doesNotMatch(videoCss, /#video-seek-preview\[hidden\] \{ display: none; \}/);
+    // And the twin decoder's seek is dwell-gated, so scrubbing never seeks it
+    // per mousemove.
+    assert.match(videoJs, /previewSeekTimer = setTimeout\(\(\) => \{ previewLast = time; seekPreviewTo\(time\); \}, 180\)/);
+    assert.match(videoJs, /\$\('video-seek'\)\.addEventListener\('mouseleave', \(\) => \{ clearTimeout\(previewSeekTimer\); previewBox\.hidden = true; \}\)/);
   });
 
   it('swaps the nav badges contextually while video or audio is active', () => {
