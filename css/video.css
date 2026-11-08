@@ -9,7 +9,7 @@
 }
 #main-video.loaded { visibility: visible; }
 #main-video[hidden], #main-img[hidden], #video-controls[hidden], #video-menu[hidden],
-#video-audio-note[hidden] { display: none !important; }
+#video-speed-panel[hidden] { display: none !important; }
 body.video-active #kbd-hint, body.video-active #toolbar-handle,
 body.video-active #statusbar, body.video-active #viewer-filename,
 body.video-active #nav-container, body.video-active #zoom-hud { display: none !important; }
@@ -87,8 +87,9 @@ body.ghost-mode #video-heading { display: block; }
 .video-sound.audio-unavailable #video-mute::after, .video-sound.audio-unavailable #video-mute::before { display: none; }
 #video-controls button:focus-visible, #video-controls input:focus-visible,
 body.video-active #ghost-close:focus-visible { outline: 2px solid var(--cyber-accent); outline-offset: 3px; }
-#video-controls button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-#video-controls button svg text { fill: currentColor; stroke: none; font: 600 10px var(--font-ui); }
+/* 1.7 stroke instead of 1.6: thin round caps smear at fractional display
+   scales (150%), a slightly bolder line keeps the glyphs crisp. */
+#video-controls button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 #video-back svg, #video-forward svg { width: 22px !important; height: 22px !important; }
 #video-play { margin-right: 6px; }
 #video-play svg { fill: currentColor !important; stroke: none !important; }
@@ -116,6 +117,16 @@ body.video-active.ghost-mode #video-fullscreen:hover { background: rgba(var(--cy
 #video-more[aria-expanded="true"]::after, #video-more[aria-expanded="true"]::before { display: none; }
 /* The More button keeps its hover look while its menu is open (btn-menu pattern). */
 #video-more[aria-expanded="true"], #video-more[aria-expanded="true"]:hover { background: rgba(var(--cyber-tint-rgb), 0.12); }
+/* Standalone speed popover anchored above its transport bar button; JS sets
+   `left` on open so the card tracks the button. The button keeps its hover
+   look while the popover is open (btn-menu pattern). */
+#video-speed-panel {
+  position: absolute; top: auto; right: auto; left: 120px; bottom: 91px;
+  width: 260px; max-width: calc(100% - 32px);
+}
+#video-speed-panel:not([hidden]) { display: block; }
+#video-speed-panel button { width: 100%; height: auto; min-height: 36px; padding: 8px 10px; justify-content: center; text-align: center; }
+#video-speed[aria-expanded="true"], #video-speed[aria-expanded="true"]:hover { background: rgba(var(--cyber-tint-rgb), 0.12); }
 .video-menu-switch {
   margin-left: auto; width: 40px; height: 20px; border-radius: 10px;
   background: var(--cyber-switch-off); position: relative; flex-shrink: 0;
@@ -140,7 +151,6 @@ html[data-theme='gray'] #video-menu button[aria-checked="true"] .video-menu-swit
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.2 8.35 6.45 11.45 12.8 4.7' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 .video-menu-divider { margin: 5px 6px; border-top: 1px solid #ffffff16; }
-#video-audio-note { margin: 2px 10px 10px; line-height: 1.5; color: #b6c5d7; font-size: 11px; }
 body.video-active #ghost-close { border: 0; border-radius: 50%; background: #0004; box-shadow: none; color: #fff; }
 body.video-idle #video-controls, body.video-idle #ghost-close { opacity: 0 !important; pointer-events: none !important; }
 /* The sidebar toggle follows the same auto-hide rhythm as the video controls. */
@@ -182,20 +192,9 @@ html[data-theme='light'] #video-autoplay[aria-checked="true"] .video-menu-switch
 html[data-theme='light'] #video-menu .video-menu-divider {
   border-top-color: rgba(var(--cyber-tint-rgb), 0.12);
 }
-html[data-theme='light'] #video-audio-note {
-  color: var(--cyber-muted);
-}
 
 /* ── YouTube-style refinements ── */
 #video-prev[hidden], #video-next[hidden] { display: none; }
-.video-speed-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  color: var(--cyber-text);
-}
-.video-speed-row .menu-ico { width: 14px; height: 14px; color: var(--cyber-muted); }
 #video-speed-display {
   text-align: center;
   font-size: 20px;
@@ -255,9 +254,10 @@ html[data-theme='light'] #video-audio-note {
   pointer-events: none;
 }
 .video-speed-track:focus-visible .video-speed-thumb { box-shadow: 0 0 0 2px var(--cyber-accent), 0 1px 5px #0006; }
-/* ID-scoped: #video-menu button would otherwise stretch these into full-width rows.
-   The circles are hover-only chrome: bare glyphs at rest, elegant on hover. */
-#video-menu .video-speed-slider-row button {
+/* ID-scoped: the panel's generic button rule would otherwise stretch these
+   into full-width rows. The circles are hover-only chrome: bare glyphs at
+   rest, elegant on hover. */
+#video-speed-panel .video-speed-slider-row button {
   width: 26px;
   height: 26px;
   min-width: 0;
@@ -274,7 +274,7 @@ html[data-theme='light'] #video-audio-note {
   justify-content: center;
   touch-action: none;
 }
-#video-menu .video-speed-slider-row button:hover {
+#video-speed-panel .video-speed-slider-row button:hover {
   background: rgba(var(--cyber-tint-rgb), .14);
   color: var(--cyber-accent-ink);
 }

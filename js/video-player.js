@@ -17,6 +17,7 @@ window.CVVideo = (() => {
   let keyboardFocus = false;
   let speedRepeatTimer = null;
   let audioStatus = 'pending';
+  let probingAudio = false;
   let loadedAt = 0;
   const text = key => (I18N[state.settings.app.language || 'en'] || I18N.en)[key];
   const active = () => window.CVFormats.isPlayable(state.images[state.current]);
@@ -96,7 +97,7 @@ window.CVVideo = (() => {
     $('video-volume').style.setProperty('--video-progress', `${element.muted ? 0 : element.volume * 100}%`);
     syncSiblings();
     syncSpeedUi();
-    if (owner?.loaded && !element.seeking && state.images[state.current] === owner) {
+    if (owner?.loaded && !element.seeking && !probingAudio && state.images[state.current] === owner) {
       state.videoTime = current;
       owner.videoTime = current;
       const second = Math.floor(current);
@@ -127,30 +128,39 @@ window.CVVideo = (() => {
       $('video-mute').dataset.tooltip = text('video_mute_shortcut');
       $('video-mute').dataset.tooltipKbd = 'M';
     }
-    const audioKey = audioStatus === 'available' ? 'video_audio_available'
-      : unavailable ? 'video_no_audio' : 'video_audio_pending';
-    $('video-audio-note').textContent = text(audioKey);
   }
 
   function setMenu(open) {
     $('video-menu').hidden = !open;
     $('video-more').setAttribute('aria-expanded', String(open));
-    if (!open) {
-      $('video-audio-note').hidden = true;
-      $('video-audio-info').setAttribute('aria-expanded', 'false');
-      setSpeedPanel(false);
-    }
+    setSpeedPanel(false);
     reveal();
   }
   function setSpeedPanel(on) {
     if (!on) stopSpeedRepeat();
-    $('video-menu-main').hidden = on;
     $('video-speed-panel').hidden = !on;
+    $('video-speed').setAttribute('aria-expanded', String(on));
+    if (on) positionSpeedPanel();
+  }
+  // The popover floats above its transport bar button, so the button's live
+  // viewport position decides `left` at open time (offsetParent-safe).
+  function positionSpeedPanel() {
+    const panel = $('video-speed-panel');
+    const rect = $('video-speed').getBoundingClientRect();
+    const width = panel.offsetWidth || 260;
+    const hostRect = (panel.offsetParent || document.body).getBoundingClientRect();
+    const center = rect.left - hostRect.left + rect.width / 2 - width / 2;
+    const left = Math.max(8, Math.min(center, hostRect.width - width - 8));
+    panel.style.left = `${Math.round(left)}px`;
+    panel.style.right = 'auto';
   }
   function closeMenu(restoreFocus = false) {
-    if ($('video-menu').hidden) return false;
-    setMenu(false);
-    if (restoreFocus) $('video-more').focus();
+    const hadMenu = !$('video-menu').hidden;
+    const hadPanel = !$('video-speed-panel').hidden;
+    setSpeedPanel(false);
+    if (hadMenu) setMenu(false);
+    else if (!hadPanel) return false;
+    if (restoreFocus) (hadMenu ? $('video-more') : $('video-speed')).focus();
     return true;
   }
   function reveal() {
@@ -173,7 +183,7 @@ window.CVVideo = (() => {
     if (!owner?.loaded || element.paused || element.ended) return;
     const delay = state.settings.app.hudAutoHideDelay ?? 2000;
     idleTimer = setTimeout(() => {
-      if (!active() || element.paused || element.ended || interacting || !$('video-menu').hidden) return;
+      if (!active() || element.paused || element.ended || interacting || !$('video-menu').hidden || !$('video-speed-panel').hidden) return;
       if (document.querySelector('.modal-overlay.active, #main-menu.open') || !$('shortcuts-popover').hidden) return;
       if (document.querySelector('.video-transport:hover, #ghost-close:hover')) return;
       if (keyboardFocus && (controls.contains(document.activeElement) || document.activeElement === $('ghost-close'))) return;
@@ -196,6 +206,7 @@ window.CVVideo = (() => {
     clearTimeout(idleTimer);
     interacting = false;
     closeMenu();
+    probingAudio = false;
     document.body.classList.remove('video-idle');
     $('video-controls').inert = false;
     $('ghost-close').inert = false;
@@ -209,7 +220,6 @@ window.CVVideo = (() => {
     element.hidden = true;
     element.classList.remove('loaded');
     $('video-controls').hidden = true;
-    $('video-audio-note').hidden = true;
     mainImg.hidden = false;
     lastSavedSecond = -1;
   }
@@ -219,6 +229,9 @@ window.CVVideo = (() => {
     unload();
     const token = generation;
     owner = image;
+    // Cached probe results (or audio files) apply the right volume state the
+    // moment the tab opens, without waiting for playback.
+    audioStatus = image.audioProbe || 'pending';
     const audio = window.CVFormats.isAudio(image);
     window.CVAudioVisuals.attach(image);
     mainImg.onload = null; mainImg.onerror = null; mainImg.removeAttribute('src');
@@ -271,6 +284,7 @@ window.CVVideo = (() => {
       window.CVAudioVisuals.refresh();
       onReady();
       if (live() && window.CVMedia.shouldPlayMediaOnOpen(state.settings.app, image)) void play();
+      else if (live() && !window.CVYouTubeSource.isYouTube(image)) void probeAudioAvailability(image, token);
     };
     element.addEventListener('loadeddata', ready);
     element.addEventListener('seeked', ready);
@@ -285,10 +299,44 @@ window.CVVideo = (() => {
     sync(); syncTools();
   }
 
+  // webkitAudioDecodedByteCount only reports once decoding has started, so a
+  // media file opened paused showed volume as available until played. A short
+  // muted decode settles the state right at load; the result is cached on the
+  // tab so later visits apply it instantly.
+  async function probeAudioAvailability(image, token) {
+    if (typeof element.webkitAudioDecodedByteCount !== 'number') return;
+    const live = () => token === generation && owner === image;
+    const startAt = Number.isFinite(element.currentTime) ? element.currentTime : 0;
+    probingAudio = true;
+    const wasMuted = element.muted;
+    try {
+      element.muted = true;
+      await element.play();
+      await new Promise(resolve => setTimeout(resolve, 350));
+      // A user-initiated play or a tab switch cancels the probe; the normal
+      // played-seconds detection takes over from there.
+      if (!probingAudio || !live()) return;
+      const decoded = element.webkitAudioDecodedByteCount;
+      image.audioProbe = decoded > 0 ? 'available' : 'unavailable';
+      element.pause();
+      if (Number.isFinite(element.duration) && Math.abs(element.currentTime - startAt) > 0.05) element.currentTime = startAt;
+      lastSavedSecond = Math.floor(startAt);
+    } catch (_) { /* play refused (quick tab switch): leave pending */ }
+    finally {
+      element.muted = live() ? wasMuted : state.settings.app.videoMuted === true;
+      probingAudio = false;
+      if (live()) { audioStatus = image.audioProbe || 'pending'; sync(); }
+    }
+  }
   async function play() {
     if (!owner || !owner.loaded || document.body.classList.contains('image-error')) return;
     const token = generation;
     reveal();
+    if (probingAudio) {
+      // Cancel the muted probe: the user asked for real playback.
+      probingAudio = false;
+      element.muted = state.settings.app.videoMuted === true;
+    }
     if (element.ended) element.currentTime = 0;
     try {
       await window.CVAudioVisuals.prepare();
@@ -502,8 +550,9 @@ window.CVVideo = (() => {
     let menuDismissClick = false;
     window.addEventListener('pointerdown', event => {
       keyboardFocus = false;
-      menuDismissClick = !$('video-menu').hidden && !event.target.closest('#video-menu, #video-more, #video-speed');
-      if (!event.target.closest('#video-menu, #video-more, #video-speed')) closeMenu();
+      const overPopup = !!event.target.closest('#video-menu, #video-more, #video-speed, #video-speed-panel');
+      menuDismissClick = (!$('video-menu').hidden || !$('video-speed-panel').hidden) && !overPopup;
+      if (!overPopup) closeMenu();
     }, true);
     $('video-play').addEventListener('click', () => void toggle());
     // Click on the video pauses immediately (YouTube); a double-click undoes
@@ -526,12 +575,9 @@ window.CVVideo = (() => {
     $('video-prev').addEventListener('click', () => openSibling(-1));
     $('video-next').addEventListener('click', () => openSibling(1));
     $('video-speed').addEventListener('click', () => {
-      const opening = $('video-menu').hidden;
-      setMenu(opening);
-      if (opening) setSpeedPanel(true);
+      setSpeedPanel($('video-speed-panel').hidden);
       reveal();
     });
-    $('video-speed-back').addEventListener('click', () => setSpeedPanel(false));
     // YouTube-style track: pointer-driven with 0.05 snapping, fully controlled
     // visuals so the fill and the thumb can never drift apart. The move
     // tracking lives on window so the drag survives capture quirks and
@@ -609,11 +655,6 @@ window.CVVideo = (() => {
     $('video-more').addEventListener('click', () => setMenu($('video-menu').hidden));
     $('video-open').addEventListener('click', () => { closeMenu(); void openImageDialog(); });
     $('video-properties').addEventListener('click', () => { closeMenu(); openPropertiesForCurrent(); });
-    $('video-audio-info').addEventListener('click', () => {
-      $('video-audio-note').hidden = !$('video-audio-note').hidden;
-      $('video-audio-info').setAttribute('aria-expanded', String(!$('video-audio-note').hidden));
-      sync();
-    });
     $('video-seek').addEventListener('input', event => {
       if (owner && Number.isFinite(element.duration)) element.currentTime = Math.max(0, Math.min(element.duration, Number(event.target.value)));
     });

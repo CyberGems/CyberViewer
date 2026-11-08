@@ -72,6 +72,29 @@ describe('nav arrow badge tooltips', () => {
     assert.match(appJs, /'video-speed', 'video-more', 'video-fit', 'video-fullscreen', 'video-sound'/);
   });
 
+  it('opens the speed panel as a standalone popover above its own button', () => {
+    // The panel left the More menu, so toggling it must not mark the More
+    // button expanded; closeMenu tears both popups down and Escape still
+    // consumes when either was open.
+    assert.doesNotMatch(videoJs, /\$\('video-menu-main'\)\.hidden = on/);
+    assert.doesNotMatch(videoJs, /\$\('video-speed-back'\)/);
+    assert.match(videoJs, /function positionSpeedPanel\(\)/);
+    assert.match(videoJs, /\$\('video-speed'\)\.addEventListener\('click', \(\) => \{\s*setSpeedPanel\(\$\('video-speed-panel'\)\.hidden\);/);
+    assert.match(videoJs, /setSpeedPanel\(false\);\s*if \(hadMenu\) setMenu\(false\);/);
+  });
+
+  it('settles the audio state at load with a muted decode probe', () => {
+    // webkitAudioDecodedByteCount reports only after decoding starts, so a
+    // paused file opened from a session showed volume as available. The probe
+    // plays ~350ms muted at load and caches the verdict on the tab.
+    assert.match(videoJs, /async function probeAudioAvailability\(image, token\)/);
+    assert.match(videoJs, /audioStatus = image\.audioProbe \|\| 'pending';/);
+    assert.match(videoJs, /!probingAudio && state\.images\[state\.current\] === owner/);
+    assert.match(videoJs, /image\.audioProbe = decoded > 0 \? 'available' : 'unavailable';/);
+    assert.doesNotMatch(videoJs, /video-audio-note/);
+    assert.doesNotMatch(videoJs, /video-audio-info/);
+  });
+
   it('swaps the nav badges contextually while video or audio is active', () => {
     // In video/audio the left/right arrows seek 5 seconds and Space pauses, so
     // the badges may only list the keys that still jump between files.

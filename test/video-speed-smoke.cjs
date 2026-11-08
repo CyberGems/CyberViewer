@@ -76,7 +76,7 @@ app.whenReady().then(async () => {
     const actual = await snapshot();
     assert.deepEqual(actual, { rate, display: rate.toFixed(2) + '×', aria: String(rate), stored: String(rate) });
   };
-  await evaluate("$('video-more').click(); $('video-speed-row').click(); window.CVVideo.setPlaybackRate(1);");
+  await evaluate("$('video-speed').click(); window.CVVideo.setPlaybackRate(1);");
   await evaluate("$('video-speed-plus').click();");
   await expectRate(1.05);
   await evaluate("$('video-speed-plus').click();");
@@ -108,7 +108,7 @@ app.whenReady().then(async () => {
   await expectRate(3);
   input('mouseDown', -.2, { button: 'left', clickCount: 1 });
   input('mouseUp', -.2, { button: 'left', clickCount: 1 });
-  await evaluate("if ($('video-menu').hidden) $('video-more').click(); $('video-speed-row').click();");
+  await evaluate("if ($('video-speed-panel').hidden) $('video-speed').click();");
   input('mouseMove', .4);
   input('mouseDown', .4, { button: 'left', clickCount: 1 });
   input('mouseMove', -.2, { button: 'left' });
@@ -158,18 +158,19 @@ app.whenReady().then(async () => {
   for (const cancel of [
     "window.dispatchEvent(new PointerEvent('pointercancel'));",
     "window.dispatchEvent(new Event('blur'));",
-    "$('video-speed-back').click();",
+    // An outside pointerdown closes the standalone popover through closeMenu.
+    "document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));",
     'window.CVVideo.closeMenu();'
   ]) {
-    await evaluate("if ($('video-menu').hidden) $('video-more').click(); $('video-speed-row').click(); window.CVVideo.setPlaybackRate(1);");
+    await evaluate("if ($('video-speed-panel').hidden) $('video-speed').click(); window.CVVideo.setPlaybackRate(1);");
     const pressed = await pressStep('video-speed-plus');
     await waitFor(async () => (await snapshot()).rate >= 1.15, 'hold before cancellation');
     await evaluate(cancel);
     await expectStopped();
     releaseStep(pressed);
   }
-  await evaluate("if ($('video-menu').hidden) $('video-more').click(); $('video-speed-row').click();");
-  console.log('PASS hold cancellation on pointer cancel, blur, panel back and menu close');
+  await evaluate("if ($('video-speed-panel').hidden) $('video-speed').click();");
+  console.log('PASS hold cancellation on pointer cancel, blur, outside pointerdown and menu close');
 
   await evaluate(`window.CVVideo.setPlaybackRate(1); $('video-speed-track').focus();
     window.__speedSeekCalls = 0;
@@ -182,7 +183,7 @@ app.whenReady().then(async () => {
   await expectRate(1);
   assert.equal(await evaluate('return window.__speedSeekCalls;'), 0);
   await evaluate("$('video-speed-plus').click();");
-  await evaluate("window.CVVideo.closeMenu(); $('video-more').click(); $('video-speed-row').click(); window.CVVideo.sync();");
+  await evaluate("window.CVVideo.closeMenu(); $('video-speed').click(); window.CVVideo.sync();");
   await expectRate(1.05);
   await evaluate('window.CVVideo.element.load();');
   await waitFor(() => evaluate('return window.CVVideo.element.readyState >= 2;'), 'reloaded video');

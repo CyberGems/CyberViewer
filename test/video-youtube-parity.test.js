@@ -119,13 +119,22 @@ describe('video player youtube parity (phase 1)', () => {
   });
 
   it('keeps every More menu row iconized and the confirm overlay readable on video', () => {
-    for (const id of ['video-open', 'video-youtube', 'video-properties', 'video-autoplay', 'video-loop', 'video-audio-info']) {
+    for (const id of ['video-open', 'video-youtube', 'video-properties', 'video-autoplay', 'video-loop']) {
       const row = html.match(new RegExp(`id="${id}"[\\s\\S]*?</button>`));
       assert.ok(row && row[0].includes('menu-ico'), `${id} must carry a menu icon`);
     }
-    // Speed left the More menu for the transport bar (next to forward).
+    // Speed left the More menu for the transport bar (next to forward), and
+    // the audio info row was dropped: the volume control carries the state.
     assert.doesNotMatch(html, /id="video-speed-row"/);
+    assert.doesNotMatch(html, /id="video-audio-info"|id="video-audio-note"/);
     assert.match(html, /id="video-speed"[^>]*data-tooltip-kbd="&gt; &lt;"/);
+    assert.match(html, /id="video-speed-panel" class="menu-panel"/);
+    const ui = JSON.parse(read('i18n/ui.json'));
+    for (const lang of ['en', 'es']) {
+      for (const key of ['video_audio_info', 'video_audio_available', 'video_audio_pending', 'video_no_audio']) {
+        assert.ok(!(key in ui[lang]), `${lang}.${key} should be gone`);
+      }
+    }
     assert.match(css, /#video-menu \.menu-ico \{ width: 14px; height: 14px;/);
     // Titlebar filename keeps room for descenders (g, y)
     assert.match(read('css/app.css'), /\.titlebar-filename\s*\{[^}]*font: 600 12px\/1\.3 var\(--font-ui\);/);

@@ -402,10 +402,10 @@
               <span class="video-sr-only" data-i18n="video_next">Video siguiente</span>
             </button>
             <button type="button" id="video-back" data-tooltip-kbd="&#8592;">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8a8.5 8.5 0 1 1-.5 7M4 3v5h5"/><text x="12" y="16" text-anchor="middle">5</text></svg>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8a8.5 8.5 0 1 1-.5 7M4 3v5h5"/><path d="M14.6 8.2H9.6v4.4h2.9a2.6 2.6 0 1 1-2.6 2.6v-.5"/></svg>
             </button>
             <button type="button" id="video-forward" data-tooltip-kbd="&#8594;">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8a8.5 8.5 0 1 0 .5 7M20 3v5h-5"/><text x="12" y="16" text-anchor="middle">5</text></svg>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8a8.5 8.5 0 1 0 .5 7M20 3v5h-5"/><path d="M14.6 8.2H9.6v4.4h2.9a2.6 2.6 0 1 1-2.6 2.6v-.5"/></svg>
             </button>
             <button type="button" id="video-speed" data-tooltip-kbd="&gt; &lt;">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>
@@ -473,34 +473,26 @@
                 <svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
                 <span data-i18n="video_sibling_tabs">Abrir anterior/siguiente en pestaña nueva</span><span class="video-menu-switch" aria-hidden="true"></span>
               </button>
-              <button type="button" id="video-audio-info" aria-expanded="false" aria-controls="video-audio-note">
-                <svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4Z"/><path d="M15 8a6 6 0 0 1 0 8"/></svg>
-                <span data-i18n="video_audio_info">Información de audio</span>
-              </button>
             </div>
-            <div id="video-speed-panel" hidden>
-              <button type="button" id="video-speed-back" class="video-speed-row">
-                <svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-                <span data-i18n="video_speed">Velocidad</span>
-              </button>
-              <div id="video-speed-display">1.00×</div>
-              <div class="video-speed-slider-row">
-                <button type="button" id="video-speed-minus" aria-label="-">−</button>
-                <div id="video-speed-track" class="video-speed-track" role="slider" tabindex="0" data-i18n-aria="video_speed" aria-label="Velocidad" aria-valuemin="0.25" aria-valuemax="3" aria-valuenow="1" aria-valuetext="1.00×">
-                  <div id="video-speed-fill" class="video-speed-fill"></div>
-                  <div id="video-speed-thumb" class="video-speed-thumb"></div>
-                </div>
-                <button type="button" id="video-speed-plus" aria-label="+">+</button>
+          </div>
+          <!-- Standalone speed popover anchored above the transport bar button. -->
+          <div id="video-speed-panel" class="menu-panel" hidden>
+            <div id="video-speed-display">1.00×</div>
+            <div class="video-speed-slider-row">
+              <button type="button" id="video-speed-minus" aria-label="-">−</button>
+              <div id="video-speed-track" class="video-speed-track" role="slider" tabindex="0" data-i18n-aria="video_speed" aria-label="Velocidad" aria-valuemin="0.25" aria-valuemax="3" aria-valuenow="1" aria-valuetext="1.00×">
+                <div id="video-speed-fill" class="video-speed-fill"></div>
+                <div id="video-speed-thumb" class="video-speed-thumb"></div>
               </div>
-              <div class="video-speed-presets" id="video-speed-presets">
-                <button type="button" class="video-menu-rate" data-rate="1"><span>1.0</span><small data-i18n="video_speed_normal">Normal</small></button>
-                <button type="button" class="video-menu-rate" data-rate="1.25">1.25</button>
-                <button type="button" class="video-menu-rate" data-rate="1.5">1.5</button>
-                <button type="button" class="video-menu-rate" data-rate="2">2.0</button>
-                <button type="button" class="video-menu-rate" data-rate="3">3.0</button>
-              </div>
+              <button type="button" id="video-speed-plus" aria-label="+">+</button>
             </div>
-            <p id="video-audio-note" role="status" hidden></p>
+            <div class="video-speed-presets" id="video-speed-presets">
+              <button type="button" class="video-menu-rate" data-rate="1"><span>1.0</span><small data-i18n="video_speed_normal">Normal</small></button>
+              <button type="button" class="video-menu-rate" data-rate="1.25">1.25</button>
+              <button type="button" class="video-menu-rate" data-rate="1.5">1.5</button>
+              <button type="button" class="video-menu-rate" data-rate="2">2.0</button>
+              <button type="button" class="video-menu-rate" data-rate="3">3.0</button>
+            </div>
           </div>
         </div>
       </div>
