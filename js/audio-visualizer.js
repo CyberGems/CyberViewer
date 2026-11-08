@@ -55,7 +55,14 @@ window.CVAudioVisuals = (() => {
   }
 
   async function prepare() {
-    if (enabled() && !context) {
+    // Autoplay policy: without a prior user gesture an AudioContext starts
+    // (and stays) suspended, and awaiting resume() hangs forever — a session
+    // restore auto-resuming playback would then never call element.play().
+    // Until any interaction has happened, play through the element natively;
+    // the graph wires up on the next play() after the first gesture.
+    if (!context) {
+      if (!enabled()) return;
+      if (!navigator.userActivation?.hasBeenActive) return;
       context = new window.AudioContext();
       analyser = context.createAnalyser();
       analyser.fftSize = 1024;
@@ -67,8 +74,10 @@ window.CVAudioVisuals = (() => {
       wire();
     }
     // The shared element remains routed through this graph for ordinary video
-    // and effects-off playback too. Resuming it must never depend on a style.
-    if (context?.state === 'suspended') await context.resume();
+    // and effects-off playback too, so a suspended context must still resume
+    // even with the visualizer off. Sticky activation (any past interaction)
+    // makes resume() resolve.
+    if (context.state === 'suspended') await context.resume().catch(() => {});
   }
 
   function color(hue, alpha = 1, lightness = 64) {

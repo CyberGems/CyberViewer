@@ -75,7 +75,10 @@ describe('video player youtube parity (phase 1)', () => {
     assert.match(html, /id="video-seek-preview" hidden/);
     assert.match(html, /id="video-preview" muted preload="metadata"/);
     assert.match(player, /video-seek'\)\.addEventListener\('mousemove'/);
-    assert.match(player, /previewVideo\.currentTime = Math\.min\(time \+ 0\.05/);
+    // The preview seeks via fastSeek (nearest keyframe) when available, with
+    // an exact-seek fallback for engines without it.
+    assert.match(player, /if \(typeof previewVideo\.fastSeek === 'function'\) previewVideo\.fastSeek\(target\);/);
+    assert.match(player, /else previewVideo\.currentTime = target;/);
     assert.match(css, /#video-seek-preview \{/);
     assert.match(css, /#video-overlay-flash \{/);
     assert.match(css, /@keyframes video-flash \{/);

@@ -125,10 +125,13 @@ describe('nav arrow badge tooltips', () => {
     // which subtly churns the main video's rendered size on GPU decode.
     assert.match(videoCss, /#video-seek-preview\[hidden\] \{ visibility: hidden; \}/);
     assert.doesNotMatch(videoCss, /#video-seek-preview\[hidden\] \{ display: none; \}/);
-    // And the twin decoder's seek is dwell-gated, so scrubbing never seeks it
-    // per mousemove.
-    assert.match(videoJs, /previewSeekTimer = setTimeout\(\(\) => \{ previewLast = time; seekPreviewTo\(time\); \}, 180\)/);
-    assert.match(videoJs, /\$\('video-seek'\)\.addEventListener\('mouseleave', \(\) => \{ clearTimeout\(previewSeekTimer\); previewBox\.hidden = true; \}\)/);
+    // And the twin decoder's seek is throttled (leading + trailing edge, ~8/s)
+    // landing on the latest hovered position, via cheap keyframe fastSeek.
+    assert.match(videoJs, /if \(typeof previewVideo\.fastSeek === 'function'\) previewVideo\.fastSeek\(target\);/);
+    assert.match(videoJs, /previewSeekTimer = setTimeout\(pumpPreview, 120\)/);
+    assert.match(videoJs, /if \(previewPendingTime < 0 \|\| Math\.abs\(previewPendingTime - previewLast\) < 0\.05\) return;/);
+    assert.match(videoJs, /\$\('video-seek'\)\.addEventListener\('mouseleave', \(\) => \{/);
+    assert.match(videoJs, /previewPendingTime = -1;/);
   });
 
   it('swaps the nav badges contextually while video or audio is active', () => {
