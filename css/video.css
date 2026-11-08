@@ -201,25 +201,26 @@ html[data-theme='light'] #video-menu .video-menu-divider {
 /* Without a sibling video the arrows stay in the bar, dimmed and inert. */
 #video-prev.is-disabled, #video-next.is-disabled { opacity: .38; cursor: default; }
 #video-prev.is-disabled:hover, #video-next.is-disabled:hover { background: transparent; }
-/* Persistent playback-rate chip in the top-left corner, styled like the
-   fullscreen close button (discreet, muted). Lives inside #video-controls,
-   so it fades and auto-hides together with the rest of the controls. In
-   windowed mode it parks below the title bar + tab strip (92px offset, same
-   as the tab switcher); true fullscreen moves it up next to the close X. */
+/* Persistent playback-rate chip in the top-left corner, matching the
+   fullscreen close button's material (translucent black, white text, no
+   border) at the same font size. Lives inside #video-controls, so it fades
+   and auto-hides together with the rest of the controls. In windowed mode it
+   parks below the title bar + tab strip (92px offset, same as the tab
+   switcher); true fullscreen moves it up next to the close X. */
 #speed-indicator {
   position: fixed;
   top: 92px;
   left: 20px;
-  padding: 5px 10px;
-  border: 1px solid var(--cyber-border);
+  padding: 7px 11px;
+  border: 0;
   border-radius: 4px;
-  background: rgba(var(--cyber-modal-rgb), 0.85);
-  color: var(--cyber-muted);
-  font: 600 12px var(--font-ui);
+  background: #0004;
+  color: #fff;
+  font: 600 14px var(--font-ui);
   letter-spacing: .5px;
   z-index: 999999;
   pointer-events: none;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  box-shadow: none;
   display: none;
 }
 body.ghost-mode #speed-indicator { top: 16px; }

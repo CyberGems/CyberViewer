@@ -505,12 +505,8 @@ window.CVVideo = (() => {
   }
   function localize() {
     for (const [id, key] of [['video-controls', 'video_controls'], ['video-seek', 'video_seek'], ['video-volume', 'video_volume']]) $(id).setAttribute('aria-label', text(key));
-    const audio = window.CVFormats.isAudio(state.images[state.current]);
-    for (const direction of ['prev', 'next']) {
-      const label = text(`${audio ? 'audio' : 'video'}_${direction}`);
-      setCyberTooltip($(`video-${direction}`), label);
-      $(`video-${direction}`).querySelector('span').textContent = label;
-    }
+    // The sibling arrows' labels and tooltips belong to syncSiblings (card
+    // tooltips); touching them here would re-arm the clipped CSS bubble.
     window.CVAudioVisuals.localize();
     for (const [id, key] of [['video-back', 'video_back'], ['video-forward', 'video_forward'], ['video-speed', 'video_speed'], ['video-more', 'video_more']]) {
       $(id).setAttribute('aria-label', text(key));
