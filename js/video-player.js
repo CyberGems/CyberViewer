@@ -36,6 +36,14 @@ window.CVVideo = (() => {
     const navigation = $('shortcuts-navigation-label');
     navigation.dataset.i18n = video ? 'video_seek_keys' : 'navigate_hint';
     navigation.textContent = text(navigation.dataset.i18n);
+    const navPrev = $('btn-prev');
+    const navNext = $('btn-next');
+    if (navPrev && navNext) {
+      // In video/audio ←/→ seek, so the nav badges list only the keys that
+      // still jump files; Space pauses playback instead of advancing.
+      navPrev.dataset.tooltipKbd = video ? '↑ Backspace' : '← ↑ Backspace';
+      navNext.dataset.tooltipKbd = video ? '↓' : '→ ↓ Space';
+    }
     imageButtons.forEach(id => {
       const button = $(id);
       if (button && video) { button.disabled = true; button.classList.add('is-disabled'); button.setAttribute('aria-disabled', 'true'); }
@@ -68,7 +76,8 @@ window.CVVideo = (() => {
     $('video-controls').classList.toggle('video-playing', playing);
     $('video-controls').classList.toggle('video-muted', element.muted || element.volume === 0);
     $('video-play-label').textContent = text(playing ? 'video_pause' : 'video_play');
-    setCyberTooltip($('video-play'), text(playing ? 'video_pause_shortcut' : 'video_play_shortcut'));
+    // Card tooltip (kbd badge comes from the static data-tooltip-kbd attribute).
+    $('video-play').dataset.tooltip = text(playing ? 'video_pause_shortcut' : 'video_play_shortcut');
     $('video-mute-label').textContent = text(element.muted ? 'video_unmute' : 'video_mute');
     $('video-mute').setAttribute('aria-pressed', String(element.muted));
     $('video-loop').setAttribute('aria-checked', String(element.loop));
@@ -148,7 +157,8 @@ window.CVVideo = (() => {
     if ($('video-fullscreen').dataset.fullscreenLabel !== fsKey) {
       $('video-fullscreen').dataset.fullscreenLabel = fsKey;
       $('video-fullscreen').setAttribute('aria-label', text(state.isGhost ? 'ghost_close_title' : 'menu_fullscreen'));
-      setCyberTooltip($('video-fullscreen'), text(fsKey));
+      // Card tooltip; the Ctrl+F badge is static in the markup.
+      $('video-fullscreen').dataset.tooltip = text(fsKey);
     }
     if (!owner?.loaded || element.paused || element.ended) return;
     const delay = state.settings.app.hudAutoHideDelay ?? 2000;
@@ -445,7 +455,7 @@ window.CVVideo = (() => {
   }
   function localize() {
     for (const [id, key] of [['video-controls', 'video_controls'], ['video-seek', 'video_seek'], ['video-volume', 'video_volume']]) $(id).setAttribute('aria-label', text(key));
-    setCyberTooltip($('video-mute'), text('video_mute_shortcut'));
+    $('video-mute').dataset.tooltip = text('video_mute_shortcut');
     const audio = window.CVFormats.isAudio(state.images[state.current]);
     for (const direction of ['prev', 'next']) {
       const label = text(`${audio ? 'audio' : 'video'}_${direction}`);
@@ -455,10 +465,12 @@ window.CVVideo = (() => {
     window.CVAudioVisuals.localize();
     for (const [id, key] of [['video-back', 'video_back'], ['video-forward', 'video_forward'], ['video-more', 'video_more']]) {
       $(id).setAttribute('aria-label', text(key));
-      setCyberTooltip($(id), text(key));
+      $(id).dataset.tooltip = text(key);
     }
+    // video-fit shares the image fit pipeline (B); its kbd badge is static in
+    // the markup. The fullscreen label swaps with the ghost state in reveal().
     $('video-fit').setAttribute('aria-label', text('menu_fit'));
-    setCyberTooltip($('video-fit'), text('fit_title'));
+    $('video-fit').dataset.tooltip = text('menu_fit');
     delete $('video-fullscreen').dataset.fullscreenLabel;
     sync();
     syncTools();

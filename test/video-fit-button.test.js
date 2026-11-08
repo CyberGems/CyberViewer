@@ -18,12 +18,13 @@ describe('video fit-to-window button', () => {
     const fitIndex = html.indexOf('id="video-fit"');
     const fsIndex = html.indexOf('id="video-fullscreen"');
     assert.ok(fitIndex !== -1 && fsIndex !== -1 && fitIndex < fsIndex);
-    assert.match(html, /<button type="button" id="video-fit" disabled aria-keyshortcuts="F">\s*<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"\/><\/svg>/);
+    assert.match(html, /<button type="button" id="video-fit" disabled aria-keyshortcuts="B" data-tooltip-kbd="B">\s*<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"\/><\/svg>/);
   });
 
   it('uses the image viewer fullscreen glyph on the video fullscreen button', () => {
-    const hudGlyph = html.match(/id="btn-fs-hud"[\s\S]*?d="([^"]+)"/)[1];
-    const videoGlyph = html.match(/id="video-fullscreen"[\s\S]*?d="([^"]+)"/)[1];
+    // Match the SVG path attribute; a loose d=" would also hit data-tooltip-kbd.
+    const hudGlyph = html.match(/id="btn-fs-hud"[\s\S]*?<path d="([^"]+)"/)[1];
+    const videoGlyph = html.match(/id="video-fullscreen"[\s\S]*?<path d="([^"]+)"/)[1];
     assert.equal(videoGlyph, hudGlyph);
   });
 
@@ -48,6 +49,7 @@ describe('video fit-to-window button', () => {
   it('reuses the image viewer fit pipeline and localized labels', () => {
     assert.match(videoPlayer, /\$\('video-fit'\)\.addEventListener\('click', \(\) => \{\s*if \(window\.CVYouTube\.active\(\)\) return;\s*const fit = \$\('btn-fit-hud'\);/);
     assert.match(videoPlayer, /\$\('video-fit'\)\.setAttribute\('aria-label', text\('menu_fit'\)\);/);
-    assert.match(videoPlayer, /setCyberTooltip\(\$\('video-fit'\), text\('fit_title'\)\);/);
+    // Card tooltip with the B badge from the static markup (F became favorite).
+    assert.match(videoPlayer, /\$\('video-fit'\)\.dataset\.tooltip = text\('menu_fit'\);/);
   });
 });

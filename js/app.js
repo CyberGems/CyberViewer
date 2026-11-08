@@ -96,7 +96,6 @@ const TT_VIEWPORT_MARGIN = 8;
 const TT_GAP = 8;
 let ttCard = null;
 let ttLabelEl = null;
-let ttKbdEl = null;
 let ttAnchor = null;
 let ttShowTimer = null;
 
@@ -141,6 +140,20 @@ function ttPositionCard() {
   ttCard.style.setProperty('--tt-arrow-x', `${Math.round(arrowX)}px`);
 }
 
+/** Each whitespace- or slash-separated token in data-tooltip-kbd gets its own
+ *  kbd badge ("← ↑ Backspace" renders three chips); combos like "Ctrl+Shift+O"
+ *  contain no spaces, so they stay a single chip. */
+function ttRenderKbd(kbdText) {
+  while (ttCard.childNodes.length > 1) ttCard.removeChild(ttCard.lastChild);
+  const tokens = (kbdText || '').split(/\s*\/\s*|\s+/).filter(Boolean);
+  for (const token of tokens) {
+    const kbd = document.createElement('kbd');
+    kbd.className = 'tooltip-shortcut-key';
+    kbd.textContent = token;
+    ttCard.appendChild(kbd);
+  }
+}
+
 function ttShow(el) {
   if (restorePointerPending) return;
   if (Date.now() < ttRestoreSuppressUntil) return;
@@ -157,17 +170,12 @@ function ttShow(el) {
     ttCard.hidden = true;
     ttLabelEl = document.createElement('span');
     ttLabelEl.className = 'tt-label';
-    ttKbdEl = document.createElement('kbd');
-    ttKbdEl.className = 'tooltip-shortcut-key';
-    ttKbdEl.hidden = true;
-    ttCard.append(ttLabelEl, ttKbdEl);
+    ttCard.append(ttLabelEl);
     document.body.appendChild(ttCard);
   }
   ttAnchor = el;
   ttLabelEl.textContent = text;
-  const kbd = el.dataset.tooltipKbd;
-  ttKbdEl.textContent = kbd || '';
-  ttKbdEl.hidden = !kbd;
+  ttRenderKbd(el.dataset.tooltipKbd);
   ttCard.hidden = false;
   ttPositionCard();
   requestAnimationFrame(() => ttCard.classList.add('is-visible'));
@@ -203,7 +211,8 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) ttHid
 // Bind every title bar control. Labels update via data-tooltip / data-i18n-tt.
 ['logo-trigger', 'titlebar-update-btn', 'titlebar-properties-btn', 'btn-shortcuts',
   'btn-config', 'btn-menu', 'btn-about', 'win-min', 'win-max', 'win-close',
-  'btn-prev', 'btn-next'
+  'btn-prev', 'btn-next', 'video-play', 'video-mute', 'video-back', 'video-forward',
+  'video-more', 'video-fit', 'video-fullscreen'
 ].forEach(id => ttBind($(id)));
 
 const ZOOM_MIN = 0.05;

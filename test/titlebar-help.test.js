@@ -234,9 +234,9 @@ describe('title bar Help menu', () => {
       assert.match(html, new RegExp(`id="${id}"[^>]*data-tooltip-kbd="${escaped}"`), `${id} should badge ${kbd}`);
     }
 
-    // Tooltip card renders the badge as a <kbd> chip (CyberNotes naming)
-    assert.match(appJs, /ttKbdEl = document\.createElement\('kbd'\);/);
-    assert.match(appJs, /ttKbdEl\.className = 'tooltip-shortcut-key';/);
+    // Tooltip card renders each key token as its own <kbd> chip (CyberNotes naming)
+    assert.match(appJs, /function ttRenderKbd\(kbdText\)/);
+    assert.match(appJs, /kbd\.className = 'tooltip-shortcut-key';/);
     assert.match(css, /#titlebar-tooltip \.tooltip-shortcut-key\s*\{[\s\S]*?font-size:\s*9px;/);
     assert.match(css, /#titlebar-tooltip\.is-visible\s*\{[\s\S]*?opacity:\s*1;/);
   });
