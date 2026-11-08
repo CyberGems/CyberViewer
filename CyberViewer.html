@@ -44,6 +44,8 @@
           <div><dt><kbd>Ctrl</kbd><kbd>W</kbd></dt><dd data-i18n="tabs_close">Cerrar pestaña</dd></div>
           <div><dt><kbd>Ctrl</kbd><kbd>⇧</kbd><kbd>T</kbd></dt><dd data-i18n="tabs_reopen">Reabrir pestaña cerrada</dd></div>
           <div><dt><kbd>←</kbd><kbd>→</kbd></dt><dd id="shortcuts-navigation-label" data-i18n="navigate_hint">NAVEGAR</dd></div>
+          <div><dt><kbd>↑</kbd><kbd>↓</kbd></dt><dd data-i18n="navigate_hint">NAVEGAR</dd></div>
+          <div><dt><kbd>Backspace</kbd><kbd>Space</kbd></dt><dd data-i18n="shortcuts_prev_next">ANTERIOR / SIGUIENTE</dd></div>
           <div><dt><kbd data-i18n="key_scroll">Rueda</kbd></dt><dd data-i18n="zoom_hint">ZOOM</dd></div>
           <div><dt><kbd data-i18n="key_drag">Arrastrar</kbd></dt><dd data-i18n="pan_hint">MOVER</dd></div>
           <div><dt><kbd data-i18n="key_enter">Intro</kbd></dt><dd data-i18n="fullscreen">PANTALLA</dd></div>
@@ -590,8 +592,8 @@
 
       <!-- NAV -->
       <div id="nav-container">
-        <button class="nav-btn cyber-tooltip tooltip-left" id="btn-prev" data-i18n-tooltip="prev_title" data-tooltip-kbd="&#8592; &#8593; / Backspace">&#9650;</button>
-        <button class="nav-btn cyber-tooltip tooltip-left" id="btn-next" data-i18n-tooltip="next_title" data-tooltip-kbd="&#8594; &#8595; / Space">&#9660;</button>
+        <button class="nav-btn" id="btn-prev" data-i18n-tooltip="prev_title" data-i18n-aria="prev_title" aria-label="Imagen anterior" data-tooltip-kbd="&#8592; &#8593; / Backspace">&#9650;</button>
+        <button class="nav-btn" id="btn-next" data-i18n-tooltip="next_title" data-i18n-aria="next_title" aria-label="Imagen siguiente" data-tooltip-kbd="&#8594; &#8595; / Space">&#9660;</button>
       </div>
 
       <!-- ZOOM HUD -->

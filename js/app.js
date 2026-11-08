@@ -202,7 +202,8 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) ttHid
 
 // Bind every title bar control. Labels update via data-tooltip / data-i18n-tt.
 ['logo-trigger', 'titlebar-update-btn', 'titlebar-properties-btn', 'btn-shortcuts',
-  'btn-config', 'btn-menu', 'btn-about', 'win-min', 'win-max', 'win-close'
+  'btn-config', 'btn-menu', 'btn-about', 'win-min', 'win-max', 'win-close',
+  'btn-prev', 'btn-next'
 ].forEach(id => ttBind($(id)));
 
 const ZOOM_MIN = 0.05;

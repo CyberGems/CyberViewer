@@ -328,7 +328,8 @@ npm run build:portable   # solo portable
 | `F` | Alternar favorito |
 | `Ctrl+,` | Abrir la configuración |
 | `P` | Propiedades |
-| `← → ↑ ↓` / `Retroceso` | Navegar entre archivos; en video, `← →` saltan 5 segundos |
+| `←` `↑` / `Retroceso` | Archivo anterior; en video, `←` salta 5 segundos |
+| `→` `↓` | Archivo siguiente; en video, `→` salta 5 segundos |
 | `Espacio` | Siguiente imagen, reproducir/pausar video o iniciar/pausar presentación |
 | `M` | Silenciar/activar sonido del video |
 | `Q` / `E` | Rotar 90° a la izquierda / derecha |

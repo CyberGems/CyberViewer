@@ -331,7 +331,8 @@ npm run build:portable   # portable only
 | `F` | Toggle favorite |
 | `Ctrl+,` | Open settings |
 | `P` | Properties |
-| `← → ↑ ↓` / `Backspace` | Navigate files; in video, `← →` seek 5 seconds |
+| `←` `↑` / `Backspace` | Previous file; in video, `←` seeks 5 seconds |
+| `→` `↓` | Next file; in video, `→` seeks 5 seconds |
 | `Space` | Next image, play/pause video, or play/pause slideshow |
 | `M` | Mute/unmute video |
 | `Q` / `E` | Rotate left / right 90° |
