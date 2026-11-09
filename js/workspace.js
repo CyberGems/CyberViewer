@@ -54,6 +54,10 @@ window.CVWorkspace = (() => {
     const tab = model.active;
     if (!tab || state.images[state.current] !== tab.image || suspended || pendingView?.tab === tab) return;
     for (const key of Object.keys(defaultView())) tab.view[key] = state[key];
+    // pendingCrop is written by canSwitch() when the crop yields to the switch;
+    // by the time capture() runs the crop is already closed, so nothing to do
+    // here. In-memory only: snapshot() serializes named fields and cleanView
+    // drops this, keeping session files free of ephemeral selections.
     tab.source = window.CVYouTubeSource.isYouTube(tab.image) ? 'youtube' : state.showingFavs ? 'favorites' : 'folder';
     tab.hiddenPaths = state.images.filter(image => image.hidden && image.file.path).map(image => image.file.path);
     tab.scrollTop = $('sidebar-scroll')?.scrollTop || 0;
@@ -72,7 +76,15 @@ window.CVWorkspace = (() => {
     const editingModal = document.querySelector('#modal-adjust.active, #modal-resize.active');
     if ((state.isCropping || editingModal) && !busy && dialogDepth === 0 &&
       state.settings.app.tabsCancelPendingEdits !== false) {
-      if (state.isCropping) exitCropMode();
+      if (state.isCropping) {
+        // Snapshot the open selection BEFORE the yield closes it: capture()
+        // runs after canSwitch() on every open path, when the crop is already
+        // gone, so it can never see an active selection.
+        const active = model.active;
+        const snap = typeof window.cropSelectionSnapshot === 'function' ? window.cropSelectionSnapshot() : null;
+        exitCropMode();
+        if (active) active.pendingCrop = snap;
+      }
       if (editingModal) closeModal(editingModal.id);
       return true;
     }

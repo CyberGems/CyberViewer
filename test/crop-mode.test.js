@@ -31,7 +31,8 @@ describe('crop yields to tab switches and external opens', () => {
     assert.ok(canSwitch, 'canSwitch should exist');
     assert.match(canSwitch[0], /const editingModal = document\.querySelector\('#modal-adjust\.active, #modal-resize\.active'\);/);
     assert.match(canSwitch[0], /if \(\(state\.isCropping \|\| editingModal\) && !busy && dialogDepth === 0 &&\s*\n\s*state\.settings\.app\.tabsCancelPendingEdits !== false\) \{/);
-    assert.match(canSwitch[0], /if \(state\.isCropping\) exitCropMode\(\);/);
+    assert.match(canSwitch[0], /const snap = typeof window\.cropSelectionSnapshot === 'function' \? window\.cropSelectionSnapshot\(\) : null;/);
+    assert.match(canSwitch[0], /exitCropMode\(\);\s*\n\s*if \(active\) active\.pendingCrop = snap;/);
     assert.match(canSwitch[0], /if \(editingModal\) closeModal\(editingModal\.id\);/);
     assert.match(canSwitch[0], /showToast\(text\('tabs_finish_edit'\), 'info'\)/);
     assert.match(workspace, /isEditing, canSwitch \}/, 'canSwitch should be exported for the YouTube dialog');
@@ -59,5 +60,29 @@ describe('crop yields to tab switches and external opens', () => {
     assert.match(youtubePlayer, /const reopening = \$\('modal-youtube'\)\.classList\.contains\('active'\);/);
     assert.match(youtubePlayer, /if \(!reopening && !window\.CVWorkspace\.canSwitch\(\)\) return;/);
     assert.doesNotMatch(youtubePlayer, /isEditing\(\) && !\$\('modal-youtube'\)/);
+  });
+
+  it('remembers an open crop across tab switches and restores it identically', () => {
+    // The selection is captured in image space (0..1) on switch, kept in
+    // memory only, and re-entered automatically when the tab displays again:
+    // same view, same rotation pending, same rectangle.
+    assert.match(appJs, /function cropSelectionSnapshot\(\) \{[\s\S]*?return \{ x: \(cropState\.x - r\.x\) \/ r\.w,[\s\S]*?\};\s*\n\}/);
+    assert.match(workspace, /const snap = typeof window\.cropSelectionSnapshot === 'function' \? window\.cropSelectionSnapshot\(\) : null;/);
+    assert.match(workspace, /exitCropMode\(\);\s*\n\s*if \(active\) active\.pendingCrop = snap;/);
+    // capture() runs after canSwitch() and must not try to snapshot a closed crop.
+    assert.doesNotMatch(workspace, /tab\.pendingCrop = typeof window\.cropSelectionSnapshot/);
+    assert.match(appJs, /if \(restoredView && target === mainImg\) \{[\s\S]*?restorePendingCrop\(backTab\);/);
+    const restore = appJs.match(/function restorePendingCrop\(tab\) \{[\s\S]*?\n\}/)[0];
+    // It consumes the snapshot once, keeps the restored view untouched (no
+    // discardPendingRotationSilently), calibrates, then remaps proportionally.
+    assert.match(restore, /tab\.pendingCrop = null;/);
+    assert.match(restore, /calibrateAndShowCrop\(\);/);
+    assert.match(restore, /cropState\.x = r\.x \+ snap\.x \* r\.w;/);
+    assert.match(restore, /updateCropUI\(\);/);
+    assert.doesNotMatch(restore, /discardPendingRotationSilently/);
+    // An explicit crop click also brings the remembered selection back.
+    assert.match(appJs, /if \(activeTab && activeTab\.pendingCrop\) \{ restorePendingCrop\(activeTab\); return; \}/);
+    // Never serialized to session files or restored views.
+    assert.doesNotMatch(fs.readFileSync(path.join(root, 'js', 'tab-model.js'), 'utf8'), /pendingCrop/);
   });
 });

@@ -3526,6 +3526,12 @@ function displayImage(url, w, h, direction) {
   }
   applyTransform(false);
   updateFileStats();
+  // Returning to a tab whose crop was left open: re-enter the mode with the
+  // remembered selection, on top of the restored view and rotation.
+  if (restoredView && target === mainImg) {
+    const backTab = window.CVWorkspace.model.active;
+    if (backTab && backTab.pendingCrop) restorePendingCrop(backTab);
+  }
 
   if (direction) {
     const inClass = direction === 'left' ? 'slide-in-left' : 'slide-in-right';
@@ -3741,6 +3747,39 @@ const cropState = {
   startRect: {}
 };
 
+/** The current selection in image space (0..1), resolution-independent so it
+ *  survives tab switches and any zoom. Null when no crop is active. */
+function cropSelectionSnapshot() {
+  if (!cropState.active || !cropState.imgRealRect || !cropState.imgRealRect.w || !cropState.imgRealRect.h) return null;
+  const r = cropState.imgRealRect;
+  return { x: (cropState.x - r.x) / r.w, y: (cropState.y - r.y) / r.h, w: cropState.w / r.w, h: cropState.h / r.h };
+}
+
+/** Re-entering crop after a tab switch restores the remembered selection
+ *  identically: keep the tab's view (rotation pending included), calibrate to
+ *  the visible image, then remap the snapshot onto it. */
+function restorePendingCrop(tab) {
+  const snap = tab && tab.pendingCrop;
+  tab.pendingCrop = null;
+  if (!snap) return false;
+  state.isCropping = true;
+  updateHUDStates(); // toggles body.crop-mode synchronously
+  const cropSeq = cropState.sequence = (cropState.sequence || 0) + 1;
+  const cropImage = state.images[state.current];
+  setTimeout(() => {
+    if (!state.isCropping || cropState.sequence !== cropSeq || state.images[state.current] !== cropImage) return;
+    calibrateAndShowCrop();
+    if (!cropState.active || !cropState.imgRealRect) return;
+    const r = cropState.imgRealRect;
+    cropState.x = r.x + snap.x * r.w;
+    cropState.y = r.y + snap.y * r.h;
+    cropState.w = Math.max(8, Math.min(snap.w * r.w, r.x + r.w - cropState.x));
+    cropState.h = Math.max(8, Math.min(snap.h * r.h, r.y + r.h - cropState.y));
+    updateCropUI();
+  }, 260);
+  return true;
+}
+
 /** Single source of truth for leaving crop mode: clears cropState, the overlay,
  *  body.crop-mode (via updateHUDStates) and the HUD hide classes. Idempotent. */
 function exitCropMode() {
@@ -3763,8 +3802,12 @@ function exitCropMode() {
 
 function startCrop() {
   if (window.CVVideo.active()) return;
-  discardPendingRotationSilently();
   if (state.current === -1) return;
+  // A crop remembered from before a tab switch restores itself once the image
+  // is displayed; an explicit click just brings it back.
+  const activeTab = window.CVWorkspace.model.tabs.find(tab => tab.image === state.images[state.current]);
+  if (activeTab && activeTab.pendingCrop) { restorePendingCrop(activeTab); return; }
+  discardPendingRotationSilently();
   if (!mainImg.complete || mainImg.naturalWidth === 0) {
     showToast(I18N[state.settings.app.language || 'en'].toast_initializing_engine, 'info');
     return;
