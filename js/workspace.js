@@ -63,6 +63,15 @@ window.CVWorkspace = (() => {
   }
   function canSwitch() {
     if (!isEditing()) return true;
+    // Crop is an uncommitted, viewer-local selection: switching tabs or
+    // receiving an external open simply cancels it instead of blocking the
+    // whole workspace (old pre-tabs flow). Everything else — save/reload work
+    // (busy), pending confirm dialogs and in-progress modals — still needs an
+    // explicit finish or cancel, since it holds real work or a decision.
+    if (state.isCropping && !busy && dialogDepth === 0 && !document.querySelector('.modal-overlay.active')) {
+      exitCropMode();
+      return true;
+    }
     showToast(text('tabs_finish_edit'), 'info');
     return false;
   }
@@ -169,8 +178,9 @@ window.CVWorkspace = (() => {
       console.error('Unable to open tabs:', error);
     }
     target ||= model.tabs[model.tabs.length - 1];
-    if (target && ((busy && options.afterEdit) || dialogDepth > 0)) deferredActivation = target.id;
-    if (target && options.activate !== false && !isEditing()) await activate(target.id, { force: true, source: options.source });
+    const deferActivation = target && ((busy && options.afterEdit) || dialogDepth > 0);
+    if (deferActivation) deferredActivation = target.id;
+    if (target && options.activate !== false && !deferActivation && canSwitch()) await activate(target.id, { force: true, source: options.source });
     else { render(); changed(); }
     prune();
     return !!target;
@@ -1005,8 +1015,10 @@ window.CVWorkspace = (() => {
       // Overlays that hold in-progress image work must not be dismissed by a
       // quit; chrome-only ones (config, properties, reminders) hold nothing,
       // so they are closed here instead of stalling the quit chain and
-      // pulling the hidden window back on screen.
-      if (busy || dialogDepth > 0 || state.isCropping ||
+      // pulling the hidden window back on screen. Crop holds nothing
+      // committed either: it is cancelled, not used as a quit blocker.
+      if (state.isCropping) exitCropMode();
+      if (busy || dialogDepth > 0 ||
         document.querySelector('#modal-adjust.active, #modal-resize.active, #modal-print-export.active, #modal-youtube.active')) {
         showToast(text('tabs_finish_edit'), 'warning');
         return;
@@ -1025,5 +1037,5 @@ window.CVWorkspace = (() => {
   return { model, get busy() { return busy; }, get ready() { return ready; }, capture, render,
     activate, openPath, openFiles, dropFiles, openYouTube, beforeShow, viewFor, restoreView, closeTabs, reopen,
     contextMenu, barMenu, clearPreloads, release, changed, flush, settingsChanged, restore, edit, dialog,
-    suspend, resume, imageBound, relocate, fileDeleted, initialize, isEditing };
+    suspend, resume, imageBound, relocate, fileDeleted, initialize, isEditing, canSwitch };
 })();

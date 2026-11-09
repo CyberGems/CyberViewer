@@ -102,7 +102,10 @@ window.CVYouTube = (() => {
     status();
   }
   function openDialog() {
-    if (window.CVWorkspace.isEditing() && !$('modal-youtube').classList.contains('active')) { showToast(text('tabs_finish_edit'), 'info'); return; }
+    // canSwitch (not isEditing) so a plain crop yields instead of blocking;
+    // reopening the modal itself skips the guard entirely (no stray toast).
+    const reopening = $('modal-youtube').classList.contains('active');
+    if (!reopening && !window.CVWorkspace.canSwitch()) return;
     $('youtube-url-error').hidden = true;
     $('youtube-autoplay').checked = state.settings.app.videoAutoplay !== false;
     openModal('modal-youtube');
