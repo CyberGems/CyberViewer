@@ -7,6 +7,8 @@ const root = path.join(__dirname, '..');
 const appJs = fs.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
 const workspace = fs.readFileSync(path.join(root, 'js', 'workspace.js'), 'utf8');
 const youtubePlayer = fs.readFileSync(path.join(root, 'js', 'youtube-player.js'), 'utf8');
+const ui = JSON.parse(fs.readFileSync(path.join(root, 'i18n', 'ui.json'), 'utf8'));
+const html = fs.readFileSync(path.join(root, 'CyberViewer.html'), 'utf8');
 
 describe('crop mode pointer guard', () => {
   it('ignores viewer double-clicks while the crop selection is active', () => {
@@ -21,14 +23,28 @@ describe('crop mode pointer guard', () => {
 
 describe('crop yields to tab switches and external opens', () => {
   it('cancels crop in canSwitch instead of blocking, keeping real-work guards', () => {
-    // Crop is uncommitted, viewer-local state: switches and external opens
-    // cancel it silently. busy (save/reload), confirm dialogs and modals
-    // still require an explicit finish or cancel.
+    // Uncommitted, viewer-local states (crop plus the adjust/resize editing
+    // modals, behind a Config toggle) yield to switches and external opens.
+    // busy (save/reload), confirm dialogs and other overlays still require an
+    // explicit finish or cancel.
     const canSwitch = workspace.match(/function canSwitch\(\) \{[\s\S]*?\n  \}/);
     assert.ok(canSwitch, 'canSwitch should exist');
-    assert.match(canSwitch[0], /if \(state\.isCropping && !busy && dialogDepth === 0 && !document\.querySelector\('\.modal-overlay\.active'\)\) \{\s*\n\s*exitCropMode\(\);\s*\n\s*return true;/);
+    assert.match(canSwitch[0], /const editingModal = document\.querySelector\('#modal-adjust\.active, #modal-resize\.active'\);/);
+    assert.match(canSwitch[0], /if \(\(state\.isCropping \|\| editingModal\) && !busy && dialogDepth === 0 &&\s*\n\s*state\.settings\.app\.tabsCancelPendingEdits !== false\) \{/);
+    assert.match(canSwitch[0], /if \(state\.isCropping\) exitCropMode\(\);/);
+    assert.match(canSwitch[0], /if \(editingModal\) closeModal\(editingModal\.id\);/);
     assert.match(canSwitch[0], /showToast\(text\('tabs_finish_edit'\), 'info'\)/);
     assert.match(workspace, /isEditing, canSwitch \}/, 'canSwitch should be exported for the YouTube dialog');
+  });
+
+  it('exposes the cancel-pending-edits toggle in Config', () => {
+    assert.match(html, /id="cfg-tabs-cancel-edits"[^>]*checked/);
+    assert.match(appJs, /\$\('cfg-tabs-cancel-edits'\)\.checked = s\.tabsCancelPendingEdits !== false;/);
+    assert.match(appJs, /tabsCancelPendingEdits: \$\('cfg-tabs-cancel-edits'\)\.checked,/);
+    for (const lang of ['en', 'es']) {
+      assert.ok(typeof ui[lang].tabs_cancel_edits === 'string' && ui[lang].tabs_cancel_edits.length > 0);
+      assert.ok(typeof ui[lang].tabs_cancel_edits_desc === 'string' && ui[lang].tabs_cancel_edits_desc.length > 0);
+    }
   });
 
   it('lets openFiles activate through canSwitch without losing the defer path', () => {

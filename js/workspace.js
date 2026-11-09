@@ -63,13 +63,17 @@ window.CVWorkspace = (() => {
   }
   function canSwitch() {
     if (!isEditing()) return true;
-    // Crop is an uncommitted, viewer-local selection: switching tabs or
-    // receiving an external open simply cancels it instead of blocking the
-    // whole workspace (old pre-tabs flow). Everything else — save/reload work
-    // (busy), pending confirm dialogs and in-progress modals — still needs an
-    // explicit finish or cancel, since it holds real work or a decision.
-    if (state.isCropping && !busy && dialogDepth === 0 && !document.querySelector('.modal-overlay.active')) {
-      exitCropMode();
+    // Uncommitted, viewer-local states: crop and the adjust/resize editing
+    // modals. Switching tabs or receiving an external open cancels them
+    // instead of blocking the whole workspace (old pre-tabs flow), unless the
+    // user turned that off in Config. busy (save/reload work), pending
+    // confirm dialogs and other overlays (print/export, dialogs) still need
+    // an explicit finish or cancel, since they hold real work or a decision.
+    const editingModal = document.querySelector('#modal-adjust.active, #modal-resize.active');
+    if ((state.isCropping || editingModal) && !busy && dialogDepth === 0 &&
+      state.settings.app.tabsCancelPendingEdits !== false) {
+      if (state.isCropping) exitCropMode();
+      if (editingModal) closeModal(editingModal.id);
       return true;
     }
     showToast(text('tabs_finish_edit'), 'info');
