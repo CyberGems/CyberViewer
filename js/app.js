@@ -7632,6 +7632,7 @@ const CONFIG_CONTROL_ICON_BY_ID = {
   'cfg-restore-session': 'restore',
   'cfg-keep-media-paused': 'pause',
   'cfg-tab-media-icons': 'image',
+  'cfg-tabs-open-next': 'image',
   'cfg-drop-center-action': 'copy',
   'cfg-hotkey': 'keyboard',
   'cfg-export-settings': 'save',
@@ -7708,6 +7709,7 @@ function openConfig() {
   $('cfg-restore-session').checked = s.restoreSession === true;
   $('cfg-keep-media-paused').checked = s.keepMediaPausedOnTabReturn !== false;
   $('cfg-tab-media-icons').checked = s.showTabMediaIcons !== false;
+  $('cfg-tabs-open-next').checked = s.tabsOpenNextToCurrent !== false;
   $('cfg-drop-center-action').value = s.centerDropAction === 'replace' ? 'replace' : 'new-tab';
   if ($('cfg-animated-gifs')) $('cfg-animated-gifs').checked = s.animateGifs !== false;
   $('cfg-show-filename').checked = s.showFileName !== false;
@@ -7841,6 +7843,7 @@ function collectConfigSettings() {
     restoreSession: $('cfg-restore-session').checked,
     keepMediaPausedOnTabReturn: $('cfg-keep-media-paused').checked,
     showTabMediaIcons: $('cfg-tab-media-icons').checked,
+    tabsOpenNextToCurrent: $('cfg-tabs-open-next').checked,
     centerDropAction: $('cfg-drop-center-action').value === 'replace' ? 'replace' : 'new-tab',
     animateGifs: !!($('cfg-animated-gifs') && $('cfg-animated-gifs').checked),
     showFileName: $('cfg-show-filename').checked,

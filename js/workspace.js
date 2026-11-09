@@ -164,6 +164,14 @@ window.CVWorkspace = (() => {
     capture();
     let target;
     let insertion = Number.isInteger(options.insertAt) ? Math.max(0, options.insertAt) : null;
+    // "Open next to current" (default): new tabs land right after the active
+    // one instead of at the end. Drops with an explicit position keep it, and
+    // already-open files reuse their tab without being repositioned.
+    const nextToCurrent = insertion === null && state.settings.app.tabsOpenNextToCurrent !== false;
+    const known = new Set(model.tabs);
+    const anchor = model.tabs.indexOf(model.active);
+    const base = anchor < 0 ? model.tabs.length : anchor + 1;
+    let placed = 0;
     try {
       for (let index = 0; index < accepted.length; index++) {
         const file = accepted[index];
@@ -171,6 +179,7 @@ window.CVWorkspace = (() => {
           activate: false, source: options.source, view: options.view, reusePath: options.reusePath !== false
         });
         if (insertion !== null) model.moveTo(tab.id, insertion++);
+        else if (nextToCurrent && !known.has(tab)) model.moveTo(tab.id, base + placed++);
         if (index === initialIdx) target = tab;
       }
     } catch (error) {

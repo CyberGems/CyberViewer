@@ -30,6 +30,20 @@ describe('tab bar ui', () => {
     assert.match(workspace, /icon\.append\(iconSvg\(mediaTypeForTab\(tab\)\)\)/);
     assert.match(tabsCss, /\.tab-switcher-item-icon\[hidden\] \{ display: none; \}/);
   });
+  it('opens new tabs next to the current one by default, with an end-of-list setting', () => {
+    // Default placement: right after the active tab. Drops with an explicit
+    // position (insertAt) and reused tabs keep their placement; restore
+    // rebuilds its saved order through model.open directly.
+    assert.match(html, /id="cfg-tabs-open-next"[^>]*checked/);
+    assert.match(workspace, /state\.settings\.app\.tabsOpenNextToCurrent !== false/);
+    assert.match(workspace, /else if \(nextToCurrent && !known\.has\(tab\)\) model\.moveTo\(tab\.id, base \+ placed\+\+\);/);
+    assert.match(appJs, /\$\('cfg-tabs-open-next'\)\.checked = s\.tabsOpenNextToCurrent !== false;/);
+    assert.match(appJs, /tabsOpenNextToCurrent: \$\('cfg-tabs-open-next'\)\.checked,/);
+    for (const lang of ['en', 'es']) {
+      assert.ok(typeof ui[lang].tabs_open_next === 'string' && ui[lang].tabs_open_next.length > 0);
+      assert.ok(typeof ui[lang].tabs_open_next_desc === 'string' && ui[lang].tabs_open_next_desc.length > 0);
+    }
+  });
   it('reveals a close button per switcher row on hover', () => {
     // Row is a shell (open button + close button) so the X never nests inside
     // an interactive element; closing reuses the same closeTabs confirm flow
