@@ -105,6 +105,10 @@ describe('suite-standard tray popup wiring', () => {
     assert.match(trayMenuCss, /\.head\[data-tooltip\]::after/);
   });
 
+  it('keeps the exit icon red on hover instead of the accent color', () => {
+    assert.match(trayMenuCss, /\.item\.item-danger:hover \.item-ico\s*\{[\s\S]*?color:\s*#ef4444/);
+  });
+
   it('backs recent thumbnails with a checkerboard plate and border', () => {
     assert.match(trayMenuCss, /\.item-img\s*\{[\s\S]*?background-image: conic-gradient/);
     assert.match(trayMenuCss, /\.item-img\s*\{[\s\S]*?background-clip: padding-box/);
