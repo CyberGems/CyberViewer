@@ -109,6 +109,17 @@ describe('suite-standard tray popup wiring', () => {
     assert.match(trayMenuCss, /\.item\.item-danger:hover \.item-ico\s*\{[\s\S]*?color:\s*#ef4444/);
   });
 
+  it('colors the donate heart red and uses the diamond for the website link', () => {
+    assert.match(trayMenuCss, /\.item\.item-donate:hover \.item-ico\s*\{[\s\S]*?color:\s*#ef4444/);
+    const helpStart = trayMenuJs.indexOf('function renderHelpView()');
+    const suiteStart = trayMenuJs.indexOf('function renderSuiteView()');
+    assert.ok(helpStart >= 0 && suiteStart > helpStart);
+    const helpView = trayMenuJs.slice(helpStart, suiteStart);
+    assert.match(helpView, /action: 'help-donate', icon: 'heart', label: t\('donate'\), donate: true/);
+    assert.match(helpView, /action: 'help-website', icon: 'diamond'/);
+    assert.doesNotMatch(trayMenuJs, /icon: 'globe'/);
+  });
+
   it('backs recent thumbnails with a checkerboard plate and border', () => {
     assert.match(trayMenuCss, /\.item-img\s*\{[\s\S]*?background-image: conic-gradient/);
     assert.match(trayMenuCss, /\.item-img\s*\{[\s\S]*?background-clip: padding-box/);
