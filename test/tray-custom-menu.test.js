@@ -8,6 +8,7 @@ const mainJs = fs.readFileSync(path.join(root, 'main.js'), 'utf8');
 const trayMenuJs = fs.readFileSync(path.join(root, 'js', 'tray-menu.js'), 'utf8');
 const trayPreloadJs = fs.readFileSync(path.join(root, 'tray-preload.js'), 'utf8');
 const trayMenuHtml = fs.readFileSync(path.join(root, 'tray-menu.html'), 'utf8');
+const trayMenuCss = fs.readFileSync(path.join(root, 'css', 'tray-menu.css'), 'utf8');
 const html = fs.readFileSync(path.join(root, 'CyberViewer.html'), 'utf8');
 const appJs = fs.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
 const uiI18n = JSON.parse(fs.readFileSync(path.join(root, 'i18n', 'ui.json'), 'utf8'));
@@ -94,6 +95,19 @@ describe('suite-standard tray popup wiring', () => {
     assert.ok(uiI18n.es.suite_recommendations);
     assert.ok(uiI18n.en.suite_recommendations_desc);
     assert.ok(uiI18n.es.suite_recommendations_desc);
+  });
+
+  it('renders app-style tooltip bubbles instead of native titles', () => {
+    assert.doesNotMatch(trayMenuJs, /btn\.title =/);
+    assert.match(trayMenuJs, /dataset\.tooltip = def\.title/);
+    assert.match(trayMenuJs, /headEl\.dataset\.tooltip = t\('about'\)/);
+    assert.match(trayMenuCss, /\[data-tooltip\]::after/);
+    assert.match(trayMenuCss, /\.head\[data-tooltip\]::after/);
+  });
+
+  it('backs recent thumbnails with a checkerboard plate and border', () => {
+    assert.match(trayMenuCss, /\.item-img\s*\{[\s\S]*?background-image: conic-gradient/);
+    assert.match(trayMenuCss, /\.item-img\s*\{[\s\S]*?border: 1px solid/);
   });
 
   it('does not count the tray popup as an app window on window-all-closed', () => {

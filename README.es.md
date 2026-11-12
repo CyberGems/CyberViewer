@@ -175,7 +175,7 @@ La reproducción también puede variar según el perfil del códec, la tasa de b
 - **Historial reciente** con hasta 10 archivos y 10 carpetas
 
 ### ⚙️ Integración con el sistema
-- **Bandeja del sistema:** menú emergente HTML personalizado con imágenes recientes, comportamiento de minimizar o cerrar a la bandeja y un diálogo de primer cierre que pregunta si quedarse en la bandeja o salir
+- **Bandeja del sistema:** menú emergente al estándar de la suite, anclado al icono de la bandeja, con mostrar/ocultar, abrir archivo, archivos recientes con miniaturas, enlaces de ayuda y las demás apps de CyberGems (opcional, también se oculta en Acerca de desde Configuración); comportamiento de minimizar o cerrar a la bandeja y un diálogo de primer cierre que pregunta si quedarse en la bandeja o salir
 - **Inicio automático con Windows:** inicia minimizado al iniciar sesión
 - **Atajo global:** atajo configurable para mostrar u ocultar, predeterminado `Alt+Shift+V`
 - **Menú contextual del Explorador:** haz clic derecho en imágenes admitidas para abrirlas en CyberViewer
