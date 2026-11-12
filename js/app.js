@@ -9276,11 +9276,17 @@ $('btn-go-end').addEventListener('click', (e) => {
         .replace('{percent}', String(s.percent || 0));
       el.style.color = 'var(--cyber-accent-ink)';
     } else if (s.state === 'error') {
-      // Skip the "(No se pudo buscar actualizaciones.)" echo when the upstream
-      // error text already equals the localized message.
-      const detail = s.message && s.message !== t.about_update_err ? ` (${s.message})` : '';
-      el.textContent = `${t.about_update_err}${detail}`;
-      el.style.color = 'var(--cyber-accent2-ink)';
+      if (s.hint) {
+        // Dev/portable notices are informational, not failures.
+        el.textContent = s.message;
+        el.style.color = 'var(--cyber-muted)';
+      } else {
+        // Skip the "(No se pudo buscar actualizaciones.)" echo when the upstream
+        // error text already equals the localized message.
+        const detail = s.message && s.message !== t.about_update_err ? ` (${s.message})` : '';
+        el.textContent = `${t.about_update_err}${detail}`;
+        el.style.color = 'var(--cyber-accent2-ink)';
+      }
     } else {
       el.textContent = '';
     }
@@ -9288,7 +9294,7 @@ $('btn-go-end').addEventListener('click', (e) => {
     if (!overlay.classList.contains('active')) return;
     if (s.state === 'checking') flashAboutUpdateNotice(t.about_checking, 'info');
     else if (s.state === 'not-available') flashAboutUpdateNotice(t.about_up_to_date, 'ok');
-    else if (s.state === 'error') flashAboutUpdateNotice(el.textContent, 'error');
+    else if (s.state === 'error') flashAboutUpdateNotice(el.textContent, s.hint ? 'info' : 'error');
     else flashAboutUpdateNotice('');
   }
 
@@ -9661,9 +9667,14 @@ $('btn-go-end').addEventListener('click', (e) => {
     const res = await window.electronAPI.checkForUpdates();
     if (!res || !res.ok) {
       if (res && (res.portable || res.error === 'PORTABLE_NO_AUTO_UPDATE' || res.error === 'DEV_NO_AUTO_UPDATE')) {
+        // Dev and portable builds cannot use electron-updater by design;
+        // surface an informational hint instead of a failure.
         updateStatus = {
           state: 'error',
-          message: res.portable ? t.about_portable_hint : t.about_update_err
+          message: (res.portable || res.error === 'PORTABLE_NO_AUTO_UPDATE')
+            ? t.about_portable_hint
+            : t.about_dev_hint,
+          hint: true
         };
         syncUpdateActions(overlay);
         return res;
@@ -9810,7 +9821,7 @@ $('btn-go-end').addEventListener('click', (e) => {
               <button type="button" id="about-btn-release" class="top-btn btn-cancel about-action-btn about-action-ghost about-release-btn" style="display:none">
                 ${t.about_view_release || 'View release page'}
               </button>
-              ${!updateInfo.canUpdate && updateInfo.portable ? `<div class="about-update-hint">${t.about_portable_hint}</div>` : ''}
+              ${!updateInfo.canUpdate && updateInfo.portable ? `<div class="about-update-hint">${t.about_portable_hint}</div>` : !updateInfo.canUpdate && updateInfo.packaged === false ? `<div class="about-update-hint">${t.about_dev_hint}</div>` : ''}
               <div class="about-auto-update-row">
                 <button type="button" class="about-auto-update" id="about-auto-update-toggle" role="switch" aria-checked="${state.settings.app.checkUpdatesOnStartup !== false ? 'true' : 'false'}" aria-label="${t.about_check_on_startup}">
                   <span class="custom-switch ${state.settings.app.checkUpdatesOnStartup !== false ? 'active' : ''}" aria-hidden="true"></span>
