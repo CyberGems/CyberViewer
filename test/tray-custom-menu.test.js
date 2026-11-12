@@ -107,6 +107,7 @@ describe('suite-standard tray popup wiring', () => {
 
   it('backs recent thumbnails with a checkerboard plate and border', () => {
     assert.match(trayMenuCss, /\.item-img\s*\{[\s\S]*?background-image: conic-gradient/);
+    assert.match(trayMenuCss, /\.item-img\s*\{[\s\S]*?background-clip: padding-box/);
     assert.match(trayMenuCss, /\.item-img\s*\{[\s\S]*?border: 1px solid/);
   });
 

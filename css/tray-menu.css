@@ -369,11 +369,13 @@ html, body {
   object-fit: contain;
   flex-shrink: 0;
   /* Checkerboard plate so dark or transparent thumbnails stay readable on the
-     dark card, mirroring the viewer's alpha background. */
+     dark card, mirroring the viewer's alpha background. Clipped to the padding
+     box so the checker never bleeds under the border and muddies it. */
   background-color: rgba(255, 255, 255, 0.05);
-  background-image: conic-gradient(rgba(255, 255, 255, 0.10) 0 25%, transparent 0 50%, rgba(255, 255, 255, 0.10) 0 75%, transparent 0);
-  background-size: 8px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background-image: conic-gradient(rgba(255, 255, 255, 0.08) 0 25%, transparent 0 50%, rgba(255, 255, 255, 0.08) 0 75%, transparent 0);
+  background-size: 6px 6px;
+  background-clip: padding-box;
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .item-label {
