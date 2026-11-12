@@ -175,7 +175,7 @@ Playback can still vary with codec profile, bitrate, sample rate, channel layout
 - **Recent history** with up to 10 files and 10 folders
 
 ### ⚙️ System Integration
-- **System tray:** custom HTML popup menu with recent images, minimize/close-to-tray behavior, and a first-close dialog that asks whether to stay in the tray or quit
+- **System tray:** suite-standard popup menu anchored to the tray icon with show/hide, open file, recent files with thumbnails, help links, and other CyberGems suite apps (optional, also hidden from About via Configuration); minimize/close-to-tray behavior and a first-close dialog that asks whether to stay in the tray or quit
 - **Auto-start with Windows:** launch minimized on sign-in
 - **Global hotkey:** configurable show/hide shortcut, default `Alt+Shift+V`
 - **Explorer context menu:** right-click supported images to open them in CyberViewer

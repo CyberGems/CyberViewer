@@ -82,7 +82,10 @@ describe('About modal redesign (CyberFeeds pattern)', () => {
       assert.match(suiteCode, new RegExp(`slug: '${slug}', key: 'about_suite_`));
     }
     assert.doesNotMatch(suiteCode, /slug: 'cyberviewer'/);
-    assert.match(appJs, /while \(suitePicks\.length < 4 && pool\.length > 0\)/);
+    // The strip is gated behind the "CyberGems Suggestions" toggle, which also
+    // hides the suite view in the tray menu.
+    assert.match(appJs, /while \(showSuiteRecommendations && suitePicks\.length < 4 && pool\.length > 0\)/);
+    assert.match(appJs, /showSuiteRecommendations !== false/);
     // each strip item links to the app page with a localized pitch tooltip
     assert.match(suiteCode, /assets\/suite\/\$\{app\.slug\}\.png/);
     assert.match(suiteCode, /cybergems\.org\/apps\/\$\{app\.slug\}\//);

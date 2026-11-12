@@ -290,6 +290,7 @@ const state = {
       closeChoiceMade: false,
       closeImageOnTray: true,
       trayRecentImages: true,
+      showSuiteRecommendations: true,
       autoStart: false, 
       accentColor: '#00d4ff',
       appearanceTheme: 'cyberviewer',
@@ -7670,6 +7671,7 @@ const CONFIG_CONTROL_ICON_BY_ID = {
   'cfg-close-image-tray': 'eye-off',
   'cfg-tray-recent-images': 'image',
   'cfg-clear-recent-images': 'image',
+  'cfg-suite-recs': 'diamond',
   'cfg-autostart': 'play',
   'cfg-contextmenu': 'settings',
   'cfg-restore-session': 'restore',
@@ -7748,6 +7750,7 @@ function openConfig() {
   $('cfg-tray').checked = s.closeToTray;
   if ($('cfg-close-image-tray')) $('cfg-close-image-tray').checked = s.closeImageOnTray !== false;
   if ($('cfg-tray-recent-images')) $('cfg-tray-recent-images').checked = s.trayRecentImages !== false;
+  if ($('cfg-suite-recs')) $('cfg-suite-recs').checked = s.showSuiteRecommendations !== false;
   $('cfg-autostart').checked = s.autoStart;
   $('cfg-contextmenu').checked = s.contextMenuEnabled || false;
   $('cfg-restore-session').checked = s.restoreSession === true;
@@ -7879,6 +7882,7 @@ function collectConfigSettings() {
     closeToTray: $('cfg-tray').checked,
     closeImageOnTray: !!($('cfg-close-image-tray') && $('cfg-close-image-tray').checked),
     trayRecentImages: !!($('cfg-tray-recent-images') && $('cfg-tray-recent-images').checked),
+    showSuiteRecommendations: !!($('cfg-suite-recs') && $('cfg-suite-recs').checked),
     autoStart: $('cfg-autostart').checked,
     preferredDisplayId: $('cfg-monitor').value,
     language: $('cfg-lang').value,
@@ -7921,6 +7925,7 @@ function getFactoryAppSettings() {
     closeChoiceMade: false,
     closeImageOnTray: true,
     trayRecentImages: true,
+    showSuiteRecommendations: true,
     autoStart: false,
     startMinimized: false,
     accentColor: '#00d4ff',
@@ -9699,7 +9704,11 @@ $('btn-go-end').addEventListener('click', (e) => {
     const versionLabel = (t.about_version_label || 'VERSION {version}')
       .replace('{version}', version || '—');
 
-    // Suite strip: 4 random sibling apps (icons are local copies, offline-safe)
+    // Suite strip: 4 random sibling apps (icons are local copies, offline-safe).
+    // Honors the "CyberGems Suggestions" toggle, which also hides the tray view.
+    const showSuiteRecommendations = state.settings && state.settings.app
+      ? state.settings.app.showSuiteRecommendations !== false
+      : true;
     const suitePool = [
       { slug: 'cyberclock', key: 'about_suite_clock' },
       { slug: 'cyberlauncher', key: 'about_suite_launcher' },
@@ -9712,7 +9721,7 @@ $('btn-go-end').addEventListener('click', (e) => {
     ];
     const suitePicks = [];
     const pool = suitePool.slice();
-    while (suitePicks.length < 4 && pool.length > 0) {
+    while (showSuiteRecommendations && suitePicks.length < 4 && pool.length > 0) {
       const pick = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
       if (pick) suitePicks.push(pick);
     }
@@ -9812,6 +9821,7 @@ $('btn-go-end').addEventListener('click', (e) => {
             </div>
           </div>
 
+          ${showSuiteRecommendations ? `
           <div class="about-section">
             <div class="about-section-title">
               <span class="about-section-rule"></span>
@@ -9825,6 +9835,7 @@ $('btn-go-end').addEventListener('click', (e) => {
               <a class="about-suite-more" href="https://cybergems.org/#apps" target="_blank" rel="noopener noreferrer">${t.about_suite_more || 'View all →'}</a>
             </div>
           </div>
+          ` : ''}
         </div>
         <div class="modal-footer about-modal-footer">
           <a

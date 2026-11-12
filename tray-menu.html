@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta
     http-equiv="Content-Security-Policy"
-    content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self'; font-src 'self';"
+    content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: cvlocal:; script-src 'self'; font-src 'self';"
   >
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CyberViewer Tray Menu</title>
@@ -14,9 +14,9 @@
   <div id="root" class="shell">
     <div id="card" class="card" role="menu">
       <div id="head" class="head"></div>
-      <div class="divider"></div>
+      <div class="divider" id="headDivider"></div>
       <div id="group" class="group"></div>
-      <div class="divider"></div>
+      <div class="divider" id="exitDivider"></div>
       <div id="exitGroup" class="group group-bottom"></div>
     </div>
   </div>

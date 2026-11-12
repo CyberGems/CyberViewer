@@ -1,35 +1,46 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const {
   TRAY_HELP_URLS,
-  buildTrayHelpModel,
   shouldShowTrayPinReminder,
   taskbarSettingsUri,
   taskbarSettingsLaunch
 } = require('../lib/tray-help');
-const menuI18n = require('../i18n/menu.json');
 
-describe('tray Help menu', () => {
-  it('builds the complete English action model', () => {
-    const help = buildTrayHelpModel(menuI18n.en);
-    assert.equal(help.label, 'Help');
-    assert.equal(help.pinLabel, 'Keep visible in system tray');
-    assert.equal(help.aboutLabel, 'About...');
-    assert.deepEqual(help.actions, [
-      'help-pin', 'help-docs', 'help-faq', 'help-changelog',
-      'help-website', 'help-donate', 'help-about', 'help-check-updates'
-    ]);
+const root = path.join(__dirname, '..');
+const trayMenuJs = fs.readFileSync(path.join(root, 'js', 'tray-menu.js'), 'utf8');
+
+describe('tray Help view', () => {
+  it('lists pin, docs, faq, changelog, website, donate, about and updates in the help view', () => {
+    const helpStart = trayMenuJs.indexOf('function renderHelpView()');
+    const suiteStart = trayMenuJs.indexOf('function renderSuiteView()');
+    assert.ok(helpStart >= 0 && suiteStart > helpStart, 'help view should be present');
+    const helpView = trayMenuJs.slice(helpStart, suiteStart);
+    assert.match(helpView, /action: 'help-pin'/);
+    assert.match(helpView, /action: 'help-docs'/);
+    assert.match(helpView, /action: 'help-faq'/);
+    assert.match(helpView, /action: 'help-changelog'/);
+    assert.match(helpView, /action: 'help-website'/);
+    assert.match(helpView, /action: 'help-donate'/);
+    assert.match(helpView, /action: 'about-modal'/);
+    assert.match(helpView, /action: 'check-updates'/);
   });
 
-  it('keeps all Help labels translated in Spanish', () => {
-    const help = buildTrayHelpModel(menuI18n.es);
-    assert.equal(help.label, 'Ayuda');
-    assert.equal(help.backLabel, 'Volver');
-    assert.equal(help.pinLabel, 'Mantener visible en la bandeja del sistema');
-    assert.equal(help.faqLabel, 'Preguntas frecuentes');
-    assert.equal(help.updatesLabel, 'Buscar actualizaciones');
+  it('carries the help labels in English and Spanish', () => {
+    assert.match(trayMenuJs, /pin: 'Pin icon to taskbar\.\.\.'/);
+    assert.match(trayMenuJs, /pin: 'Anclar icono en la barra de tareas\.\.\.'/);
+    assert.match(trayMenuJs, /docs: 'Documentation \(Wiki\)'/);
+    assert.match(trayMenuJs, /docs: 'Documentación \(Wiki\)'/);
+    assert.match(trayMenuJs, /faq: 'Frequently Asked Questions'/);
+    assert.match(trayMenuJs, /faq: 'Preguntas frecuentes \(FAQ\)'/);
+    assert.match(trayMenuJs, /about: 'About CyberViewer\.\.\.'/);
+    assert.match(trayMenuJs, /about: 'Acerca de CyberViewer\.\.\.'/);
+    assert.match(trayMenuJs, /updates: 'Check for updates\.\.\.'/);
+    assert.match(trayMenuJs, /updates: 'Buscar actualizaciones\.\.\.'/);
   });
 
   it('exposes only the intended external destinations', () => {

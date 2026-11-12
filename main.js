@@ -12,7 +12,7 @@ const { pathToFileURL } = require('url');
 const { execFile, spawn } = require('child_process');
 
 const {
-  cleanFsPath, toMediaUrl, createPathAllowlist, MEDIA_EXTS,
+  cleanFsPath, toMediaUrl, createPathAllowlist, MEDIA_EXTS, IMAGE_EXTS,
   isExistingMediaFile, isVideoPath, isAudioPath
 } = require('./lib/paths');
 const { createMediaResponse } = require('./lib/media-protocol');
@@ -24,7 +24,7 @@ const autoBackup = require('./lib/auto-backup');
 const { SessionStore } = require('./lib/session-store');
 const { YouTubePlayer } = require('./lib/youtube-player');
 const {
-  TRAY_HELP_URLS, buildTrayHelpModel, taskbarSettingsLaunch
+  TRAY_HELP_URLS, taskbarSettingsLaunch
 } = require('./lib/tray-help');
 const CVMedia = require('./js/media-helpers');
 
@@ -180,6 +180,7 @@ function loadSettings() {
         if (!Number.isFinite(data.app.videoVolume)) data.app.videoVolume = 1;
         if (data.app.videoMuted === undefined) data.app.videoMuted = false;
         if (data.app.closeChoiceMade === undefined) data.app.closeChoiceMade = false;
+        if (data.app.showSuiteRecommendations === undefined) data.app.showSuiteRecommendations = true;
       if (data.app.dblClickAction === undefined) data.app.dblClickAction = 'fullscreen';
         if (data.app.toggleHotkey === undefined || data.app.toggleHotkey === '') {
           data.app.toggleHotkey = DEFAULT_TOGGLE_HOTKEY;
@@ -197,6 +198,7 @@ function loadSettings() {
       closeImageOnTray: true,
       closeChoiceMade: false,
       trayRecentImages: true,
+      showSuiteRecommendations: true,
       startMinimized: false,
       autoStart: false,
       accentColor: '#00d4ff',
@@ -721,13 +723,13 @@ function createWindow() {
     // Chromium keeps :hover on the button clicked to minimize until the cursor
     // moves again; tell the renderer to re-hit-test on restore/show.
     try { win.webContents.send('window-restore'); } catch (_) { /* ignore */ }
-    updateTrayMenu();
+    updateCustomTrayMenuState();
   });
-  win.on('hide', () => updateTrayMenu());
-  win.on('minimize', () => updateTrayMenu());
+  win.on('hide', () => updateCustomTrayMenuState());
+  win.on('minimize', () => updateCustomTrayMenuState());
   win.on('restore', () => {
     try { win.webContents.send('window-restore'); } catch (_) { /* ignore */ }
-    updateTrayMenu();
+    updateCustomTrayMenuState();
   });
   win.on('blur', () => {
     if (win && !win.isDestroyed()) win.webContents.send('window-blur');
@@ -797,7 +799,7 @@ function hideToTray() {
     }
   } catch (_) { /* ignore */ }
   if (win.isVisible()) win.hide();
-  updateTrayMenu();
+  updateCustomTrayMenuState();
 }
 
 function showFromTray() {
@@ -809,7 +811,7 @@ function showFromTray() {
   // The window was created hidden at login; ask the compositor for a fresh
   // frame once visible in case DWM never presented the boot-time frame.
   setTimeout(nudgeCompositorFrame, 200);
-  updateTrayMenu();
+  updateCustomTrayMenuState();
 }
 
 function isWindowShown() {
@@ -872,18 +874,370 @@ function openTrayHelpUrl(key) {
   if (url) void shell.openExternal(url);
 }
 
-// Windows owns the lifecycle of native tray menus and their submenu flyouts.
-// Keep the menu object stable while it is open; replacing it during a hover can
-// make Windows redraw the menu or crash older Electron/Windows combinations.
-let trayContextMenuOpen = false;
-let trayContextMenuRebuildPending = false;
-let trayContextMenuCloseFallback = null;
-let pendingTrayAction = null;
+// =====================================
+// CUSTOM TRAY MENU WINDOW (SUITE STANDARD)
+// =====================================
+// The tray icon itself only toggles the main window on left click. Right click
+// opens a frameless HTML popup anchored to the icon bounds, following the
+// CyberLauncher pattern used across the suite. Menu state is pushed over
+// 'tray-menu-state' and items report back through 'tray-menu-action'.
 
-function executePendingTrayAction() {
-  const action = pendingTrayAction;
-  pendingTrayAction = null;
-  if (!action) return;
+const SUITE_SHORT_DESCS = {
+  cyberclock: { es: 'Reloj de escritorio', en: 'Desktop Clock' },
+  cyberfeeds: { es: 'Lector RSS', en: 'RSS Reader' },
+  cyberlauncher: { es: 'Lanzador de apps', en: 'App Launcher' },
+  cybermanager: { es: 'Administrador de tareas', en: 'Task Manager' },
+  cybernotes: { es: 'Notas', en: 'Note Taking' },
+  cyberpaste: { es: 'Portapapeles', en: 'Clipboard Manager' },
+  cybersnap: { es: 'Captura de pantalla', en: 'Screen Capture' },
+  cybertray: { es: 'Accesos directos', en: 'Shortcut Manager' },
+  cyberwall: { es: 'Firewall', en: 'Firewall' }
+};
+
+function getSuiteAppsList(lang) {
+  try {
+    const dataPath = path.join(__dirname, 'assets', 'suite', 'suite.json');
+    if (fs.existsSync(dataPath)) {
+      const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+      if (data && Array.isArray(data.apps)) {
+        return data.apps.map((a) => ({
+          slug: a.slug,
+          name: a.name,
+          desc: (SUITE_SHORT_DESCS[a.slug] && SUITE_SHORT_DESCS[a.slug][lang])
+            || (a.tagline && a.tagline[lang])
+            || a.name,
+          site: a.site || `https://cybergems.org/apps/${a.slug}/`
+        }));
+      }
+    }
+  } catch (_) { /* fall back to the built-in list */ }
+  return Object.entries(SUITE_SHORT_DESCS).map(([slug, descObj]) => ({
+    slug,
+    name: slug.charAt(0).toUpperCase() + slug.slice(1),
+    desc: descObj[lang] || descObj.en,
+    site: `https://cybergems.org/apps/${slug}/`
+  }));
+}
+
+let trayMenuWin = null;
+let trayMenuAnchor = null;
+let trayMenuHideTimer = null;
+let trayMenuShowPending = false;
+let trayMenuShowFallback = null;
+let trayMenuRevealTimer = null;
+let trayMenuLastShown = 0;
+let trayMenuOpen = false;
+const TRAY_MENU_CARD_WIDTH = 292;
+const TRAY_MENU_SHADOW_PAD = 24;
+const TRAY_MENU_EST_HEIGHT = 550;
+let lastTrayMenuHeight = 550;
+let mainViewHeight = 550;
+
+function buildTrayMenuState(resetView) {
+  const settings = loadSettings();
+  const s = settings.app || {};
+  const lang = getUiLang();
+  const recentFiles = Array.isArray(s.recentFiles) ? s.recentFiles : [];
+  const recents = [];
+  for (const filePath of recentFiles.filter((p) => typeof p === 'string' && p).slice(0, 10)) {
+    const entry = { name: path.basename(filePath) || filePath, path: filePath };
+    // Image entries get a real thumbnail; the popup window may read the file
+    // over cvlocal, so the same allowance the viewer itself uses is required.
+    if (IMAGE_EXTS.has(path.extname(filePath).toLowerCase())) {
+      try {
+        pathAllowlist.allowMediaFile(filePath);
+        entry.thumb = toMediaUrl(filePath);
+      } catch (_) { /* no thumbnail without a valid media path */ }
+    }
+    recents.push(entry);
+  }
+  return {
+    version: app.getVersion(),
+    lang,
+    isVisible: isWindowShown(),
+    shortcut: resolveToggleHotkey(s.toggleHotkey),
+    showTrayRecents: s.trayRecentImages !== false,
+    showSuiteRecommendations: s.showSuiteRecommendations !== false,
+    recents,
+    suiteApps: getSuiteAppsList(lang),
+    resetView: Boolean(resetView)
+  };
+}
+
+function trayMenuGeometry(iconBounds, windowW, windowH) {
+  let b = (iconBounds && typeof iconBounds.x === 'number' && (iconBounds.width || iconBounds.height))
+    ? { x: iconBounds.x, y: iconBounds.y, width: iconBounds.width || 0, height: iconBounds.height || 0 }
+    : null;
+  if (!b) {
+    let p = null;
+    try { p = screen.getCursorScreenPoint(); } catch (_) { p = { x: 0, y: 0 }; }
+    b = { x: p.x, y: p.y, width: 0, height: 0 };
+  }
+  const cx = b.x + b.width / 2;
+  const cy = b.y + b.height / 2;
+  let display;
+  try { display = screen.getDisplayNearestPoint({ x: cx, y: cy }); }
+  catch (_) { display = screen.getPrimaryDisplay(); }
+  const work = (display && display.workArea) || { x: 0, y: 0, width: windowW, height: windowH };
+
+  const gap = 4;
+  const pad = TRAY_MENU_SHADOW_PAD;
+  const cardW = windowW - 2 * pad;
+  const cardH = windowH - 2 * pad;
+
+  let cardX;
+  let cardY;
+  const dLeft = cx - work.x;
+  const dRight = (work.x + work.width) - cx;
+  const dTop = cy - work.y;
+  const dBottom = (work.y + work.height) - cy;
+
+  if (dBottom <= dLeft && dBottom <= dRight && dBottom <= dTop) {
+    cardX = cx - cardW / 2;
+    cardY = b.y - gap - cardH;
+  } else if (dTop <= dLeft && dTop <= dRight) {
+    cardX = cx - cardW / 2;
+    cardY = b.y + b.height + gap;
+  } else if (dLeft <= dRight) {
+    cardX = b.x + b.width + gap;
+    cardY = cy - cardH / 2;
+  } else {
+    cardX = b.x - gap - cardW;
+    cardY = cy - cardH / 2;
+  }
+
+  // Position the outer window centered on the card, clamped inside the display
+  // work area so the shadow padding never crosses the monitor boundary.
+  let windowX = cardX - pad;
+  let windowY = cardY - pad;
+  windowX = Math.min(Math.max(windowX, work.x + 2), work.x + work.width - windowW - 2);
+  const screenBottom = (display.bounds ? display.bounds.y + display.bounds.height : work.y + work.height) - 2;
+  windowY = Math.min(Math.max(windowY, work.y + 2), screenBottom - windowH);
+
+  return { x: Math.round(windowX), y: Math.round(windowY), width: Math.round(windowW), height: Math.round(windowH) };
+}
+
+function ensureTrayMenuWin() {
+  if (trayMenuWin && !trayMenuWin.isDestroyed()) return trayMenuWin;
+
+  const windowW = TRAY_MENU_CARD_WIDTH + 2 * TRAY_MENU_SHADOW_PAD;
+  trayMenuWin = new BrowserWindow({
+    width: windowW,
+    height: TRAY_MENU_EST_HEIGHT,
+    show: false,
+    frame: false,
+    transparent: true,
+    hasShadow: false,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    focusable: true,
+    backgroundColor: '#00000000',
+    webPreferences: {
+      preload: path.join(__dirname, 'tray-preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+      backgroundThrottling: false
+    }
+  });
+
+  trayMenuWin.setAlwaysOnTop(true, 'pop-up-menu');
+  void trayMenuWin.loadFile(path.join(__dirname, 'tray-menu.html'));
+
+  trayMenuWin.on('blur', () => {
+    if (trayMenuHideTimer) return;
+    if (Date.now() - trayMenuLastShown < 250) return;
+    trayMenuHideTimer = setTimeout(() => {
+      trayMenuHideTimer = null;
+      hideCustomTrayMenu();
+    }, 120);
+  });
+
+  trayMenuWin.on('closed', () => {
+    trayMenuWin = null;
+    trayMenuOpen = false;
+  });
+
+  trayMenuWin.webContents.on('preload-error', (_e, pPath, error) => {
+    console.error('[TRAY-PRELOAD-ERROR]', pPath, error);
+  });
+
+  trayMenuWin.webContents.once('did-finish-load', () => {
+    if (!trayMenuWin || trayMenuWin.isDestroyed()) return;
+    trayMenuWin.webContents.send('tray-menu-state', buildTrayMenuState(true));
+  });
+
+  return trayMenuWin;
+}
+
+function revealTrayMenuWin() {
+  if (!trayMenuWin || trayMenuWin.isDestroyed()) return;
+  if (trayMenuShowFallback) { clearTimeout(trayMenuShowFallback); trayMenuShowFallback = null; }
+  trayMenuShowPending = false;
+  if (!trayMenuWin.isVisible()) {
+    try { trayMenuWin.setOpacity(0); } catch (_) { /* ignore */ }
+    trayMenuWin.show();
+    if (trayMenuRevealTimer) clearTimeout(trayMenuRevealTimer);
+    trayMenuRevealTimer = setTimeout(() => {
+      trayMenuRevealTimer = null;
+      if (trayMenuWin && !trayMenuWin.isDestroyed()) {
+        try { trayMenuWin.setOpacity(1); } catch (_) { /* ignore */ }
+      }
+    }, 40);
+  } else {
+    try { trayMenuWin.setOpacity(1); } catch (_) { /* ignore */ }
+  }
+  trayMenuWin.focus();
+  trayMenuLastShown = Date.now();
+}
+
+function showCustomTrayMenu(eventBounds) {
+  if (!tray || tray.isDestroyed()) return;
+  let b = (eventBounds && typeof eventBounds.x === 'number' && (eventBounds.width || eventBounds.height))
+    ? eventBounds : null;
+  if (!b) { try { b = tray.getBounds(); } catch (_) { b = null; } }
+  if (!b || (!b.width && !b.height)) {
+    let p = null;
+    try { p = screen.getCursorScreenPoint(); } catch (_) { p = { x: 0, y: 0 }; }
+    b = p ? { x: p.x, y: p.y, width: 0, height: 0 } : { x: 0, y: 0, width: 0, height: 0 };
+  }
+
+  trayMenuAnchor = b;
+  if (trayMenuHideTimer) { clearTimeout(trayMenuHideTimer); trayMenuHideTimer = null; }
+
+  const w = ensureTrayMenuWin();
+  if (!w || w.isDestroyed()) return;
+
+  trayMenuOpen = true;
+
+  const windowW = TRAY_MENU_CARD_WIDTH + 2 * TRAY_MENU_SHADOW_PAD;
+  const initialH = mainViewHeight || lastTrayMenuHeight || TRAY_MENU_EST_HEIGHT;
+  const geo = trayMenuGeometry(trayMenuAnchor, windowW, initialH);
+  const current = w.getBounds();
+  if (current.x !== geo.x || current.y !== geo.y || current.width !== geo.width || current.height !== geo.height) {
+    w.setBounds(geo);
+  }
+
+  trayMenuShowPending = true;
+  if (trayMenuShowFallback) { clearTimeout(trayMenuShowFallback); trayMenuShowFallback = null; }
+  trayMenuShowFallback = setTimeout(() => {
+    trayMenuShowFallback = null;
+    if (trayMenuShowPending) revealTrayMenuWin();
+  }, 500);
+
+  w.webContents.send('tray-menu-state', buildTrayMenuState(true));
+}
+
+function hideCustomTrayMenu() {
+  if (trayMenuHideTimer) { clearTimeout(trayMenuHideTimer); trayMenuHideTimer = null; }
+  if (trayMenuShowFallback) { clearTimeout(trayMenuShowFallback); trayMenuShowFallback = null; }
+  if (trayMenuRevealTimer) { clearTimeout(trayMenuRevealTimer); trayMenuRevealTimer = null; }
+  trayMenuShowPending = false;
+  trayMenuOpen = false;
+  if (trayMenuWin && !trayMenuWin.isDestroyed()) {
+    try { trayMenuWin.setOpacity(1); } catch (_) { /* ignore */ }
+    if (trayMenuWin.isVisible()) {
+      trayMenuWin.hide();
+    }
+    trayMenuWin.webContents.send('tray-menu-reset');
+  }
+}
+
+function updateCustomTrayMenuState() {
+  if (trayMenuWin && !trayMenuWin.isDestroyed()) {
+    trayMenuWin.webContents.send('tray-menu-state', buildTrayMenuState(false));
+  }
+}
+
+function formatTrayTooltip(shortcut) {
+  const clean = String(shortcut || '').trim();
+  return clean ? `CyberViewer · ${clean}` : 'CyberViewer';
+}
+
+// Tooltip depends on the toggle hotkey, state on visibility/language/recents;
+// both refresh together whenever settings may have changed either.
+function refreshTrayMenu() {
+  if (!tray) return;
+  tray.setToolTip(formatTrayTooltip(resolveToggleHotkey(loadSettings().app && loadSettings().app.toggleHotkey)));
+  updateCustomTrayMenuState();
+}
+
+function clearRecentFilesFromMain() {
+  const current = loadSettings();
+  const appSettings = { ...(current.app || {}), recentFiles: [] };
+  saveSettings({ app: appSettings });
+  updateCustomTrayMenuState();
+  if (win && !win.isDestroyed()) {
+    win.webContents.send('recent-files-cleared');
+  }
+}
+
+function createTray() {
+  if (tray) return;
+  tray = new Tray(path.join(__dirname, 'assets', 'icon.ico'));
+  tray.setToolTip(formatTrayTooltip(resolveToggleHotkey(loadSettings().app && loadSettings().app.toggleHotkey)));
+  try {
+    ensureTrayMenuWin();
+  } catch (err) {
+    console.warn('[TRAY] Failed to prewarm tray menu window:', err && err.message);
+  }
+
+  if (process.platform === 'win32') {
+    tray.on('right-click', (_event, bounds) => {
+      trayRightClickSeq += 1;
+      lastTrayRightClickAt = Date.now();
+      if (trayMenuOpen && trayMenuWin && !trayMenuWin.isDestroyed() && trayMenuWin.isVisible()) {
+        hideCustomTrayMenu();
+      } else {
+        showCustomTrayMenu(bounds);
+      }
+    });
+  }
+
+  tray.on('click', () => {
+    // If the popup is open, closing it is the whole action; do not also toggle
+    // the main window underneath.
+    const menuWasOpen = trayMenuOpen;
+    hideCustomTrayMenu();
+    if (process.platform === 'win32') {
+      const clickSeq = trayRightClickSeq;
+      if (trayClickTimer) clearTimeout(trayClickTimer);
+      trayClickTimer = setTimeout(() => {
+        trayClickTimer = null;
+        // A right-click can arrive before or after this deferred click.
+        // Ignore both orderings so opening the menu cannot also toggle the
+        // main window underneath it.
+        if (menuWasOpen) return;
+        if (trayRightClickSeq !== clickSeq || Date.now() - lastTrayRightClickAt < 400) return;
+        if (trayMenuOpen) return;
+        if (!win || win.isDestroyed()) return;
+        if (isWindowShown()) hideToTray();
+        else showFromTray();
+      }, 120);
+      return;
+    }
+    if (menuWasOpen) return;
+    if (!win || win.isDestroyed()) return;
+    if (isWindowShown()) hideToTray();
+    else showFromTray();
+  });
+
+  tray.on('double-click', () => {
+    hideCustomTrayMenu();
+    if (!win || win.isDestroyed()) return;
+    if (win.isMinimized()) win.restore();
+    if (!win.isVisible()) win.show();
+    win.focus();
+  });
+}
+
+// IPC for the custom tray menu window.
+ipcMain.on('tray-menu-action', (_event, action, payload) => {
+  hideCustomTrayMenu();
 
   if (action === 'quit') {
     isQuitting = true;
@@ -892,12 +1246,23 @@ function executePendingTrayAction() {
     app.quit();
     return;
   }
+  if (action === 'show') {
+    showFromTray();
+    return;
+  }
   if (action === 'hide') {
     hideToTray();
     return;
   }
-  if (action === 'show') {
+  if (action === 'open-file') {
     showFromTray();
+    void openMediaFileDialog().then((filePaths) => {
+      if (win && !win.isDestroyed() && Array.isArray(filePaths)) {
+        for (const filePath of filePaths) {
+          win.webContents.send('open-file', filePath);
+        }
+      }
+    }).catch(() => { /* dialog errors are non-fatal */ });
     return;
   }
   if (action === 'settings') {
@@ -905,9 +1270,14 @@ function executePendingTrayAction() {
     if (win && !win.isDestroyed()) win.webContents.send('open-settings');
     return;
   }
-  if (action === 'about') {
+  if (action === 'about-modal') {
     showFromTray();
     if (win && !win.isDestroyed()) win.webContents.send('menu-action', { action: 'show-about' });
+    return;
+  }
+  if (action === 'check-updates') {
+    showFromTray();
+    if (win && !win.isDestroyed()) win.webContents.send('menu-action', { action: 'check-updates' });
     return;
   }
   if (action === 'help-pin') {
@@ -915,18 +1285,30 @@ function executePendingTrayAction() {
     if (win && !win.isDestroyed()) win.webContents.send('menu-action', { action: 'show-tray-pin-reminder' });
     return;
   }
-  if (action === 'help-check-updates') {
-    showFromTray();
-    if (win && !win.isDestroyed()) win.webContents.send('menu-action', { action: 'check-updates' });
+  if (action === 'help-docs') { openTrayHelpUrl('docs'); return; }
+  if (action === 'help-faq') { openTrayHelpUrl('faq'); return; }
+  if (action === 'help-changelog') { openTrayHelpUrl('changelog'); return; }
+  if (action === 'help-website') { openTrayHelpUrl('website'); return; }
+  if (action === 'help-donate') { openTrayHelpUrl('donate'); return; }
+  if (action === 'suite-app' && payload && payload.site) {
+    void shell.openExternal(payload.site);
     return;
   }
-  if (action && typeof action === 'object' && action.type === 'open-file') {
+  if (action === 'suite-view-all') {
+    void shell.openExternal('https://cybergems.org/#apps');
+    return;
+  }
+  if (action === 'suite-home') {
+    void shell.openExternal('https://cybergems.org');
+    return;
+  }
+  if (action === 'open-recent' && payload && payload.path) {
     showFromTray();
     if (win && !win.isDestroyed()) {
       try {
-        pathAllowlist.allow(action.filePath);
-      } catch (_) {}
-      win.webContents.send('open-file', action.filePath);
+        pathAllowlist.allowMediaFile(payload.path);
+      } catch (_) { /* ignore */ }
+      win.webContents.send('open-file', payload.path);
     }
     return;
   }
@@ -934,250 +1316,42 @@ function executePendingTrayAction() {
     clearRecentFilesFromMain();
     return;
   }
-}
+});
 
-function clearRecentFilesFromMain() {
-  const current = loadSettings();
-  const appSettings = { ...(current.app || {}), recentFiles: [] };
-  saveSettings({ app: appSettings });
-  updateTrayMenu();
-  if (win && !win.isDestroyed()) {
-    win.webContents.send('recent-files-cleared');
-  }
-}
+ipcMain.on('tray-menu-hide', () => {
+  hideCustomTrayMenu();
+});
 
-function onTrayContextMenuClosed() {
-  if (!trayContextMenuOpen) return;
-  trayContextMenuOpen = false;
-  if (trayContextMenuCloseFallback) {
-    clearTimeout(trayContextMenuCloseFallback);
-    trayContextMenuCloseFallback = null;
-  }
+ipcMain.on('tray-menu-ready', (_event, rect) => {
+  if (trayMenuWin && !trayMenuWin.isDestroyed() && trayMenuAnchor && rect && rect.height) {
+    const pad = TRAY_MENU_SHADOW_PAD;
+    const windowW = TRAY_MENU_CARD_WIDTH + 2 * pad;
+    const isMain = rect.view === 'main' || !rect.view;
 
-  // Windows can emit menu-will-close before the item click. Give the click
-  // callback a short window to populate pendingTrayAction, as CyberLauncher
-  // does for the same native menu lifecycle.
-  setTimeout(() => {
-    executePendingTrayAction();
-    if (trayContextMenuRebuildPending) {
-      trayContextMenuRebuildPending = false;
-      rebuildTrayContextMenu();
-    }
-  }, 50);
-}
-
-function loadTrayMenuIcon(name) {
-  const iconPath = path.join(__dirname, 'assets', 'menu-icons', name);
-  try {
-    if (!fs.existsSync(iconPath)) return null;
-    const image = nativeImage.createFromPath(iconPath);
-    return image.isEmpty() ? null : image;
-  } catch (_) {
-    return null;
-  }
-}
-
-function loadTrayBrandIcon() {
-  const iconPath = path.join(__dirname, 'assets', 'icon.ico');
-  try {
-    if (!fs.existsSync(iconPath)) return null;
-    const image = nativeImage.createFromPath(iconPath);
-    return image.isEmpty() ? null : image.resize({ width: 16, height: 16 });
-  } catch (_) {
-    return null;
-  }
-}
-
-function buildTrayContextMenuTemplate() {
-  const lang = getUiLang();
-  const t = menuI18n[lang] || menuI18n.en;
-  const settings = loadSettings();
-  const visible = isWindowShown();
-  const shortcut = resolveToggleHotkey(settings.app && settings.app.toggleHotkey);
-  const help = buildTrayHelpModel(t);
-  const iconBrand = loadTrayBrandIcon();
-  const iconShow = loadTrayMenuIcon('show-hide.png');
-  const iconRecent = loadTrayMenuIcon('recent-images.png');
-  const iconSettings = loadTrayMenuIcon('settings.png');
-  const iconHelp = loadTrayMenuIcon('help.png');
-  const iconFaq = loadTrayMenuIcon('faq.png');
-  const iconChangelog = loadTrayMenuIcon('changelog.png');
-  const iconHome = loadTrayMenuIcon('homepage.png');
-  const iconDonate = loadTrayMenuIcon('donate.png');
-  const iconAbout = loadTrayMenuIcon('about.png');
-  const iconUpdate = loadTrayMenuIcon('update.png');
-  const iconQuit = loadTrayMenuIcon('quit.png');
-
-  const recentFiles = (settings.app && Array.isArray(settings.app.recentFiles)) ? settings.app.recentFiles : [];
-  const showTrayRecents = !settings.app || settings.app.trayRecentImages !== false;
-  let recentItem = null;
-  if (showTrayRecents) {
-    const validRecents = recentFiles.filter((p) => p && typeof p === 'string').slice(0, 10);
-    const recentSubmenu = [];
-    if (validRecents.length === 0) {
-      recentSubmenu.push({
-        label: t.tray_no_recent || 'No recent images',
-        enabled: false
-      });
+    if (isMain) {
+      const naturalMainH = Math.min(Math.max(rect.height, 350), 750);
+      mainViewHeight = naturalMainH;
+      lastTrayMenuHeight = naturalMainH;
+      const currentBounds = trayMenuWin.getBounds();
+      if (Math.abs(currentBounds.height - naturalMainH) > 4 || Math.abs(currentBounds.width - windowW) > 4) {
+        trayMenuWin.setBounds(trayMenuGeometry(trayMenuAnchor, windowW, naturalMainH));
+      }
     } else {
-      validRecents.forEach((filePath) => {
-        const name = (path.basename(filePath) || filePath).replace(/&/g, '&&');
-        recentSubmenu.push({
-          label: name,
-          click: () => {
-            pendingTrayAction = { type: 'open-file', filePath };
-          }
-        });
-      });
-      recentSubmenu.push({ type: 'separator' });
-      recentSubmenu.push({
-        label: t.tray_clear_recent || 'Clear recent list',
-        click: () => {
-          pendingTrayAction = 'clear-recent';
-        }
-      });
+      // Subviews keep at least the main view height so the card never shrinks
+      // mid-navigation; expand up to 750px when a view needs more room.
+      const desiredH = Math.min(Math.max(rect.height, mainViewHeight), 750);
+      const currentBounds = trayMenuWin.getBounds();
+      if (Math.abs(currentBounds.height - desiredH) > 4 || Math.abs(currentBounds.width - windowW) > 4) {
+        trayMenuWin.setBounds(trayMenuGeometry(trayMenuAnchor, windowW, desiredH));
+      }
     }
-    recentItem = {
-      label: t.tray_recent_images || 'Recent images',
-      ...(iconRecent ? { icon: iconRecent } : {}),
-      submenu: recentSubmenu
-    };
   }
+  if (trayMenuShowPending) revealTrayMenuWin();
+});
 
-  return [
-    {
-      label: 'CyberViewer v' + app.getVersion(),
-      ...(iconBrand ? { icon: iconBrand } : {}),
-      click: () => { pendingTrayAction = 'about'; }
-    },
-    { type: 'separator' },
-    {
-      label: visible ? t.tray_hide : t.tray_show,
-      ...(iconShow ? { icon: iconShow } : {}),
-      accelerator: shortcut || undefined,
-      click: () => { pendingTrayAction = visible ? 'hide' : 'show'; }
-    },
-    ...(recentItem ? [recentItem] : []),
-    {
-      label: t.tray_settings,
-      ...(iconSettings ? { icon: iconSettings } : {}),
-      click: () => { pendingTrayAction = 'settings'; }
-    },
-    {
-      label: help.label,
-      ...(iconHelp ? { icon: iconHelp } : {}),
-      submenu: [
-        {
-          label: help.pinLabel,
-          ...(iconSettings ? { icon: iconSettings } : {}),
-          click: () => { pendingTrayAction = 'help-pin'; }
-        },
-        { type: 'separator' },
-        {
-          label: help.docsLabel,
-          ...(iconHelp ? { icon: iconHelp } : {}),
-          click: () => openTrayHelpUrl('docs')
-        },
-        {
-          label: help.faqLabel,
-          ...(iconFaq ? { icon: iconFaq } : {}),
-          click: () => openTrayHelpUrl('faq')
-        },
-        {
-          label: help.changelogLabel,
-          ...(iconChangelog ? { icon: iconChangelog } : {}),
-          click: () => openTrayHelpUrl('changelog')
-        },
-        {
-          label: help.websiteLabel,
-          ...(iconHome ? { icon: iconHome } : {}),
-          click: () => openTrayHelpUrl('website')
-        },
-        {
-          label: help.donateLabel,
-          ...(iconDonate ? { icon: iconDonate } : {}),
-          click: () => openTrayHelpUrl('donate')
-        },
-        { type: 'separator' },
-        {
-          label: help.aboutLabel,
-          ...(iconAbout ? { icon: iconAbout } : {}),
-          click: () => { pendingTrayAction = 'about'; }
-        },
-        {
-          label: help.updatesLabel,
-          ...(iconUpdate ? { icon: iconUpdate } : {}),
-          click: () => { pendingTrayAction = 'help-check-updates'; }
-        }
-      ]
-    },
-    { type: 'separator' },
-    {
-      label: t.tray_exit,
-      ...(iconQuit ? { icon: iconQuit } : {}),
-      click: () => { pendingTrayAction = 'quit'; }
-    }
-  ];
-}
-
-function rebuildTrayContextMenu() {
-  if (!tray) return;
-  if (trayContextMenuOpen) {
-    trayContextMenuRebuildPending = true;
-    return;
-  }
-
-  trayContextMenuRebuildPending = false;
-  const menu = Menu.buildFromTemplate(buildTrayContextMenuTemplate());
-  menu.on('menu-will-show', () => {
-    trayContextMenuOpen = true;
-    pendingTrayAction = null;
-    if (trayContextMenuCloseFallback) clearTimeout(trayContextMenuCloseFallback);
-    trayContextMenuCloseFallback = setTimeout(() => {
-      if (trayContextMenuOpen) onTrayContextMenuClosed();
-    }, 15000);
-  });
-  menu.on('menu-will-close', onTrayContextMenuClosed);
-  tray.setContextMenu(menu);
-}
-
-function updateTrayMenu() {
-  if (!tray) return;
-  tray.setToolTip('CyberViewer v' + app.getVersion());
-  rebuildTrayContextMenu();
-}
-
-function createTray() {
-  if (tray) return;
-  tray = new Tray(path.join(__dirname, 'assets', 'icon.ico'));
-  tray.setToolTip('CyberViewer v' + app.getVersion());
-  rebuildTrayContextMenu();
-  tray.on('click', () => {
-    if (process.platform === 'win32') {
-      const clickSeq = trayRightClickSeq;
-      if (trayClickTimer) clearTimeout(trayClickTimer);
-      trayClickTimer = setTimeout(() => {
-        trayClickTimer = null;
-        // A right-click can arrive before or after this deferred click.
-        // Ignore both event orderings so opening the context menu cannot also
-        // toggle the main window underneath it.
-        if (trayRightClickSeq !== clickSeq || Date.now() - lastTrayRightClickAt < 400) return;
-        if (trayContextMenuOpen) return;
-        if (!win || win.isDestroyed()) return;
-        if (isWindowShown()) hideToTray();
-        else showFromTray();
-      }, 120);
-      return;
-    }
-    if (!win || win.isDestroyed()) return;
-    if (isWindowShown()) hideToTray();
-    else showFromTray();
-  });
-  tray.on('right-click', (_event, _bounds) => {
-    trayRightClickSeq += 1;
-    lastTrayRightClickAt = Date.now();
-  });
-}
+ipcMain.on('tray-menu-request-state', (event) => {
+  event.reply('tray-menu-state', buildTrayMenuState(false));
+});
 
 // ── Global toggle hotkey ─────────────────────────────────────────────
 // When the user sets an accelerator (e.g. "Alt+Shift+V") we register it globally
@@ -1397,7 +1571,9 @@ ipcMain.handle('win-pointer-position', (event) => {
   };
 });
 
-ipcMain.handle('open-file-dialog', async () => {
+// Shared by the renderer's open dialog IPC and the tray "Open file..." item.
+// Returns the selected media paths, or null when the dialog was canceled.
+async function openMediaFileDialog() {
   const lang = getUiLang();
   const result = await dialog.showOpenDialog(win, {
     title: tMenu('dialog_open_title', lang),
@@ -1413,6 +1589,10 @@ ipcMain.handle('open-file-dialog', async () => {
   if (result.canceled || !result.filePaths.length) return null;
   for (const filePath of result.filePaths) pathAllowlist.allowMediaFile(filePath);
   return result.filePaths;
+}
+
+ipcMain.handle('open-file-dialog', async () => {
+  return openMediaFileDialog();
 });
 
 /**
@@ -2851,9 +3031,9 @@ ipcMain.on('save-settings', (event, newSettings) => {
   } else if (tray) {
     // The icon is resident: never destroy it here. Recreating the Tray resets
     // Windows per-icon "always show" pinning, sending the icon back to the
-    // overflow area. updateTrayMenu() refreshes labels (e.g. on language
+    // overflow area. refreshTrayMenu() refreshes labels (e.g. on language
     // change) without changing the icon identity.
-    updateTrayMenu();
+    refreshTrayMenu();
   }
 
   // (Re)apply the global toggle hotkey whenever the setting may have changed.
@@ -3158,11 +3338,15 @@ if (!gotTheLock) {
     ensureContextMenuRegistration();
 
     app.on('activate', () => {
-      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+      const hasAppWindow = BrowserWindow.getAllWindows().some((w) => !w.isDestroyed() && w !== trayMenuWin);
+      if (!hasAppWindow) createWindow();
     });
   });
 }
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  // The frameless tray popup is a helper window, not an app window: it must
+  // not keep the process alive after the main window has really closed.
+  const hasAppWindow = BrowserWindow.getAllWindows().some((w) => !w.isDestroyed() && w !== trayMenuWin);
+  if (!hasAppWindow && process.platform !== 'darwin') app.quit();
 });
