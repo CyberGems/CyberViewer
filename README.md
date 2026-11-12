@@ -37,12 +37,10 @@
 - [🖼️ Screenshots](#️-screenshots)
 - [🎯 Why CyberViewer?](#-why-cyberviewer)
 - [✨ Key Features](#-key-features)
-- [🚀 Installation](#-installation)
+- [⬇️ Installation](#️-installation)
 - [🧭 Using the App](#-using-the-app)
 - [🛠️ Tech Stack & Architecture](#️-tech-stack--architecture)
 - [⌨️ Keyboard Shortcuts](#️-keyboard-shortcuts)
-- [🔒 Security](#-security)
-- [🔄 Updates](#-updates)
 - [❤️ Donate](#️-donate)
 - [📄 License](#-license)
 - [❓ FAQ](#-faq)
@@ -194,7 +192,7 @@ Playback can still vary with codec profile, bitrate, sample rate, channel layout
 
 ---
 
-## 🚀 Installation
+## ⬇️ Installation
 
 ### Install (Recommended)
 
@@ -326,6 +324,28 @@ npm run build:portable   # portable only
 - Desktop/Start Menu shortcuts
 - Bilingual installer (en_US, es_ES)
 
+### 🔒 Security
+
+- `webSecurity` enabled with Content-Security-Policy
+- Local images served through `cvlocal://` protocol (streamed) with path allowlist
+- Allowlist expansion only accepts **existing supported image or video files**
+- Folder scans only run for neighbors of an existing supported media file
+- Media streams support byte ranges for seeking without reading a complete video into RAM
+- Renderer runs with `nodeIntegration: false` and `contextIsolation: true`
+- DevTools IPC disabled in packaged builds
+
+### 🔄 Updates
+
+Installed (NSIS) builds use **electron-updater** against GitHub Releases:
+
+1. **About → Check for Updates** (or menu Help)
+2. **Download update** when a newer version is available
+3. **Install & restart:** silent install, no wizard, and automatic relaunch
+
+Download/install is always user-requested. With "Check for updates on startup" enabled (default), the app notifies on startup that an update exists (toast + About banner), but will not download until you ask.
+
+Portable builds cannot self-update in-app; use **Open releases page**.
+
 ---
 
 ## ⌨️ Keyboard Shortcuts
@@ -363,32 +383,6 @@ npm run build:portable   # portable only
 | `+` / `-` | Zoom in / out |
 | `0` | Fit to window |
 | `Esc` | Close overlays/modals/cancel crop |
-
----
-
-## 🔒 Security
-
-- `webSecurity` enabled with Content-Security-Policy
-- Local images served through `cvlocal://` protocol (streamed) with path allowlist
-- Allowlist expansion only accepts **existing supported image or video files**
-- Folder scans only run for neighbors of an existing supported media file
-- Media streams support byte ranges for seeking without reading a complete video into RAM
-- Renderer runs with `nodeIntegration: false` and `contextIsolation: true`
-- DevTools IPC disabled in packaged builds
-
----
-
-## 🔄 Updates
-
-Installed (NSIS) builds use **electron-updater** against GitHub Releases:
-
-1. **About → Check for Updates** (or menu Help)
-2. **Download update** when a newer version is available
-3. **Install & restart:** silent install, no wizard, and automatic relaunch
-
-Download/install is always user-requested. With "Check for updates on startup" enabled (default), the app notifies on startup that an update exists (toast + About banner), but will not download until you ask.
-
-Portable builds cannot self-update in-app; use **Open releases page**.
 
 ---
 

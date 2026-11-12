@@ -37,12 +37,10 @@
 - [🖼️ Capturas](#️-capturas)
 - [🎯 ¿Por qué CyberViewer?](#-por-qué-cyberviewer)
 - [✨ Funciones principales](#-funciones-principales)
-- [🚀 Instalación](#-instalación)
+- [⬇️ Instalación](#️-instalación)
 - [🧭 Cómo usar la app](#-cómo-usar-la-app)
 - [🛠️ Stack tecnológico y arquitectura](#️-stack-tecnológico-y-arquitectura)
 - [⌨️ Atajos de teclado](#️-atajos-de-teclado)
-- [🔒 Seguridad](#-seguridad)
-- [🔄 Actualizaciones](#-actualizaciones)
 - [❤️ Donar](#️-donar)
 - [📄 Licencia](#-licencia)
 - [❓ Preguntas frecuentes](#-preguntas-frecuentes)
@@ -191,9 +189,10 @@ La reproducción también puede variar según el perfil del códec, la tasa de b
 - **Estilos de fondo:** Automático (sigue el tema), Cuadriculado oscuro, Cuadriculado claro o Sin cuadriculado
 - **Ajustes de interfaz:** barra lateral, barra de herramientas, barra de estado, tooltips, guía de atajos, retrasos de ocultación automática y comportamiento del doble clic
 - **Configuración con pestañas:** General, Apariencia, Interfaz, Presentación, Sistema y Respaldo y datos
+
 ---
 
-## 🚀 Instalación
+## ⬇️ Instalación
 
 ### Instalación (recomendada)
 
@@ -225,6 +224,7 @@ Windows muestra este aviso para cualquier instalador sin un certificado de firma
 Puedes verificar el archivo de forma independiente: compara el SHA con el release de GitHub, escanéalo en VirusTotal o compila desde el código fuente. Más detalles: [guía de SmartScreen en el sitio web](https://cybergems.org/download#smartscreen).
 
 </details>
+
 ---
 
 ## 🧭 Cómo usar la app
@@ -323,6 +323,29 @@ npm run build:portable   # solo portable
 - Asociaciones de archivo por usuario (HKCU)
 - Accesos directos de Escritorio y Menú Inicio
 - Instalador bilingüe (en_US, es_ES)
+
+### 🔒 Seguridad
+
+- `webSecurity` activado con Content-Security-Policy
+- Imágenes locales servidas mediante el protocolo `cvlocal://` (en streaming) con lista de permitidos de rutas
+- La expansión de la lista de permitidos solo acepta **archivos existentes de imagen o video con extensión admitida**
+- Los escaneos de carpeta solo se ejecutan sobre vecinos de un archivo multimedia existente con extensión admitida
+- El streaming admite rangos de bytes para buscar posiciones sin cargar el video completo en RAM
+- El renderer se ejecuta con `nodeIntegration: false` y `contextIsolation: true`
+- DevTools IPC desactivado en las builds empaquetadas
+
+### 🔄 Actualizaciones
+
+Las builds instaladas (NSIS) usan **electron-updater** contra GitHub Releases:
+
+1. **Acerca de → Buscar actualizaciones** (o menú Ayuda)
+2. **Descargar actualización** cuando haya una versión más reciente
+3. **Instalar y reiniciar:** instalación silenciosa, sin asistente y relanzamiento automático
+
+La descarga y la instalación siempre las solicita el usuario. Con «Buscar actualizaciones al iniciar» activado (predeterminado), la app te avisa al arrancar que existe una actualización (toast + banner de Acerca de), pero no descargará hasta que se lo pidas.
+
+Las builds portables no pueden actualizarse dentro de la app; usa **Abrir página de releases**.
+
 ---
 
 ## ⌨️ Atajos de teclado
@@ -363,32 +386,6 @@ npm run build:portable   # solo portable
 
 ---
 
-## 🔒 Seguridad
-
-- `webSecurity` activado con Content-Security-Policy
-- Imágenes locales servidas mediante el protocolo `cvlocal://` (en streaming) con lista de permitidos de rutas
-- La expansión de la lista de permitidos solo acepta **archivos existentes de imagen o video con extensión admitida**
-- Los escaneos de carpeta solo se ejecutan sobre vecinos de un archivo multimedia existente con extensión admitida
-- El streaming admite rangos de bytes para buscar posiciones sin cargar el video completo en RAM
-- El renderer se ejecuta con `nodeIntegration: false` y `contextIsolation: true`
-- DevTools IPC desactivado en las builds empaquetadas
-
----
-
-## 🔄 Actualizaciones
-
-Las builds instaladas (NSIS) usan **electron-updater** contra GitHub Releases:
-
-1. **Acerca de → Buscar actualizaciones** (o menú Ayuda)
-2. **Descargar actualización** cuando haya una versión más reciente
-3. **Instalar y reiniciar:** instalación silenciosa, sin asistente y relanzamiento automático
-
-La descarga y la instalación siempre las solicita el usuario. Con «Buscar actualizaciones al iniciar» activado (predeterminado), la app te avisa al arrancar que existe una actualización (toast + banner de Acerca de), pero no descargará hasta que se lo pidas.
-
-Las builds portables no pueden actualizarse dentro de la app; usa **Abrir página de releases**.
-
----
-
 ## ❤️ Donar
 
 **CyberViewer** es 100% gratis y de código abierto. Si te resulta útil, por favor considera [donar](https://cybergems.org/donate) o [dar una estrella al repo en GitHub](https://github.com/CyberGems/CyberViewer) para apoyar el desarrollo continuo. [Lee la historia completa](https://cybergems.org/about/) del proyecto. ¡Gracias! 🙏
@@ -423,6 +420,7 @@ Las builds portables no pueden actualizarse dentro de la app; usa **Abrir págin
 </details>
 
 </div>
+
 ---
 
 ## 📄 Licencia
