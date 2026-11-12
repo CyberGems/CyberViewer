@@ -37,7 +37,8 @@
 - [🖼️ Screenshots](#️-screenshots)
 - [🎯 Why CyberViewer?](#-why-cyberviewer)
 - [✨ Key Features](#-key-features)
-- [🚀 Getting Started](#-getting-started)
+- [🚀 Installation](#-installation)
+- [🧭 Using the App](#-using-the-app)
 - [🛠️ Tech Stack & Architecture](#️-tech-stack--architecture)
 - [⌨️ Keyboard Shortcuts](#️-keyboard-shortcuts)
 - [🔒 Security](#-security)
@@ -193,7 +194,7 @@ Playback can still vary with codec profile, bitrate, sample rate, channel layout
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Installation
 
 ### Install (Recommended)
 
@@ -225,6 +226,20 @@ Windows shows this warning for any installer without a paid code-signing certifi
 You can verify the file independently: compare the SHA with the GitHub release, scan it on VirusTotal, or build from source. More details: [SmartScreen guide on the website](https://cybergems.org/download#smartscreen).
 
 </details>
+
+---
+
+## 🧭 Using the App
+
+CyberViewer shows or hides from anywhere with `Alt+Shift+V`; you can also drop a folder straight onto the window.
+
+1. Drag a folder onto CyberViewer, or open images with `Ctrl+O`.
+2. Move through files with the arrow keys or `A` / `D`, or click thumbnails in the sidebar.
+3. Press `F` or `0` to fit, `1` for original size, and scroll to zoom around the pointer.
+
+Press `Enter` for fullscreen and `Esc` to leave it. Closing the window can leave CyberViewer running in the tray; a first-close dialog asks whether to stay or quit.
+
+See [How Do You Use CyberViewer?](https://github.com/CyberGems/CyberViewer/wiki/How-Do-You-Use) for everyday examples and the full guides.
 
 ---
 

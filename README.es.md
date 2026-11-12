@@ -37,7 +37,8 @@
 - [🖼️ Capturas](#️-capturas)
 - [🎯 ¿Por qué CyberViewer?](#-por-qué-cyberviewer)
 - [✨ Funciones principales](#-funciones-principales)
-- [🚀 Primeros pasos](#-primeros-pasos)
+- [🚀 Instalación](#-instalación)
+- [🧭 Cómo usar la app](#-cómo-usar-la-app)
 - [🛠️ Stack tecnológico y arquitectura](#️-stack-tecnológico-y-arquitectura)
 - [⌨️ Atajos de teclado](#️-atajos-de-teclado)
 - [🔒 Seguridad](#-seguridad)
@@ -192,7 +193,7 @@ La reproducción también puede variar según el perfil del códec, la tasa de b
 - **Configuración con pestañas:** General, Apariencia, Interfaz, Presentación, Sistema y Respaldo y datos
 ---
 
-## 🚀 Primeros pasos
+## 🚀 Instalación
 
 ### Instalación (recomendada)
 
@@ -224,6 +225,20 @@ Windows muestra este aviso para cualquier instalador sin un certificado de firma
 Puedes verificar el archivo de forma independiente: compara el SHA con el release de GitHub, escanéalo en VirusTotal o compila desde el código fuente. Más detalles: [guía de SmartScreen en el sitio web](https://cybergems.org/download#smartscreen).
 
 </details>
+---
+
+## 🧭 Cómo usar la app
+
+CyberViewer se muestra u oculta desde cualquier parte con `Alt+Shift+V`; también puedes arrastrar una carpeta directamente a la ventana.
+
+1. Arrastra una carpeta a CyberViewer o abre imágenes con `Ctrl+O`.
+2. Recorre los archivos con las flechas o `A` / `D`, o haz clic en las miniaturas de la barra lateral.
+3. Pulsa `F` o `0` para ajustar, `1` para el tamaño original y desplaza la rueda para ampliar alrededor del puntero.
+
+Pulsa `Intro` para pantalla completa y `Esc` para salir. Al cerrar la ventana, CyberViewer puede quedarse en la bandeja: un primer aviso pregunta si prefieres permanecer ahí o salir.
+
+Consulta [¿Cómo se usa CyberViewer?](https://github.com/CyberGems/CyberViewer/wiki/How-Do-You-Use) para ver ejemplos cotidianos y las guías completas de la wiki (en inglés).
+
 ---
 
 ## 🛠️ Stack tecnológico y arquitectura
