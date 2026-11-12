@@ -1,6 +1,6 @@
 
 // ── Media / format helpers (from js/media-helpers.js) ──
-/* exported clearViewer, mergeNeighbors, ttBind */
+/* exported clearViewer, mergeNeighbors, ttBind, cropSelectionSnapshot */
 const CVMedia = (typeof window !== 'undefined' && window.CVMedia) ? window.CVMedia : {};
 const mediaUrl = CVMedia.mediaUrl || function () { return ''; };
 const canvasExport = CVMedia.canvasExport || function (c, p) { return { buffer: '', filePath: p }; };

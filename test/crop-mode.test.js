@@ -32,8 +32,8 @@ describe('crop yields to tab switches and external opens', () => {
     assert.match(canSwitch[0], /const editingModal = document\.querySelector\('#modal-adjust\.active, #modal-resize\.active'\);/);
     assert.match(canSwitch[0], /if \(\(state\.isCropping \|\| editingModal\) && !busy && dialogDepth === 0 &&\s*\n\s*state\.settings\.app\.tabsCancelPendingEdits !== false\) \{/);
     assert.match(canSwitch[0], /const snap = typeof window\.cropSelectionSnapshot === 'function' \? window\.cropSelectionSnapshot\(\) : null;/);
-    assert.match(canSwitch[0], /exitCropMode\(\);\s*\n\s*if \(active\) active\.pendingCrop = snap;/);
-    assert.match(canSwitch[0], /if \(editingModal\) closeModal\(editingModal\.id\);/);
+    assert.match(canSwitch[0], /window\.exitCropMode\(\);\s*\n\s*if \(active\) active\.pendingCrop = snap;/);
+    assert.match(canSwitch[0], /if \(editingModal\) window\.closeModal\(editingModal\.id\);/);
     assert.match(canSwitch[0], /showToast\(text\('tabs_finish_edit'\), 'info'\)/);
     assert.match(workspace, /isEditing, canSwitch \}/, 'canSwitch should be exported for the YouTube dialog');
   });

@@ -1,4 +1,4 @@
-/* global state, I18N, $, spinner, mainImg, setCyberTooltip,
+/* global state, I18N, $, spinner, mainImg,
    displayImage, setImageError, clearImageError, showToast,
    toggleFullscreen, openImageDialog, openPropertiesForCurrent, showImage */
 'use strict';

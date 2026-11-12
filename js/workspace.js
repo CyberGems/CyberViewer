@@ -82,10 +82,10 @@ window.CVWorkspace = (() => {
         // gone, so it can never see an active selection.
         const active = model.active;
         const snap = typeof window.cropSelectionSnapshot === 'function' ? window.cropSelectionSnapshot() : null;
-        exitCropMode();
+        window.exitCropMode();
         if (active) active.pendingCrop = snap;
       }
-      if (editingModal) closeModal(editingModal.id);
+      if (editingModal) window.closeModal(editingModal.id);
       return true;
     }
     showToast(text('tabs_finish_edit'), 'info');
@@ -1042,7 +1042,7 @@ window.CVWorkspace = (() => {
       // so they are closed here instead of stalling the quit chain and
       // pulling the hidden window back on screen. Crop holds nothing
       // committed either: it is cancelled, not used as a quit blocker.
-      if (state.isCropping) exitCropMode();
+      if (state.isCropping) window.exitCropMode();
       if (busy || dialogDepth > 0 ||
         document.querySelector('#modal-adjust.active, #modal-resize.active, #modal-print-export.active, #modal-youtube.active')) {
         showToast(text('tabs_finish_edit'), 'warning');
