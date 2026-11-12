@@ -109,7 +109,7 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 
 ### ▶️ Reproducción de video
 - Abre MP4, M4V, WebM, MOV y MKV desde el selector, arrastrando archivos, navegando por carpetas o mediante pestañas. La compatibilidad depende de los códecs de video y audio del archivo y de los decodificadores del equipo.
-- Reproduce/pausa, busca una posición, ajusta el volumen, silencia y repite. Los videos se reproducen al abrirlos por defecto; desactiva **Reproducir al abrir** en el menú **…** para iniciarlos manualmente. La preferencia se conserva. Pulsa **Espacio** para reproducir/pausar, **Izquierda/Derecha** para saltar 5 segundos o **M** para silenciar. **Arriba/Abajo** y **A/D** siguen navegando entre archivos.
+- Reproduce/pausa, busca una posición, ajusta el volumen, silencia y repite. Los videos se reproducen al abrirlos por defecto; desactiva **Reproducir al abrir** en el menú **…** para iniciarlos manualmente. La preferencia se conserva. Pulsa **Espacio** para reproducir/pausar, **Izquierda/Derecha** para saltar 5 segundos o **M** para silenciar. **Arriba/Abajo** sigue navegando entre archivos.
 - **Detalles estilo YouTube:** haz clic sobre el video para pausar o reanudar y doble clic para pantalla completa; usa los botones anterior/siguiente para saltar entre videos de la carpeta; abre el panel de velocidad (0.25×–3×) desde el menú **…** o ciclalo con `>` / `<`; y pasa el cursor por la barra de progreso para ver la marca de tiempo con una miniatura del fotograma. Repetir, volumen, silencio y velocidad se conservan entre sesiones.
 - Los controles compactos se superponen al video y se ocultan durante la reproducción tras un periodo de inactividad. El menú **…** reúne repetir, propiedades, abrir e información de audio. Las barras de edición de imágenes se ocultan al ver videos.
 - Usa el botón de pantalla completa o **Ctrl+F** para entrar en pantalla completa nativa con el fotograma completo ajustado a la pantalla. Solo queda el video cuando se ocultan los controles y el cursor; mover el ratón o pulsar una tecla revela los controles. **Esc** vuelve a la ventana (o cierra primero el menú de reproducción).
@@ -229,13 +229,13 @@ Puedes verificar el archivo de forma independiente: compara el SHA con el releas
 
 ## 🧭 Cómo usar la app
 
-CyberViewer se muestra u oculta desde cualquier parte con `Alt+Shift+V`; también puedes arrastrar una carpeta directamente a la ventana.
+CyberViewer se muestra u oculta desde cualquier parte con `Alt+Shift+V`; también puedes arrastrar una carpeta o un archivo directamente a la ventana.
 
-1. Arrastra una carpeta a CyberViewer o abre imágenes con `Ctrl+O`.
-2. Recorre los archivos con las flechas o `A` / `D`, o haz clic en las miniaturas de la barra lateral.
-3. Pulsa `F` o `0` para ajustar, `1` para el tamaño original y desplaza la rueda para ampliar alrededor del puntero.
+1. Arrastra una carpeta a CyberViewer o abre archivos con `Ctrl+O`: imágenes, video local (MP4, MKV, WebM…) y audio (MP3, FLAC, Ogg…) se abren en pestañas dentro de la misma ventana.
+2. Recorre los archivos con las flechas o haz clic en las miniaturas de la barra lateral; la barra de pestañas marca qué es imagen, video, audio o YouTube.
+3. En imágenes, `B` o `0` ajusta a la ventana, `A` devuelve el tamaño original y la rueda amplía alrededor del puntero; en video y audio, `Espacio` reproduce o pausa, `←` / `→` saltan 5 segundos y `M` silencia.
 
-Pulsa `Intro` para pantalla completa y `Esc` para salir. Al cerrar la ventana, CyberViewer puede quedarse en la bandeja: un primer aviso pregunta si prefieres permanecer ahí o salir.
+Pega un video, Short, directo o playlist de YouTube en **Abrir enlace de YouTube** (`Ctrl+L`) y míralo sin salir de la app: necesita internet y un video que permita insertarse. Mientras suena música, elige una de sus visualizaciones en el menú del reproductor. Pulsa `Intro` para pantalla completa y `Esc` para salir. Al cerrar la ventana, CyberViewer puede quedarse en la bandeja: un primer aviso pregunta si prefieres permanecer ahí o salir.
 
 Consulta [¿Cómo se usa CyberViewer?](https://github.com/CyberGems/CyberViewer/wiki/How-Do-You-Use) para ver ejemplos cotidianos y las guías completas de la wiki (en inglés).
 

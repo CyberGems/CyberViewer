@@ -109,7 +109,7 @@ Most image viewers are either bloated with features you never use or so barebone
 
 ### ▶️ Video playback
 - Open MP4, M4V, WebM, MOV, and MKV through the file picker, drag and drop, folder navigation, or tabs. Support depends on the video and audio codecs inside each file and the computer's decoder capabilities.
-- Play/pause, seek, adjust volume, mute, and loop. Videos play automatically on open by default; turn **Autoplay on open** off in the **…** menu for manual playback. The preference is saved. Press **Space** to play/pause, **Left/Right** to skip 5 seconds, or **M** to mute. **Up/Down** and **A/D** still navigate files.
+- Play/pause, seek, adjust volume, mute, and loop. Videos play automatically on open by default; turn **Autoplay on open** off in the **…** menu for manual playback. The preference is saved. Press **Space** to play/pause, **Left/Right** to skip 5 seconds, or **M** to mute. **Up/Down** still navigates between files.
 - **YouTube-style touches:** click the video to pause or resume and double-click it for fullscreen; use the previous/next buttons to jump between videos in the folder; open the speed panel (0.25×–3×) from the **…** menu or cycle it with `>` / `<`; and hover the seek bar for a timestamp with a frame preview. Loop, volume, mute, and speed persist between sessions.
 - Compact controls sit over the video and hide during playback after inactivity. The **…** menu provides loop, properties, open, and audio information. Image editing bars are hidden while viewing video.
 - Use the fullscreen button or **Ctrl+F** for native fullscreen with the complete frame fitted to the screen. Only the video remains after the controls and cursor hide; moving the pointer or pressing a key reveals the controls. **Esc** returns to the window (or closes the playback menu first).
@@ -229,13 +229,13 @@ You can verify the file independently: compare the SHA with the GitHub release, 
 
 ## 🧭 Using the App
 
-CyberViewer shows or hides from anywhere with `Alt+Shift+V`; you can also drop a folder straight onto the window.
+CyberViewer shows or hides from anywhere with `Alt+Shift+V`; you can also drop a folder or a media file straight onto the window.
 
-1. Drag a folder onto CyberViewer, or open images with `Ctrl+O`.
-2. Move through files with the arrow keys or `A` / `D`, or click thumbnails in the sidebar.
-3. Press `F` or `0` to fit, `1` for original size, and scroll to zoom around the pointer.
+1. Drag a folder onto CyberViewer, or open files with `Ctrl+O`: images, local video (MP4, MKV, WebM…) and audio (MP3, FLAC, Ogg…) open in tabs inside the same window.
+2. Move through files with the arrow keys or click thumbnails in the sidebar; the tab bar marks what is an image, a video, audio or YouTube.
+3. For images, `B` or `0` fits the window, `A` restores the original size, and scrolling zooms around the pointer; for video and audio, `Space` plays or pauses, `←` / `→` skip 5 seconds and `M` mutes.
 
-Press `Enter` for fullscreen and `Esc` to leave it. Closing the window can leave CyberViewer running in the tray; a first-close dialog asks whether to stay or quit.
+Paste a YouTube video, Short, live stream or playlist into **Open YouTube link** (`Ctrl+L`) and watch it without leaving the app — it needs internet and a video that allows embedding. While music plays, pick one of its visualizations from the playback menu. Press `Enter` for fullscreen and `Esc` to leave it. Closing the window can leave CyberViewer running in the tray; a first-close dialog asks whether to stay or quit.
 
 See [How Do You Use CyberViewer?](https://github.com/CyberGems/CyberViewer/wiki/How-Do-You-Use) for everyday examples and the full guides.
 
