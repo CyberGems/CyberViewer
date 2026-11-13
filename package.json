@@ -5,6 +5,7 @@
   "main": "main.js",
   "author": "CyberGems <info@cybergems.org>",
   "license": "GPL-3.0-only",
+  "homepage": "https://cybergems.org",
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --win --x64 --publish never",

@@ -97,6 +97,12 @@ FunctionEnd
 !macroend
 
 !macro customInstall
+  ; electron-builder 24 does not write the Add/Remove Programs URL values.
+  ; URLInfoAbout is what uninstallers show in their "Website" column.
+  ; UNINSTALL_APP_KEY is a command-line define, available in this header.
+  WriteRegStr SHELL_CONTEXT "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_APP_KEY}" "URLInfoAbout" "https://cybergems.org"
+  WriteRegStr SHELL_CONTEXT "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_APP_KEY}" "URLUpdateInfo" "https://cybergems.org"
+  WriteRegStr SHELL_CONTEXT "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_APP_KEY}" "HelpLink" "https://cybergems.org"
   ; Only when user left the image checkbox checked (or silent install default)
   ${If} $R9 == 1
     !insertmacro CV_WriteFileAssoc ".jpg"  "CyberViewer.jpg"  "JPEG Image"
