@@ -2562,7 +2562,7 @@
     align-items: center;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 12px;
   }
   /* Shortcut hint inside the primary button: normal case so it reads like the
      "· Ctrl+V" hints on the secondary buttons, not SHOUTED by the button's

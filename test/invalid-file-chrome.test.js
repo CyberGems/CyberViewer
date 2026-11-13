@@ -195,6 +195,19 @@ describe('welcome paste affordance', () => {
   it('probes the clipboard from the Electron layer without reading image bytes', () => {
     assert.match(mainJs, /ipcMain\.handle\('clipboard:probe'/);
     assert.match(preloadJs, /probeClipboard: \(\) => ipcRenderer\.invoke\('clipboard:probe'\)/);
+    // Electron 45 removed readImage/availableFormats in favour of the async
+    // web-style API, so the probe must feature-detect and fall back to has().
+    assert.match(mainJs, /if \(typeof clipboard\.readImage === 'function'\)/);
+    assert.match(mainJs, /for \(const format of \['image\/png', 'image\/jpeg'\]\)/);
+    assert.match(mainJs, /await clipboard\.has\(format\)/);
+    assert.match(mainJs, /await clipboard\.readText\(\)/);
+  });
+
+  it('reads clipboard images through the async item API on Electron 45', () => {
+    assert.match(mainJs, /ipcMain\.handle\('clipboard:read-image', async \(\)/);
+    assert.match(mainJs, /it\.types\.some\(\(t\) => t\.startsWith\('image\/'\)\)/);
+    assert.match(mainJs, /await item\.getType\(type\)/);
+    assert.match(mainJs, /Buffer\.from\(await blob\.arrayBuffer\(\)\)/);
   });
 
   it('relabels Paste to a YouTube URL when the clipboard holds a link', () => {

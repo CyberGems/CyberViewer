@@ -2592,19 +2592,38 @@ ipcMain.on('copy-image-buffer', (event, base64) => {
   }
 });
 
-ipcMain.handle('clipboard:read-image', () => {
+ipcMain.handle('clipboard:read-image', async () => {
   try {
-    const img = clipboard.readImage();
-    if (!img || img.isEmpty()) {
+    // Electron < 45: sync nativeImage API. 45+: web-style items with async
+    // blobs (readImage/availableFormats were removed).
+    if (typeof clipboard.readImage === 'function') {
+      const img = clipboard.readImage();
+      if (!img || img.isEmpty()) {
+        return { ok: false, error: 'NO_IMAGE' };
+      }
+      const size = img.getSize();
+      return {
+        ok: true,
+        buffer: img.toPNG().toString('base64'),
+        width: size.width,
+        height: size.height,
+        mime: 'image/png'
+      };
+    }
+    const items = await clipboard.read();
+    const item = (items || []).find((it) => it && Array.isArray(it.types) && it.types.some((t) => t.startsWith('image/')));
+    if (!item) {
       return { ok: false, error: 'NO_IMAGE' };
     }
-    const size = img.getSize();
+    const type = item.types.find((t) => t.startsWith('image/'));
+    const blob = await item.getType(type);
+    const buffer = Buffer.from(await blob.arrayBuffer());
     return {
       ok: true,
-      buffer: img.toPNG().toString('base64'),
-      width: size.width,
-      height: size.height,
-      mime: 'image/png'
+      buffer: buffer.toString('base64'),
+      width: 0,
+      height: 0,
+      mime: type
     };
   } catch (e) {
     console.error('Error reading clipboard image:', e);
@@ -2614,13 +2633,25 @@ ipcMain.handle('clipboard:read-image', () => {
 
 // Cheap clipboard probe: lets the renderer relabel the Paste affordance when the
 // clipboard holds a link rather than an image. Does not read/encode image bytes.
-ipcMain.handle('clipboard:probe', () => {
+ipcMain.handle('clipboard:probe', async () => {
   try {
-    const img = clipboard.readImage();
-    return {
-      hasImage: !!(img && !img.isEmpty()),
-      text: (clipboard.readText() || '').slice(0, 2048)
-    };
+    let hasImage = false;
+    if (typeof clipboard.readImage === 'function') {
+      const img = clipboard.readImage();
+      hasImage = !!(img && !img.isEmpty());
+    } else {
+      // 45+: has() is async and only reports concrete MIME types.
+      for (const format of ['image/png', 'image/jpeg']) {
+        if (await clipboard.has(format)) {
+          hasImage = true;
+          break;
+        }
+      }
+    }
+    const text = typeof clipboard.readText === 'function'
+      ? String((await clipboard.readText()) || '').slice(0, 2048)
+      : '';
+    return { hasImage, text };
   } catch (e) {
     console.error('Error probing clipboard:', e);
     return { hasImage: false, text: '' };
