@@ -2619,16 +2619,12 @@
   body.image-error #sidebar-edge-rail {
     display: none !important;
   }
-  /* Dead toggle: no hover response, dimmed arrow (JS also guards the click
-     because the menu opens it via a programmatic .click()). */
+  /* Dead toggle: it would reopen a panel that cannot scan or list anything
+     while the tab's file is gone, and it reads as stray chrome over the
+     banner, so hide it outright. The JS click guard stays, because the menu
+     opens it with a programmatic .click() that ignores display. */
   body.image-error #sidebar-handle {
-    pointer-events: none;
-    cursor: default;
-  }
-  body.image-error #sidebar-handle-arrow {
-    opacity: 0.25;
-    border-color: rgba(var(--cyber-accent-rgb), 0.15);
-    box-shadow: none;
+    display: none !important;
   }
 
   .err-frame {

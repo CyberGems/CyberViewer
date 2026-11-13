@@ -6,6 +6,8 @@ const assert = require('node:assert/strict');
 const root = path.join(__dirname, '..');
 const appCss = fs.readFileSync(path.join(root, 'css', 'app.css'), 'utf8');
 const youtubeCss = fs.readFileSync(path.join(root, 'css', 'youtube.css'), 'utf8');
+const videoCss = fs.readFileSync(path.join(root, 'css', 'video.css'), 'utf8');
+const audioCss = fs.readFileSync(path.join(root, 'css', 'audio.css'), 'utf8');
 const appJs = fs.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
 const youtubePlayer = fs.readFileSync(path.join(root, 'js', 'youtube-player.js'), 'utf8');
 
@@ -29,10 +31,12 @@ describe('invalid-file view chrome', () => {
     assert.match(css, /body\.image-error #toolbar-handle[^{]*\{[^}]*display: none !important;/);
   });
 
-  it('hides the sidebar and deadens its toggle', () => {
+  it('hides the sidebar and its toggle', () => {
     const css = flat(appCss);
     assert.match(css, /body\.image-error #sidebar, body\.image-error #sidebar-edge-rail[^{]*\{[^}]*display: none !important;/);
-    assert.match(css, /body\.image-error #sidebar-handle[^{]*\{[^}]*pointer-events: none;/);
+    // The toggle is hidden outright (not just dimmed): it would reopen a panel
+    // that cannot list anything, and it reads as stray chrome over the banner.
+    assert.match(css, /body\.image-error #sidebar-handle \{ display: none !important; \}/);
   });
 
   it('guards the sidebar toggle click so the menu programmatic click is inert', () => {
@@ -48,6 +52,20 @@ describe('invalid-file view chrome', () => {
     const tb = appJs.match(/const tb = panel\.querySelector\('\[data-action="toolbar"\]'\);[\s\S]*?\n    \}/);
     assert.ok(tb, 'toolbar menu item sync should exist');
     assert.match(tb[0], /tb\.classList\.toggle\('disabled', err\);/);
+  });
+});
+
+describe('media error chrome in fullscreen', () => {
+  it('hides the video controls (and the heading inside them) on a video error', () => {
+    const css = flat(videoCss);
+    // #video-heading, #video-fit and #video-fullscreen live inside
+    // #video-controls, so hiding the container clears the whole overlay.
+    assert.match(css, /body\.image-error #video-controls \{ display: none; \}/);
+  });
+
+  it('hides the audio stage on an audio error', () => {
+    const css = flat(audioCss);
+    assert.match(css, /body\.audio-active\.image-error #audio-stage \{ display: none; \}/);
   });
 });
 
