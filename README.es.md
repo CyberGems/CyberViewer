@@ -237,7 +237,7 @@ CyberViewer se muestra u oculta desde cualquier parte con `Alt+Shift+V`; tambié
 
 Pega un video, Short, directo o playlist de YouTube en **Abrir enlace de YouTube** (`Ctrl+L`) y míralo sin salir de la app: necesita internet y un video que permita insertarse. Mientras suena música, elige una de sus visualizaciones en el menú del reproductor. Pulsa `Intro` para pantalla completa y `Esc` para salir. Al cerrar la ventana, CyberViewer puede quedarse en la bandeja: un primer aviso pregunta si prefieres permanecer ahí o salir.
 
-Consulta [¿Cómo se usa CyberViewer?](https://github.com/CyberGems/CyberViewer/wiki/How-Do-You-Use) para ver ejemplos cotidianos y las guías completas de la wiki (en inglés).
+Consulta [¿Cómo se usa CyberViewer?](https://github.com/CyberGems/CyberViewer/wiki/How-Do-You-Use-es) para ver ejemplos cotidianos y las guías completas de la wiki.
 
 ---
 
