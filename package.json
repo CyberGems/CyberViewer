@@ -1,7 +1,7 @@
 {
   "name": "cyberviewer",
   "version": "1.22.0",
-  "description": "CyberViewer — Visor de imágenes rápido y centrado, por CyberGems",
+  "description": "Images, video and audio in one fast window, with folder browsing and quick fixes.",
   "main": "main.js",
   "author": "CyberGems <info@cybergems.org>",
   "license": "GPL-3.0-only",
