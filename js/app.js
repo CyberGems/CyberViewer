@@ -5900,6 +5900,8 @@ viewerWrap.addEventListener('wheel', e => {
   if (window.CVFormats.isAudio(state.images[state.current])) return;
   if (e.target.closest('#video-controls')) return;
   if (window.CVVideo.active() && state.isGhost) { e.preventDefault(); return; }
+  // Invalid-file view: the blank frame has nothing to zoom.
+  if (document.body.classList.contains('image-error')) return;
   if (state.images.length === 0 || state.isCropping) return;
   e.preventDefault();
   const delta = -e.deltaY;
@@ -5911,6 +5913,9 @@ viewerWrap.addEventListener('mousedown', e => {
   if (window.CVFormats.isAudio(state.images[state.current])) return;
   if (e.target.closest('#video-controls')) return;
   if (window.CVVideo.active() && state.isGhost) return;
+  // Invalid-file view: there is no frame to pan, so the grab cursor and a
+  // drag would only confuse (CSS also resets the cursor there).
+  if (document.body.classList.contains('image-error')) return;
   if (e.target.closest('#kbd-hint') || e.target.closest('#topbar') || e.target.closest('#sidebar')) return;
   if (e.button !== 0 || state.images.length === 0 || state.isCropping) return;
   state.dragging = true;
@@ -5939,6 +5944,9 @@ viewerWrap.addEventListener('dblclick', e => {
   // Cropping owns the pointer: a double-click while adjusting the selection
   // would fullscreen or zoom the image mid-crop. Ignore it until Apply/Cancel.
   if (state.isCropping) return;
+  // Invalid-file view: the banner owns the screen; a double-click must not
+  // fullscreen or zoom a blank frame.
+  if (document.body.classList.contains('image-error')) return;
   if (window.CVYouTube.active()) return;
   if (e.target.closest('#video-controls')) return;
   // In video mode double-click always fullscreens (YouTube behavior); the

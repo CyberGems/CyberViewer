@@ -10,6 +10,7 @@ const videoCss = fs.readFileSync(path.join(root, 'css', 'video.css'), 'utf8');
 const audioCss = fs.readFileSync(path.join(root, 'css', 'audio.css'), 'utf8');
 const appJs = fs.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
 const youtubePlayer = fs.readFileSync(path.join(root, 'js', 'youtube-player.js'), 'utf8');
+const html = fs.readFileSync(path.join(root, 'CyberViewer.html'), 'utf8');
 
 // Collapse whitespace so the assertions match regardless of the source
 // formatting (selector list wrapping, indentation, trailing spaces).
@@ -52,6 +53,38 @@ describe('invalid-file view chrome', () => {
     const tb = appJs.match(/const tb = panel\.querySelector\('\[data-action="toolbar"\]'\);[\s\S]*?\n    \}/);
     assert.ok(tb, 'toolbar menu item sync should exist');
     assert.match(tb[0], /tb\.classList\.toggle\('disabled', err\);/);
+  });
+
+  it('drops the grab cursor and the pan/zoom/fullscreen gestures', () => {
+    const css = flat(appCss);
+    // No frame to pan: the grab cursor only confuses.
+    assert.match(css, /body\.image-error #viewer-wrap \{ cursor: default; \}/);
+    // The prev/next arrows would float over the banner.
+    assert.match(css, /body\.image-error #nav-container \{ display: none !important; \}/);
+    // The canvas gestures become no-ops while the banner owns the screen.
+    const guard = /if \(document\.body\.classList\.contains\('image-error'\)\) return;/;
+    const wheel = appJs.match(/viewerWrap\.addEventListener\('wheel',[\s\S]*?\}, \{ passive: false \}\);/);
+    assert.match(wheel[0], guard);
+    const down = appJs.match(/viewerWrap\.addEventListener\('mousedown',[\s\S]*?\n\}\);/);
+    assert.match(down[0], guard);
+    const dbl = appJs.match(/viewerWrap\.addEventListener\('dblclick',[\s\S]*?\n\}\);/);
+    assert.match(dbl[0], guard);
+  });
+
+  it('keeps the rosa palette on the frame and corners, neutral on logo and title', () => {
+    const css = flat(appCss);
+    assert.match(css, /\.err-frame \{ border-color: rgba\(var\(--cyber-accent2-rgb\), 0\.5\); \}/);
+    assert.match(css, /\.err-corner \{ border-color: var\(--cyber-accent2\) !important; \}/);
+    // Logo and title follow the app accent, not the error pink.
+    assert.match(css, /\.err-logo \{ color: rgba\(var\(--cyber-accent-rgb\), 0\.72\);/);
+    assert.match(css, /\.err-title \{ color: var\(--cyber-text\); \}/);
+  });
+
+  it('lists the locate button before the open button (more intuitive order)', () => {
+    const relocate = html.indexOf('id="btn-relocate-tab"');
+    const open = html.indexOf('id="btn-error-open"');
+    assert.ok(relocate > -1 && open > -1, 'both error buttons should exist');
+    assert.ok(relocate < open, 'Localizar should come before Abrir otra imagen');
   });
 });
 

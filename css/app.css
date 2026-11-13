@@ -2626,6 +2626,16 @@
   body.image-error #sidebar-handle {
     display: none !important;
   }
+  /* The grab/pan cursor and the pan handler only make sense with a frame to
+     pan; on the error view a drag does nothing, so it just confuses. */
+  body.image-error #viewer-wrap {
+    cursor: default;
+  }
+  /* Prev/next arrows would float over the banner and duplicate the tab bar;
+     hide them so the banner owns the screen. */
+  body.image-error #nav-container {
+    display: none !important;
+  }
 
   .err-frame {
     border-color: rgba(var(--cyber-accent2-rgb), 0.5);
@@ -2636,13 +2646,16 @@
   .err-corner {
     border-color: var(--cyber-accent2) !important;
   }
+  /* Logo and title use the app's neutral accent (same as the welcome screen),
+     not the rosa error palette: the pink frame and corners still flag the
+     error, and a fully pink header read as an excess of red. */
   .err-logo {
-    color: var(--cyber-accent2-ink);
-    filter: drop-shadow(0 0 12px rgba(var(--cyber-accent2-rgb), 0.5));
+    color: rgba(var(--cyber-accent-rgb), 0.72);
+    filter: drop-shadow(0 0 12px rgba(var(--cyber-accent-rgb), 0.4));
     opacity: 0.92;
   }
   .err-title {
-    color: rgba(var(--cyber-accent2-rgb), 0.92);
+    color: var(--cyber-text);
   }
   .err-sub {
     max-width: 38ch;
