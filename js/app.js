@@ -6671,6 +6671,9 @@ async function syncPasteAffordance() {
     }
   } catch (_) { /* probe is best-effort */ }
   state.clipboardYouTube = ytUrl;
+  // The dedicated YouTube button does the same job, so only one stays visible.
+  const ytBtn = $('btn-drop-youtube');
+  if (ytBtn) ytBtn.hidden = !!ytUrl;
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
   const t = I18N[lang] || I18N.en || {};
   const key = ytUrl ? 'drop_paste_youtube' : 'drop_paste';

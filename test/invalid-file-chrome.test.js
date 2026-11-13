@@ -13,6 +13,7 @@ const youtubePlayer = fs.readFileSync(path.join(root, 'js', 'youtube-player.js')
 const html = fs.readFileSync(path.join(root, 'CyberViewer.html'), 'utf8');
 const ui = JSON.parse(fs.readFileSync(path.join(root, 'i18n', 'ui.json'), 'utf8'));
 const mediaTypes = fs.readFileSync(path.join(root, 'js', 'media-types.js'), 'utf8');
+const workspace = fs.readFileSync(path.join(root, 'js', 'workspace.js'), 'utf8');
 const mainJs = fs.readFileSync(path.join(root, 'main.js'), 'utf8');
 const preloadJs = fs.readFileSync(path.join(root, 'preload.js'), 'utf8');
 
@@ -227,5 +228,35 @@ describe('welcome paste affordance', () => {
       assert.match(ui[lang].drop_paste_youtube, /YouTube/);
       assert.ok(typeof ui[lang].toast_youtube_pasted === 'string' && ui[lang].toast_youtube_pasted.length > 0);
     }
+    // Both entry points say "Enlace"/"link", never "URL".
+    assert.match(ui.es.drop_paste_youtube, /^Pegar enlace de YouTube/);
+    assert.match(ui.es.drop_youtube, /^Enlace de YouTube/);
+    assert.doesNotMatch(ui.es.drop_paste_youtube, /URL/);
+    assert.doesNotMatch(ui.es.drop_youtube, /URL/);
+  });
+
+  it('hides the dedicated YouTube button while Paste is in link mode', () => {
+    assert.match(appJs, /const ytBtn = \$\('btn-drop-youtube'\);/);
+    assert.match(appJs, /ytBtn\.hidden = !!ytUrl;/);
+  });
+
+  it('tailors the close warning to the real cause, without phantom rotations', () => {
+    // The old catch-all string claimed pending rotations for a plain pasted image.
+    assert.equal(ui.en.tabs_unsaved_message, undefined);
+    assert.equal(ui.es.tabs_unsaved_message, undefined);
+    for (const lang of ['en', 'es']) {
+      for (const key of ['tabs_unsaved_rot_one', 'tabs_unsaved_rot_many', 'tabs_unsaved_file_one',
+        'tabs_unsaved_file_many', 'tabs_unsaved_rot_file_one', 'tabs_unsaved_rot_file_many',
+        'tabs_unsaved_close_question']) {
+        assert.ok(typeof ui[lang][key] === 'string' && ui[lang][key].length > 0, `${lang}.${key}`);
+      }
+      // The plain unsaved case must not mention rotations.
+      assert.doesNotMatch(ui[lang].tabs_unsaved_file_one, /rotac|rotation/i);
+      assert.doesNotMatch(ui[lang].tabs_unsaved_file_many, /rotac|rotation/i);
+    }
+    assert.match(workspace, /function tabsUnsavedMessage\(pending\)/);
+    assert.match(workspace, /pending\.some\(tab => tab\.view\.hasChanges\)/);
+    assert.match(workspace, /pending\.some\(tab => !tab\.image\.file\.path\)/);
+    assert.doesNotMatch(workspace, /tabs_unsaved_message/);
   });
 });

@@ -299,11 +299,25 @@ window.CVWorkspace = (() => {
     updateHUDStates();
     return true;
   }
+  // Close warning tailored to what is actually pending: pending rotations,
+  // images that never made it to a file (pasted/dropped), or both — and
+  // singular/plural, so a single pasted image does not read like a rotation.
+  function tabsUnsavedMessage(pending) {
+    const many = pending.length > 1;
+    const hasRot = pending.some(tab => tab.view.hasChanges);
+    const hasUnsaved = pending.some(tab => !tab.image.file.path);
+    const key = hasRot && hasUnsaved
+      ? (many ? 'tabs_unsaved_rot_file_many' : 'tabs_unsaved_rot_file_one')
+      : hasRot
+        ? (many ? 'tabs_unsaved_rot_many' : 'tabs_unsaved_rot_one')
+        : (many ? 'tabs_unsaved_file_many' : 'tabs_unsaved_file_one');
+    return `${text(key)} ${text('tabs_unsaved_close_question')}`;
+  }
   function confirmDiscard(tabs, callback) {
     capture();
     const pending = tabs.filter(edited);
     if (!pending.length) { callback(); return; }
-    showCyberConfirm({ title: text('tabs_unsaved_title'), message: text('tabs_unsaved_message'),
+    showCyberConfirm({ title: text('tabs_unsaved_title'), message: tabsUnsavedMessage(pending),
       detail: pending.map(tab => tab.image.file.name).join('\n'), danger: false, onConfirm: callback });
   }
   function closeTabs(ids, { discard = false, remember = true } = {}) {
