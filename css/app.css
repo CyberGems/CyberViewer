@@ -2652,15 +2652,18 @@
     max-width: 38ch;
     word-break: break-word;
   }
+  /* Buttons stay in the app's action color (same as the welcome screen), not
+     the rosa error palette: the pink frame, corners, logo and title already
+     signal the error, and two solid pink buttons read as an excess of red. */
   .err-btn {
-    background: var(--cyber-accent2);
-    border-color: var(--cyber-accent2);
-    box-shadow: 0 0 18px rgba(var(--cyber-accent2-rgb), 0.28);
+    background: var(--cyber-accent);
+    border-color: var(--cyber-accent);
+    box-shadow: 0 0 18px rgba(var(--cyber-accent-rgb), 0.28);
   }
   .err-btn:hover {
-    background: var(--cyber-accent2-bright);
-    border-color: var(--cyber-accent2-bright);
-    box-shadow: 0 0 26px rgba(var(--cyber-accent2-rgb), 0.45);
+    background: var(--cyber-accent-bright);
+    border-color: var(--cyber-accent-bright);
+    box-shadow: 0 0 26px rgba(var(--cyber-accent-rgb), 0.45);
   }
 
 
