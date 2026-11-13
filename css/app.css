@@ -3375,11 +3375,10 @@
   body.empty-state #nav-container {
     display: none !important;
   }
+  /* Welcome screen has no files to list, so the sidebar toggle is useless
+     chrome; hide it (the menu item stays, but nothing to browse yet). */
   body.empty-state #sidebar-handle {
-    opacity: 0.32;
-  }
-  body.empty-state #sidebar-handle:hover {
-    opacity: 1;
+    display: none !important;
   }
   body.empty-state #sidebar {
     opacity: 0.55;

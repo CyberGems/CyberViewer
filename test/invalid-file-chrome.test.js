@@ -11,6 +11,7 @@ const audioCss = fs.readFileSync(path.join(root, 'css', 'audio.css'), 'utf8');
 const appJs = fs.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
 const youtubePlayer = fs.readFileSync(path.join(root, 'js', 'youtube-player.js'), 'utf8');
 const html = fs.readFileSync(path.join(root, 'CyberViewer.html'), 'utf8');
+const ui = JSON.parse(fs.readFileSync(path.join(root, 'i18n', 'ui.json'), 'utf8'));
 
 // Collapse whitespace so the assertions match regardless of the source
 // formatting (selector list wrapping, indentation, trailing spaces).
@@ -111,5 +112,34 @@ describe('YouTube inline error chrome', () => {
   it('toggles the youtube-error class with the embed error and clears it on unload', () => {
     assert.match(youtubePlayer, /document\.body\.classList\.toggle\('youtube-error', !!error\);/);
     assert.match(youtubePlayer, /document\.body\.classList\.remove\('youtube-error'\);/);
+  });
+});
+
+describe('welcome screen', () => {
+  it('hides the sidebar toggle, which has nothing to list yet', () => {
+    assert.match(flat(appCss), /body\.empty-state #sidebar-handle \{ display: none !important; \}/);
+  });
+
+  it('offers a YouTube link entry point wired to the dialog', () => {
+    assert.match(html, /id="btn-drop-youtube"[^>]*data-i18n="drop_youtube"/);
+    assert.match(appJs, /const btnDropYoutube = \$\('btn-drop-youtube'\);/);
+    assert.match(appJs, /window\.CVYouTube\.openDialog\(\)/);
+  });
+
+  it('labels Paste as images-only, in both languages', () => {
+    assert.match(html, /id="btn-drop-paste"[^>]*>Pegar imagen · Ctrl\+V</);
+    for (const lang of ['en', 'es']) {
+      assert.match(ui[lang].drop_paste, /image|imagen/i);
+      assert.ok(typeof ui[lang].drop_youtube === 'string' && ui[lang].drop_youtube.length > 0);
+    }
+  });
+});
+
+describe('audio error cursor', () => {
+  it('drops the grab cursor in audio mode', () => {
+    // Audio has no frame to pan; its error banner is covered by the shared
+    // body.image-error cursor rule.
+    assert.match(flat(audioCss), /body\.audio-active #viewer-wrap \{ cursor: default; \}/);
+    assert.match(flat(appCss), /body\.image-error #viewer-wrap \{ cursor: default; \}/);
   });
 });

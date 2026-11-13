@@ -5954,7 +5954,7 @@ viewerWrap.addEventListener('dblclick', e => {
   if (window.CVVideo.active()) { window.CVVideo.handleVideoDblClick(); return; }
   if (e.target.closest('#kbd-hint') || e.target.closest('#topbar') || e.target.closest('#sidebar') || e.target.closest('#nav-container')) return;
   // The drop-zone buttons already handle their own clicks; don't open the dialog twice on double-click.
-  if (e.target.closest('#btn-drop-open') || e.target.closest('#btn-drop-paste') || e.target.closest('#btn-drop-icon')) return;
+  if (e.target.closest('#btn-drop-open') || e.target.closest('#btn-drop-paste') || e.target.closest('#btn-drop-youtube') || e.target.closest('#btn-drop-icon')) return;
   const action = state.settings && state.settings.app ? normalizeDblClickAction(state.settings.app.dblClickAction) : 'fullscreen';
   if (action === 'none') return;
   // Empty canvas: double-click opens an image (Photoshop-style), independent of the action setting.
@@ -6625,6 +6625,13 @@ const btnDropPaste = $('btn-drop-paste');
 if (btnDropPaste) {
   btnDropPaste.addEventListener('click', () => {
     if (typeof pasteFromClipboard === 'function') pasteFromClipboard();
+  });
+}
+// Welcome-screen shortcut to open a YouTube link without a file open.
+const btnDropYoutube = $('btn-drop-youtube');
+if (btnDropYoutube) {
+  btnDropYoutube.addEventListener('click', () => {
+    if (window.CVYouTube && typeof window.CVYouTube.openDialog === 'function') window.CVYouTube.openDialog();
   });
 }
 fileInput.addEventListener('change', e => loadFiles(e.target.files));

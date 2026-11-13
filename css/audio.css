@@ -43,6 +43,9 @@
 body.audio-active #main-video, body.audio-active #video-fit,
 body.audio-active #video-heading, body.audio-active #video-preview { display: none !important; }
 body.audio-active #canvas-layer { pointer-events: none; }
+/* Audio has no frame to pan, so the grab cursor is dropped here too (and on
+   its error banner, via the shared body.image-error rule). */
+body.audio-active #viewer-wrap { cursor: default; }
 body.audio-active.image-error #audio-stage { display: none; }
 #audio-visualizer-row {
   display: flex;
