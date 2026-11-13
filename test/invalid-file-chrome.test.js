@@ -12,6 +12,7 @@ const appJs = fs.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
 const youtubePlayer = fs.readFileSync(path.join(root, 'js', 'youtube-player.js'), 'utf8');
 const html = fs.readFileSync(path.join(root, 'CyberViewer.html'), 'utf8');
 const ui = JSON.parse(fs.readFileSync(path.join(root, 'i18n', 'ui.json'), 'utf8'));
+const mediaTypes = fs.readFileSync(path.join(root, 'js', 'media-types.js'), 'utf8');
 
 // Collapse whitespace so the assertions match regardless of the source
 // formatting (selector list wrapping, indentation, trailing spaces).
@@ -132,6 +133,35 @@ describe('welcome screen', () => {
       assert.match(ui[lang].drop_paste, /image|imagen/i);
       assert.ok(typeof ui[lang].drop_youtube === 'string' && ui[lang].drop_youtube.length > 0);
     }
+  });
+});
+
+describe('welcome formats flyout', () => {
+  it('moves the format list off the banner text', () => {
+    for (const lang of ['en', 'es']) {
+      // No format enumeration and no repeated "arrastra"/"drag and drop".
+      assert.doesNotMatch(ui[lang].drop_sub, /JPG|MP4|MP3|\bWebP\b/);
+      assert.doesNotMatch(ui[lang].drop_sub, /arrastra|drag and drop|suelta/i);
+    }
+  });
+
+  it('sources the format labels from one place, shared with About', () => {
+    assert.match(mediaTypes, /const IMAGE_FORMAT_LABELS = \[/);
+    assert.match(mediaTypes, /const VIDEO_FORMAT_LABELS = \[/);
+    assert.match(mediaTypes, /const AUDIO_FORMAT_LABELS = /);
+    assert.match(mediaTypes, /IMAGE_FORMAT_LABELS, VIDEO_FORMAT_LABELS, AUDIO_FORMAT_LABELS/);
+    assert.match(appJs, /const ABOUT_IMAGE_FORMATS = window\.CVFormats\.IMAGE_FORMAT_LABELS;/);
+    assert.match(appJs, /const ABOUT_VIDEO_FORMATS = window\.CVFormats\.VIDEO_FORMAT_LABELS;/);
+  });
+
+  it('anchors the flyout to the drop tile and reveals it on hover/focus', () => {
+    assert.match(html, /class="drop-tile-wrap"[\s\S]*?id="btn-drop-icon"[\s\S]*?id="drop-formats"[\s\S]*?id="drop-formats-rows"/);
+    assert.match(appJs, /tile\.addEventListener\('mouseenter', show\);/);
+    assert.match(appJs, /tile\.addEventListener\('mouseleave', hide\);/);
+    assert.match(appJs, /tile\.addEventListener\('focus', show\);/);
+    // Suppressed while files are dragged over the tile.
+    assert.match(appJs, /classList\.contains\('drag-over'\)/);
+    assert.match(flat(appCss), /\.drop-formats\[hidden\] \{ display: none !important; \}/);
   });
 });
 

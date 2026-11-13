@@ -2447,6 +2447,71 @@
       transform: none;
     }
   }
+  /* Formats flyout: hovering or focusing the drop tile reveals the supported
+     formats as badge chips (mirroring the About panel) instead of listing them
+     as loose text under the title. */
+  .drop-tile-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .drop-formats {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 9px 12px;
+    min-width: 260px;
+    max-width: min(420px, 86vw);
+    box-sizing: border-box;
+    border-radius: 8px;
+    background: rgba(var(--cyber-modal-rgb), 0.97);
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.28);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+  }
+  .drop-formats[hidden] {
+    display: none !important;
+  }
+  .drop-formats-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .drop-formats-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .drop-formats-label {
+    font-family: var(--font-ui);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--cyber-muted);
+    margin-right: 2px;
+  }
+  .drop-format-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 6px;
+    font-family: var(--font-mono, var(--font-ui));
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--cyber-text);
+    background: rgba(var(--cyber-tint-rgb), 0.06);
+    border: 1px solid rgba(var(--cyber-border-soft-rgb), 0.9);
+    border-radius: 3px;
+  }
 
   .drop-title {
     font-family: var(--font-ui);

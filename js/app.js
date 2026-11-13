@@ -6634,6 +6634,44 @@ if (btnDropYoutube) {
     if (window.CVYouTube && typeof window.CVYouTube.openDialog === 'function') window.CVYouTube.openDialog();
   });
 }
+// Welcome drop tile: reveal the supported formats on hover/focus as badge
+// chips (same curated lists as About). Kept off the banner text so it stays
+// clean; the tile still opens the file dialog on click.
+(function initDropFormats() {
+  const tile = $('btn-drop-icon');
+  const pop = $('drop-formats');
+  const rows = $('drop-formats-rows');
+  if (!tile || !pop || !rows) return;
+  const build = () => {
+    const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+    const t = I18N[lang] || I18N.en || {};
+    const formats = window.CVFormats || {};
+    const badge = (label) => `<span class="drop-format-badge">${label}</span>`;
+    const row = (label, labels) =>
+      `<div class="drop-formats-row"><span class="drop-formats-label">${label}</span>${(labels || []).map(badge).join('')}</div>`;
+    rows.innerHTML = [
+      row(t.about_formats_images || 'Images', formats.IMAGE_FORMAT_LABELS),
+      row(t.about_formats_videos || 'Videos', formats.VIDEO_FORMAT_LABELS),
+      row(t.audio_label || 'Audio', formats.AUDIO_FORMAT_LABELS)
+    ].join('');
+  };
+  build();
+  const show = () => {
+    const appEl = $('app');
+    if (appEl && appEl.classList.contains('drag-over')) return;
+    build();
+    pop.hidden = false;
+    pop.setAttribute('aria-hidden', 'false');
+  };
+  const hide = () => {
+    pop.hidden = true;
+    pop.setAttribute('aria-hidden', 'true');
+  };
+  tile.addEventListener('mouseenter', show);
+  tile.addEventListener('mouseleave', hide);
+  tile.addEventListener('focus', show);
+  tile.addEventListener('blur', hide);
+})();
 fileInput.addEventListener('change', e => loadFiles(e.target.files));
 
 $('btn-show-folder').addEventListener('click', () => {
@@ -9716,9 +9754,9 @@ $('btn-go-end').addEventListener('click', (e) => {
 
   // Curated About claims: formats the file filter accepts AND the Chromium
   // renderer decodes natively. TIFF has no renderer decoder, so it stays out
-  // of the claims. Mirrors the welcome banner's image/video split.
-  const ABOUT_IMAGE_FORMATS = ['JPG', 'PNG', 'GIF', 'WebP', 'BMP', 'ICO', 'AVIF'];
-  const ABOUT_VIDEO_FORMATS = ['MP4', 'WebM', 'MOV', 'MKV'];
+  // of the claims. Shared with the welcome formats flyout so both agree.
+  const ABOUT_IMAGE_FORMATS = window.CVFormats.IMAGE_FORMAT_LABELS;
+  const ABOUT_VIDEO_FORMATS = window.CVFormats.VIDEO_FORMAT_LABELS;
 
   async function openAbout() {
     const lang = state.settings.app.language || 'en';
@@ -9790,7 +9828,7 @@ $('btn-go-end').addEventListener('click', (e) => {
               </div>
               <div class="about-formats-row">
                 <span class="about-formats-label">${t.audio_label}</span>
-                ${[...window.CVFormats.AUDIO_EXTS].map((f) => `<kbd class="about-format-badge">${f.slice(1).toUpperCase()}</kbd>`).join('')}
+                ${window.CVFormats.AUDIO_FORMAT_LABELS.map((f) => `<kbd class="about-format-badge">${f}</kbd>`).join('')}
               </div>
               <span class="about-formats-tech">${t.about_formats_tech || ''}</span>
             </div>
