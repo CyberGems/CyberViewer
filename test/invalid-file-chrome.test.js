@@ -134,6 +134,17 @@ describe('welcome screen', () => {
       assert.ok(typeof ui[lang].drop_youtube === 'string' && ui[lang].drop_youtube.length > 0);
     }
   });
+
+  it('stacks the primary button above the secondary pair, with a hotkey hint', () => {
+    // Short label + hint, since the formats are now shown on the icon flyout.
+    assert.match(html, /id="btn-drop-open"[^>]*><span data-i18n="drop_btn">Abrir<\/span><span class="drop-btn-hint" data-i18n="drop_open_hint">Ctrl\+O<\/span>/);
+    assert.match(html, /class="drop-actions-secondary"[\s\S]*?id="btn-drop-paste"[\s\S]*?id="btn-drop-youtube"/);
+    assert.match(flat(appCss), /#drop-zone \.drop-actions \{ display: flex; flex-direction: column;/);
+    for (const lang of ['en', 'es']) {
+      assert.ok(['Open', 'Abrir'].includes(ui[lang].drop_btn), `drop_btn should be short (${lang})`);
+      assert.equal(ui[lang].drop_open_hint, 'Ctrl+O');
+    }
+  });
 });
 
 describe('welcome formats flyout', () => {

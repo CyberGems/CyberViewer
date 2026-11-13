@@ -2552,11 +2552,27 @@
 
   #drop-zone .drop-actions {
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .drop-actions-secondary {
+    display: flex;
     align-items: center;
     justify-content: center;
     flex-wrap: wrap;
     gap: 8px;
-    margin-top: 8px;
+  }
+  /* Shortcut hint inside the primary button: normal case so it reads like the
+     "· Ctrl+V" hints on the secondary buttons, not SHOUTED by the button's
+     uppercase transform. */
+  .drop-btn-hint {
+    text-transform: none;
+    margin-left: 8px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    opacity: 0.85;
   }
 
   .drop-btn {
