@@ -3,6 +3,24 @@
 Notable user-facing changes per release. Earlier versions are documented in the
 [GitHub Releases](https://github.com/CyberGems/CyberViewer/releases) page.
 
+## [1.22.0] - 2026-11-12
+
+### Added
+
+- Suite-standard tray popup: right-click the tray icon for an anchored card with a live status row, show/hide with the shortcut badge, an open-file action, help links, and other CyberGems apps.
+- Recent files in the tray with real thumbnails, a full list view for up to ten files, and a clear-list action.
+- "CyberGems Suggestions" setting that hides suite recommendations in the tray menu and in the About dialog.
+- App-style tooltip bubbles in the tray menu, showing the full path of recent files.
+
+### Changed
+
+- The exit and donate icons keep their red color on hover, and the website link uses the suite diamond glyph.
+- Checking for updates in development or portable builds now shows an informational hint pointing to GitHub Releases instead of a failure message.
+
+### Fixed
+
+- The hidden tray popup no longer keeps the process alive after the main window is really closed.
+
 ## [1.21.1] - 2026-11-06
 
 ### Added
