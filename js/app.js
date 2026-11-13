@@ -6843,6 +6843,10 @@ if (sidebarHandleEl) {
   sidebarHandleEl.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
+    // Invalid-file view: the sidebar cannot scan or list anything while the
+    // tab's file is missing/unreadable; CSS deadens the toggle meanwhile and
+    // the panel comes back untouched once the error clears.
+    if (document.body.classList.contains('image-error')) return;
     setSidebarOpen(!state.sidebarOpen);
   });
 }
@@ -10197,9 +10201,21 @@ $('btn-config').addEventListener('click', openConfig);
       }
     }
     const sb = panel.querySelector('[data-action="sidebar"]');
-    if (sb) sb.classList.toggle('checked', !!state.sidebarOpen);
+    if (sb) {
+      // Invalid-file view: sidebar/toolbar toggles cannot do anything while
+      // the error banner is up (their chrome is hidden); keep them inert.
+      const err = document.body.classList.contains('image-error');
+      sb.classList.toggle('checked', !!state.sidebarOpen);
+      sb.classList.toggle('disabled', err);
+      sb.setAttribute('aria-disabled', String(err));
+    }
     const tb = panel.querySelector('[data-action="toolbar"]');
-    if (tb) tb.classList.toggle('checked', state.toolbarOpen !== false);
+    if (tb) {
+      const err = document.body.classList.contains('image-error');
+      tb.classList.toggle('checked', state.toolbarOpen !== false);
+      tb.classList.toggle('disabled', err);
+      tb.setAttribute('aria-disabled', String(err));
+    }
     const th = panel.querySelector('[data-action="toggle-hints"]');
     if (th) th.classList.toggle('checked', !!(state.settings && state.settings.app && state.settings.app.showShortcutGuide !== false));
     const ab = panel.querySelector('[data-action="toggle-alpha-bg"]');

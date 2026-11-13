@@ -2591,6 +2591,45 @@
     opacity: 0 !important;
     visibility: hidden !important;
   }
+  /* Invalid-file view: without a working frame the action bar and statusbar
+     have nothing to act on — the banner owns the screen. Same chrome-clearing
+     as crop-mode: CSS-only, so both bars return as soon as the tab shows a
+     valid file again (clearImageError runs on every showImage). */
+  body.image-error:not(.ghost-mode) #kbd-hint,
+  body.image-error:not(.ghost-mode) #statusbar,
+  body.image-error.ghost-mode #kbd-hint {
+    display: none !important;
+  }
+  body.image-error:not(.ghost-mode):not(.empty-state),
+  body.image-error:not(.ghost-mode):not(.empty-state) #viewer-wrap {
+    --dock-h: 0px;
+  }
+  /* Reclaim the 36px strip the statusbar reserves in restored windows */
+  body.image-error.statusbar-visible:not(.ghost-mode):not(.empty-state) #viewer-wrap {
+    margin-bottom: 0 !important;
+  }
+  /* Nothing to reopen while the banner is up */
+  body.image-error #toolbar-handle {
+    display: none !important;
+  }
+  /* Sidebar: it cannot scan or list anything while the tab's file is gone.
+     CSS-only hide keeps state.sidebarOpen untouched, so an open panel comes
+     back once the error clears. */
+  body.image-error #sidebar,
+  body.image-error #sidebar-edge-rail {
+    display: none !important;
+  }
+  /* Dead toggle: no hover response, dimmed arrow (JS also guards the click
+     because the menu opens it via a programmatic .click()). */
+  body.image-error #sidebar-handle {
+    pointer-events: none;
+    cursor: default;
+  }
+  body.image-error #sidebar-handle-arrow {
+    opacity: 0.25;
+    border-color: rgba(var(--cyber-accent-rgb), 0.15);
+    box-shadow: none;
+  }
 
   .err-frame {
     border-color: rgba(var(--cyber-accent2-rgb), 0.5);
