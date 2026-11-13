@@ -41,6 +41,10 @@ body.youtube-active #sidebar, body.youtube-active #sidebar-handle, body.youtube-
 body.youtube-active #video-controls, body.youtube-active #ghost-close { display: none !important; }
 body.youtube-active.ghost-mode #youtube-footer { display: none; }
 body.youtube-active #viewer-wrap { margin: 0 !important; }
+/* Inline error: uniform with the invalid-file banner — the action bar and
+   statusbar have nothing to act on while the embed is down, so hide them. */
+body.youtube-error #kbd-hint,
+body.youtube-error #statusbar { display: none !important; }
 
 .youtube-dialog { width: min(540px, calc(100vw - 48px)); max-height: calc(100vh - 48px); border-color: rgba(var(--cyber-accent-rgb), .32); }
 .youtube-dialog-heading { display: flex; align-items: flex-start; gap: 14px; padding: 22px 24px 18px; border-bottom: 1px solid var(--cyber-border); background: rgba(var(--cyber-accent-rgb), .035); }

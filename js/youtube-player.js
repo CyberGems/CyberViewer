@@ -23,6 +23,10 @@ window.CVYouTube = (() => {
   function command(action, extra = {}) { if (owner) window.electronAPI.youtube.command(id, { action, ...extra }); }
   function status() {
     if (!owner) return;
+    // Inline error: the action bar and statusbar have nothing to act on while
+    // the embed is down (the panel offers Retry), so hide them like the
+    // invalid-file banner does. Cleared as soon as the embed recovers.
+    document.body.classList.toggle('youtube-error', !!error);
     $('youtube-title').textContent = owner.file.name;
     $('youtube-copy').textContent = text(isPlaylist() ? 'youtube_copy_playlist' : 'youtube_copy_video');
     const key = error === 'network' ? 'youtube_network_error' : [100].includes(error) ? 'youtube_missing_error'
@@ -53,6 +57,7 @@ window.CVYouTube = (() => {
     owner = null; info = null; error = null; onReady = null; lastBounds = ''; lastPlaylistState = '';
     $('youtube-panel').hidden = true;
     document.body.classList.remove('youtube-active');
+    document.body.classList.remove('youtube-error');
   }
   function load(image, callback) {
     unload(); owner = image; id++; onReady = callback; blocked = false;
