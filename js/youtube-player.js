@@ -116,6 +116,14 @@ window.CVYouTube = (() => {
     openModal('modal-youtube');
     setTimeout(() => { $('youtube-url').focus(); $('youtube-url').select(); }, 0); resize();
   }
+  // Open a validated link directly (no dialog). Used by the welcome Paste
+  // affordance when the clipboard holds a YouTube URL instead of an image.
+  async function openUrl(value) {
+    const v = String(value || '').trim();
+    if (!window.CVYouTubeSource.parse(v)) return false;
+    await window.CVWorkspace.openYouTube(v);
+    return true;
+  }
   function initialize() {
     window.electronAPI.youtube.onState(receive);
     new ResizeObserver(resize).observe($('youtube-slot'));
@@ -146,5 +154,5 @@ window.CVYouTube = (() => {
     });
     $('youtube-fullscreen').addEventListener('click', toggleFullscreen);
   }
-  return { active, load, unload, resize, command, copyLink, isPlaylist, openDialog, initialize, localize: status, get info() { return info; } };
+  return { active, load, unload, resize, command, copyLink, isPlaylist, openDialog, openUrl, initialize, localize: status, get info() { return info; } };
 })();

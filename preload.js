@@ -80,6 +80,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   copyImage: (path) => ipcRenderer.send('copy-image', path),
   copyImageBuffer: (base64) => ipcRenderer.send('copy-image-buffer', base64),
   readClipboardImage: () => ipcRenderer.invoke('clipboard:read-image'),
+  probeClipboard: () => ipcRenderer.invoke('clipboard:probe'),
   moveToTrash: (path) => ipcRenderer.invoke('move-to-trash', path),
   setWallpaper: (path, style) => ipcRenderer.invoke('set-wallpaper', path, style),
   setWallpaperFromData: (data, ext, style) => ipcRenderer.invoke('set-wallpaper-data', data, ext, style),

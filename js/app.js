@@ -6518,6 +6518,26 @@ function insertPastedImage(blob, mime = 'image/png') {
   return window.CVWorkspace.openFiles([file]);
 }
 
+// When the clipboard holds a YouTube link (no image), open it directly.
+// Returns true when it handled the paste.
+async function pasteYouTubeFromClipboard() {
+  if (!isElectron || !window.electronAPI || !window.electronAPI.probeClipboard) return false;
+  if (!window.CVYouTube || typeof window.CVYouTube.openUrl !== 'function') return false;
+  try {
+    const probe = await window.electronAPI.probeClipboard();
+    if (!probe || probe.hasImage || !probe.text) return false;
+    const text = probe.text.trim();
+    if (!window.CVYouTubeSource.parse(text)) return false;
+    const ok = await window.CVYouTube.openUrl(text);
+    if (ok) {
+      const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+      const t = I18N[lang] || I18N.en || {};
+      showToast(t.toast_youtube_pasted || 'YOUTUBE LINK OPENED', 'success');
+    }
+    return ok;
+  } catch (_) { return false; }
+}
+
 async function pasteFromClipboard() {
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
   const t = I18N[lang] || I18N.en || {};
@@ -6526,6 +6546,8 @@ async function pasteFromClipboard() {
     if (isElectron && window.electronAPI.readClipboardImage) {
       const res = await window.electronAPI.readClipboardImage();
       if (!res || !res.ok) {
+        // No image: maybe a YouTube link instead.
+        if (await pasteYouTubeFromClipboard()) return;
         showToast(t.toast_paste_empty || 'NO IMAGE IN CLIPBOARD', 'info');
         return;
       }
@@ -6624,9 +6646,40 @@ if ($('btn-error-open')) $('btn-error-open').addEventListener('click', () => { o
 const btnDropPaste = $('btn-drop-paste');
 if (btnDropPaste) {
   btnDropPaste.addEventListener('click', () => {
+    if (state.clipboardYouTube && window.CVYouTube && typeof window.CVYouTube.openUrl === 'function') {
+      void window.CVYouTube.openUrl(state.clipboardYouTube);
+      return;
+    }
     if (typeof pasteFromClipboard === 'function') pasteFromClipboard();
   });
 }
+// The Paste affordance is dynamic: when the clipboard holds a YouTube link
+// instead of an image, it relabels to "Paste YouTube URL" and opens the link.
+// Electron can read the clipboard without a user gesture, so we re-probe on
+// focus/visibility. Best-effort: any failure leaves the default image label.
+async function syncPasteAffordance() {
+  const btn = $('btn-drop-paste');
+  if (!btn) return;
+  let ytUrl = null;
+  try {
+    if (isElectron && window.electronAPI && window.electronAPI.probeClipboard) {
+      const probe = await window.electronAPI.probeClipboard();
+      if (probe && !probe.hasImage && probe.text) {
+        const text = probe.text.trim();
+        if (window.CVYouTubeSource.parse(text)) ytUrl = text;
+      }
+    }
+  } catch (_) { /* probe is best-effort */ }
+  state.clipboardYouTube = ytUrl;
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  const t = I18N[lang] || I18N.en || {};
+  const key = ytUrl ? 'drop_paste_youtube' : 'drop_paste';
+  btn.dataset.i18n = key;
+  btn.textContent = t[key] || (ytUrl ? 'Paste YouTube URL' : 'Paste image · Ctrl+V');
+}
+window.addEventListener('focus', () => { void syncPasteAffordance(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) void syncPasteAffordance(); });
+setTimeout(() => { void syncPasteAffordance(); }, 0);
 // Welcome-screen shortcut to open a YouTube link without a file open.
 const btnDropYoutube = $('btn-drop-youtube');
 if (btnDropYoutube) {

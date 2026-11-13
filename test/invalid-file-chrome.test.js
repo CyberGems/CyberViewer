@@ -13,6 +13,8 @@ const youtubePlayer = fs.readFileSync(path.join(root, 'js', 'youtube-player.js')
 const html = fs.readFileSync(path.join(root, 'CyberViewer.html'), 'utf8');
 const ui = JSON.parse(fs.readFileSync(path.join(root, 'i18n', 'ui.json'), 'utf8'));
 const mediaTypes = fs.readFileSync(path.join(root, 'js', 'media-types.js'), 'utf8');
+const mainJs = fs.readFileSync(path.join(root, 'main.js'), 'utf8');
+const preloadJs = fs.readFileSync(path.join(root, 'preload.js'), 'utf8');
 
 // Collapse whitespace so the assertions match regardless of the source
 // formatting (selector list wrapping, indentation, trailing spaces).
@@ -182,5 +184,35 @@ describe('audio error cursor', () => {
     // body.image-error cursor rule.
     assert.match(flat(audioCss), /body\.audio-active #viewer-wrap \{ cursor: default; \}/);
     assert.match(flat(appCss), /body\.image-error #viewer-wrap \{ cursor: default; \}/);
+  });
+});
+
+describe('welcome paste affordance', () => {
+  it('adds breathing room between the primary and secondary rows', () => {
+    assert.match(flat(appCss), /#drop-zone \.drop-actions \{ display: flex; flex-direction: column; align-items: center; gap: 16px;/);
+  });
+
+  it('probes the clipboard from the Electron layer without reading image bytes', () => {
+    assert.match(mainJs, /ipcMain\.handle\('clipboard:probe'/);
+    assert.match(preloadJs, /probeClipboard: \(\) => ipcRenderer\.invoke\('clipboard:probe'\)/);
+  });
+
+  it('relabels Paste to a YouTube URL when the clipboard holds a link', () => {
+    assert.match(appJs, /async function syncPasteAffordance\(\)/);
+    assert.match(appJs, /state\.clipboardYouTube = ytUrl;/);
+    assert.match(appJs, /drop_paste_youtube/);
+    assert.match(appJs, /window\.CVYouTube\.openUrl\(state\.clipboardYouTube\)/);
+    assert.match(youtubePlayer, /async function openUrl\(value\)/);
+    assert.match(youtubePlayer, /openDialog, openUrl, initialize/);
+    // Ctrl+V falls back to a YouTube link when there is no image.
+    assert.match(appJs, /async function pasteYouTubeFromClipboard\(\)/);
+    assert.match(appJs, /if \(await pasteYouTubeFromClipboard\(\)\) return;/);
+  });
+
+  it('localizes the YouTube paste labels and toast', () => {
+    for (const lang of ['en', 'es']) {
+      assert.match(ui[lang].drop_paste_youtube, /YouTube/);
+      assert.ok(typeof ui[lang].toast_youtube_pasted === 'string' && ui[lang].toast_youtube_pasted.length > 0);
+    }
   });
 });

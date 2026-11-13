@@ -2612,6 +2612,21 @@ ipcMain.handle('clipboard:read-image', () => {
   }
 });
 
+// Cheap clipboard probe: lets the renderer relabel the Paste affordance when the
+// clipboard holds a link rather than an image. Does not read/encode image bytes.
+ipcMain.handle('clipboard:probe', () => {
+  try {
+    const img = clipboard.readImage();
+    return {
+      hasImage: !!(img && !img.isEmpty()),
+      text: (clipboard.readText() || '').slice(0, 2048)
+    };
+  } catch (e) {
+    console.error('Error probing clipboard:', e);
+    return { hasImage: false, text: '' };
+  }
+});
+
 async function trashFile(filePath) {
   const abs = resolveAllowedPath(filePath);
   await shell.trashItem(abs);
