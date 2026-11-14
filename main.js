@@ -2,7 +2,7 @@
 
 const {
   app, BrowserWindow, shell, ipcMain, screen, Tray, Menu,
-  protocol, nativeImage, clipboard, dialog, globalShortcut
+  protocol, nativeImage, clipboard, dialog, globalShortcut, ClipboardItem
 } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -2566,6 +2566,21 @@ ipcMain.handle('save-image', async (event, { filePath, rotation, buffer, createC
   }
 });
 
+// Electron 45 removed clipboard.writeImage for the async web-style API; the
+// buffer is normalised to PNG through nativeImage and written as an item.
+/* global Blob */
+async function writeClipboardImage(buffer) {
+  const img = nativeImage.createFromBuffer(buffer);
+  if (img.isEmpty()) return false;
+  if (typeof clipboard.writeImage === 'function') {
+    clipboard.writeImage(img);
+    return true;
+  }
+  const blob = new Blob([img.toPNG()], { type: 'image/png' });
+  await clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+  return true;
+}
+
 ipcMain.on('copy-image', (event, filePath) => {
   try {
     const cleanPath = resolveAllowedPath(filePath);
@@ -2574,8 +2589,7 @@ ipcMain.on('copy-image', (event, filePath) => {
         console.error('Failed to read file for clipboard:', err);
         return;
       }
-      const img = nativeImage.createFromBuffer(data);
-      if (!img.isEmpty()) clipboard.writeImage(img);
+      writeClipboardImage(data).catch((e) => console.error('Error copying image to clipboard:', e));
     });
   } catch (e) {
     console.error('Error copying image to clipboard:', e);
@@ -2585,8 +2599,7 @@ ipcMain.on('copy-image', (event, filePath) => {
 ipcMain.on('copy-image-buffer', (event, base64) => {
   try {
     if (!base64 || typeof base64 !== 'string') return;
-    const img = nativeImage.createFromBuffer(Buffer.from(base64, 'base64'));
-    if (!img.isEmpty()) clipboard.writeImage(img);
+    writeClipboardImage(Buffer.from(base64, 'base64')).catch((e) => console.error('Error copying image buffer to clipboard:', e));
   } catch (e) {
     console.error('Error copying image buffer to clipboard:', e);
   }
@@ -3118,8 +3131,7 @@ ipcMain.on('show-context-menu', (event, props) => {
                 const abs = resolveAllowedPath(props.path);
                 fs.readFile(abs, (err, data) => {
                   if (!err) {
-                    const img = nativeImage.createFromBuffer(data);
-                    clipboard.writeImage(img);
+                    writeClipboardImage(data).catch(() => {});
                   }
                 });
               } catch (_) { /* ignore */ }
@@ -3222,8 +3234,7 @@ ipcMain.on('show-context-menu', (event, props) => {
                 const abs = resolveAllowedPath(props.path);
                 fs.readFile(abs, (err, data) => {
                   if (!err) {
-                    const img = nativeImage.createFromBuffer(data);
-                    clipboard.writeImage(img);
+                    writeClipboardImage(data).catch(() => {});
                   }
                 });
               } catch (_) { /* ignore */ }

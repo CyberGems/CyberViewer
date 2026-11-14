@@ -125,22 +125,36 @@ describe('welcome screen', () => {
   });
 
   it('offers a YouTube link entry point wired to the dialog', () => {
-    assert.match(html, /id="btn-drop-youtube"[^>]*data-i18n="drop_youtube"/);
+    assert.match(html, /id="btn-drop-youtube"[^>]*>\s*<span class="drop-btn-label" data-i18n="drop_youtube"/);
     assert.match(appJs, /const btnDropYoutube = \$\('btn-drop-youtube'\);/);
     assert.match(appJs, /window\.CVYouTube\.openDialog\(\)/);
   });
 
   it('labels Paste as images-only, in both languages', () => {
-    assert.match(html, /id="btn-drop-paste"[^>]*>Pegar imagen · Ctrl\+V</);
+    assert.match(html, /id="btn-drop-paste"[^>]*>\s*<span class="drop-btn-label" data-i18n="drop_paste">Pegar imagen<\/span>/);
     for (const lang of ['en', 'es']) {
       assert.match(ui[lang].drop_paste, /image|imagen/i);
       assert.ok(typeof ui[lang].drop_youtube === 'string' && ui[lang].drop_youtube.length > 0);
     }
   });
 
+  it('uses one hint mechanism for all three welcome buttons', () => {
+    for (const key of ['drop_btn', 'drop_paste', 'drop_youtube', 'drop_paste_youtube']) {
+      // Labels carry no embedded shortcut; hints are separate keys.
+      assert.doesNotMatch(ui.en[key], /Ctrl\+/);
+      assert.doesNotMatch(ui.es[key], /Ctrl\+/);
+    }
+    for (const lang of ['en', 'es']) {
+      for (const key of ['drop_open_hint', 'drop_paste_hint', 'drop_youtube_hint']) {
+        assert.match(ui[lang][key], /^Ctrl\+[OLV]$/, `${lang}.${key}`);
+      }
+    }
+    assert.match(appJs, /label\.textContent = t\[key\] \|\| \(ytUrl \? 'Paste YouTube link' : 'Paste image'\);/);
+  });
+
   it('stacks the primary button above the secondary pair, with a hotkey hint', () => {
     // Short label + hint, since the formats are now shown on the icon flyout.
-    assert.match(html, /id="btn-drop-open"[^>]*><span data-i18n="drop_btn">Abrir<\/span><span class="drop-btn-hint" data-i18n="drop_open_hint">Ctrl\+O<\/span>/);
+    assert.match(html, /id="btn-drop-open"[^>]*><span class="drop-btn-label" data-i18n="drop_btn">Abrir<\/span><span class="drop-btn-hint" data-i18n="drop_open_hint">Ctrl\+O<\/span>/);
     assert.match(html, /class="drop-actions-secondary"[\s\S]*?id="btn-drop-paste"[\s\S]*?id="btn-drop-youtube"/);
     assert.match(flat(appCss), /#drop-zone \.drop-actions \{ display: flex; flex-direction: column;/);
     for (const lang of ['en', 'es']) {
@@ -258,5 +272,34 @@ describe('welcome paste affordance', () => {
     assert.match(workspace, /pending\.some\(tab => tab\.view\.hasChanges\)/);
     assert.match(workspace, /pending\.some\(tab => !tab\.image\.file\.path\)/);
     assert.doesNotMatch(workspace, /tabs_unsaved_message/);
+  });
+});
+
+describe('helper text legibility and clipboard copy', () => {
+  it('bumps helper, description and detail text by a point', () => {
+    const css = flat(appCss);
+    const ycss = flat(youtubeCss);
+    assert.match(css, /\.confirm-detail \{ font-size: 12px;/);
+    assert.match(css, /\.drop-sub \{ font-size: 13px;/);
+    assert.match(css, /#drop-zone \.drop-sub \{ color: var\(--cyber-muted\); font-size: 13px;/);
+    assert.match(css, /\.config-desc \{ font-size: 13px;/);
+    assert.match(css, /\.modal-subtitle \{ color: var\(--cyber-muted\); font-size: 12px;/);
+    assert.match(css, /\.first-close-option-sub \{ font-size: 13px;/);
+    assert.match(css, /\.props-path-val \{ text-align: left !important; color: var\(--cyber-accent-ink\) !important; font-size: 12px;/);
+    assert.match(css, /\.menu-header-sub \{ font-size: 12px;/);
+    assert.match(css, /#modal-config \.config-tab-intro-desc \{ margin-top: 3px; color: var\(--cyber-muted\); font-size: 12px;/);
+    assert.match(css, /\.about-formats-label \{ font-size: 11px;/);
+    assert.match(css, /\.about-formats-tech \{ display: block; font-size: 11px;/);
+    assert.match(ycss, /\.youtube-dialog p \{ margin: 0; color: var\(--cyber-muted\); font-size: 13px; line-height: 1\.5; \}/);
+    assert.match(ycss, /#youtube-status \{ color: var\(--cyber-muted\); font-size: 12px; line-height: 1\.35; \}/);
+  });
+
+  it('copies images to the clipboard through the Electron 45 item API', () => {
+    assert.match(mainJs, /async function writeClipboardImage\(buffer\)/);
+    assert.match(mainJs, /new ClipboardItem\(\{ 'image\/png': blob \}\)/);
+    assert.match(mainJs, /writeClipboardImage\(data\)\.catch\(\(\) => \{\}\)/);
+    // writeImage may only remain inside the feature-detected legacy branch.
+    const calls = (mainJs.match(/clipboard\.writeImage\(img\);/g) || []).length;
+    assert.equal(calls, 1, 'writeImage only inside the feature-detected helper');
   });
 });

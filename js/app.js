@@ -6677,8 +6677,12 @@ async function syncPasteAffordance() {
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
   const t = I18N[lang] || I18N.en || {};
   const key = ytUrl ? 'drop_paste_youtube' : 'drop_paste';
-  btn.dataset.i18n = key;
-  btn.textContent = t[key] || (ytUrl ? 'Paste YouTube URL' : 'Paste image · Ctrl+V');
+  // Only the label span changes; the Ctrl+V hint span stays untouched.
+  const label = btn.querySelector('.drop-btn-label');
+  if (label) {
+    label.dataset.i18n = key;
+    label.textContent = t[key] || (ytUrl ? 'Paste YouTube link' : 'Paste image');
+  }
 }
 window.addEventListener('focus', () => { void syncPasteAffordance(); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) void syncPasteAffordance(); });

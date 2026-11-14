@@ -1170,7 +1170,7 @@
     line-height: 1.35;
   }
   .menu-header-sub {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--cyber-muted);
     font-weight: 500;
     letter-spacing: 0.2px;
@@ -2535,7 +2535,7 @@
   }
 
   .drop-sub {
-    font-size: 12px;
+    font-size: 13px;
     font-family: var(--font-ui);
     font-weight: 500;
     letter-spacing: 0.6px;
@@ -2547,7 +2547,7 @@
 
   #drop-zone .drop-sub {
     color: var(--cyber-muted);
-    font-size: 12px;
+    font-size: 13px;
     letter-spacing: 0.25px;
     line-height: 1.45;
   }
@@ -4008,7 +4008,7 @@
   .modal-title-copy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
   .modal-subtitle {
     color: var(--cyber-muted);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 400;
     letter-spacing: 0;
     line-height: 1.4;
@@ -4097,7 +4097,7 @@
     color: var(--cyber-menu-text);
   }
   .first-close-option-sub {
-    font-size: 12px;
+    font-size: 13px;
     color: var(--cyber-muted);
     line-height: 1.4;
   }
@@ -4280,7 +4280,7 @@
   }
   
   .confirm-detail {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--cyber-muted);
     font-family: var(--font-ui);
     word-break: break-all;
@@ -4560,7 +4560,7 @@
   .props-path-val {
     text-align: left !important;
     color: var(--cyber-accent-ink) !important;
-    font-size: 11px;
+    font-size: 12px;
     width: 100%;
     line-height: 1.35;
     display: flex;
@@ -4793,7 +4793,7 @@
 
   .config-info { flex: 1; }
   .config-name { font-size: 14px; font-weight: 600; color: var(--cyber-text); }
-  .config-desc { font-size: 12px; color: var(--cyber-muted); margin-top: 2px; }
+  .config-desc { font-size: 13px; color: var(--cyber-muted); margin-top: 2px; }
 
 
   /* ── SWITCH ── */
@@ -5575,7 +5575,7 @@
   #modal-config .config-tab-intro-desc {
     margin-top: 3px;
     color: var(--cyber-muted);
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1.45;
   }
 
@@ -7095,7 +7095,7 @@
 }
 .about-formats-tech {
   display: block;
-  font-size: 10px;
+  font-size: 11px;
   opacity: 0.85;
 }
 .about-formats-row {
@@ -7106,7 +7106,7 @@
   gap: 4px;
 }
 .about-formats-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
