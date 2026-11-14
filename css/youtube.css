@@ -56,7 +56,14 @@ body.youtube-error #statusbar { display: none !important; }
 .youtube-dialog-body > label:first-child { display: block; margin: 0 0 8px; color: var(--cyber-text); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 #youtube-url { width: 100%; box-sizing: border-box; background: var(--cyber-black); color: var(--cyber-text); border: 1px solid var(--cyber-border); border-radius: 6px; padding: 12px; font: 13px var(--font-ui); transition: border-color 150ms ease, box-shadow 150ms ease; }
 #youtube-url:hover { border-color: rgba(var(--cyber-accent-rgb), .45); }
-#youtube-url:focus { border-color: var(--cyber-accent); box-shadow: 0 0 0 3px rgba(var(--cyber-accent-rgb), .12); }
+/* Focus: one soft edge instead of border + ring + outline stacked. The plain
+   border change keeps the indicator visible for keyboard users. */
+#youtube-url:focus,
+#youtube-url:focus-visible {
+  outline: none;
+  border-color: rgba(var(--cyber-accent-rgb), .55);
+  box-shadow: 0 0 0 1px rgba(var(--cyber-accent-rgb), .18), 0 0 14px rgba(var(--cyber-accent-rgb), .12);
+}
 #youtube-url-error { margin-top: 8px !important; color: var(--cyber-danger-ink) !important; }
 .youtube-dialog-body .youtube-loop { margin-top: 16px; padding: 0; color: var(--cyber-text); }
 .youtube-dialog-actions { display: flex; gap: 10px; justify-content: flex-end; padding: 14px 24px; border-top: 1px solid var(--cyber-border); }

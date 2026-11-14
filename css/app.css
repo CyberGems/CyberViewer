@@ -27,7 +27,9 @@
     --cyber-dim: #1a2535;
     --cyber-text: #c8d8e8;
     --cyber-menu-text: #e6f3ff;
-    --cyber-muted: #4a6080;
+    /* Secondary text sits between the ink and the panel so long helper lines
+       stay readable; brighter than the old #4a6080, still far from white. */
+    --cyber-muted: #7d93b3;
 
     /* Theme tokens. Every theme (CyberViewer / gray / light) redefines these,
        so components compose colours from tokens instead of hardcoding a dark
@@ -99,8 +101,8 @@
     --cyber-text-soft-3: #91a4bd;
     --cyber-text-soft-4: #93a7c2;
     --cyber-text-soft-5: #8296b2;
-    --cyber-text-soft-6: #62758f;
-    --cyber-text-soft-7: #7185a2;
+    --cyber-text-soft-6: #8ba0bd;
+    --cyber-text-soft-7: #8fa4c0;
     --cyber-text-soft-8: #d1dbea;
     --cyber-ring: #ffffff;             /* active swatch ring */
     --cyber-knob: #12161e;             /* switch knob (off) */
@@ -1085,7 +1087,7 @@
   }
   .menu-cat .menu-label, .menu-item .menu-label { flex: 1; white-space: nowrap; color: var(--cyber-menu-text); }
   .menu-arrow { color: var(--cyber-muted); font-size: 17px; line-height: 1; }
-  .menu-shortcut { color: var(--cyber-accent-ink); opacity: 0.5; font-size: 11px; letter-spacing: .5px; flex-shrink: 0; }
+  .menu-shortcut { color: var(--cyber-accent-ink); opacity: 0.72; font-size: 11px; letter-spacing: .5px; flex-shrink: 0; }
 
   /* Recent files flyout: show filename, truncate long names */
   .menu-recent-sub {
@@ -1119,7 +1121,7 @@
   }
   .menu-cat:hover .menu-arrow { color: var(--cyber-text); }
   .menu-cat:hover > .menu-shortcut,
-  .menu-item:hover > .menu-shortcut { color: var(--cyber-text); opacity: 0.7; }
+  .menu-item:hover > .menu-shortcut { color: var(--cyber-text); opacity: 0.92; }
   .menu-item.danger:hover {
     background: rgba(var(--cyber-accent2-rgb), 0.14);
     color: var(--cyber-accent2-ink);
@@ -7914,7 +7916,7 @@ html[data-theme='gray'] {
   --cyber-dim: #242424;
   --cyber-text: #d6d6d6;
   --cyber-menu-text: #f2f2f2;
-  --cyber-muted: #8c8c8c;
+  --cyber-muted: #a6a6a6;
 
   --cyber-tint-rgb: 255, 255, 255;
   --cyber-scrim-rgb: 0, 0, 0;
@@ -7984,8 +7986,8 @@ html[data-theme='gray'] {
   --cyber-text-soft-3: #b0b0b0;
   --cyber-text-soft-4: #b4b4b4;
   --cyber-text-soft-5: #a8a8a8;
-  --cyber-text-soft-6: #8e8e8e;
-  --cyber-text-soft-7: #9a9a9a;
+  --cyber-text-soft-6: #a3a3a3;
+  --cyber-text-soft-7: #b0b0b0;
   --cyber-text-soft-8: #dcdcdc;
   --cyber-ring: #e8e8e8;
   --cyber-knob: #1a1a1a;
