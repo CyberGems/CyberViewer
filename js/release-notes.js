@@ -46,6 +46,9 @@
         .replace(/#{2,4}\s*(?:🔐\s*)?(?:Checksums|Sumas de verificación|VirusTotal)[\s\S]*/i, '')
         // Strip footer
         .replace(/\*Crafted with precision[\s\S]*/i, '')
+        // Strip the Before you install block (release-page furniture)
+        .replace(/^#{2,4}\s*⚠️\s*(?:Before you install|Antes de instalar)[\s\S]*?\n---/gim, '')
+        .replace(/^#{2,4}\s*⚠️\s*(?:Before you install|Antes de instalar)[\s\S]*$/gim, '')
         // Strip introductory blockquotes
         .replace(/^>\s*\*\*.*?(?:New to CyberViewer|Nuevo en CyberViewer).*?(?:\r?\n|$)/gim, '')
         // Normalize excessive newlines
