@@ -3609,6 +3609,8 @@ function rotate(deg) {
   state.hasChanges = state.currentRotation !== 0;
   updateSaveButton();
   updateHUDStates();
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  showModeHud(lang === 'es' ? 'ROTADA ' + state.currentRotation + '°' : 'ROTATED ' + state.currentRotation + '°');
 }
 
 // ── IMAGE FLIP (permanent copy) ──
@@ -6439,7 +6441,8 @@ async function copyToClipboard() {
     } else {
       throw new Error('clipboard unavailable');
     }
-    showToast(i18nLang.toast_copied || 'IMAGEN COPIADA', 'success');
+    // Success feedback goes to the view HUD (toast stays for errors).
+    showModeHud(i18nLang.toast_copied || 'IMAGEN COPIADA');
   } catch (err) {
     console.error('Error al copiar:', err);
     showToast(i18nLang.toast_copy_error || 'ERROR AL COPIAR', 'error');
@@ -10888,7 +10891,7 @@ function addFavorite() {
       window.electronAPI.saveSettings(state.settings.app);
     }
     const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
-    showToast(lang === 'es' ? 'AÑADIDO A FAVORITOS' : 'ADDED TO FAVORITES', 'success');
+    showModeHud(lang === 'es' ? 'AÑADIDO A FAVORITOS' : 'ADDED TO FAVORITES');
     updateFavButtonState();
     if (typeof buildSidebar === 'function') buildSidebar();
   }
@@ -10910,7 +10913,7 @@ function removeFavorite() {
       window.electronAPI.saveSettings(state.settings.app);
     }
     const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
-    showToast(lang === 'es' ? 'ELIMINADO DE FAVORITOS' : 'REMOVED FROM FAVORITES', 'info');
+    showModeHud(lang === 'es' ? 'ELIMINADO DE FAVORITOS' : 'REMOVED FROM FAVORITES');
     updateFavButtonState();
     if (typeof buildSidebar === 'function') buildSidebar();
   }
