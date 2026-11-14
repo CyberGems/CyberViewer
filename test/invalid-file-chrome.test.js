@@ -279,7 +279,7 @@ describe('helper text legibility and clipboard copy', () => {
   it('bumps helper, description and detail text by a point', () => {
     const css = flat(appCss);
     const ycss = flat(youtubeCss);
-    assert.match(css, /\.confirm-detail \{ font-size: 12px;/);
+    assert.match(css, /\.confirm-detail \{ font-size: 13px;/);
     assert.match(css, /\.drop-sub \{ font-size: 13px;/);
     assert.match(css, /#drop-zone \.drop-sub \{ color: var\(--cyber-muted\); font-size: 13px;/);
     assert.match(css, /\.config-desc \{ font-size: 13px;/);
@@ -327,5 +327,29 @@ describe('dialog keyboard ownership and unified view HUD', () => {
     assert.doesNotMatch(flat(appCss), /body\.ghost-mode #mode-hud \{ display: none; \}/);
     assert.match(appJs, /const zoomHud = \$\('mode-hud'\);/);
     assert.match(appJs, /\{ el: \$\('mode-hud'\), hideClass: 'hud-hidden-fade', ghostOnly: true \}/);
+  });
+});
+
+describe('modal flag ownership and save feedback', () => {
+  it('watches every modal overlay so no open/close path can skip the flag', () => {
+    assert.match(appJs, /const modalFlagObserver = new MutationObserver\(refreshModalOpenFlag\);/);
+    assert.match(appJs, /function watchModalFlag\(el\)/);
+    assert.match(appJs, /document\.querySelectorAll\('\.modal-overlay, #about-overlay'\)\.forEach\(watchModalFlag\);/);
+    // Overlays built later (e.g. #about-overlay) get watched on insertion.
+    assert.match(appJs, /new MutationObserver\(\(mutations\) => \{/);
+    assert.match(appJs, /refreshModalOpenFlag\(\);/);
+  });
+
+  it('reports save success through the view HUD', () => {
+    assert.match(appJs, /showModeHud\(lang === 'es' \? 'COPIA GUARDADA' : 'COPY SAVED'\);/);
+    assert.match(appJs, /showModeHud\(lang === 'es' \? 'IMAGEN GUARDADA' : 'IMAGE SAVED'\);/);
+    // Progress and errors stay as toasts.
+    assert.match(appJs, /'GUARDANDO COPIA\.\.\.' : 'SAVING COPY\.\.\.', 'info'/);
+    assert.match(appJs, /showToast\(result\.error \|\| 'ERROR', 'error'\);/);
+  });
+
+  it('lets the mode HUD manage its own visibility', () => {
+    assert.match(flat(appCss), /#mode-hud\.hud-hidden-fade \{ opacity: 0 !important; \}/);
+    assert.match(appJs, /if \(item\.el\.id === 'mode-hud'\) \{\s*return;/);
   });
 });

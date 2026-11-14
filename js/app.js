@@ -2992,7 +2992,7 @@ async function saveAsPath(targetPath) {
 
         if (currentPath && window.CVTabs.pathKey(currentPath) !== window.CVTabs.pathKey(savedPath)) {
           await openImagePath(savedPath, { afterEdit: true });
-          showToast(lang === 'es' ? 'COPIA GUARDADA' : 'COPY SAVED', 'success');
+          showModeHud(lang === 'es' ? 'COPIA GUARDADA' : 'COPY SAVED');
           return;
         }
 
@@ -3002,7 +3002,7 @@ async function saveAsPath(targetPath) {
         state.hasChanges = false;
         buildSidebar();
         showImage(state.current, null, true);
-        showToast(lang === 'es' ? 'IMAGEN GUARDADA' : 'IMAGE SAVED', 'success');
+        showModeHud(lang === 'es' ? 'IMAGEN GUARDADA' : 'IMAGE SAVED');
       } else {
         showToast(result.error || 'ERROR', 'error');
       }
@@ -7343,6 +7343,26 @@ function refreshModalOpenFlag() {
   document.body.classList.toggle('modal-open', !!anyOpen);
 }
 
+// Every dialog keeps the flag in sync by itself: the observer watches each
+// overlay's class, so no open/close path (now or in future overlays) can
+// leave a stale flag hiding the HUD or keeping the keyboard guard active.
+const modalFlagObserver = new MutationObserver(refreshModalOpenFlag);
+function watchModalFlag(el) {
+  if (el) modalFlagObserver.observe(el, { attributes: true, attributeFilter: ['class'] });
+}
+document.querySelectorAll('.modal-overlay, #about-overlay').forEach(watchModalFlag);
+new MutationObserver((mutations) => {
+  for (const m of mutations) {
+    for (const node of m.addedNodes) {
+      if (node.nodeType === 1) {
+        if (node.matches && node.matches('.modal-overlay, #about-overlay')) watchModalFlag(node);
+        if (node.querySelectorAll) node.querySelectorAll('.modal-overlay, #about-overlay').forEach(watchModalFlag);
+      }
+    }
+  }
+}).observe(document.body, { childList: true, subtree: false });
+refreshModalOpenFlag();
+
 function openModal(id) {
   // Dialogs never interrupt playback: media keeps running while any panel is
   // open, and the load/unload paths pause only when files actually change.
@@ -10762,9 +10782,10 @@ function resetHudTimer() {
     if (item.el.id === 'kbd-hint' && !state.isGhost && state.toolbarOpen !== false) {
       item.el.classList.remove('hud-hidden', 'hud-hidden-fade');
     }
-    // Zoom badge needs .visible from a zoom gesture; keep it if user just zoomed in FS
-    if (item.el.id === 'zoom-hud' && !item.el.classList.contains('visible')) {
-      item.el.classList.add('hud-hidden-fade');
+    // The mode HUD manages its own visibility (transient timers); the mouse-idle
+    // pass may hide it, but a reveal must not resurrect stale content.
+    if (item.el.id === 'mode-hud') {
+      return;
     }
   });
 
