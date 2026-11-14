@@ -88,4 +88,6 @@ The `latest.yml` and `.blockmap` files support the in-app update workflow and ar
 
 ---
 
+📜 **Full changelog:** browse every version in [CHANGELOG.md](https://github.com/CyberGems/CyberViewer/blob/main/CHANGELOG.md).
+
 *Crafted with precision by [CyberGems](https://cybergems.org)*
