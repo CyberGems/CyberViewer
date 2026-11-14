@@ -39,7 +39,17 @@ La bandeja del sistema abre ahora una tarjeta anclada en lugar del menú nativo:
 - **Apps de CyberGems y ayuda**: vista Más de CyberGems y enlaces a wiki, FAQ, registro de cambios, web y donar, con el ajuste de Sugerencias para ocultarlas en la bandeja y en Acerca de.
 - **Interfaz más cuidada**: burbujas de tooltip al estilo de la app con rutas completas, iconos de salir y donar rojos en hover, y aviso informativo cuando la búsqueda de actualizaciones no puede ejecutarse.
 
+### ⚠️ Antes de instalar
+
+- **Windows:** esta versión aún no está firmada digitalmente. SmartScreen puede avisar antes de ejecutarla: **Más información › Ejecutar de todas formas**. Cuando Smart App Control está activado, Windows rechaza programas sin firmar; consulta la [política de firma de código](https://github.com/CyberGems/.github/blob/main/CODE_SIGNING.md). Verifica la descarga con los checksums SHA256 que aparecen más abajo.
+
 </details>
+
+---
+
+### ⚠️ Before you install
+
+- **Windows:** this release is not code-signed yet. SmartScreen may ask before it runs: **More info › Run anyway**. Where Smart App Control is on, Windows refuses unsigned programs; see the [code signing policy](https://github.com/CyberGems/.github/blob/main/CODE_SIGNING.md). Verify the download with the SHA256 checksums below.
 
 ---
 
