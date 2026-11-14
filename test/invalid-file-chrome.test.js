@@ -13,6 +13,7 @@ const youtubePlayer = fs.readFileSync(path.join(root, 'js', 'youtube-player.js')
 const html = fs.readFileSync(path.join(root, 'CyberViewer.html'), 'utf8');
 const ui = JSON.parse(fs.readFileSync(path.join(root, 'i18n', 'ui.json'), 'utf8'));
 const mediaTypes = fs.readFileSync(path.join(root, 'js', 'media-types.js'), 'utf8');
+const trayCss = fs.readFileSync(path.join(root, 'css', 'tray-menu.css'), 'utf8');
 const workspace = fs.readFileSync(path.join(root, 'js', 'workspace.js'), 'utf8');
 const mainJs = fs.readFileSync(path.join(root, 'main.js'), 'utf8');
 const preloadJs = fs.readFileSync(path.join(root, 'preload.js'), 'utf8');
@@ -351,5 +352,23 @@ describe('modal flag ownership and save feedback', () => {
   it('lets the mode HUD manage its own visibility', () => {
     assert.match(flat(appCss), /#mode-hud\.hud-hidden-fade \{ opacity: 0 !important; \}/);
     assert.match(appJs, /if \(item\.el\.id === 'mode-hud'\) \{\s*return;/);
+  });
+});
+
+describe('slideshow yields to dialogs and tray text legibility', () => {
+  it('pauses a running slideshow while a dialog is open and resumes it after', () => {
+    assert.match(appJs, /if \(anyOpen && !wasOpen\) pauseSlideshowForModal\(\);/);
+    assert.match(appJs, /else if \(!anyOpen && wasOpen\) resumeSlideshowForModal\(\);/);
+    assert.match(appJs, /function pauseSlideshowForModal\(\) \{\s*if \(state\.slideshowActive && state\.slideshowPlaying && !slideshowPausedByModal\) \{\s*pauseSlideshow\(\);/);
+    assert.match(appJs, /function resumeSlideshowForModal\(\) \{\s*if \(!slideshowPausedByModal\) return;/);
+    // A manual pause stays put: the dialog only reverts its own pause.
+    assert.match(appJs, /slideshowPausedByModal = true;/);
+    assert.match(appJs, /slideshowPausedByModal = false;/);
+  });
+
+  it('lifts the dim tray texts (version and empty state)', () => {
+    assert.match(trayCss, /\.head-ver \{\s*font-size: 11px;\s*font-weight: 500;\s*color: var\(--text-muted\);/);
+    assert.match(trayCss, /\.item-empty-label \{\s*font-style: italic;\s*color: var\(--text-muted\);/);
+    assert.match(trayCss, /\.item-desc \{\s*font-size: 11px;\s*color: var\(--text-muted\);/);
   });
 });

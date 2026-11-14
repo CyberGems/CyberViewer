@@ -114,7 +114,7 @@ html, body {
 .head-ver {
   font-size: 11px;
   font-weight: 500;
-  color: #475569;
+  color: var(--text-muted);
   margin-left: 2px;
   transition: color 0.18s ease;
   pointer-events: none;
@@ -347,7 +347,7 @@ html, body {
 
 .item-empty-label {
   font-style: italic;
-  color: var(--text-dim);
+  color: var(--text-muted);
 }
 
 .item-ico {
@@ -469,8 +469,8 @@ html, body {
 }
 
 .item-desc {
-  font-size: 10px;
-  color: var(--text-dim);
+  font-size: 11px;
+  color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

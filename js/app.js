@@ -7340,7 +7340,29 @@ function scheduleInitialTrayPinReminder() {
 // view modes, toasts) and their banners would glow through the modal backdrop.
 function refreshModalOpenFlag() {
   const anyOpen = document.querySelector('.modal-overlay.active, #about-overlay.active');
+  const wasOpen = document.body.classList.contains('modal-open');
   document.body.classList.toggle('modal-open', !!anyOpen);
+  // A running slideshow would advance images behind the dialog: pause it for
+  // the dialog's lifetime and resume when the last one closes.
+  if (anyOpen && !wasOpen) pauseSlideshowForModal();
+  else if (!anyOpen && wasOpen) resumeSlideshowForModal();
+}
+
+// A manual pause is the user's choice and stays put: only a pause caused by
+// the dialog itself is reverted when it closes.
+let slideshowPausedByModal = false;
+
+function pauseSlideshowForModal() {
+  if (state.slideshowActive && state.slideshowPlaying && !slideshowPausedByModal) {
+    pauseSlideshow();
+    slideshowPausedByModal = true;
+  }
+}
+
+function resumeSlideshowForModal() {
+  if (!slideshowPausedByModal) return;
+  slideshowPausedByModal = false;
+  if (state.slideshowActive && !state.slideshowPlaying) resumeSlideshow();
 }
 
 // Every dialog keeps the flag in sync by itself: the observer watches each
