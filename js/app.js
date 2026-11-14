@@ -6107,6 +6107,7 @@ document.addEventListener('keydown', e => {
     closeModal('modal-first-close');
     const aboutOverlay = $('about-overlay');
     if (aboutOverlay) aboutOverlay.classList.remove('active');
+    refreshModalOpenFlag();
     e.preventDefault();
     return;
   }
@@ -6617,7 +6618,7 @@ function showToast(txt, type = 'info', durationMs = 2500) {
     position:fixed;top:${toastTop}px;bottom:auto;left:50%;transform:translateX(-50%);
     background:${bg};color:#000;padding:8px 24px;
     border-radius:2px;font-family:var(--font-ui);
-    font-size:12px;font-weight:700;z-index:12000;
+    font-size:12px;font-weight:700;z-index:1000010;
     box-shadow: 0 0 20px ${bg.replace('0.95', '0.4')};
     animation: toast-in 220ms ease, toast-out 280ms ease ${fadeAt}ms forwards;
     pointer-events: none;
@@ -6742,15 +6743,34 @@ $('btn-show-folder').addEventListener('click', () => {
   }
 });
 
+// Transient view-mode banner (window mode): hotkeys B/A change the view and
+// the only feedback otherwise is the statusbar slider. Mirrors the ghost
+// zoom-hud: appears, names the mode, fades away.
+let modeHudTimer = null;
+function showModeHud(label) {
+  const hud = $('mode-hud');
+  if (!hud || state.isGhost || document.body.classList.contains('modal-open')) return;
+  hud.textContent = label;
+  hud.classList.add('visible');
+  clearTimeout(modeHudTimer);
+  modeHudTimer = setTimeout(() => hud.classList.remove('visible'), 950);
+}
+
 $('btn-fit-hud').addEventListener('click', () => {
   if (!checkImageLoaded()) return;
   const im = state.images[state.current];
-  if (im && im.w) { state.viewMode = 'fit'; state.selectedViewMode = 'fit'; state.panX=0; state.panY=0; fitToWindow(im.w, im.h); }
+  if (im && im.w) {
+    state.viewMode = 'fit'; state.selectedViewMode = 'fit'; state.panX=0; state.panY=0; fitToWindow(im.w, im.h);
+    const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+    showModeHud((I18N[lang] || I18N.en).fit_to_window || 'FIT');
+  }
 });
 
 $('btn-orig-hud').addEventListener('click', () => {
   if (!checkImageLoaded()) return;
   setOriginalView(true);
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  showModeHud((I18N[lang] || I18N.en).shortcuts_1_1 || 'ACTUAL SIZE');
 });
 
 $('btn-fs-hud').addEventListener('click', () => {
@@ -7305,6 +7325,13 @@ function scheduleInitialTrayPinReminder() {
   setTimeout(maybeShowPendingTrayPinReminder, 0);
 }
 
+// Track when any dialog covers the screen: hotkeys can still fire (slideshow,
+// view modes, toasts) and their banners would glow through the modal backdrop.
+function refreshModalOpenFlag() {
+  const anyOpen = document.querySelector('.modal-overlay.active, #about-overlay.active');
+  document.body.classList.toggle('modal-open', !!anyOpen);
+}
+
 function openModal(id) {
   // Dialogs never interrupt playback: media keeps running while any panel is
   // open, and the load/unload paths pause only when files actually change.
@@ -7313,6 +7340,7 @@ function openModal(id) {
   el.classList.add('active');
   el.setAttribute('role', 'dialog');
   el.setAttribute('aria-modal', 'true');
+  refreshModalOpenFlag();
   const focusable = el.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
   if (focusable) {
     setTimeout(() => focusable.focus(), 0);
@@ -7328,6 +7356,7 @@ function closeModal(id) {
   }
   el.classList.remove('active');
   el.removeAttribute('aria-modal');
+  refreshModalOpenFlag();
   if (id === 'modal-config') { window.CVConfigSelects.close(); clearConfigAccentPreview(); }
   if (id === 'modal-config') setTimeout(maybeShowPendingTrayPinReminder, 0);
 }
@@ -7719,6 +7748,7 @@ function openPrintExportModal() {
   });
   const peAboutOverlay = $("about-overlay");
   if (peAboutOverlay) peAboutOverlay.classList.remove("active");
+  refreshModalOpenFlag();
   if (state.isCropping) return;
 
   let baked;
@@ -10145,12 +10175,14 @@ $('btn-go-end').addEventListener('click', (e) => {
 
     syncUpdateActions(overlay);
     overlay.classList.add('active');
+    refreshModalOpenFlag();
     // One surface at a time: the popup hides while the About is open.
     syncUpdatePopup(false);
   }
 
   function closeAbout() {
     overlay.classList.remove('active');
+    refreshModalOpenFlag();
     // The update may still be pending: the popup returns when the About closes.
     syncUpdatePopup(false);
     if (unsubUpdateStatus) {
@@ -10405,6 +10437,7 @@ $('btn-config').addEventListener('click', openConfig);
     closeModal('modal-tray-pin');
     const aboutOverlay = $('about-overlay');
     if (aboutOverlay) aboutOverlay.classList.remove('active');
+    refreshModalOpenFlag();
   }
 
   function runAction(action, itemEl) {
@@ -10605,6 +10638,18 @@ $('btn-config').addEventListener('click', openConfig);
 })();
 // ── HUD AUTO-HIDE (Sincronizado) ──
 // Docked toolbar (#kbd-hint) only auto-hides in fullscreen (ghost). In window mode it is chrome.
+/* Banner inventory (the floating chrome this array drives):
+   - #topbar            window title bar (always; auto-hide in ghost)      — keep
+   - #statusbar         footer: scan radar, dims, zoom slider (config)     — keep
+   - #kbd-hint          docked action bar (user-collapsible)               — keep
+   - #ghost-close       exit-fullscreen pill (fullscreen only)             — keep
+   - #zoom-hud          zoom % pill (fullscreen only; statusbar covers it) — keep
+   - #slideshow-hud     slideshow controls (hotkey S)                      — keep
+   - #viewer-filename   filename banner (config / toast slot)              — keep
+   - #nav-container     prev/next arrows                                   — keep
+   - #mode-hud          transient view-mode feedback (B/A, window mode)    — new
+   All of them hide while a dialog is open (body.modal-open) so nothing
+   glows through the modal backdrop; toasts are exempt (feedback must read). */
 let hudTimer = null;
 let cursorOnCanvas = false;
 const elementsToHide = [

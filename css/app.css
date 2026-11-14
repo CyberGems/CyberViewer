@@ -1388,6 +1388,22 @@
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
     will-change: transform, opacity;
   }
+  /* ── DIALOGS OWN THE SCREEN ── while any modal is open the floating chrome
+     stays hidden: hotkeys can still trigger banners (slideshow, filename,
+     nav) and they would glow through the 90% modal backdrop. Opacity instead
+     of display avoids layout shifts under the fixed overlay. */
+  body.modal-open #topbar,
+  body.modal-open #statusbar,
+  body.modal-open #kbd-hint,
+  body.modal-open #viewer-filename,
+  body.modal-open #nav-container,
+  body.modal-open #slideshow-hud,
+  body.modal-open #ghost-close,
+  body.modal-open #zoom-hud,
+  body.modal-open #mode-hud {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
   .hud-hidden-top { transform: translateY(-100%) !important; opacity: 0 !important; pointer-events: none; }
   .hud-hidden-bottom { transform: translateY(100%) !important; opacity: 0 !important; pointer-events: none; }
   .hud-hidden-fade { opacity: 0 !important; pointer-events: none; }
@@ -3035,6 +3051,34 @@
   #zoom-hud.hud-hidden-fade {
     opacity: 0 !important;
   }
+
+  /* ── MODE HUD (window mode: transient feedback for view-mode hotkeys) ──
+     Ghost mode has the zoom HUD; here hotkeys B/A only moved the statusbar
+     slider, so the named mode appears as a pill above the statusbar. */
+  #mode-hud {
+    position: absolute;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    z-index: 1100;
+    box-sizing: border-box;
+    background: rgba(var(--cyber-modal-rgb), 0.94);
+    border: 1px solid rgba(var(--cyber-accent-rgb), 0.28);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--cyber-accent-ink);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+  #mode-hud.visible { opacity: 1; }
+  body.statusbar-visible #mode-hud { bottom: 52px; }
+  body.ghost-mode #mode-hud { display: none; }
 
   #radar-wrapper {
     display: flex;
