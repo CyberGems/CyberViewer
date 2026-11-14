@@ -11,6 +11,14 @@ const crypto = require('crypto');
 const { pathToFileURL } = require('url');
 const { execFile, spawn } = require('child_process');
 
+// Dev isolation: automated verification runs must never touch the user's saved
+// session/settings. Launching with --cv-dev-session redirects userData into a
+// sandbox folder, so pastes, tab changes and settings made during tests stay
+// there and vanish when the folder is wiped.
+if (process.argv.includes('--cv-dev-session')) {
+  app.setPath('userData', path.join(app.getPath('userData'), 'dev'));
+}
+
 const {
   cleanFsPath, toMediaUrl, createPathAllowlist, MEDIA_EXTS, IMAGE_EXTS,
   isExistingMediaFile, isVideoPath, isAudioPath
