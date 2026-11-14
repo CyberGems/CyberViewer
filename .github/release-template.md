@@ -6,16 +6,12 @@
 
 ### 🚀 What's new in this release
 
-<!-- IMPORTANT FOR AGENTS & MAINTAINERS: Always rewrite this entire section and highlights with the ACTUAL release notes for this specific new version before tagging. NEVER leave or copy previous version notes! Use 25-45 words for the summary, lead with user-facing changes, and do not repeat the app name or version. -->
+<!-- IMPORTANT FOR AGENTS & MAINTAINERS: Always rewrite this entire section and highlights with the ACTUAL release notes for this specific new version before tagging. NEVER leave or copy previous version notes! Use 25-45 words for the summary, lead with user-facing changes, and do not repeat the app name or version. Keep the Spanish mirror inside the details block in sync: translate the summary and rewrite the highlights. -->
 <!-- changelog-summary:start -->
 The tray menu becomes a suite-standard popup: a live status row, show/hide, recent files with real thumbnails, help links and other CyberGems apps, all behind a new Suggestions setting. App-style tooltips, red exit and donate icons, and clearer hints when update checks cannot run.
 <!-- changelog-summary:end -->
 
 > **New to CyberViewer?** A fast Windows media viewer for images, video and audio, with on-the-spot edits, tabs, favorites, slideshows, and a session that reopens where you left it.
-
----
-
-The system tray now opens an anchored card instead of a native menu: show or hide the viewer, open files, reopen the last images with real thumbnails, and reach the help pages and the rest of the CyberGems suite. A new Suggestions setting hides those recommendations in the tray and in About, tooltips follow the app style, and update checks explain themselves in development or portable builds.
 
 ---
 
