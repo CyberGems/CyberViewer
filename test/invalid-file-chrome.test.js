@@ -303,3 +303,29 @@ describe('helper text legibility and clipboard copy', () => {
     assert.equal(calls, 1, 'writeImage only inside the feature-detected helper');
   });
 });
+
+describe('dialog keyboard ownership and unified view HUD', () => {
+  it('swallows content hotkeys while a dialog is open', () => {
+    // Paste with no image fired its banner behind modals; the guard sits
+    // before the content hotkey switch so nothing acts (or toasts) there.
+    assert.match(appJs, /if \(document\.body\.classList\.contains\('modal-open'\)\) return;/);
+    const guardIdx = appJs.indexOf("if (document.body.classList.contains('modal-open')) return;");
+    const pasteIdx = appJs.indexOf("case 'v': e.preventDefault(); pasteFromClipboard(); break;");
+    assert.ok(guardIdx > -1 && pasteIdx > -1 && guardIdx < pasteIdx, 'guard must precede the paste hotkey');
+  });
+
+  it('hides the sidebar toggle for pasted-image tabs', () => {
+    assert.match(flat(appCss), /body\.current-unsaved #sidebar-handle \{ display: none !important; \}/);
+    assert.match(appJs, /document\.body\.classList\.toggle\('current-unsaved', !!\(cur && !cur\.file\.path\)\);/);
+  });
+
+  it('unifies zoom and mode feedback into one view HUD', () => {
+    assert.equal((html.match(/id="zoom-hud"/g) || []).length, 0, 'zoom-hud removed');
+    assert.equal((flat(appCss).match(/#zoom-hud/g) || []).length, 0, 'zoom-hud CSS removed');
+    assert.match(html, /id="mode-hud"/);
+    assert.match(flat(appCss), /#mode-hud\.hud-hidden-fade \{ opacity: 0 !important; \}/);
+    assert.doesNotMatch(flat(appCss), /body\.ghost-mode #mode-hud \{ display: none; \}/);
+    assert.match(appJs, /const zoomHud = \$\('mode-hud'\);/);
+    assert.match(appJs, /\{ el: \$\('mode-hud'\), hideClass: 'hud-hidden-fade', ghostOnly: true \}/);
+  });
+});

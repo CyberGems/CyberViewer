@@ -12,7 +12,7 @@
 #video-speed-panel[hidden] { display: none !important; }
 body.video-active #kbd-hint, body.video-active #toolbar-handle,
 body.video-active #statusbar, body.video-active #viewer-filename,
-body.video-active #nav-container, body.video-active #zoom-hud { display: none !important; }
+body.video-active #nav-container, body.video-active #mode-hud { display: none !important; }
 body.video-active #viewer-wrap { margin-bottom: 0 !important; background: #000; cursor: default; --dock-h: 0px; }
 body.video-active #viewer-wrap::before { display: none; }
 body.video-active #canvas-layer { bottom: 0 !important; }

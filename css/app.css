@@ -386,15 +386,6 @@
   }
   body.ghost-mode #sidebar { display: none !important; }
   body.ghost-mode #sidebar-handle { display: none !important; }
-  /* Floating zoom HUD only in fullscreen (window mode uses statusbar slider) */
-  body:not(.ghost-mode) #zoom-hud {
-    display: none !important;
-  }
-  /* Stack under exit (X): 16 + 32 + 8 gap = 56 */
-  body.ghost-mode #zoom-hud {
-    top: 56px;
-    right: 20px;
-  }
   /* Side prev/next are redundant with slideshow HUD arrows */
   body.slideshow-active #nav-container {
     display: none !important;
@@ -1399,7 +1390,6 @@
   body.modal-open #nav-container,
   body.modal-open #slideshow-hud,
   body.modal-open #ghost-close,
-  body.modal-open #zoom-hud,
   body.modal-open #mode-hud {
     opacity: 0 !important;
     pointer-events: none !important;
@@ -3020,37 +3010,6 @@
     color: var(--cyber-accent-ink);
   }
 
-  /* ── ZOOM HUD (fullscreen floating; auto-hide synced with other HUD) ── */
-  #zoom-hud {
-    position: absolute;
-    top: 12px;
-    right: 20px;
-    z-index: 6;
-    min-height: 32px;
-    box-sizing: border-box;
-    background: rgba(var(--cyber-modal-rgb),0.9);
-    border: 1px solid var(--cyber-border);
-    border-radius: 4px;
-    padding: 6px 10px;
-    font-family: var(--font-ui);
-    font-weight: 700;
-    font-size: 12px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--cyber-accent-ink);
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  #zoom-hud.visible { opacity: 1; }
-  /* Same fade used by ghost-close / nav when HUD auto-hides */
-  #zoom-hud.hud-hidden-fade {
-    opacity: 0 !important;
-  }
 
   /* ── MODE HUD (window mode: transient feedback for view-mode hotkeys) ──
      Ghost mode has the zoom HUD; here hotkeys B/A only moved the statusbar
@@ -3077,8 +3036,17 @@
     transition: opacity 0.35s ease;
   }
   #mode-hud.visible { opacity: 1; }
+  #mode-hud.hud-hidden-fade { opacity: 0 !important; }
   body.statusbar-visible #mode-hud { bottom: 52px; }
-  body.ghost-mode #mode-hud { display: none; }
+  /* Ghost keeps the old zoom-HUD corner (stacked under the exit X) so the
+     pill never collides with the floating action bar. */
+  body.ghost-mode #mode-hud {
+    top: 56px;
+    right: 20px;
+    bottom: auto;
+    left: auto;
+    transform: none;
+  }
 
   #radar-wrapper {
     display: flex;
@@ -3505,6 +3473,11 @@
   /* Welcome screen has no files to list, so the sidebar toggle is useless
      chrome; hide it (the menu item stays, but nothing to browse yet). */
   body.empty-state #sidebar-handle {
+    display: none !important;
+  }
+  /* Same for a tab whose image was pasted: no folder to scan or list.
+     Favorites stay reachable from the menu. */
+  body.current-unsaved #sidebar-handle {
     display: none !important;
   }
   body.empty-state #sidebar {

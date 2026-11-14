@@ -231,8 +231,6 @@ const mainImg    = $('main-img');
 const spinner    = $('spinner');
 const dropZone   = $('drop-zone');
 const fileInput  = $('file-input');
-const zoomHud    = $('zoom-hud');
-const zoomVal    = $('zoom-val');
 const btnOpen    = $('btn-open');
 const btnConfig  = $('btn-config');
 const btnAbout   = $('btn-about');
@@ -939,7 +937,6 @@ function clearViewer(opts = {}) {
   state.openSeq++;
   updateThumbProgress(0, 0);
 
-  zoomVal.textContent = '100%';
   const zoomPct = $('zoom-pct');
   if (zoomPct) zoomPct.textContent = '100%';
   const zoomSlider = $('zoom-slider');
@@ -5222,10 +5219,10 @@ function updateZoomHUD(opts = {}) {
   const baseZoom = getOriginalZoom();
   const displayZoom = baseZoom > 0 ? state.zoom / baseZoom : state.zoom;
   const pct = Math.round(displayZoom * 100);
-  zoomVal.textContent = pct + '%';
   $('zoom-pct').textContent = pct + '%';
   const slider = $('zoom-slider');
   if (slider) slider.value = zoomToSlider(displayZoom);
+  const zoomHud = $('mode-hud'); // unified view HUD (zoom here, mode names elsewhere)
   if (!zoomHud) return;
 
   // Floating badge is fullscreen-only
@@ -5244,6 +5241,7 @@ function updateZoomHUD(opts = {}) {
   }
 
   // User zoom (or normal FS zoom) — show badge; own short fade so slideshow idle-hide won't kill it instantly
+  zoomHud.textContent = pct + '%';
   zoomHud.classList.add('visible');
   zoomHud.classList.remove('hud-hidden-fade');
   clearTimeout(state.zoomTimer);
@@ -5569,10 +5567,10 @@ function hideFloatingChromeForSlideshow() {
   fade('ghost-close', 'hud-hidden-fade');
   fade('viewer-filename', 'hud-hidden-fade');
   fade('nav-container', 'hud-hidden-fade');
-  fade('zoom-hud', 'hud-hidden-fade');
+  fade('mode-hud', 'hud-hidden-fade');
   const kbd = $('kbd-hint');
   if (kbd && state.isGhost) kbd.classList.add('hud-hidden');
-  const zh = $('zoom-hud');
+  const zh = $('mode-hud');
   if (zh) zh.classList.remove('visible');
 
   // Re-arm hide timer only after next mouse reveal (mousemove → resetHudTimer)
@@ -6197,6 +6195,14 @@ document.addEventListener('keydown', e => {
   }
 
   if (state.isCropping) return; // modo Crop: el recorte es la unica accion activa
+
+  // A dialog owns the keyboard: content hotkeys must not act behind the modal
+  // nor fire their feedback banners (paste with no image, slideshow, view
+  // modes, save dialogs...). Escape, titlebar keys and the modal-internal
+  // Enter confirms already ran above; unhandled keys keep native behaviour
+  // (Tab focus traversal inside the dialog still works).
+  if (document.body.classList.contains('modal-open')) return;
+
   const pendingRotation = state.currentRotation !== 0 && state.hasChanges;
   const isCtrl = e.ctrlKey || e.metaKey;
 
@@ -6746,14 +6752,16 @@ $('btn-show-folder').addEventListener('click', () => {
 // Transient view-mode banner (window mode): hotkeys B/A change the view and
 // the only feedback otherwise is the statusbar slider. Mirrors the ghost
 // zoom-hud: appears, names the mode, fades away.
-let modeHudTimer = null;
 function showModeHud(label) {
   const hud = $('mode-hud');
-  if (!hud || state.isGhost || document.body.classList.contains('modal-open')) return;
+  if (!hud || document.body.classList.contains('modal-open')) return;
+  // One shared timer with the zoom feedback: a zoom tick cancels a pending
+  // mode fade and vice versa, so the last action always wins the HUD.
   hud.textContent = label;
   hud.classList.add('visible');
-  clearTimeout(modeHudTimer);
-  modeHudTimer = setTimeout(() => hud.classList.remove('visible'), 950);
+  hud.classList.remove('hud-hidden-fade');
+  clearTimeout(state.zoomTimer);
+  state.zoomTimer = setTimeout(() => hud.classList.remove('visible'), 950);
 }
 
 $('btn-fit-hud').addEventListener('click', () => {
@@ -9201,6 +9209,11 @@ function updateHUDStates() {
   const fsBtn = $('btn-fs-hud');
   const commit = $('btn-commit');
 
+  // A pasted image has no folder, so the sidebar cannot scan or list
+  // anything for this tab: the toggle is hidden for its lifetime.
+  const cur = state.images[state.current];
+  document.body.classList.toggle('current-unsaved', !!(cur && !cur.file.path));
+
   const pendingRotation = state.currentRotation !== 0 && state.hasChanges;
   syncRotationPendingState(pendingRotation);
   if (pendingRotation) {
@@ -10643,13 +10656,13 @@ $('btn-config').addEventListener('click', openConfig);
    - #statusbar         footer: scan radar, dims, zoom slider (config)     — keep
    - #kbd-hint          docked action bar (user-collapsible)               — keep
    - #ghost-close       exit-fullscreen pill (fullscreen only)             — keep
-   - #zoom-hud          zoom % pill (fullscreen only; statusbar covers it) — keep
+   - #mode-hud          view HUD: mode names (B/A) + zoom % (wheel)      — new
    - #slideshow-hud     slideshow controls (hotkey S)                      — keep
    - #viewer-filename   filename banner (config / toast slot)              — keep
    - #nav-container     prev/next arrows                                   — keep
-   - #mode-hud          transient view-mode feedback (B/A, window mode)    — new
    All of them hide while a dialog is open (body.modal-open) so nothing
-   glows through the modal backdrop; toasts are exempt (feedback must read). */
+   glows through the modal backdrop; toasts are exempt (feedback must read).
+   Content hotkeys are swallowed by the keydown guard for the same reason. */
 let hudTimer = null;
 let cursorOnCanvas = false;
 const elementsToHide = [
@@ -10657,7 +10670,7 @@ const elementsToHide = [
   { el: $('statusbar'), hideClass: 'hud-hidden-bottom', ghostOnly: false },
   { el: $('kbd-hint'), hideClass: 'hud-hidden', ghostOnly: true },
   { el: $('ghost-close'), hideClass: 'hud-hidden-fade', ghostOnly: true },
-  { el: $('zoom-hud'), hideClass: 'hud-hidden-fade', ghostOnly: true },
+  { el: $('mode-hud'), hideClass: 'hud-hidden-fade', ghostOnly: true },
   { el: $('slideshow-hud'), hideClass: 'hud-hidden-fade', ghostOnly: false },
   { el: $('viewer-filename'), hideClass: 'hud-hidden-fade', ghostOnly: false },
   { el: $('nav-container'), hideClass: 'hud-hidden-fade', ghostOnly: false }
@@ -10692,7 +10705,7 @@ function resetHudTimer() {
     if (kbd && state.isGhost) kbd.classList.add('hud-hidden');
     const nav = $('nav-container');
     if (nav) nav.classList.add('hud-hidden-fade');
-    const zh = $('zoom-hud');
+    const zh = $('mode-hud');
     if (zh && state.isGhost) zh.classList.add('hud-hidden-fade');
     const ss = $('slideshow-hud');
     if (ss && state.slideshowActive) ss.classList.add('hud-hidden-fade');
