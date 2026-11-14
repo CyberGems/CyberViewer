@@ -11,6 +11,8 @@
 The tray menu becomes a suite-standard popup: a live status row, show/hide, recent files with real thumbnails, help links and other CyberGems apps, all behind a new Suggestions setting. App-style tooltips, red exit and donate icons, and clearer hints when update checks cannot run.
 <!-- changelog-summary:end -->
 
+> **New to CyberViewer?** A fast Windows media viewer for images, video and audio, with on-the-spot edits, tabs, favorites, slideshows, and a session that reopens where you left it.
+
 ---
 
 The system tray now opens an anchored card instead of a native menu: show or hide the viewer, open files, reopen the last images with real thumbnails, and reach the help pages and the rest of the CyberGems suite. A new Suggestions setting hides those recommendations in the tray and in About, tooltips follow the app style, and update checks explain themselves in development or portable builds.
@@ -33,6 +35,8 @@ The system tray now opens an anchored card instead of a native menu: show or hid
 ### 🚀 Novedades de esta versión
 
 La bandeja del sistema abre ahora una tarjeta anclada en lugar del menú nativo: muestra u oculta el visor, abre archivos, retoma las últimas imágenes con miniaturas reales y llega a las páginas de ayuda y al resto de la suite CyberGems. Un nuevo ajuste de Sugerencias oculta esas recomendaciones en la bandeja y en Acerca de, los tooltips siguen el estilo de la app y la búsqueda de actualizaciones se explica sola en builds de desarrollo o portable.
+
+> **¿Nuevo en CyberViewer?** Un visor de medios rápido para Windows (imágenes, vídeo y audio), con edición al instante, pestañas, favoritos, pases de diapositivas y una sesión que reabre donde la dejaste.
 
 - **Popup estándar de la suite**: clic derecho en el icono para ver el estado en vivo, mostrar u ocultar con el atajo, y abrir archivos desde una tarjeta anclada.
 - **Archivos recientes con miniaturas**: lanza los cuatro últimos con un clic, consulta la lista completa de diez o límpiala; las imágenes muestran vistas previas reales por el mismo canal seguro del visor.
