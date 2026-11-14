@@ -30,13 +30,17 @@ The system tray now opens an anchored card instead of a native menu: show or hid
 - ✨ **Interface polish**: app-style tooltip bubbles with full file paths, exit and donate icons that stay red on hover, and an informational hint when update checks cannot run in development or portable builds.
 
 <details>
-<summary><b>🌐 Ver notas de la versión en Español</b></summary>
+<summary><b>🇪🇸 Ver notas de la versión en Español</b></summary>
 
 ### 🚀 Novedades de esta versión
 
 La bandeja del sistema abre ahora una tarjeta anclada en lugar del menú nativo: muestra u oculta el visor, abre archivos, retoma las últimas imágenes con miniaturas reales y llega a las páginas de ayuda y al resto de la suite CyberGems. Un nuevo ajuste de Sugerencias oculta esas recomendaciones en la bandeja y en Acerca de, los tooltips siguen el estilo de la app y la búsqueda de actualizaciones se explica sola en builds de desarrollo o portable.
 
 > **¿Nuevo en CyberViewer?** Un visor de medios rápido para Windows (imágenes, vídeo y audio), con edición al instante, pestañas, favoritos, pases de diapositivas y una sesión que reabre donde la dejaste.
+
+---
+
+### ✨ Novedades destacadas
 
 - **Popup estándar de la suite**: clic derecho en el icono para ver el estado en vivo, mostrar u ocultar con el atajo, y abrir archivos desde una tarjeta anclada.
 - **Archivos recientes con miniaturas**: lanza los cuatro últimos con un clic, consulta la lista completa de diez o límpiala; las imágenes muestran vistas previas reales por el mismo canal seguro del visor.
