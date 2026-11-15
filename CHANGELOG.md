@@ -2,6 +2,32 @@
 
 All notable changes to CyberViewer are documented here.
 
+## [1.23.0] - 2026-11-15
+
+### 🇺🇸 English
+
+- Dedicated invalid-file view: when a file is missing or unreadable, a refined error banner owns the canvas. The action bar and statusbar hide, the sidebar toggle is disabled while the tab is broken, banner buttons use the app action color with "Locate file" listed before "Open another image", and pan, zoom and double-click gestures no longer respond to nothing.
+- Welcome screen polish: a "YouTube link" entry (Ctrl+L) opens the YouTube dialog without any file, the format list becomes a flyout on the drop icon showing the About-style badge chips, the sidebar toggle hides with no files open, Paste is relabeled "Paste image", and the primary button stacks above the secondary pair.
+- YouTube URL paste: the Paste button relabels itself to "Paste YouTube URL" when the clipboard holds a YouTube link (re-probed on window focus), and Ctrl+V opens it too. Wording is unified to "YouTube link", the dedicated button hides while paste is in link mode, and the close warning now reflects only what is actually pending (rotations, images never saved, or both) in singular or plural.
+- View-mode HUD: a new mode HUD surfaces view-mode feedback (Fit, 1:1, fullscreen zoom) and now carries copy, favorite, rotation and save success feedback instead of toasts over the image. Floating chrome (topbar, statusbar, action bar, filename banner, nav arrows and HUDs) hides behind dialogs, content hotkeys are blocked while a dialog is open, the sidebar hides for pasted images, toasts stay readable above dialogs, and the modal flag self-heals from every overlay.
+- A running slideshow pauses while a dialog is open and resumes when the last dialog closes; a manual pause is respected.
+- Fixed image paste broken by the Electron 45 clipboard API change: the probe feature-detects both eras and reads images through async clipboard items. Copy-image is repaired, shortcut hints are unified and helper text sizes are bumped.
+- Legibility polish: the dialog focus ring becomes a single dimmed border with a soft halo, secondary text is lifted across the dark and gray themes (helper texts, confirm details, menu hints) and dim tray texts are raised.
+- Windows uninstall registry metadata now includes the website URL and consistent English comments.
+- Runtime updates: Electron 45.3.0, electron-updater 6.8.11 and music-metadata 12.4.0.
+
+### 🇪🇸 Español
+
+- Vista dedicada de archivo inválido: cuando un archivo falta o no se puede leer, un banner de error refinado toma el lienzo. La barra de acciones y la de estado se ocultan, el toggle de la barra lateral se desactiva mientras la pestaña esté rota, los botones del banner usan el color de acción de la app con "Localizar archivo" antes de "Abrir otra imagen", y los gestos de paneo, zoom y doble clic ya no responden a nada.
+- Pulido de la pantalla de bienvenida: una entrada "Enlace de YouTube" (Ctrl+L) abre el diálogo de YouTube sin necesidad de archivos, la lista de formatos se convierte en un flyout sobre el icono de soltar con las insignias del Acerca de, el toggle de la barra lateral se oculta sin archivos abiertos, Pegar pasa a llamarse "Pegar imagen" y el botón principal se apila sobre la pareja secundaria.
+- Pegado de URLs de YouTube: el botón Pegar se renombra a "Pegar URL de YouTube" cuando el portapapeles contiene un enlace de YouTube (recomprobado al enfocar la ventana), y Ctrl+V también lo abre. El texto se unifica como "Enlace de YouTube", el botón dedicado se oculta mientras pegar está en modo enlace y el aviso de cierre refleja solo lo que está pendiente de verdad (rotaciones, imágenes sin guardar, o ambas) en singular o plural.
+- HUD de modo de vista: un nuevo HUD muestra el feedback de los modos de vista (Ajustar, 1:1, zoom en pantalla completa) y ahora recoge el feedback de copiar, favoritar, rotar y guardar en lugar de toasts sobre la imagen. El chrome flotante (barra superior, de estado, de acciones, banner de nombre, flechas y HUDs) se oculta tras los diálogos, los atajos de contenido se bloquean con un diálogo abierto, la barra lateral se oculta para imágenes pegadas, los toasts siguen legibles sobre los diálogos y la bandera de modal se auto-repara desde cada overlay.
+- Una presentación en curso se pausa mientras haya un diálogo abierto y se reanuda al cerrar el último; una pausa manual se respeta.
+- Corregido el pegado de imágenes roto por el cambio de API del portapapeles en Electron 45: la comprobación detecta ambas eras y lee las imágenes mediante items asíncronos del portapapeles. Copiar imagen queda reparado, las pistas de atajos se unifican y los tamaños del texto de ayuda suben.
+- Pulido de legibilidad: el anillo de foco de los diálogos pasa a un borde atenuado con halo suave, el texto secundario sube contraste en los temas oscuro y gris (textos de ayuda, detalles de confirmación, pistas de menús) y los textos atenuados de la bandeja se levantan.
+- Los metadatos de desinstalación del registro de Windows incluyen ahora la URL de la web y comentarios en inglés consistentes.
+- Actualizaciones de runtime: Electron 45.3.0, electron-updater 6.8.11 y music-metadata 12.4.0.
+
 ## [1.22.0] - 2026-11-13
 
 ### 🇺🇸 English

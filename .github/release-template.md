@@ -8,7 +8,7 @@
 
 <!-- IMPORTANT FOR AGENTS & MAINTAINERS: Always rewrite this entire section and highlights with the ACTUAL release notes for this specific new version before tagging. NEVER leave or copy previous version notes! Use 25-45 words for the summary, lead with user-facing changes, and do not repeat the app name or version. Keep the Spanish mirror inside the details block in sync: translate the summary and rewrite the highlights. -->
 <!-- changelog-summary:start -->
-The tray menu becomes a suite-standard popup: a live status row, show/hide, recent files with real thumbnails, help links and other CyberGems apps, all behind a new Suggestions setting. App-style tooltips, red exit and donate icons, and clearer hints when update checks cannot run.
+Broken or unsupported files get a dedicated polished banner, the welcome screen adds a YouTube link entry and a formats flyout, clipboard links paste straight into YouTube, and a new view HUD reports fit, zoom, copy and save feedback. Image paste is repaired, hotkeys rest behind dialogs, and slideshows pause underneath.
 <!-- changelog-summary:end -->
 
 > **New to CyberViewer?** A fast Windows media viewer for images, video and audio, with on-the-spot edits, tabs, favorites, slideshows, and a session that reopens where you left it.
@@ -17,20 +17,20 @@ The tray menu becomes a suite-standard popup: a live status row, show/hide, rece
 
 ### ✨ Key Features & Highlights
 
-- 🖥️ **Suite-standard tray popup**: right-click the tray icon for a live status row, show/hide with the shortcut badge, and an open-file action, all in an anchored card that follows the suite look.
+- 🚫 **Refined invalid-file view**: missing or unreadable files get a full-canvas banner with hidden chrome and a locked sidebar, app-action buttons in a clearer order, and calmer colors and gestures.
 
-- 🖼️ **Recent files with thumbnails**: launch the four latest files in one click, browse the full list of ten, or clear it; image entries show real previews through the viewer's own secure pipeline.
+- ▶️ **YouTube from the first click**: the welcome screen adds a YouTube link entry (Ctrl+L) and tucks the format list into a flyout on the drop icon, and the Paste button becomes a YouTube URL paste when the clipboard holds a link.
 
-- 💎 **CyberGems apps and help**: a More from CyberGems view plus wiki, FAQ, changelog, website and donate links, with a new Suggestions setting that hides these in the tray and in About.
+- 🎯 **View HUD feedback**: view modes, copy, favorites, rotations and saves report through one view HUD pill; floating chrome hides behind dialogs, content hotkeys rest while a dialog is open, and slideshows pause underneath.
 
-- ✨ **Interface polish**: app-style tooltip bubbles with full file paths, exit and donate icons that stay red on hover, and an informational hint when update checks cannot run in development or portable builds.
+- 🛠️ **Paste repaired and clearer chrome**: image paste works again on Electron 45's async clipboard API, the close warning reflects only what is really pending, secondary text gains contrast, and the Windows uninstaller lists the website.
 
 <details>
 <summary><b>🇪🇸 Ver notas de la versión en Español</b></summary>
 
 ### 🚀 Novedades de esta versión
 
-La bandeja del sistema abre ahora una tarjeta anclada en lugar del menú nativo: muestra u oculta el visor, abre archivos, retoma las últimas imágenes con miniaturas reales y llega a las páginas de ayuda y al resto de la suite CyberGems. Un nuevo ajuste de Sugerencias oculta esas recomendaciones en la bandeja y en Acerca de, los tooltips siguen el estilo de la app y la búsqueda de actualizaciones se explica sola en builds de desarrollo o portable.
+Los archivos rotos o no compatibles abren un banner dedicado y refinado, la pantalla de bienvenida estrena una entrada de enlaces de YouTube y un flyout de formatos, los enlaces del portapapeles se pegan directamente en YouTube y un nuevo HUD de vista informa de ajuste, zoom, copia y guardado. El pegado de imágenes queda reparado, los atajos descansan tras los diálogos y las diapositivas se pausan debajo.
 
 > **¿Nuevo en CyberViewer?** Un visor de medios rápido para Windows (imágenes, vídeo y audio), con edición al instante, pestañas, favoritos, pases de diapositivas y una sesión que reabre donde la dejaste.
 
@@ -38,10 +38,10 @@ La bandeja del sistema abre ahora una tarjeta anclada en lugar del menú nativo:
 
 ### ✨ Novedades destacadas
 
-- **Popup estándar de la suite**: clic derecho en el icono para ver el estado en vivo, mostrar u ocultar con el atajo, y abrir archivos desde una tarjeta anclada.
-- **Archivos recientes con miniaturas**: lanza los cuatro últimos con un clic, consulta la lista completa de diez o límpiala; las imágenes muestran vistas previas reales por el mismo canal seguro del visor.
-- **Apps de CyberGems y ayuda**: vista Más de CyberGems y enlaces a wiki, FAQ, registro de cambios, web y donar, con el ajuste de Sugerencias para ocultarlas en la bandeja y en Acerca de.
-- **Interfaz más cuidada**: burbujas de tooltip al estilo de la app con rutas completas, iconos de salir y donar rojos en hover, y aviso informativo cuando la búsqueda de actualizaciones no puede ejecutarse.
+- **Vista de archivo inválido refinada**: los archivos que faltan o no se pueden leer abren un banner a todo lienzo con el chrome oculto y la barra lateral bloqueada, botones con el color de acción de la app en un orden más claro y colores y gestos más calmados.
+- **YouTube desde el primer clic**: la pantalla de bienvenida añade una entrada de enlace de YouTube (Ctrl+L) y guarda la lista de formatos en un flyout sobre el icono de soltar, y el botón Pegar se convierte en pegado de URL de YouTube cuando el portapapeles contiene un enlace.
+- **Feedback en el HUD de vista**: los modos de vista, copiar, favoritos, rotaciones y guardados informan a través de una píldora HUD; el chrome flotante se oculta tras los diálogos, los atajos de contenido descansan con un diálogo abierto y las diapositivas se pausan debajo.
+- **Pegado reparado y chrome más claro**: el pegado de imágenes vuelve a funcionar con la API asíncrona del portapapeles de Electron 45, el aviso de cierre refleja solo lo pendiente de verdad, el texto secundario gana contraste y el desinstalador de Windows lista la web.
 
 ### ⚠️ Antes de instalar
 
