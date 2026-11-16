@@ -548,6 +548,21 @@ window.CVVideo = (() => {
       if (!overPopup) closeMenu();
     }, true);
     $('video-play').addEventListener('click', () => void toggle());
+    // A pan on the zoomed frame also ends with a click on the wrap. That
+    // release belongs to the drag, not to play/pause, so only a press that
+    // stays within the click slop counts as a click.
+    const CLICK_SLOP_PX = 4;
+    let pressOrigin = null;
+    let pressPanned = false;
+    $('viewer-wrap').addEventListener('mousedown', (event) => {
+      pressOrigin = event.button === 0 ? { x: event.clientX, y: event.clientY } : null;
+      pressPanned = false;
+    });
+    window.addEventListener('mousemove', (event) => {
+      if (!pressOrigin || pressPanned) return;
+      if (Math.hypot(event.clientX - pressOrigin.x, event.clientY - pressOrigin.y) > CLICK_SLOP_PX) pressPanned = true;
+    });
+    window.addEventListener('mouseup', () => { pressOrigin = null; });
     // Click on the video pauses immediately (YouTube); a double-click undoes
     // the pause and fullscreens. Bound on the wrap because #canvas-layer sits
     // above the video element and receives the clicks.
@@ -555,7 +570,8 @@ window.CVVideo = (() => {
       if (!active() || window.CVYouTube.active()) return;
       if (event.target.closest('#video-controls, #video-menu, #sidebar-handle, #kbd-hint, #nav-container, #topbar, #sidebar, #ghost-close')) return;
       // A press that just dismissed the More menu belongs to the dismissal,
-      // not to play/pause.
+      // not to play/pause. The same applies to a press that panned the frame.
+      if (pressPanned) { pressPanned = false; menuDismissClick = false; return; }
       if (menuDismissClick) { menuDismissClick = false; return; }
       if (videoClickTimer) return;
       videoClickTimer = setTimeout(() => {

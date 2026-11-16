@@ -93,7 +93,7 @@ app.whenReady().then(async () => {
     }
     await open(path.basename(file)); await loaded();
     assert.ok(await evaluate('return Math.abs(window.CVVideo.element.currentTime-6)<.3;'));
-    assert.equal(await evaluate("return $('video-audio-note').hidden;"),true, 'A paused restored video must not be reported as lacking playable audio');
+    assert.equal(await evaluate("return !$('video-mute').disabled;"),true, 'A paused restored video must not be reported as lacking playable audio');
     console.log('PASS MOV, MKV, M4V, WebM and playback position across tabs');
     await evaluate("$('video-loop').click();");
     assert.equal(await evaluate('return window.CVVideo.element.loop;'),true);
@@ -111,6 +111,23 @@ app.whenReady().then(async () => {
     await waitFor(() => evaluate('return !window.CVVideo.element.seeking;'), 'ArrowRight seeks video');
     assert.ok(await evaluate('return Math.abs(window.CVVideo.element.currentTime-7)<.3;'));
     console.log('PASS playback keyboard, five-second seek, volume, mute and loop controls');
+
+    // A pan on the zoomed frame ends with a click on the wrap. Releasing it
+    // must belong to the drag, not toggle play/pause.
+    await evaluate('window.CVVideo.element.muted=true; await window.CVVideo.toggle();');
+    await waitFor(() => evaluate('return !window.CVVideo.element.paused;'), 'playback before pan');
+    await evaluate('zoomAt(600, innerWidth/2, innerHeight/2);');
+    const panFrom = await evaluate('return {x:Math.floor(innerWidth/2),y:Math.floor(innerHeight/2)};');
+    win.webContents.sendInputEvent({ type:'mouseDown', x:panFrom.x, y:panFrom.y, button:'left', clickCount:1 });
+    win.webContents.sendInputEvent({ type:'mouseMove', x:panFrom.x+90, y:panFrom.y+60, button:'left' });
+    await delay(120);
+    win.webContents.sendInputEvent({ type:'mouseUp', x:panFrom.x+90, y:panFrom.y+60, button:'left', clickCount:1 });
+    await delay(400);
+    assert.ok(await evaluate('return Math.abs(state.panX) > 20 && Math.abs(state.panY) > 10;'), 'The drag panned the zoomed frame');
+    assert.equal(await evaluate('return window.CVVideo.element.paused;'), false, 'Releasing a pan must not toggle playback');
+    await evaluate("$('btn-fit-hud').click(); window.CVVideo.element.pause();");
+    assert.equal(await evaluate('return state.panX === 0 && state.panY === 0 && state.viewMode === "fit";'), true, 'Fit restores the frame after the pan');
+    console.log('PASS panning the zoomed frame does not pause or resume playback');
 
     // Exercise the actual native fullscreen transition, not only a CSS class.
     await evaluate("state.settings.app.hudAutoHideDelay=350; $('video-fullscreen').click();");
