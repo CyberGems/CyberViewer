@@ -7356,6 +7356,14 @@
   border-color: rgba(var(--cyber-accent-rgb), 0.22);
   color: var(--cyber-muted);
 }
+/* The update check is a routine action, not a cancellation: its hover
+   follows the standard accent hover instead of the cancel pink. */
+#about-btn-update:hover:not(:disabled) {
+  border-color: var(--cyber-accent);
+  color: var(--cyber-accent-ink);
+  background: rgba(var(--cyber-accent-rgb), 0.08);
+  box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.25);
+}
 .about-update-status {
   margin-top: 0;
   min-height: 0;
