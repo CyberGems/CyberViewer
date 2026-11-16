@@ -135,13 +135,19 @@ describe('nav arrow badge tooltips', () => {
     // which subtly churns the main video's rendered size on GPU decode.
     assert.match(videoCss, /#video-seek-preview\[hidden\] \{ visibility: hidden; \}/);
     assert.doesNotMatch(videoCss, /#video-seek-preview\[hidden\] \{ display: none; \}/);
-    // And the twin decoder's seek is throttled (leading + trailing edge, ~8/s)
-    // landing on the latest hovered position, via cheap keyframe fastSeek.
+    // And the twin decoder only runs after a hover intent, then seeks at most
+    // ~4 times per second, landing on the latest hovered position via cheap
+    // keyframe fastSeek. Fewer keyframe decodes keep high-quality playback
+    // smooth, and a 160px hint gains nothing from a higher-quality thumb.
     assert.match(videoJs, /if \(typeof previewVideo\.fastSeek === 'function'\) previewVideo\.fastSeek\(target\);/);
-    assert.match(videoJs, /previewSeekTimer = setTimeout\(pumpPreview, 120\)/);
-    assert.match(videoJs, /if \(previewPendingTime < 0 \|\| Math\.abs\(previewPendingTime - previewLast\) < 0\.05\) return;/);
+    assert.match(videoJs, /const PREVIEW_INTENT_MS = 200;/);
+    assert.match(videoJs, /const PREVIEW_SEEK_MS = 250;/);
+    assert.match(videoJs, /previewIntentTimer = setTimeout\(\(\) => \{/);
+    assert.match(videoJs, /previewSeekTimer = setTimeout\(pumpPreview, PREVIEW_SEEK_MS\)/);
+    assert.match(videoJs, /if \(previewPendingTime < 0 \|\| Math\.abs\(previewPendingTime - previewLast\) < PREVIEW_MIN_DELTA\) return;/);
     assert.match(videoJs, /\$\('video-seek'\)\.addEventListener\('mouseleave', \(\) => \{/);
     assert.match(videoJs, /previewPendingTime = -1;/);
+    assert.match(videoJs, /previewVideo\.pause\(\);/);
   });
 
   it('swaps the nav badges contextually while video or audio is active', () => {

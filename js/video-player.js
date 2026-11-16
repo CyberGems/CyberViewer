@@ -19,6 +19,8 @@ window.CVVideo = (() => {
   let audioStatus = 'pending';
   let previewLast = -1;
   let previewSeekTimer = 0;
+  let previewIntentTimer = 0;
+  let previewStarted = false;
   let previewPendingTime = -1;
   let loadedAt = 0;
   const text = key => (I18N[state.settings.app.language || 'en'] || I18N.en)[key];
@@ -215,6 +217,12 @@ window.CVVideo = (() => {
     owner = null;
     clearTimeout(idleTimer);
     clearTimeout(previewSeekTimer);
+    clearTimeout(previewIntentTimer);
+    previewSeekTimer = 0;
+    previewIntentTimer = 0;
+    previewStarted = false;
+    previewPendingTime = -1;
+    previewLast = -1;
     interacting = false;
     closeMenu();
     clearFlash();
@@ -680,12 +688,16 @@ window.CVVideo = (() => {
       if (owner && Number.isFinite(element.duration)) element.currentTime = Math.max(0, Math.min(element.duration, Number(event.target.value)));
     });
     // Seek bar hover: timestamp chip plus a cheap frame preview from a muted
-    // twin decoder. Position and timestamp track the cursor live; the twin's
-    // seek is throttled to ~8 per second and always lands on the latest
-    // hovered position, using fastSeek (nearest keyframe) so a 160px
-    // thumbnail never pays for a full-precision 1080p seek.
+    // twin decoder. The chip follows the cursor live, but the twin is only
+    // asked for a frame after a short hover intent and then at most ~4 times
+    // per second, always landing on the latest hovered position. High-quality
+    // files pay decoder time for every keyframe seek, so generating fewer
+    // thumbnails keeps playback smooth; the 160px hint does not need more.
     const previewBox = $('video-seek-preview');
     const previewVideo = $('video-preview');
+    const PREVIEW_INTENT_MS = 200;
+    const PREVIEW_SEEK_MS = 250;
+    const PREVIEW_MIN_DELTA = 0.15;
     const seekPreviewTo = (time) => {
       if (window.CVFormats.isAudio(owner)) return;
       try {
@@ -698,9 +710,9 @@ window.CVVideo = (() => {
     };
     const pumpPreview = () => {
       previewSeekTimer = 0;
-      if (previewPendingTime < 0 || Math.abs(previewPendingTime - previewLast) < 0.05) return;
+      if (previewPendingTime < 0 || Math.abs(previewPendingTime - previewLast) < PREVIEW_MIN_DELTA) return;
       seekPreviewTo(previewPendingTime);
-      previewSeekTimer = setTimeout(pumpPreview, 120);
+      previewSeekTimer = setTimeout(pumpPreview, PREVIEW_SEEK_MS);
     };
     $('video-seek').addEventListener('mousemove', (event) => {
       if (window.CVYouTube.active() || !Number.isFinite(element.duration)) { previewBox.hidden = true; return; }
@@ -712,15 +724,32 @@ window.CVVideo = (() => {
       $('video-seek-preview-time').textContent = window.CVFormats.formatTime(time);
       if (window.CVFormats.isAudio(owner)) return;
       previewPendingTime = time;
-      if (!previewSeekTimer) {
-        seekPreviewTo(previewPendingTime);
-        previewSeekTimer = setTimeout(pumpPreview, 120);
+      if (previewStarted) {
+        if (!previewSeekTimer) {
+          seekPreviewTo(previewPendingTime);
+          previewSeekTimer = setTimeout(pumpPreview, PREVIEW_SEEK_MS);
+        }
+        return;
+      }
+      if (!previewIntentTimer) {
+        previewIntentTimer = setTimeout(() => {
+          previewIntentTimer = 0;
+          previewStarted = true;
+          if (previewPendingTime < 0) return;
+          seekPreviewTo(previewPendingTime);
+          previewSeekTimer = setTimeout(pumpPreview, PREVIEW_SEEK_MS);
+        }, PREVIEW_INTENT_MS);
       }
     });
     $('video-seek').addEventListener('mouseleave', () => {
+      clearTimeout(previewIntentTimer);
+      previewIntentTimer = 0;
+      previewStarted = false;
       clearTimeout(previewSeekTimer);
       previewSeekTimer = 0;
       previewPendingTime = -1;
+      previewLast = -1;
+      previewVideo.pause();
       previewBox.hidden = true;
     });
     $('video-volume').addEventListener('input', event => {
