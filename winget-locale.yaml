@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+PackageIdentifier: CyberGems.CyberViewer
+PackageVersion: {{VERSION}}
+PackageLocale: en-US
+Publisher: CyberGems
+PackageName: CyberViewer
+PackageUrl: https://cybergems.org/apps/cyberviewer/
+License: GPL-3.0-or-later
+LicenseUrl: https://github.com/CyberGems/CyberViewer/blob/main/LICENSE
+Copyright: Copyright (C) 2026 CyberGems
+ShortDescription: Images, video and audio in one fast window for Windows
+Description: CyberViewer opens images, video and audio in one fast Windows window. Drop in a photo or a whole folder, move through thumbnails, zoom into details and run a fullscreen slideshow. Local videos play in media tabs, audio tracks share the same player, and YouTube videos or playlists open in an isolated viewer. Crop, rotate, resize, flip or color-correct a picture on the spot, then copy, print, export it to PDF or set it as wallpaper without opening a full editor. Tabs, favorites, session restore, Windows Explorer integration and scheduled backups to a folder you pick keep the workspace with you. Built with Electron.
+Tags:
+- image-viewer
+- media-player
+- photo-editor
+- video
+- audio
+Moniker: cyberviewer
+ReleaseNotesUrl: https://github.com/CyberGems/CyberViewer/releases/tag/{{TAG}}
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

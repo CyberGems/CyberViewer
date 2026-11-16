@@ -57,6 +57,36 @@ jobs:
             dist/latest.yml
           if-no-files-found: error
 
+      # Generate and validate the winget manifests BEFORE the release exists:
+      # creating the release publishes it immediately and fires the submit
+      # workflow, so the manifests must already be among its assets.
+      - name: Generate winget manifests
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          # winget versions carry no 'v' prefix (1.23.1, not v1.23.1); URLs keep the tag's.
+          $bareVersion = $tag.TrimStart('v')
+          $installer = Get-ChildItem -Path "./dist" -Filter "CyberViewer-Setup-*.exe" |
+            Where-Object { $_.Name -notlike "*.blockmap*" } |
+            Select-Object -First 1
+          if (-not $installer) { throw "CyberViewer setup installer not found in ./dist" }
+          $installerHash = (Get-FileHash $installer.FullName -Algorithm SHA256).Hash.ToLower()
+          $manifestFiles = @{
+              "winget-version.yaml"   = "CyberGems.CyberViewer.yaml"
+              "winget-locale.yaml"    = "CyberGems.CyberViewer.locale.en-US.yaml"
+              "winget-installer.yaml" = "CyberGems.CyberViewer.installer.yaml"
+          }
+          New-Item -ItemType Directory -Path winget-pkg -Force | Out-Null
+          foreach ($entry in $manifestFiles.GetEnumerator()) {
+              $manifestTemplate = [System.IO.File]::ReadAllText($entry.Key, [System.Text.Encoding]::UTF8)
+              $manifest = $manifestTemplate.Replace("{{VERSION}}", $bareVersion).Replace("{{TAG}}", $tag).Replace("{{INSTALLER_HASH}}", $installerHash)
+              [System.IO.File]::WriteAllText("winget-pkg/$($entry.Value)", $manifest, [System.Text.Encoding]::UTF8)
+          }
+          winget validate winget-pkg
+          if ($LASTEXITCODE -ne 0) { throw "winget manifest validation failed." }
+          Write-Host "Generated and validated winget manifests for $tag."
+
       # Prefer gh CLI with retries over a single softprops call — GitHub has been
       # returning intermittent 503s during release create/upload.
       - name: Create GitHub Release and Upload Assets
@@ -67,7 +97,7 @@ jobs:
         run: |
           set -euo pipefail
           TAG="${GITHUB_REF_NAME}"
-          FILES=(dist/*.exe dist/*.blockmap dist/latest.yml)
+          FILES=(dist/*.exe dist/*.blockmap dist/latest.yml winget-pkg/CyberGems.CyberViewer.yaml winget-pkg/CyberGems.CyberViewer.locale.en-US.yaml winget-pkg/CyberGems.CyberViewer.installer.yaml)
 
           retry() {
             local attempt=1
