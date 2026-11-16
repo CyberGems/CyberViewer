@@ -9456,6 +9456,7 @@ $('btn-go-end').addEventListener('click', (e) => {
     } else {
       const el = document.createElement('div');
       el.className = 'about-formats-notice';
+      el.setAttribute('aria-live', 'polite');
       el.textContent = text;
       el.dataset.tone = tone || 'info';
       box.prepend(el);
@@ -9468,14 +9469,14 @@ $('btn-go-end').addEventListener('click', (e) => {
     const t = tAbout();
     const s = updateStatus;
     el.style.color = 'var(--cyber-muted)';
-    // Banner already covers available/downloaded
-    if (s.state === 'available' || s.state === 'downloaded') {
+    // The formats-box banner already covers available, downloaded and the
+    // up-to-date result: echoing "CyberViewer is up to date" in this small
+    // line too read as a duplicate, so the line only carries the states the
+    // banner does not (checking, downloading progress, error).
+    if (s.state === 'available' || s.state === 'downloaded' || s.state === 'not-available') {
       el.textContent = '';
     } else if (s.state === 'checking') {
       el.textContent = t.about_checking;
-    } else if (s.state === 'not-available') {
-      el.textContent = t.about_up_to_date;
-      el.style.color = 'var(--cyber-accent3-ink)';
     } else if (s.state === 'downloading') {
       el.textContent = (t.about_downloading || 'Downloading… {percent}%')
         .replace('{percent}', String(s.percent || 0));
