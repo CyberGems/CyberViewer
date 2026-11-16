@@ -340,6 +340,7 @@ body.video-active #speed-indicator:not([hidden]) { display: block; }
   opacity: 0;
   pointer-events: none;
   z-index: 5;
+  transition: opacity .18s ease;
 }
 #video-overlay-flash .menu-ico { width: 34px; height: 34px; }
 #video-overlay-flash span {
@@ -348,10 +349,17 @@ body.video-active #speed-indicator:not([hidden]) { display: block; }
   font-family: var(--font-mono, monospace);
 }
 #video-overlay-flash.run { animation: video-flash 0.5s ease forwards; }
+/* Paused: the badge stays until the player idles and it leaves with the bar. */
+#video-overlay-flash.held { animation: video-flash-hold 0.3s ease forwards; }
+body.video-idle #video-overlay-flash { opacity: 0 !important; }
 @keyframes video-flash {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
   25% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   100% { opacity: 0; transform: translate(-50%, -50%) scale(1.05); }
+}
+@keyframes video-flash-hold {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 .video-timeline { position: relative; }
 #video-seek-preview {

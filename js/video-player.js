@@ -186,10 +186,12 @@ window.CVVideo = (() => {
       // Card tooltip; the Ctrl+F badge is static in the markup.
       $('video-fullscreen').dataset.tooltip = text(fsKey);
     }
-    if (!owner?.loaded || element.paused || element.ended) return;
+    if (!owner?.loaded) return;
     const delay = state.settings.app.hudAutoHideDelay ?? 2000;
     idleTimer = setTimeout(() => {
-      if (!active() || element.paused || element.ended || interacting || !$('video-menu').hidden || !$('video-speed-panel').hidden) return;
+      // Paused or ended playback idles too: the bar and the held pause badge
+      // go away together with the rest of the chrome.
+      if (!active() || interacting || !$('video-menu').hidden || !$('video-speed-panel').hidden) return;
       if (document.querySelector('.modal-overlay.active, #main-menu.open') || !$('shortcuts-popover').hidden) return;
       if (document.querySelector('.video-transport:hover, #ghost-close:hover')) return;
       if (keyboardFocus && (controls.contains(document.activeElement) || document.activeElement === $('ghost-close'))) return;
@@ -213,6 +215,7 @@ window.CVVideo = (() => {
     clearTimeout(previewSeekTimer);
     interacting = false;
     closeMenu();
+    clearFlash();
     document.body.classList.remove('video-idle');
     $('video-controls').inert = false;
     $('ghost-close').inert = false;
@@ -482,7 +485,9 @@ window.CVVideo = (() => {
   const FLASH_PLAY = '<svg class="menu-ico" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="m9 5 11 7-11 7Z"/></svg>';
   const FLASH_PAUSE = '<svg class="menu-ico" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M8 5h3v14H8zM15 5h3v14h-3z"/></svg>';
   let flashEl = null;
-  function flashOverlay(content) {
+  // `hold` keeps the badge on screen (paused) instead of fading it out; the
+  // badge then leaves with the rest of the chrome when the player idles.
+  function flashOverlay(content, hold = false) {
     if (window.CVYouTube.active()) return;
     const wrap = $('viewer-wrap');
     if (!wrap) return;
@@ -493,9 +498,12 @@ window.CVVideo = (() => {
       wrap.appendChild(flashEl);
     }
     flashEl.innerHTML = content;
-    flashEl.classList.remove('run');
+    flashEl.classList.remove('run', 'held');
     void flashEl.offsetWidth;
-    flashEl.classList.add('run');
+    flashEl.classList.add(hold ? 'held' : 'run');
+  }
+  function clearFlash() {
+    if (flashEl) flashEl.classList.remove('run', 'held');
   }
 
   // ── Click on the video pauses (delayed); double-click fullscreens ──
@@ -580,7 +588,9 @@ window.CVVideo = (() => {
       }, 230);
     });
     element.addEventListener('play', () => { if (Date.now() - loadedAt > 400) flashOverlay(FLASH_PLAY); });
-    element.addEventListener('pause', () => flashOverlay(FLASH_PAUSE));
+    // Only a user-visible pause of a loaded tab holds the badge; the pause()
+    // that loading and unloading perform must not leave a stale pause badge.
+    element.addEventListener('pause', () => { if (owner?.loaded) flashOverlay(FLASH_PAUSE, true); });
     $('video-prev').addEventListener('click', () => openSibling(-1));
     $('video-next').addEventListener('click', () => openSibling(1));
     $('video-speed').addEventListener('click', () => {

@@ -90,11 +90,13 @@ describe('video player youtube parity (phase 1)', () => {
     assert.match(css, /#video-more\[aria-expanded="true"\], #video-more\[aria-expanded="true"\]:hover \{ background: rgba\(var\(--cyber-tint-rgb\), 0\.12\); \}/);
   });
 
-  it('flashes youtube-style overlay icons on play and pause', () => {
+  it('flashes youtube-style overlay icons on play and holds the pause badge', () => {
     assert.match(player, /const FLASH_PLAY = /);
     assert.match(player, /const FLASH_PAUSE = /);
     assert.match(player, /element\.addEventListener\('play', \(\) => \{ if \(Date\.now\(\) - loadedAt > 400\) flashOverlay\(FLASH_PLAY\); \}\)/);
-    assert.match(player, /element\.addEventListener\('pause', \(\) => flashOverlay\(FLASH_PAUSE\)\)/);
+    assert.match(player, /element\.addEventListener\('pause', \(\) => \{ if \(owner\?\.loaded\) flashOverlay\(FLASH_PAUSE, true\); \}\)/);
+    assert.match(css, /#video-overlay-flash\.held \{ animation: video-flash-hold 0\.3s ease forwards; \}/);
+    assert.match(css, /body\.video-idle #video-overlay-flash \{ opacity: 0 !important; \}/);
   });
 
   it('persists loop, volume and mute across sessions', () => {

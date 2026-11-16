@@ -125,9 +125,19 @@ app.whenReady().then(async () => {
     await delay(400);
     assert.ok(await evaluate('return Math.abs(state.panX) > 20 && Math.abs(state.panY) > 10;'), 'The drag panned the zoomed frame');
     assert.equal(await evaluate('return window.CVVideo.element.paused;'), false, 'Releasing a pan must not toggle playback');
-    await evaluate("$('btn-fit-hud').click(); window.CVVideo.element.pause();");
+    await evaluate("$('btn-fit-hud').click();");
     assert.equal(await evaluate('return state.panX === 0 && state.panY === 0 && state.viewMode === "fit";'), true, 'Fit restores the frame after the pan');
     console.log('PASS panning the zoomed frame does not pause or resume playback');
+
+    // Paused playback idles the windowed bar too, and the held pause badge
+    // leaves with it instead of fading on its own after half a second.
+    await evaluate('state.settings.app.hudAutoHideDelay=900; window.CVVideo.element.pause(); window.CVVideo.reveal();');
+    await waitFor(() => evaluate("const f=$('video-overlay-flash'); return !!f && f.classList.contains('held') && getComputedStyle(f).opacity === '1';"), 'pause badge stays while paused');
+    await waitFor(() => evaluate("return document.body.classList.contains('video-idle') && getComputedStyle($('video-controls')).opacity === '0' && getComputedStyle($('video-overlay-flash')).opacity === '0';"), 'paused player idles bar and badge');
+    assert.equal(await evaluate("return $('video-controls').inert && !state.isGhost;"), true, 'Windowed controls hide on inactivity while paused');
+    await evaluate('window.CVVideo.reveal();');
+    await waitFor(() => evaluate("return !document.body.classList.contains('video-idle') && getComputedStyle($('video-overlay-flash')).opacity === '1';"), 'activity brings the paused badge back with the controls');
+    console.log('PASS paused playback idles the windowed bar; the pause badge hides and returns with it');
 
     // Exercise the actual native fullscreen transition, not only a CSS class.
     await evaluate("state.settings.app.hudAutoHideDelay=350; $('video-fullscreen').click();");
@@ -162,10 +172,10 @@ app.whenReady().then(async () => {
     await delay(500);
     assert.equal(await evaluate("return document.body.classList.contains('video-idle');"), false, 'Seeking gestures keep playback controls available');
     await evaluate("window.dispatchEvent(new Event('pointerup')); $('video-play').blur();");
-    await evaluate('window.CVVideo.element.pause(); window.CVVideo.element.loop=false;');
-    await delay(500);
-    assert.equal(await evaluate("return document.body.classList.contains('video-idle');"), false, 'Paused controls remain available');
+    await delay(150);
     fs.writeFileSync(path.join(dataDir,'video-fullscreen-controls.png'), (await win.webContents.capturePage()).toPNG());
+    await evaluate('window.CVVideo.element.pause(); window.CVVideo.element.loop=false;');
+    await waitFor(() => evaluate("return document.body.classList.contains('video-idle') && $('video-controls').inert && getComputedStyle($('video-controls')).opacity === '0' && getComputedStyle($('video-overlay-flash')).opacity === '0';"), 'paused fullscreen controls and badge fade out');
     await evaluate("document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));");
     await waitFor(() => !win.isFullScreen(), 'Escape leaves native fullscreen');
     await waitFor(() => evaluate("return !state.isGhost && getComputedStyle($('topbar')).opacity === '1';"), 'normal window restored');
