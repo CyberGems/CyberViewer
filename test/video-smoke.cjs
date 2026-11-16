@@ -152,6 +152,20 @@ app.whenReady().then(async () => {
     await delay(100);
     console.log('PASS releasing a pan over the toolbar neither pauses nor seeks');
 
+    // QHD and above must not decode a frame on every sweep step; the preview
+    // waits until the pointer settles. The fixtures top out at 1080p, so
+    // report 4K metadata for the main element during this check only.
+    await evaluate("Object.defineProperty(window.CVVideo.element,'videoWidth',{configurable:true,value:3840}); Object.defineProperty(window.CVVideo.element,'videoHeight',{configurable:true,value:2160}); $('video-preview').removeAttribute('src'); $('video-preview').load(); window.CVVideo.reveal();");
+    const sweepBar = await evaluate("return (() => { const r=$('video-seek').getBoundingClientRect(); return { left:r.left, top:r.top + r.height/2, width:r.width }; })();");
+    for (const ratio of [0.2, 0.4, 0.6]) {
+      await evaluate(`(() => { const s=$('video-seek'); s.dispatchEvent(new MouseEvent('mousemove',{bubbles:true,clientX:${sweepBar.left} + ${sweepBar.width} * ${ratio},clientY:${sweepBar.top}})); })()`);
+      await delay(60);
+    }
+    assert.equal(await evaluate("return !$('video-preview').hasAttribute('src');"), true, 'A high-quality thumb is not decoded while the pointer sweeps');
+    await waitFor(() => evaluate("return $('video-preview').hasAttribute('src') && $('video-preview').currentTime > 0;"), 'high-quality thumb renders after the pointer settles');
+    await evaluate("delete window.CVVideo.element.videoWidth; delete window.CVVideo.element.videoHeight; $('video-seek').dispatchEvent(new Event('mouseleave',{bubbles:true}));");
+    console.log('PASS high-quality seek previews wait for the pointer to settle');
+
     // Paused playback idles the windowed bar too, and the held pause badge
     // leaves with it instead of fading on its own after half a second.
     await evaluate('state.settings.app.hudAutoHideDelay=900; window.CVVideo.element.pause(); window.CVVideo.reveal();');

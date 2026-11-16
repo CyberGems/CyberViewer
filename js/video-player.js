@@ -20,6 +20,7 @@ window.CVVideo = (() => {
   let previewLast = -1;
   let previewSeekTimer = 0;
   let previewIntentTimer = 0;
+  let previewSettleTimer = 0;
   let previewStarted = false;
   let previewPendingTime = -1;
   let loadedAt = 0;
@@ -218,8 +219,10 @@ window.CVVideo = (() => {
     clearTimeout(idleTimer);
     clearTimeout(previewSeekTimer);
     clearTimeout(previewIntentTimer);
+    clearTimeout(previewSettleTimer);
     previewSeekTimer = 0;
     previewIntentTimer = 0;
+    previewSettleTimer = 0;
     previewStarted = false;
     previewPendingTime = -1;
     previewLast = -1;
@@ -698,6 +701,12 @@ window.CVVideo = (() => {
     const PREVIEW_INTENT_MS = 200;
     const PREVIEW_SEEK_MS = 250;
     const PREVIEW_MIN_DELTA = 0.15;
+    // QHD and above: decoding another full-resolution frame on every sweep
+    // step is what makes 4K playback stutter, so those files only get a thumb
+    // once the pointer settles. 1080p and below keep the live cadence.
+    const PREVIEW_SETTLE_MS = 300;
+    const PREVIEW_BULK_PIXELS = 2560 * 1440;
+    const previewSettlesOnly = () => (element.videoWidth || 0) * (element.videoHeight || 0) >= PREVIEW_BULK_PIXELS;
     const seekPreviewTo = (time) => {
       if (window.CVFormats.isAudio(owner)) return;
       try {
@@ -724,6 +733,14 @@ window.CVVideo = (() => {
       $('video-seek-preview-time').textContent = window.CVFormats.formatTime(time);
       if (window.CVFormats.isAudio(owner)) return;
       previewPendingTime = time;
+      if (previewSettlesOnly()) {
+        clearTimeout(previewSettleTimer);
+        previewSettleTimer = setTimeout(() => {
+          previewSettleTimer = 0;
+          if (previewPendingTime >= 0 && Math.abs(previewPendingTime - previewLast) >= PREVIEW_MIN_DELTA) seekPreviewTo(previewPendingTime);
+        }, PREVIEW_SETTLE_MS);
+        return;
+      }
       if (previewStarted) {
         if (!previewSeekTimer) {
           seekPreviewTo(previewPendingTime);
@@ -744,6 +761,8 @@ window.CVVideo = (() => {
     $('video-seek').addEventListener('mouseleave', () => {
       clearTimeout(previewIntentTimer);
       previewIntentTimer = 0;
+      clearTimeout(previewSettleTimer);
+      previewSettleTimer = 0;
       previewStarted = false;
       clearTimeout(previewSeekTimer);
       previewSeekTimer = 0;
