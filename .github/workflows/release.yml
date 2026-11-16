@@ -57,9 +57,9 @@ jobs:
             dist/latest.yml
           if-no-files-found: error
 
-      # Generate and validate the winget manifests BEFORE the release exists:
-      # creating the release publishes it immediately and fires the submit
-      # workflow, so the manifests must already be among its assets.
+      # Generate and validate the winget manifests BEFORE the release is
+      # created, so the draft release includes them among its assets and the
+      # submit workflow finds them the moment the draft is published.
       - name: Generate winget manifests
         if: startsWith(github.ref, 'refs/tags/')
         shell: pwsh
@@ -121,10 +121,12 @@ jobs:
               # before publish. Assets are still uploaded below.
               return 0
             fi
+            # Draft like the rest of the suite: nothing goes live until the
+            # draft is reviewed and published by hand.
             gh release create "$TAG" \
               --title "CyberViewer $TAG" \
               --generate-notes \
-              --latest
+              --draft
           }
 
           retry ensure_release
