@@ -129,6 +129,29 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate('return state.panX === 0 && state.panY === 0 && state.viewMode === "fit";'), true, 'Fit restores the frame after the pan');
     console.log('PASS panning the zoomed frame does not pause or resume playback');
 
+    // Releasing a pan over the transport bar must stay a pan too: the click
+    // lands on the toolbar, but the drag guard owns it, so playback keeps
+    // going and the release does not seek the video.
+    await evaluate('window.CVVideo.reveal();');
+    await waitFor(() => evaluate("return !document.body.classList.contains('video-idle') && !$('video-controls').inert && getComputedStyle($('video-controls')).opacity === '1';"), 'transport visible before pan over the bar');
+    await evaluate('zoomAt(600, innerWidth/2, innerHeight/2);');
+    const beforeBarPan = await evaluate('return window.CVVideo.element.currentTime;');
+    const panToBar = await evaluate("return (() => { const r = $('video-time').getBoundingClientRect(); return { x: Math.round(r.left + r.width/2), y: Math.round(r.top + r.height/2) }; })();");
+    win.webContents.sendInputEvent({ type:'mouseDown', x:panFrom.x, y:panFrom.y, button:'left', clickCount:1 });
+    win.webContents.sendInputEvent({ type:'mouseMove', x:panToBar.x, y:panToBar.y, button:'left' });
+    await delay(120);
+    win.webContents.sendInputEvent({ type:'mouseUp', x:panToBar.x, y:panToBar.y, button:'left', clickCount:1 });
+    await delay(400);
+    assert.ok(await evaluate('return Math.abs(state.panY) > 20;'), 'The drag toward the toolbar panned the frame');
+    assert.equal(await evaluate('return window.CVVideo.element.paused;'), false, 'Releasing a pan over the toolbar must not toggle playback');
+    assert.ok(await evaluate(`return window.CVVideo.element.currentTime > ${beforeBarPan} && window.CVVideo.element.currentTime < ${beforeBarPan + 2};`), 'The toolbar release did not seek the video');
+    await evaluate("$('btn-fit-hud').click();");
+    // Leave the toolbar so its hover keeps it awake; the idle checks below
+    // require the pointer over the frame.
+    win.webContents.sendInputEvent({ type:'mouseMove', x: panFrom.x, y: panFrom.y });
+    await delay(100);
+    console.log('PASS releasing a pan over the toolbar neither pauses nor seeks');
+
     // Paused playback idles the windowed bar too, and the held pause badge
     // leaves with it instead of fading on its own after half a second.
     await evaluate('state.settings.app.hudAutoHideDelay=900; window.CVVideo.element.pause(); window.CVVideo.reveal();');
