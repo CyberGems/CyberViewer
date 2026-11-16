@@ -348,7 +348,7 @@ body.video-active #speed-indicator:not([hidden]) { display: block; }
   font-weight: 700;
   font-family: var(--font-mono, monospace);
 }
-#video-overlay-flash.run { animation: video-flash 0.5s ease forwards; }
+#video-overlay-flash.run { animation: video-flash 1s ease forwards; }
 /* Paused: the badge stays until the player idles and it leaves with the bar. */
 #video-overlay-flash.held { animation: video-flash-hold 0.3s ease forwards; }
 body.video-idle #video-overlay-flash { opacity: 0 !important; }

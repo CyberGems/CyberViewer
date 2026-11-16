@@ -95,6 +95,9 @@ describe('video player youtube parity (phase 1)', () => {
     assert.match(player, /const FLASH_PAUSE = /);
     assert.match(player, /element\.addEventListener\('play', \(\) => \{ if \(Date\.now\(\) - loadedAt > 400\) flashOverlay\(FLASH_PLAY\); \}\)/);
     assert.match(player, /element\.addEventListener\('pause', \(\) => \{ if \(owner\?\.loaded\) flashOverlay\(FLASH_PAUSE, true\); \}\)/);
+    // The play badge stays on screen for a full second, twice the original
+    // half-second fade, so the confirmation is easy to catch.
+    assert.match(css, /#video-overlay-flash\.run \{ animation: video-flash 1s ease forwards; \}/);
     assert.match(css, /#video-overlay-flash\.held \{ animation: video-flash-hold 0\.3s ease forwards; \}/);
     assert.match(css, /body\.video-idle #video-overlay-flash \{ opacity: 0 !important; \}/);
   });
