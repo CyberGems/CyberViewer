@@ -214,6 +214,34 @@ describe('updater helpers', () => {
     }
   });
 
+  it('coalesces download-progress ticks to percent changes and a slow keepalive', async () => {
+    const { mod, listeners, restore } = loadUpdaterWithStubs({
+      PACKAGED: '1'
+    });
+    try {
+      mod.initUpdater({});
+      listeners['download-progress']({ percent: 12.4, transferred: 10, total: 100 });
+      listeners['download-progress']({ percent: 12.2, transferred: 11, total: 100 });
+      let status = mod.getLastUpdateStatus();
+      assert.equal(status.state, 'downloading');
+      assert.equal(status.percent, 12);
+      assert.equal(status.transferred, 10, 'same-percent ticks are coalesced');
+
+      listeners['download-progress']({ percent: 13.0, transferred: 12, total: 100 });
+      status = mod.getLastUpdateStatus();
+      assert.equal(status.percent, 13);
+      assert.equal(status.transferred, 12, 'a new percent always broadcasts');
+
+      await new Promise((resolve) => setTimeout(resolve, 520));
+      listeners['download-progress']({ percent: 13.2, transferred: 20, total: 100 });
+      status = mod.getLastUpdateStatus();
+      assert.equal(status.percent, 13);
+      assert.equal(status.transferred, 20, 'the keepalive passes after 500ms');
+    } finally {
+      restore();
+    }
+  });
+
   it('exports releases URL', () => {
     const { mod, restore } = loadUpdaterWithStubs();
     try {

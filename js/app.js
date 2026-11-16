@@ -9553,6 +9553,7 @@ $('btn-go-end').addEventListener('click', (e) => {
   let popupAppVersion = '';
   let popupAppVersionFetched = false;
   let popupDismissedKey = '';
+  let popupRenderedKey = ''; // download ticks patch the rendered popup in place instead of rebuilding it
 
   function popupOpenReleaseUrl() {
     const version = updateStatus.version ? String(updateStatus.version) : '';
@@ -9576,6 +9577,21 @@ $('btn-go-end').addEventListener('click', (e) => {
       (ignoreSkip || (key !== popupDismissedKey && (s !== 'available' || version !== skipped)));
     if (!show) {
       updatePopupEl.classList.remove('visible');
+      popupRenderedKey = '';
+      return;
+    }
+
+    // download-progress fires per chunk, and a full innerHTML rebuild per tick
+    // destroys the hovered footer button and restarts its 0.15s transitions,
+    // which reads as a high-speed flicker on the Discard button. Within one
+    // downloading render only the percentage and the bar move, so patch those
+    // nodes in place and keep the subtree (and its hover states) intact.
+    if (s === 'downloading' && popupRenderedKey === key) {
+      const percent = Math.max(0, Math.min(100, updateStatus.percent || 0));
+      const pct = updatePopupEl.querySelector('.update-popup-progress-pct');
+      const bar = updatePopupEl.querySelector('.about-update-bar');
+      if (pct) pct.textContent = `${percent}%`;
+      if (bar) bar.style.width = `${percent}%`;
       return;
     }
 
@@ -9679,6 +9695,7 @@ $('btn-go-end').addEventListener('click', (e) => {
       });
     });
 
+    popupRenderedKey = (s === 'downloading') ? key : '';
     updatePopupEl.classList.add('visible');
   }
 
