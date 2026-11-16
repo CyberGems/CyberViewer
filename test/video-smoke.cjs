@@ -214,11 +214,11 @@ app.whenReady().then(async () => {
     await waitFor(() => evaluate('return window.CVVideo.element.currentTime > .8;'), 'silent.mp4 playback');
     await evaluate("document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'m',bubbles:true}));");
     assert.equal(await evaluate('return window.CVVideo.element.muted;'), true, 'Mute hotkey respects unavailable audio');
-    assert.equal(await evaluate("return $('video-menu').hidden && $('video-mute').dataset.tooltip === 'Audio no disponible';"), true, 'Unavailable audio is a card hint, never an automatic notice');
+    assert.equal(await evaluate("return $('video-menu').hidden && $('video-mute').dataset.tooltip === 'Video sin audio';"), true, 'Unavailable audio is a card hint, never an automatic notice');
     await evaluate('window.CVVideo.element.pause(); window.CVVideo.reveal(); await new Promise(resolve => setTimeout(resolve, 150));');
     fs.writeFileSync(path.join(dataDir,'silent.mp4-controls.png'), (await win.webContents.capturePage()).toPNG());
     await evaluate("state.settings.app.language='en'; updateLanguage('en');");
-    assert.equal(await evaluate("return $('video-mute').dataset.tooltip === 'Audio unavailable';"), true, 'The unavailable-audio hint is localized');
+    assert.equal(await evaluate("return $('video-mute').dataset.tooltip === 'Video without audio';"), true, 'The unavailable-audio hint is localized');
     await evaluate("state.settings.app.language='es'; updateLanguage('es');");
 
     await open('unsupported-audio.mkv'); await loaded();
