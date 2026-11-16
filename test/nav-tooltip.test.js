@@ -145,12 +145,17 @@ describe('nav arrow badge tooltips', () => {
     assert.match(videoJs, /previewIntentTimer = setTimeout\(\(\) => \{/);
     assert.match(videoJs, /previewSeekTimer = setTimeout\(pumpPreview, PREVIEW_SEEK_MS\)/);
     assert.match(videoJs, /if \(previewPendingTime < 0 \|\| Math\.abs\(previewPendingTime - previewLast\) < PREVIEW_MIN_DELTA\) return;/);
-    // QHD and above skip the sweep entirely: the thumb is only requested once
-    // the pointer settles, so no 4K keyframe decodes compete with playback.
-    assert.match(videoJs, /const PREVIEW_SETTLE_MS = 300;/);
+    // QHD and above skip the sweep entirely: the stale frame hides, and the
+    // thumb is only requested once the pointer settles, so no 4K keyframe
+    // decodes compete with playback.
+    assert.match(videoJs, /const PREVIEW_SETTLE_MS = 160;/);
+    assert.match(videoJs, /const PREVIEW_REVEAL_MS = 700;/);
     assert.match(videoJs, /const previewSettlesOnly = \(\) =>/);
     assert.match(videoJs, /if \(previewSettlesOnly\(\)\) \{/);
     assert.match(videoJs, /previewSettleTimer = setTimeout\(\(\) => \{/);
+    assert.match(videoJs, /previewBox\.classList\.add\('preview-pending'\)/);
+    assert.match(videoJs, /previewBox\.classList\.remove\('preview-pending'\)/);
+    assert.match(videoCss, /#video-seek-preview\.preview-pending #video-preview \{ opacity: 0; \}/);
     assert.match(videoJs, /\$\('video-seek'\)\.addEventListener\('mouseleave', \(\) => \{/);
     assert.match(videoJs, /previewPendingTime = -1;/);
     assert.match(videoJs, /previewVideo\.pause\(\);/);

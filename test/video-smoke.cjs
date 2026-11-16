@@ -162,7 +162,8 @@ app.whenReady().then(async () => {
       await delay(60);
     }
     assert.equal(await evaluate("return !$('video-preview').hasAttribute('src');"), true, 'A high-quality thumb is not decoded while the pointer sweeps');
-    await waitFor(() => evaluate("return $('video-preview').hasAttribute('src') && $('video-preview').currentTime > 0;"), 'high-quality thumb renders after the pointer settles');
+    assert.equal(await evaluate("return $('video-seek-preview').classList.contains('preview-pending') && getComputedStyle($('video-preview')).opacity === '0';"), true, 'The stale thumb hides while the pointer sweeps');
+    await waitFor(() => evaluate("return $('video-preview').hasAttribute('src') && $('video-preview').currentTime > 0 && !$('video-seek-preview').classList.contains('preview-pending') && getComputedStyle($('video-preview')).opacity === '1';"), 'high-quality thumb renders after the pointer settles');
     await evaluate("delete window.CVVideo.element.videoWidth; delete window.CVVideo.element.videoHeight; $('video-seek').dispatchEvent(new Event('mouseleave',{bubbles:true}));");
     console.log('PASS high-quality seek previews wait for the pointer to settle');
 

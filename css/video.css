@@ -383,7 +383,11 @@ body.video-idle #video-overlay-flash { opacity: 0 !important; }
   background: #000;
   border: 1px solid rgba(var(--cyber-accent-rgb), .35);
   object-fit: cover;
+  transition: opacity .08s ease;
 }
+/* High-quality sweeps hide the previous frame until the settled one is
+   decoded, so the same stale thumb does not follow the cursor across the bar. */
+#video-seek-preview.preview-pending #video-preview { opacity: 0; }
 #video-seek-preview-time {
   margin-top: 4px;
   padding: 1px 7px;

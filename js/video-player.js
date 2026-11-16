@@ -21,6 +21,8 @@ window.CVVideo = (() => {
   let previewSeekTimer = 0;
   let previewIntentTimer = 0;
   let previewSettleTimer = 0;
+  let previewRevealTimer = 0;
+  let previewGeneration = 0;
   let previewStarted = false;
   let previewPendingTime = -1;
   let loadedAt = 0;
@@ -220,9 +222,12 @@ window.CVVideo = (() => {
     clearTimeout(previewSeekTimer);
     clearTimeout(previewIntentTimer);
     clearTimeout(previewSettleTimer);
+    clearTimeout(previewRevealTimer);
     previewSeekTimer = 0;
     previewIntentTimer = 0;
     previewSettleTimer = 0;
+    previewRevealTimer = 0;
+    previewGeneration = 0;
     previewStarted = false;
     previewPendingTime = -1;
     previewLast = -1;
@@ -236,6 +241,7 @@ window.CVVideo = (() => {
     element.pause();
     $('video-preview').removeAttribute('src');
     $('video-preview').load();
+    $('video-seek-preview').classList.remove('preview-pending');
     $('video-seek-preview').hidden = true;
     element.removeAttribute('src');
     element.load();
@@ -703,8 +709,11 @@ window.CVVideo = (() => {
     const PREVIEW_MIN_DELTA = 0.15;
     // QHD and above: decoding another full-resolution frame on every sweep
     // step is what makes 4K playback stutter, so those files only get a thumb
-    // once the pointer settles. 1080p and below keep the live cadence.
-    const PREVIEW_SETTLE_MS = 300;
+    // once the pointer settles. While it moves, the stale frame hides and the
+    // live timestamp chip stays; the new frame appears when its seek completes.
+    // 1080p and below keep the live cadence.
+    const PREVIEW_SETTLE_MS = 160;
+    const PREVIEW_REVEAL_MS = 700;
     const PREVIEW_BULK_PIXELS = 2560 * 1440;
     const previewSettlesOnly = () => (element.videoWidth || 0) * (element.videoHeight || 0) >= PREVIEW_BULK_PIXELS;
     const seekPreviewTo = (time) => {
@@ -716,6 +725,26 @@ window.CVVideo = (() => {
         else previewVideo.currentTime = target;
         previewLast = time;
       } catch (_) { /* ignore */ }
+    };
+    const revealPreview = (generation) => {
+      clearTimeout(previewRevealTimer);
+      previewRevealTimer = 0;
+      if (generation !== previewGeneration) return;
+      previewBox.classList.remove('preview-pending');
+    };
+    const seekSettledPreview = (time) => {
+      const generation = previewGeneration;
+      const onSeeked = () => {
+        previewVideo.removeEventListener('seeked', onSeeked);
+        revealPreview(generation);
+      };
+      previewVideo.addEventListener('seeked', onSeeked);
+      seekPreviewTo(time);
+      clearTimeout(previewRevealTimer);
+      previewRevealTimer = setTimeout(() => {
+        previewVideo.removeEventListener('seeked', onSeeked);
+        revealPreview(generation);
+      }, PREVIEW_REVEAL_MS);
     };
     const pumpPreview = () => {
       previewSeekTimer = 0;
@@ -734,10 +763,14 @@ window.CVVideo = (() => {
       if (window.CVFormats.isAudio(owner)) return;
       previewPendingTime = time;
       if (previewSettlesOnly()) {
+        previewGeneration++;
+        previewBox.classList.add('preview-pending');
         clearTimeout(previewSettleTimer);
         previewSettleTimer = setTimeout(() => {
           previewSettleTimer = 0;
-          if (previewPendingTime >= 0 && Math.abs(previewPendingTime - previewLast) >= PREVIEW_MIN_DELTA) seekPreviewTo(previewPendingTime);
+          const generation = previewGeneration;
+          if (previewPendingTime >= 0 && Math.abs(previewPendingTime - previewLast) >= PREVIEW_MIN_DELTA) seekSettledPreview(previewPendingTime);
+          else if (generation === previewGeneration) previewBox.classList.remove('preview-pending');
         }, PREVIEW_SETTLE_MS);
         return;
       }
@@ -763,6 +796,10 @@ window.CVVideo = (() => {
       previewIntentTimer = 0;
       clearTimeout(previewSettleTimer);
       previewSettleTimer = 0;
+      clearTimeout(previewRevealTimer);
+      previewRevealTimer = 0;
+      previewGeneration++;
+      previewBox.classList.remove('preview-pending');
       previewStarted = false;
       clearTimeout(previewSeekTimer);
       previewSeekTimer = 0;
