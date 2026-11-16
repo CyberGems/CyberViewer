@@ -18,3 +18,26 @@ jobs:
       - run: npm install
       - run: npm run lint
       - run: npm test
+  video:
+    name: Video Playback Tests
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install
+      - name: Ensure FFmpeg
+        shell: pwsh
+        run: if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) { choco install ffmpeg -y --no-progress }
+      - run: npm run test:video
+      - name: Upload video test screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-test-screenshots
+          path: ${{ runner.temp }}/cyberviewer-video-test-*/*.png
+          if-no-files-found: ignore
+          retention-days: 7
