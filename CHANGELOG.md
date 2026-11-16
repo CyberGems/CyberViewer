@@ -2,6 +2,20 @@
 
 All notable changes to CyberViewer are documented here.
 
+## [1.23.1] - 2026-11-16
+
+### 🇺🇸 English
+
+- Fixed in-app update installs racing pending unsaved changes: choosing "Restart and update" (from the update popup or the About dialog) now shows the same discard warning as closing the app, and the installer only runs after the warning is resolved. Cancelling leaves the app and the pending update untouched, and discarding flushes the session, then quits and installs cleanly, so the NSIS error "Fallo al desinstalar archivos antiguos de la aplicación" can no longer appear when rotations or pasted images are pending.
+- The update popup no longer rebuilds its whole subtree on every download-progress tick: progress patches the percentage and the bar in place, so the Dismiss button no longer flickers at high speed under the cursor while a download runs, and the bar's width transition animates again.
+- Download progress broadcasts are coalesced to whole-percent changes plus a 500ms keepalive, cutting per-chunk IPC traffic between the main process and the renderer.
+
+### 🇪🇸 Español
+
+- Corregidas las instalaciones de actualización integradas que competían con cambios sin guardar: al elegir "Reiniciar y actualizar" (desde el popup de actualización o desde el Acerca de) se muestra ahora el mismo aviso de descarte que al cerrar la app, y el instalador solo se ejecuta cuando el aviso queda resuelto. Cancelar deja la app y la actualización pendiente intactas, y descartar vuelca la sesión, luego sale e instala limpiamente, así que el error NSIS "Fallo al desinstalar archivos antiguos de la aplicación" ya no puede aparecer con rotaciones o imágenes pegadas pendientes.
+- El popup de actualización ya no reconstruye todo su subárbol en cada tick de progreso de descarga: el progreso actualiza el porcentaje y la barra en sitio, así que el botón Descartar ya no parpadea a alta velocidad bajo el cursor durante una descarga y la transición de ancho de la barra vuelve a animarse.
+- Los broadcasts de progreso de descarga se coalescen a cambios de porcentaje entero más un keepalive de 500ms, reduciendo el tráfico de IPC por chunk entre el proceso principal y el renderer.
+
 ## [1.23.0] - 2026-11-15
 
 ### 🇺🇸 English

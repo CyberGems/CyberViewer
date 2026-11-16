@@ -8,7 +8,7 @@
 
 <!-- IMPORTANT FOR AGENTS & MAINTAINERS: Always rewrite this entire section and highlights with the ACTUAL release notes for this specific new version before tagging. NEVER leave or copy previous version notes! Use 25-45 words for the summary, lead with user-facing changes, and do not repeat the app name or version. Keep the Spanish mirror inside the details block in sync: translate the summary and rewrite the highlights. -->
 <!-- changelog-summary:start -->
-Broken or unsupported files get a dedicated polished banner, the welcome screen adds a YouTube link entry and a formats flyout, clipboard links paste straight into YouTube, and a new view HUD reports fit, zoom, copy and save feedback. Image paste is repaired, hotkeys rest behind dialogs, and slideshows pause underneath.
+The update prompt no longer flickers while downloading, and starting the install now asks about unsaved images first, so the warning cannot race the installer and fail with a locked-file error. Progress ticks patch the popup in place instead of rebuilding it.
 <!-- changelog-summary:end -->
 
 > **New to CyberViewer?** A fast Windows media viewer for images, video and audio, with on-the-spot edits, tabs, favorites, slideshows, and a session that reopens where you left it.
@@ -17,20 +17,18 @@ Broken or unsupported files get a dedicated polished banner, the welcome screen 
 
 ### ✨ Key Features & Highlights
 
-- 🚫 **Refined invalid-file view**: missing or unreadable files get a full-canvas banner with hidden chrome and a locked sidebar, app-action buttons in a clearer order, and calmer colors and gestures.
+- 🛠️ **Safer update installs**: "Restart and update" now surfaces the unsaved-changes warning before the installer spawns. Cancelling keeps everything untouched; discarding flushes the session and quits into a clean install, so the locked-file NSIS error cannot appear while rotations or pasted images are pending.
 
-- ▶️ **YouTube from the first click**: the welcome screen adds a YouTube link entry (Ctrl+L) and tucks the format list into a flyout on the drop icon, and the Paste button becomes a YouTube URL paste when the clipboard holds a link.
+- ✨ **Steady download popup**: the popup patches its percentage and progress bar in place instead of rebuilding on every tick, so the Dismiss button no longer flickers under the cursor and the bar animates smoothly again.
 
-- 🎯 **View HUD feedback**: view modes, copy, favorites, rotations and saves report through one view HUD pill; floating chrome hides behind dialogs, content hotkeys rest while a dialog is open, and slideshows pause underneath.
-
-- 🛠️ **Paste repaired and clearer chrome**: image paste works again on Electron 45's async clipboard API, the close warning reflects only what is really pending, secondary text gains contrast, and the Windows uninstaller lists the website.
+- 🔇 **Quieter progress feed**: download progress reaches the renderer only on whole-percent changes plus a 500ms keepalive, cutting per-chunk IPC traffic.
 
 <details>
 <summary><b>🇪🇸 Ver notas de la versión en Español</b></summary>
 
 ### 🚀 Novedades de esta versión
 
-Los archivos rotos o no compatibles abren un banner dedicado y refinado, la pantalla de bienvenida estrena una entrada de enlaces de YouTube y un flyout de formatos, los enlaces del portapapeles se pegan directamente en YouTube y un nuevo HUD de vista informa de ajuste, zoom, copia y guardado. El pegado de imágenes queda reparado, los atajos descansan tras los diálogos y las diapositivas se pausan debajo.
+El aviso de actualización ya no parpadea durante la descarga, y al iniciar la instalación se pregunta primero por las imágenes sin guardar, así el aviso ya no compite con el instalador ni falla con un error de archivo bloqueado. Los ticks de progreso actualizan el popup en sitio en lugar de reconstruirlo.
 
 > **¿Nuevo en CyberViewer?** Un visor de medios rápido para Windows (imágenes, vídeo y audio), con edición al instante, pestañas, favoritos, pases de diapositivas y una sesión que reabre donde la dejaste.
 
@@ -38,10 +36,9 @@ Los archivos rotos o no compatibles abren un banner dedicado y refinado, la pant
 
 ### ✨ Novedades destacadas
 
-- **Vista de archivo inválido refinada**: los archivos que faltan o no se pueden leer abren un banner a todo lienzo con el chrome oculto y la barra lateral bloqueada, botones con el color de acción de la app en un orden más claro y colores y gestos más calmados.
-- **YouTube desde el primer clic**: la pantalla de bienvenida añade una entrada de enlace de YouTube (Ctrl+L) y guarda la lista de formatos en un flyout sobre el icono de soltar, y el botón Pegar se convierte en pegado de URL de YouTube cuando el portapapeles contiene un enlace.
-- **Feedback en el HUD de vista**: los modos de vista, copiar, favoritos, rotaciones y guardados informan a través de una píldora HUD; el chrome flotante se oculta tras los diálogos, los atajos de contenido descansan con un diálogo abierto y las diapositivas se pausan debajo.
-- **Pegado reparado y chrome más claro**: el pegado de imágenes vuelve a funcionar con la API asíncrona del portapapeles de Electron 45, el aviso de cierre refleja solo lo pendiente de verdad, el texto secundario gana contraste y el desinstalador de Windows lista la web.
+- **Instalaciones más seguras**: "Reiniciar y actualizar" muestra ahora el aviso de cambios sin guardar antes de lanzar el instalador. Cancelar lo deja todo intacto; descartar vuelca la sesión y sale para instalar limpiamente, así el error NSIS de archivo bloqueado ya no puede aparecer con rotaciones o imágenes pegadas pendientes.
+- **Popup de descarga estable**: el popup actualiza su porcentaje y barra de progreso en sitio en lugar de reconstruirse en cada tick, así el botón Descartar ya no parpadea bajo el cursor y la barra vuelve a animarse con fluidez.
+- **Flujo de progreso más silencioso**: el progreso de descarga llega al renderer solo en cambios de porcentaje entero más un keepalive de 500ms, reduciendo el tráfico de IPC por chunk.
 
 ### ⚠️ Antes de instalar
 
