@@ -109,13 +109,15 @@ window.CVVideo = (() => {
     let playedSeconds = 0;
     for (let i = 0; i < played.length; i++) playedSeconds += played.end(i) - played.start(i);
     // Decoded-byte counts cannot distinguish a silent file from an unsupported
-    // audio codec. Keep this neutral diagnostic behind an explicit user action.
-    // The container verdict from music-metadata (cached on the tab) is
-    // authoritative; the decode-based detection only fills the gap while a
-    // probe is still pending, and must not overwrite it on every sync.
+    // audio codec. The container verdict from music-metadata (cached on the
+    // tab) settles whether a track exists at all; once playback actually ran,
+    // zero decoded bytes mean the codec cannot be played, so that evidence
+    // wins over "a track exists" and still recovers if a delayed track starts.
     const decodedStatus = !owner?.loaded ? 'pending' : element.webkitAudioDecodedByteCount > 0 ? 'available'
       : typeof element.webkitAudioDecodedByteCount === 'number' && (playedSeconds > .75 || (element.ended && playedSeconds > 0)) ? 'unavailable' : 'pending';
-    audioStatus = owner && (owner.audioProbe === 'available' || owner.audioProbe === 'unavailable') ? owner.audioProbe : decodedStatus;
+    const probeStatus = owner && (owner.audioProbe === 'available' || owner.audioProbe === 'unavailable') ? owner.audioProbe : 'pending';
+    audioStatus = probeStatus === 'unavailable' || decodedStatus === 'unavailable' ? 'unavailable'
+      : probeStatus === 'available' ? 'available' : decodedStatus;
     const unavailable = audioStatus === 'unavailable';
     $('video-mute').disabled = unavailable;
     $('video-volume').disabled = unavailable;

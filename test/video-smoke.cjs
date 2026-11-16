@@ -203,31 +203,41 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate('return state.hasChanges;'),false);
     console.log('PASS image editing restored and inactive video decoder released');
 
-    for (const name of ['silent.mp4', 'unsupported-audio.mp4']) {
-      await open(name); await loaded();
-      assert.equal(await evaluate("return !$('video-volume').disabled && !$('video-mute').disabled;"), true, 'A new source is checked independently');
-      await evaluate('window.CVVideo.element.muted=true; await window.CVVideo.toggle();');
-      await waitFor(() => evaluate("return window.CVVideo.element.currentTime > .8 && $('video-volume').disabled && $('video-mute').disabled;"), name + ' disables unavailable audio controls');
-      await evaluate("document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'m',bubbles:true}));");
-      assert.equal(await evaluate('return window.CVVideo.element.muted;'), true, 'Mute hotkey respects unavailable audio');
-      assert.equal(await evaluate("return $('video-audio-note').hidden && $('video-menu').hidden;"), true, 'Silent or unsupported audio never raises an automatic notice');
-      await evaluate("window.CVVideo.element.pause(); $('video-more').click(); $('video-audio-info').click();");
-      fs.writeFileSync(path.join(dataDir,name + '-controls.png'), (await win.webContents.capturePage()).toPNG());
-      assert.equal(await evaluate("return !$('video-audio-note').hidden && $('video-audio-note').textContent.includes('puede ser silencioso');"), true, 'Audio information appears only when requested');
-      await evaluate("state.settings.app.language='en'; updateLanguage('en');");
-      assert.ok(await evaluate("return $('video-audio-note').textContent.includes('may be silent');"));
-      await evaluate("state.settings.app.language='es'; updateLanguage('es'); window.CVVideo.closeMenu();");
-    }
+    // Silent files have no audio track, so the container probe reports the
+    // audio controls unavailable on load. A file whose track exists but whose
+    // codec Chromium cannot decode disables them once playback proves that no
+    // audio is being decoded.
+    await open('silent.mp4'); await loaded();
+    await waitFor(() => evaluate("return $('video-mute').disabled && $('video-volume').disabled && $('video-sound').classList.contains('audio-unavailable');"), 'silent.mp4 reports unavailable audio on load');
+    assert.equal(await evaluate("return getComputedStyle($('video-volume')).display === 'none' && getComputedStyle($('video-mute')).display !== 'none';"), true, 'Unavailable audio shows only the speaker, with no dead slider');
+    await evaluate('window.CVVideo.element.muted=true; await window.CVVideo.toggle();');
+    await waitFor(() => evaluate('return window.CVVideo.element.currentTime > .8;'), 'silent.mp4 playback');
+    await evaluate("document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'m',bubbles:true}));");
+    assert.equal(await evaluate('return window.CVVideo.element.muted;'), true, 'Mute hotkey respects unavailable audio');
+    assert.equal(await evaluate("return $('video-menu').hidden && $('video-mute').dataset.tooltip === 'Audio no disponible';"), true, 'Unavailable audio is a card hint, never an automatic notice');
+    await evaluate('window.CVVideo.element.pause(); window.CVVideo.reveal(); await new Promise(resolve => setTimeout(resolve, 150));');
+    fs.writeFileSync(path.join(dataDir,'silent.mp4-controls.png'), (await win.webContents.capturePage()).toPNG());
+    await evaluate("state.settings.app.language='en'; updateLanguage('en');");
+    assert.equal(await evaluate("return $('video-mute').dataset.tooltip === 'Audio unavailable';"), true, 'The unavailable-audio hint is localized');
+    await evaluate("state.settings.app.language='es'; updateLanguage('es');");
+
+    await open('unsupported-audio.mkv'); await loaded();
+    assert.equal(await evaluate("return !$('video-mute').disabled && !$('video-volume').disabled;"), true, 'A new source is checked independently');
+    await evaluate('window.CVVideo.element.muted=true; await window.CVVideo.toggle();');
+    await waitFor(() => evaluate("return window.CVVideo.element.currentTime > .8 && $('video-mute').disabled && $('video-volume').disabled;"), 'unsupported-audio.mkv disables the undecodable audio controls');
+    assert.equal(await evaluate('return window.CVVideo.element.webkitAudioDecodedByteCount === 0 && !window.CVVideo.element.paused && window.CVVideo.element.videoWidth === 320;'), true, 'The video keeps playing while its codec decodes no audio');
+    fs.writeFileSync(path.join(dataDir,'unsupported-audio.mkv-controls.png'), (await win.webContents.capturePage()).toPNG());
+    console.log('PASS silent and undecodable audio report icon-only controls, hints and localization');
     await open('delayed-audio.mp4'); await loaded();
     await evaluate('window.CVVideo.element.muted=true; await window.CVVideo.toggle();');
     await waitFor(() => evaluate("return window.CVVideo.element.currentTime>3.5 && window.CVVideo.element.webkitAudioDecodedByteCount>0 && !$('video-volume').disabled && !$('video-mute').disabled;"), 'audio controls recover when a delayed track becomes decodable');
-    console.log('PASS unavailable audio controls, mute guard and delayed-audio recovery');
+    console.log('PASS unavailable-audio controls recover when a delayed track becomes decodable');
     await open('damaged.mp4');
     await waitFor(() => evaluate('return document.body.classList.contains("image-error") && !state.transitioning;'), 'incompatible video banner');
     assert.ok(await evaluate("return $('error-banner-sub').textContent.includes('códec');"));
     await evaluate("state.settings.app.language='en'; updateLanguage('en'); setImageError(state.images[state.current]);");
     assert.ok(await evaluate("return $('error-banner-sub').textContent.includes('codec');"));
-    console.log('PASS quiet silent/unsupported audio, requested bilingual audio information and invalid-video message');
+    console.log('PASS localized invalid-video message after undecodable audio');
 
     for (const name of ['unindexed.mkv', ...(fs.existsSync(path.join(dataDir,'regression-sample.mkv')) ? ['regression-sample.mkv'] : [])]) {
       await open(name);

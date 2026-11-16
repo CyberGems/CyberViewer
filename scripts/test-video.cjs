@@ -39,7 +39,7 @@ unindexed.writeUInt32BE(0x10000000 + elementSize - 5, cues + 1);
 fs.writeFileSync(unindexedPath, unindexed);
 if (process.env.CV_VIDEO_MKV_SAMPLE) fs.copyFileSync(process.env.CV_VIDEO_MKV_SAMPLE, path.join(dataDir, 'regression-sample.mkv'));
 sample('compatible.webm', ['-i',base,'-c:v','libvpx-vp9','-deadline','realtime','-cpu-used','8','-c:a','libopus']);
-sample('unsupported-audio.mp4', ['-i',base,'-c:v','copy','-c:a','ac3']);
+sample('unsupported-audio.mkv', ['-i',base,'-c:v','copy','-c:a','wmav2']);
 sample('silent.mp4', ['-i',base,'-c:v','copy','-an']);
 sample('delayed-audio.mp4', ['-i',base,'-itsoffset','3','-i',base,'-map','0:v:0','-map','1:a:0','-c','copy','-t','10']);
 fs.copyFileSync(base, path.join(dataDir, 'autoplay.mp4'));

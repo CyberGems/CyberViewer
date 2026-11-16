@@ -92,8 +92,18 @@ describe('nav arrow badge tooltips', () => {
     assert.match(videoJs, /getVideoAudioCodec\(probePath\)/);
     assert.match(videoJs, /image\.audioProbe = result\.codec \? 'available' : 'unavailable';/);
     assert.match(videoJs, /audioStatus = image\.audioProbe \|\| 'pending';/);
+    // A track whose codec decodes nothing still reports unavailable once
+    // playback proves it, without losing the delayed-track recovery.
+    assert.match(videoJs, /probeStatus === 'unavailable' \|\| decodedStatus === 'unavailable' \? 'unavailable'/);
     assert.doesNotMatch(videoJs, /video-audio-note/);
     assert.doesNotMatch(videoJs, /video-audio-info/);
+  });
+
+  it('shows only the speaker when the audio is unavailable', () => {
+    assert.match(videoCss, /\.video-sound\.audio-unavailable #video-volume \{ display: none; \}/);
+    assert.match(videoCss, /\.video-sound\.audio-unavailable \.video-icon-sound \{ display: none; \}/);
+    assert.match(videoCss, /\.video-sound\.audio-unavailable \.video-icon-muted \{ display: initial; \}/);
+    assert.doesNotMatch(videoCss, /audio-unavailable #video-mute,[^}]*opacity: \.38/);
   });
 
   it('keeps the sibling arrows visible, disabled with their own hint', () => {

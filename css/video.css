@@ -82,11 +82,11 @@ body.ghost-mode #video-heading { display: block; }
 }
 #video-controls button:hover { background: rgba(var(--cyber-tint-rgb), 0.12); }
 #video-controls button:disabled { cursor: default; background: transparent; }
-/* Dim only the controls, never the group: the tooltip lives inside it and
-   would inherit the transparency. */
-.video-sound.audio-unavailable #video-mute,
-.video-sound.audio-unavailable #video-volume { opacity: .38; }
-.video-sound.audio-unavailable input { cursor: default !important; }
+/* No audio track or an undecodable one: the speaker alone reports the state,
+   with no dead slider and no empty gap where it used to be. */
+.video-sound.audio-unavailable #video-volume { display: none; }
+.video-sound.audio-unavailable .video-icon-sound { display: none; }
+.video-sound.audio-unavailable .video-icon-muted { display: initial; }
 .video-sound.audio-unavailable #video-mute::after, .video-sound.audio-unavailable #video-mute::before { display: none; }
 #video-controls button:focus-visible, #video-controls input:focus-visible,
 body.video-active #ghost-close:focus-visible { outline: 2px solid var(--cyber-accent); outline-offset: 3px; }
