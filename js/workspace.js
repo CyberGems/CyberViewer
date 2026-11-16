@@ -320,6 +320,29 @@ window.CVWorkspace = (() => {
     showCyberConfirm({ title: text('tabs_unsaved_title'), message: tabsUnsavedMessage(pending),
       detail: pending.map(tab => tab.image.file.name).join('\n'), danger: false, onConfirm: callback });
   }
+  // Installing an update is a quit in disguise: resolve the same
+  // pending-changes warning the close flow uses BEFORE the updater spawns the
+  // NSIS installer, so the uninstall phase never races a live app that is
+  // showing a modal. Discarding leaves the pending state as-is, so allowUnload
+  // then lets the updater's own quit land on the first attempt; a refused
+  // install (dev/portable) restores close protection.
+  function requestUpdateInstall(onProceed) {
+    capture();
+    if (state.isCropping) window.exitCropMode();
+    if (busy || dialogDepth > 0 ||
+      document.querySelector('#modal-adjust.active, #modal-resize.active, #modal-print-export.active, #modal-youtube.active')) {
+      showToast(text('tabs_finish_edit'), 'warning');
+      return;
+    }
+    document.querySelectorAll('.modal-overlay.active').forEach(overlay => overlay.classList.remove('active'));
+    const proceed = async () => {
+      if (state.settings.app.restoreSession && !(await flush())) return;
+      allowUnload = true;
+      const ok = await onProceed();
+      if (ok === false) allowUnload = false;
+    };
+    confirmDiscard(model.tabs, () => void proceed());
+  }
   function closeTabs(ids, { discard = false, remember = true } = {}) {
     if (!canSwitch()) return;
     const tabs = model.tabs.filter(tab => ids.includes(tab.id));
@@ -1076,5 +1099,5 @@ window.CVWorkspace = (() => {
   return { model, get busy() { return busy; }, get ready() { return ready; }, capture, render,
     activate, openPath, openFiles, dropFiles, openYouTube, beforeShow, viewFor, restoreView, closeTabs, reopen,
     contextMenu, barMenu, clearPreloads, release, changed, flush, settingsChanged, restore, edit, dialog,
-    suspend, resume, imageBound, relocate, fileDeleted, initialize, isEditing, canSwitch };
+    suspend, resume, imageBound, relocate, fileDeleted, initialize, isEditing, canSwitch, requestUpdateInstall };
 })();

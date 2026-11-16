@@ -9688,7 +9688,12 @@ $('btn-go-end').addEventListener('click', (e) => {
           persistAppSettings();
           startUpdateDownload();
         } else if (action === 'install') {
-          if (window.electronAPI.installUpdate) window.electronAPI.installUpdate();
+          if (window.electronAPI.installUpdate) {
+            // Resolve pending unsaved changes before the installer spawns:
+            // a quit blocked by the discard modal races NSIS and fails.
+            window.CVWorkspace.requestUpdateInstall(
+              () => window.electronAPI.installUpdate().then((res) => !!(res && res.ok)));
+          }
         } else if (action === 'release') {
           popupOpenReleaseUrl();
         }
@@ -10182,7 +10187,8 @@ $('btn-go-end').addEventListener('click', (e) => {
       startUpdateDownload();
     });
     overlay.querySelector('#about-btn-install').addEventListener('click', () => {
-      window.electronAPI.installUpdate();
+      window.CVWorkspace.requestUpdateInstall(
+        () => window.electronAPI.installUpdate().then((res) => !!(res && res.ok)));
     });
     overlay.querySelector('#about-btn-release').addEventListener('click', () => {
       const version = updateStatus.version ? String(updateStatus.version) : '';
