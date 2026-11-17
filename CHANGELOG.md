@@ -2,6 +2,24 @@
 
 All notable changes to CyberViewer are documented here.
 
+## [1.23.2] - 2026-11-17
+
+### 🇺🇸 English
+
+- Keep video playback when a pan drag is released, hold the pause badge while the player idles, and keep the play confirmation visible twice as long.
+- Generate seek-preview thumbnails less often, settle them only for QHD and 4K videos, and hide stale thumbnails while a high-quality sweep moves.
+- Show an icon-only volume control when a video has no audio, and clarify the hint as a video without audio.
+- Drop the duplicated up-to-date note under the About check button and soften its hover with the standard accent.
+- Ship winget manifests with every release and automate Windows Package Manager submissions.
+
+### 🇪🇸 Español
+
+- La reproducción de vídeo continúa al soltar un arrastre de paneo, la insignia de pausa se sostiene mientras el reproductor está inactivo y la confirmación de reproducción se ve el doble de tiempo.
+- Genera las miniaturas de avance con menos frecuencia, las estabiliza solo en vídeos QHD y 4K y oculta las miniaturas obsoletas mientras avanza un barrido de alta calidad.
+- Muestra un control de volumen de solo icono cuando un vídeo no tiene audio, y aclara el aviso como un vídeo sin audio.
+- Elimina la nota duplicada bajo el botón de comprobación de Acerca de y suaviza su hover con el acento estándar.
+- Publica manifiestos winget con cada release y automatiza los envíos al Windows Package Manager.
+
 ## [1.23.1] - 2026-11-16
 
 ### 🇺🇸 English

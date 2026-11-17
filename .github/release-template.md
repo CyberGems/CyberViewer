@@ -8,7 +8,7 @@
 
 <!-- IMPORTANT FOR AGENTS & MAINTAINERS: Always rewrite this entire section and highlights with the ACTUAL release notes for this specific new version before tagging. NEVER leave or copy previous version notes! Use 25-45 words for the summary, lead with user-facing changes, and do not repeat the app name or version. Keep the Spanish mirror inside the details block in sync: translate the summary and rewrite the highlights. -->
 <!-- changelog-summary:start -->
-The update prompt no longer flickers while downloading, and starting the install now asks about unsaved images first, so the warning cannot race the installer and fail with a locked-file error. Progress ticks patch the popup in place instead of rebuilding it.
+Video playback survives panning and pausing with clear state badges, seek previews generate less often and settle only for QHD and 4K, videos without audio show a calm icon-only volume control, and About clears its duplicated up-to-date note. Releases now ship winget manifests.
 <!-- changelog-summary:end -->
 
 > **New to CyberViewer?** A fast Windows media viewer for images, video and audio, with on-the-spot edits, tabs, favorites, slideshows, and a session that reopens where you left it.
@@ -17,18 +17,20 @@ The update prompt no longer flickers while downloading, and starting the install
 
 ### ✨ Key Features & Highlights
 
-- 🛠️ **Safer update installs**: "Restart and update" now surfaces the unsaved-changes warning before the installer spawns. Cancelling keeps everything untouched; discarding flushes the session and quits into a clean install, so the locked-file NSIS error cannot appear while rotations or pasted images are pending.
+- ▶️ **Steadier video playback**: Playback keeps running when a pan drag is released, the pause badge holds while the player idles, and the play confirmation stays visible twice as long.
 
-- ✨ **Steady download popup**: the popup patches its percentage and progress bar in place instead of rebuilding on every tick, so the Dismiss button no longer flickers under the cursor and the bar animates smoothly again.
+- 🖼️ **Calmer seek previews**: Thumbnails generate less often, settle only for QHD and 4K videos, and stale thumbnails hide while a high-quality sweep moves.
 
-- 🔇 **Quieter progress feed**: download progress reaches the renderer only on whole-percent changes plus a 500ms keepalive, cutting per-chunk IPC traffic.
+- 🔈 **Honest audio state**: Videos without audio show an icon-only volume control, and the hint reads clearly as a video without audio.
+
+- 🧹 **About and maintenance**: The duplicated up-to-date note under the About check button is gone, its hover uses the standard accent, and every release now ships winget manifests for the Windows Package Manager.
 
 <details>
 <summary><b>🇪🇸 Ver notas de la versión en Español</b></summary>
 
 ### 🚀 Novedades de esta versión
 
-El aviso de actualización ya no parpadea durante la descarga, y al iniciar la instalación se pregunta primero por las imágenes sin guardar, así el aviso ya no compite con el instalador ni falla con un error de archivo bloqueado. Los ticks de progreso actualizan el popup en sitio en lugar de reconstruirlo.
+La reproducción de vídeo sobrevive a paneos y pausas con insignias de estado claras, las miniaturas de avance se generan menos a menudo y solo se estabilizan en QHD y 4K, los vídeos sin audio muestran un control de volumen discreto de solo icono y Acerca de elimina su nota duplicada. Los releases publican ahora manifiestos winget.
 
 > **¿Nuevo en CyberViewer?** Un visor de medios rápido para Windows (imágenes, vídeo y audio), con edición al instante, pestañas, favoritos, pases de diapositivas y una sesión que reabre donde la dejaste.
 
@@ -36,9 +38,13 @@ El aviso de actualización ya no parpadea durante la descarga, y al iniciar la i
 
 ### ✨ Novedades destacadas
 
-- **Instalaciones más seguras**: "Reiniciar y actualizar" muestra ahora el aviso de cambios sin guardar antes de lanzar el instalador. Cancelar lo deja todo intacto; descartar vuelca la sesión y sale para instalar limpiamente, así el error NSIS de archivo bloqueado ya no puede aparecer con rotaciones o imágenes pegadas pendientes.
-- **Popup de descarga estable**: el popup actualiza su porcentaje y barra de progreso en sitio en lugar de reconstruirse en cada tick, así el botón Descartar ya no parpadea bajo el cursor y la barra vuelve a animarse con fluidez.
-- **Flujo de progreso más silencioso**: el progreso de descarga llega al renderer solo en cambios de porcentaje entero más un keepalive de 500ms, reduciendo el tráfico de IPC por chunk.
+- **Reproducción más estable**: la reproducción continúa al soltar un arrastre de paneo, la insignia de pausa se sostiene mientras el reproductor está inactivo y la confirmación de reproducción se ve el doble de tiempo.
+
+- **Miniaturas de avance más calmadas**: se generan con menos frecuencia, se estabilizan solo en vídeos QHD y 4K y las miniaturas obsoletas se ocultan mientras avanza un barrido de alta calidad.
+
+- **Estado de audio honesto**: los vídeos sin audio muestran un control de volumen de solo icono, y el aviso se lee claramente como un vídeo sin audio.
+
+- **Acerca de y mantenimiento**: la nota duplicada bajo el botón de comprobación de Acerca de desaparece, su hover usa el acento estándar y cada release publica manifiestos winget para el Windows Package Manager.
 
 ### ⚠️ Antes de instalar
 
