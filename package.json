@@ -1,6 +1,6 @@
 {
   "name": "cyberviewer",
-  "version": "1.23.2",
+  "version": "1.23.3",
   "description": "Images, video and audio in one fast window, with folder browsing and quick fixes.",
   "main": "main.js",
   "author": "CyberGems <info@cybergems.org>",

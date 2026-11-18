@@ -2,6 +2,18 @@
 
 All notable changes to CyberViewer are documented here.
 
+## [1.23.3] - 2026-11-18
+
+### 🇺🇸 English
+
+- Convert the tray submenus (`Recent files`, `Help`, and `More from CyberGems`) into side-by-side flyout panels with dwell hover, click toggling, automatic monitor-edge placement, and keyboard arrow navigation.
+- Run the tray window sandboxed with navigation locking, validate web URLs before passing them to the shell from the renderer or tray, rebuild a dead tray renderer on next open, report startup failures in a dialog, and reveal the main window even if its first paint never arrives.
+
+### 🇪🇸 Español
+
+- Convierte los submenús de la bandeja (`Archivos recientes`, `Ayuda` y `Más de CyberGems`) en paneles flyout laterales con retardo hover, alternancia por clic, colocación automática según el monitor y navegación con flechas del teclado.
+- Ejecuta la ventana de bandeja en sandbox con bloqueo de navegación, valida URLs web antes de abrirlas desde el renderizador o la bandeja, reconstruye un renderizador muerto al reabrir, informa fallos de inicio en un diálogo y revela la ventana principal aunque no llegue su primer pintado.
+
 ## [1.23.2] - 2026-11-17
 
 ### 🇺🇸 English
