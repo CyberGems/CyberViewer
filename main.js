@@ -804,9 +804,41 @@ function createWindow() {
     persistWindowState();
   });
 
+  // Only web links reach the system browser: the url comes from the
+  // renderer, so any other scheme is dropped.
   win.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    try {
+      const target = new URL(url);
+      if (target.protocol === 'https:' || target.protocol === 'http:') {
+        void shell.openExternal(target.toString());
+      }
+    } catch (_) { /* ignore anything that is not a URL */ }
     return { action: 'deny' };
+  });
+}
+
+/**
+ * The suite-standard tray menu never navigates and never opens windows: a
+ * web link leaves through the user's browser and anything else is dropped.
+ * Without this, a compromised renderer could mount a remote page with the
+ * preload attached.
+ */
+function lockTrayNavigation(win) {
+  const openWebLink = (url) => {
+    try {
+      const target = new URL(url);
+      if (target.protocol === 'https:' || target.protocol === 'http:') {
+        void shell.openExternal(target.toString());
+      }
+    } catch (_) { /* ignore anything that is not a URL */ }
+  };
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    openWebLink(url);
+    return { action: 'deny' };
+  });
+  win.webContents.on('will-navigate', (event, url) => {
+    event.preventDefault();
+    openWebLink(url);
   });
 }
 
@@ -1062,13 +1094,23 @@ function ensureTrayMenuWin() {
       preload: path.join(__dirname, 'tray-preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
       backgroundThrottling: false
     }
   });
 
   trayMenuWin.setAlwaysOnTop(true, 'pop-up-menu');
-  void trayMenuWin.loadFile(path.join(__dirname, 'tray-menu.html'));
+  lockTrayNavigation(trayMenuWin);
+  trayMenuWin.loadFile(path.join(__dirname, 'tray-menu.html')).catch((error) => {
+    console.error('[TRAY] the tray menu failed to load:', error);
+  });
+
+  // A dead tray renderer leaves no dead menu: the window is dropped and the
+  // next opening rebuilds it.
+  trayMenuWin.webContents.on('render-process-gone', (_event, details) => {
+    if (details.reason === 'clean-exit') return;
+    console.error('[TRAY] tray menu renderer gone:', details.reason);
+    if (trayMenuWin && !trayMenuWin.isDestroyed()) trayMenuWin.destroy();
+  });
 
   trayMenuWin.on('blur', () => {
     if (trayMenuHideTimer) return;
@@ -1313,7 +1355,14 @@ ipcMain.on('tray-menu-action', (_event, action, payload) => {
   if (action === 'help-website') { openTrayHelpUrl('website'); return; }
   if (action === 'help-donate') { openTrayHelpUrl('donate'); return; }
   if (action === 'suite-app' && payload && payload.site) {
-    void shell.openExternal(payload.site);
+    // The payload crosses the sandbox, so it is not trusted: only web URLs
+    // reach the system browser.
+    try {
+      const site = new URL(String(payload.site));
+      if (site.protocol === 'https:' || site.protocol === 'http:') {
+        void shell.openExternal(site.toString());
+      }
+    } catch (_) { /* anything that is not a URL is dropped */ }
     return;
   }
   if (action === 'suite-view-all') {
@@ -3394,6 +3443,8 @@ if (!gotTheLock) {
     }
   });
 
+  // A startup failure used to be an unhandled rejection: no window, no
+  // message. The cause is shown to the user.
   app.whenReady().then(() => {
     diagWindow('boot', {
       packaged: app.isPackaged,
@@ -3420,6 +3471,14 @@ if (!gotTheLock) {
       const hasAppWindow = BrowserWindow.getAllWindows().some((w) => !w.isDestroyed() && w !== trayMenuWin);
       if (!hasAppWindow) createWindow();
     });
+  }).catch((error) => {
+    // A startup failure used to be an unhandled rejection: no window, no
+    // message, a process that looked like a double click that did nothing.
+    // The cause is shown to the user.
+    const text = error instanceof Error ? error.stack || error.message : String(error);
+    console.error('[MAIN] startup failed:', text);
+    dialog.showErrorBox('CyberViewer', `CyberViewer no pudo iniciarse / CyberViewer could not start:\n\n${text.slice(0, 600)}`);
+    app.exit(1);
   });
 }
 
