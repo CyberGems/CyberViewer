@@ -677,7 +677,21 @@ function createWindow() {
   const loadUrl = !app.isPackaged
     ? pathToFileURL(htmlPath).href + '?v=' + Date.now() + '&' + bootParams.toString()
     : pathToFileURL(htmlPath).href + '?' + bootParams.toString();
-  win.loadURL(loadUrl);
+  // The reveal waits for the first paint, and ready-to-show only fires when
+  // that paint lands. A paint that never lands (a stale GPU cache of another
+  // build of the app is enough) would leave the window invisible forever,
+  // so once the load settles the reveal is forced after a grace period; a
+  // late paint fills the window in.
+  win.loadURL(loadUrl).catch((error) => {
+    diagWindow('load-error', { message: String((error && error.message) || error) });
+  }).then(() => {
+    setTimeout(() => {
+      if (win && !win.isDestroyed() && !win.isVisible()) {
+        diagWindow('reveal-anyway');
+        revealWindow();
+      }
+    }, 3000);
+  });
 
   win.on('close', (event) => {
     if (!isQuitting) {
