@@ -27,9 +27,9 @@ describe('suite-standard tray popup wiring', () => {
     }
   });
 
-  it('renders all four views with drill-down navigation', () => {
-    for (const view of ['main', 'recents', 'help', 'suite']) {
-      assert.match(trayMenuJs, new RegExp(`currentView === '${view}'`));
+  it('renders the main card and side-by-side flyouts for recents, help, and suite', () => {
+    for (const id of ['flyoutRecents', 'flyoutHelp', 'flyoutSuite']) {
+      assert.match(trayMenuHtml, new RegExp(`id="${id}"`));
     }
     assert.match(trayMenuJs, /localAction: 'recents'/);
     assert.match(trayMenuJs, /localAction: 'help'/);

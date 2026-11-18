@@ -30,12 +30,16 @@ const ICONS = {
 function getApi() {
   return window.trayMenu || (window.electronAPI && window.electronAPI.trayMenu) || null;
 }
+const stageEl = document.getElementById('stage');
 const cardEl = document.getElementById('card');
 const headEl = document.getElementById('head');
 const headDividerEl = document.getElementById('headDivider');
 const groupEl = document.getElementById('group');
 const exitDividerEl = document.getElementById('exitDivider');
 const exitGroupEl = document.getElementById('exitGroup');
+const flyoutRecentsEl = document.getElementById('flyoutRecents');
+const flyoutHelpEl = document.getElementById('flyoutHelp');
+const flyoutSuiteEl = document.getElementById('flyoutSuite');
 
 let currentState = {
   version: '',
@@ -46,8 +50,93 @@ let currentState = {
   showSuiteRecommendations: true,
   recents: [],
   suiteApps: [],
+  flyoutSide: 'left',
+  verticalAlign: 'bottom',
 };
-let currentView = 'main';
+let activeFlyout = null;
+let flyoutOpenTimer = null;
+let flyoutCloseTimer = null;
+
+function cancelFlyoutTimers() {
+  if (flyoutOpenTimer) {
+    clearTimeout(flyoutOpenTimer);
+    flyoutOpenTimer = null;
+  }
+  if (flyoutCloseTimer) {
+    clearTimeout(flyoutCloseTimer);
+    flyoutCloseTimer = null;
+  }
+}
+
+function getFlyoutElement(target) {
+  if (target === 'recents') return flyoutRecentsEl;
+  if (target === 'help') return flyoutHelpEl;
+  if (target === 'suite') return flyoutSuiteEl;
+  return null;
+}
+
+function setActiveFlyout(target) {
+  activeFlyout = target;
+  const flyouts = [
+    ['recents', flyoutRecentsEl],
+    ['help', flyoutHelpEl],
+    ['suite', flyoutSuiteEl],
+  ];
+  for (const [id, el] of flyouts) {
+    if (!el) continue;
+    const isOpen = id === activeFlyout;
+    el.classList.toggle('is-open', isOpen);
+    el.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+  }
+  if (cardEl) {
+    const triggers = cardEl.querySelectorAll('[data-flyout-trigger]');
+    for (const btn of triggers) {
+      const isOpen = btn.dataset.flyoutTrigger === activeFlyout;
+      btn.classList.toggle('is-flyout-open', isOpen);
+      btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    }
+  }
+}
+
+function scheduleFlyoutOpen(target) {
+  cancelFlyoutTimers();
+  if (activeFlyout === target) return;
+  const delay = activeFlyout !== null ? 60 : 120;
+  flyoutOpenTimer = setTimeout(() => {
+    flyoutOpenTimer = null;
+    setActiveFlyout(target);
+  }, delay);
+}
+
+function scheduleFlyoutClose() {
+  cancelFlyoutTimers();
+  if (activeFlyout === null) return;
+  flyoutCloseTimer = setTimeout(() => {
+    flyoutCloseTimer = null;
+    setActiveFlyout(null);
+  }, 220);
+}
+
+function openFlyoutAndFocusFirst(target) {
+  cancelFlyoutTimers();
+  setActiveFlyout(target);
+  requestAnimationFrame(() => {
+    const el = getFlyoutElement(target);
+    if (!el) return;
+    const firstBtn = el.querySelector('button.item:not(.item-empty)');
+    if (firstBtn) firstBtn.focus();
+  });
+}
+
+function closeFlyoutAndReturnFocus() {
+  const prev = activeFlyout;
+  cancelFlyoutTimers();
+  setActiveFlyout(null);
+  if (prev && cardEl) {
+    const trigger = cardEl.querySelector(`[data-flyout-trigger="${prev}"]`);
+    if (trigger) trigger.focus();
+  }
+}
 
 const I18N = {
   en: {
@@ -121,6 +210,7 @@ function makeSeparator() {
 function makeItem(def) {
   const btn = document.createElement('button');
   btn.type = 'button';
+  btn.setAttribute('role', 'menuitem');
   btn.className = 'item' + (def.danger ? ' item-danger' : '') + (def.donate ? ' item-donate' : '') + (def.stacked ? ' item-stacked' : '');
   // App-style bubble via [data-tooltip]; a native title would use the OS style.
   if (def.title) btn.dataset.tooltip = def.title;
@@ -183,13 +273,31 @@ function makeItem(def) {
     btn.appendChild(ch);
   }
 
+  if (def.localAction) {
+    btn.dataset.flyoutTrigger = def.localAction;
+    btn.setAttribute('aria-haspopup', 'menu');
+    btn.setAttribute('aria-expanded', activeFlyout === def.localAction ? 'true' : 'false');
+    if (activeFlyout === def.localAction) {
+      btn.classList.add('is-flyout-open');
+    }
+    btn.addEventListener('mouseenter', () => {
+      scheduleFlyoutOpen(def.localAction);
+    });
+  } else if (def.inMainCard) {
+    btn.addEventListener('mouseenter', () => {
+      scheduleFlyoutClose();
+    });
+  }
+
   btn.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
     if (def.localAction) {
-      currentView = def.localAction;
-      renderView();
+      cancelFlyoutTimers();
+      setActiveFlyout(activeFlyout === def.localAction ? null : def.localAction);
     } else if (def.action) {
+      cancelFlyoutTimers();
+      setActiveFlyout(null);
       const api = getApi();
       if (api && api.action) {
         api.action(def.action, def.payload);
@@ -202,84 +310,73 @@ function makeItem(def) {
 
 function renderHead() {
   headEl.replaceChildren();
+  headDividerEl.style.display = 'block';
+  const version = (currentState && currentState.version) || '';
+  headEl.className = 'head';
+  headEl.setAttribute('role', 'button');
+  headEl.setAttribute('tabindex', '0');
 
-  if (currentView === 'main') {
-    headDividerEl.style.display = 'block';
-    const version = (currentState && currentState.version) || '';
-    headEl.className = 'head';
-    headEl.setAttribute('role', 'button');
-    headEl.setAttribute('tabindex', '0');
+  const logo = document.createElement('img');
+  logo.className = 'head-logo';
+  logo.src = 'assets/icon.png';
+  logo.alt = '';
+  logo.draggable = false;
+  logo.addEventListener('error', () => { logo.src = 'assets/icon.ico'; }, { once: true });
 
-    const logo = document.createElement('img');
-    logo.className = 'head-logo';
-    logo.src = 'assets/icon.png';
-    logo.alt = '';
-    logo.draggable = false;
-    logo.addEventListener('error', () => { logo.src = 'assets/icon.ico'; }, { once: true });
+  const titleWrap = document.createElement('span');
+  titleWrap.className = 'head-title';
+  titleWrap.innerHTML = `Cyber<span class="head-title-accent">Viewer</span> <span class="head-ver">v${version}</span>`;
 
-    const titleWrap = document.createElement('span');
-    titleWrap.className = 'head-title';
-    titleWrap.innerHTML = `Cyber<span class="head-title-accent">Viewer</span> <span class="head-ver">v${version}</span>`;
-
-    headEl.appendChild(logo);
-    headEl.appendChild(titleWrap);
-    headEl.dataset.tooltip = t('about');
-    headEl.onclick = (e) => {
+  headEl.appendChild(logo);
+  headEl.appendChild(titleWrap);
+  headEl.dataset.tooltip = t('about');
+  headEl.onmouseenter = () => {
+    scheduleFlyoutClose();
+  };
+  headEl.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const api = getApi();
+    if (api && api.action) api.action('about-modal');
+  };
+  headEl.onkeydown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       e.stopPropagation();
       const api = getApi();
       if (api && api.action) api.action('about-modal');
-    };
-    headEl.onkeydown = (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        e.stopPropagation();
-        const api = getApi();
-        if (api && api.action) api.action('about-modal');
-      }
-    };
-  } else {
-    headDividerEl.style.display = 'block';
-    headEl.className = 'sub-head';
-
-    const backBtn = document.createElement('button');
-    backBtn.type = 'button';
-    backBtn.className = 'back-btn';
-    backBtn.innerHTML = `${ICONS.chevronLeft}<span>${t('back')}</span>`;
-    backBtn.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      currentView = 'main';
-      renderView();
-    };
-
-    headEl.appendChild(backBtn);
-
-    if (currentView === 'suite') {
-      const brandBtn = document.createElement('button');
-      brandBtn.type = 'button';
-      brandBtn.className = 'suite-brand-mark';
-      brandBtn.innerHTML = `<img class="suite-brand-logo" src="assets/cybergems-logo.svg" alt="" onerror="this.onerror=null;this.src='assets/cybergems-logo.png'"><span class="suite-brand-name">CyberGems</span>`;
-      brandBtn.onclick = () => {
-        const api = getApi();
-        if (api && api.action) api.action('suite-home');
-      };
-      headEl.appendChild(brandBtn);
-    } else if (currentView === 'help') {
-      const title = document.createElement('span');
-      title.className = 'sub-title';
-      title.textContent = t('help');
-      headEl.appendChild(title);
-    } else if (currentView === 'recents') {
-      const title = document.createElement('span');
-      title.className = 'sub-title';
-      title.textContent = t('recentsTitle');
-      headEl.appendChild(title);
     }
-  }
+  };
 }
 
-function recentItemDef(r) {
+function makeFlyoutHead(iconKey, titleText, extraNode) {
+  const head = document.createElement('div');
+  head.className = 'flyout-head';
+
+  const title = document.createElement('span');
+  title.className = 'flyout-head-title';
+  const ico = document.createElement('span');
+  ico.className = 'flyout-head-ico';
+  ico.innerHTML = ICONS[iconKey] || ICONS.diamond;
+  const text = document.createElement('span');
+  text.textContent = titleText;
+  title.appendChild(ico);
+  title.appendChild(text);
+  head.appendChild(title);
+
+  if (extraNode) {
+    head.appendChild(extraNode);
+  }
+  return head;
+}
+
+function makeFlyoutDivider() {
+  const div = document.createElement('div');
+  div.className = 'divider';
+  return div;
+}
+
+function recentItemDef(r, inMainCard = false) {
   return {
     action: 'open-recent',
     payload: { path: r.path },
@@ -288,6 +385,7 @@ function recentItemDef(r) {
     fallbackIcon: 'image',
     label: r.name,
     title: r.path,
+    inMainCard,
   };
 }
 
@@ -307,6 +405,7 @@ function renderMainView() {
     <span class="status-dot ${isVis ? 'active' : 'idle'}" aria-hidden="true"></span>
     <span class="status-text">${isVis ? t('statusVisible') : t('statusHidden')}</span>
   `;
+  statusRow.addEventListener('mouseenter', () => scheduleFlyoutClose());
   items.push(statusRow);
 
   // Show / Hide action
@@ -316,6 +415,7 @@ function renderMainView() {
       icon: 'window',
       label: isVis ? t('hide') : t('show'),
       shortcut: shortcut || undefined,
+      inMainCard: true,
     })
   );
 
@@ -325,6 +425,7 @@ function renderMainView() {
       action: 'open-file',
       icon: 'open',
       label: t('openFile'),
+      inMainCard: true,
     })
   );
 
@@ -334,10 +435,11 @@ function renderMainView() {
       action: 'settings',
       icon: 'settings',
       label: t('settings'),
+      inMainCard: true,
     })
   );
 
-  // Recent files (top 4 for one-click open; the rest in the recents view)
+  // Recent files (top 4 for one-click open; full list in side-by-side flyout)
   if (showRecents) {
     items.push(makeSeparator());
 
@@ -348,7 +450,7 @@ function renderMainView() {
 
     if (recents.length > 0) {
       for (const r of recents.slice(0, 4)) {
-        items.push(makeItem(recentItemDef(r)));
+        items.push(makeItem(recentItemDef(r, true)));
       }
 
       if (recents.length > 4) {
@@ -369,7 +471,7 @@ function renderMainView() {
     }
   }
 
-  // Drill-down submenus
+  // Side-by-side flyout submenus
   items.push(makeSeparator());
   items.push(
     makeItem({
@@ -402,12 +504,16 @@ function renderMainView() {
       icon: 'quit',
       label: t('quit'),
       danger: true,
+      inMainCard: true,
     })
   );
 }
 
 function renderHelpView() {
-  groupEl.replaceChildren(
+  if (!flyoutHelpEl) return;
+  const group = document.createElement('div');
+  group.className = 'group group-bottom';
+  group.replaceChildren(
     makeItem({ action: 'help-pin', icon: 'pin', label: t('pin') }),
     makeSeparator(),
     makeItem({ action: 'help-docs', icon: 'book', label: t('docs') }),
@@ -419,14 +525,28 @@ function renderHelpView() {
     makeItem({ action: 'about-modal', icon: 'about', label: t('about') }),
     makeItem({ action: 'check-updates', icon: 'update', label: t('updates') })
   );
-
-  exitDividerEl.style.display = 'none';
-  exitGroupEl.style.display = 'none';
+  flyoutHelpEl.replaceChildren(
+    makeFlyoutHead('help', t('help')),
+    makeFlyoutDivider(),
+    group
+  );
 }
 
 function renderSuiteView() {
+  if (!flyoutSuiteEl) return;
   const apps = (currentState && Array.isArray(currentState.suiteApps)) ? currentState.suiteApps : [];
   const sisterApps = apps.filter((a) => a && a.slug !== 'cyberviewer');
+
+  const brandBtn = document.createElement('button');
+  brandBtn.type = 'button';
+  brandBtn.className = 'suite-brand-mark';
+  brandBtn.innerHTML = `<img class="suite-brand-logo" src="assets/cybergems-logo.svg" alt="" onerror="this.onerror=null;this.src='assets/cybergems-logo.png'"><span class="suite-brand-name">CyberGems</span>`;
+  brandBtn.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const api = getApi();
+    if (api && api.action) api.action('suite-home');
+  };
 
   const items = sisterApps.map((app) => {
     return makeItem({
@@ -449,12 +569,19 @@ function renderSuiteView() {
     })
   );
 
-  groupEl.replaceChildren(...items);
-  exitDividerEl.style.display = 'none';
-  exitGroupEl.style.display = 'none';
+  const group = document.createElement('div');
+  group.className = 'group group-bottom';
+  group.replaceChildren(...items);
+
+  flyoutSuiteEl.replaceChildren(
+    makeFlyoutHead('diamond', t('suite'), brandBtn),
+    makeFlyoutDivider(),
+    group
+  );
 }
 
 function renderRecentsView() {
+  if (!flyoutRecentsEl) return;
   const recents = ((currentState && Array.isArray(currentState.recents)) ? currentState.recents : []).slice(0, 10);
   const items = [];
 
@@ -478,68 +605,151 @@ function renderRecentsView() {
     })
   );
 
-  groupEl.replaceChildren(...items);
-  exitDividerEl.style.display = 'none';
-  exitGroupEl.style.display = 'none';
+  const group = document.createElement('div');
+  group.className = 'group group-bottom';
+  group.replaceChildren(...items);
+
+  flyoutRecentsEl.replaceChildren(
+    makeFlyoutHead('recent', t('recentsTitle')),
+    makeFlyoutDivider(),
+    group
+  );
 }
 
 function renderView() {
-  renderHead();
-
-  groupEl.className = 'group';
-
-  if (currentView === 'help') {
-    renderHelpView();
-  } else if (currentView === 'suite') {
-    renderSuiteView();
-  } else if (currentView === 'recents') {
-    renderRecentsView();
-  } else {
-    renderMainView();
+  if (stageEl) {
+    stageEl.dataset.flyoutSide = currentState?.flyoutSide === 'right' ? 'right' : 'left';
+    stageEl.dataset.verticalAlign = currentState?.verticalAlign === 'top' ? 'top' : 'bottom';
   }
 
+  renderHead();
+  groupEl.className = 'group';
+  renderMainView();
+  renderRecentsView();
+  renderHelpView();
+  renderSuiteView();
+
+  const showRecents = currentState ? currentState.showTrayRecents !== false : true;
+  const showSuite = currentState ? currentState.showSuiteRecommendations !== false : true;
+  const recents = (currentState && Array.isArray(currentState.recents)) ? currentState.recents : [];
+  if (activeFlyout === 'recents' && (!showRecents || recents.length <= 4)) {
+    activeFlyout = null;
+  } else if (activeFlyout === 'suite' && !showSuite) {
+    activeFlyout = null;
+  }
+  setActiveFlyout(activeFlyout);
+
   reportSize();
+}
+
+function measureCardHeight(el) {
+  if (!el) return 0;
+  return Math.max(el.scrollHeight, Math.ceil(el.getBoundingClientRect().height));
 }
 
 function reportSize() {
   if (!cardEl) return;
   requestAnimationFrame(() => {
     const pad = 24;
-    let contentH = 0;
-    const parts = [headEl, headDividerEl, groupEl, exitDividerEl, exitGroupEl];
-    for (const el of parts) {
-      if (el && el.style.display !== 'none') {
-        contentH += el.getBoundingClientRect().height;
-      }
-    }
-    const cardH = Math.max(cardEl.scrollHeight, Math.ceil(contentH + 2));
+    const showRecents = currentState ? currentState.showTrayRecents !== false : true;
+    const showSuite = currentState ? currentState.showSuiteRecommendations !== false : true;
+    const recents = (currentState && Array.isArray(currentState.recents)) ? currentState.recents : [];
+
+    const cardH = Math.max(
+      measureCardHeight(cardEl),
+      measureCardHeight(flyoutHelpEl),
+      showSuite ? measureCardHeight(flyoutSuiteEl) : 0,
+      (showRecents && recents.length > 4) ? measureCardHeight(flyoutRecentsEl) : 0
+    );
     const h = Math.ceil(cardH + 2 * pad);
     const w = Math.ceil(cardEl.offsetWidth + 2 * pad);
     const api = getApi();
     if (api && api.ready && w > 0 && h > 0) {
-      api.ready({ width: w, height: h, view: currentView });
+      api.ready({ width: w, height: h, view: 'main' });
     }
   });
 }
 
 function hideMenu() {
-  currentView = 'main';
-  renderView();
+  cancelFlyoutTimers();
+  setActiveFlyout(null);
   const api = getApi();
   if (api && api.hide) {
     api.hide();
   }
 }
 
+if (cardEl) {
+  cardEl.addEventListener('mouseleave', () => {
+    scheduleFlyoutClose();
+  });
+}
+
+for (const flyoutEl of [flyoutRecentsEl, flyoutHelpEl, flyoutSuiteEl]) {
+  if (!flyoutEl) continue;
+  flyoutEl.addEventListener('mouseenter', () => {
+    cancelFlyoutTimers();
+  });
+  flyoutEl.addEventListener('mouseleave', () => {
+    scheduleFlyoutClose();
+  });
+}
+
+document.addEventListener('mousedown', (e) => {
+  const target = e.target;
+  if (!(target instanceof Node)) return;
+  if (cardEl && cardEl.contains(target)) return;
+  const openFlyout = getFlyoutElement(activeFlyout);
+  if (openFlyout && openFlyout.contains(target)) return;
+  hideMenu();
+});
+
 // Global key handlers
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    if (currentView !== 'main') {
-      currentView = 'main';
-      renderView();
+    e.preventDefault();
+    if (activeFlyout !== null) {
+      closeFlyoutAndReturnFocus();
     } else {
       hideMenu();
     }
+    return;
+  }
+
+  const flyoutSide = currentState?.flyoutSide === 'right' ? 'right' : 'left';
+  const openKey = flyoutSide === 'left' ? 'ArrowLeft' : 'ArrowRight';
+  const closeKey = flyoutSide === 'left' ? 'ArrowRight' : 'ArrowLeft';
+  const openFlyoutEl = getFlyoutElement(activeFlyout);
+  const activeEl = document.activeElement;
+  const inFlyout = Boolean(openFlyoutEl && activeEl && openFlyoutEl.contains(activeEl));
+
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    const scope = (inFlyout && openFlyoutEl) ? openFlyoutEl : cardEl;
+    if (!scope) return;
+    const buttons = Array.from(scope.querySelectorAll('button.item:not(.item-empty)'));
+    if (buttons.length === 0) return;
+    e.preventDefault();
+    const idx = buttons.indexOf(activeEl);
+    const delta = e.key === 'ArrowDown' ? 1 : -1;
+    const nextIdx = idx === -1
+      ? (delta > 0 ? 0 : buttons.length - 1)
+      : (idx + delta + buttons.length) % buttons.length;
+    buttons[nextIdx]?.focus();
+    return;
+  }
+
+  if (e.key === openKey || (!inFlyout && e.key === closeKey)) {
+    const triggerTarget = activeEl && activeEl.dataset ? activeEl.dataset.flyoutTrigger : null;
+    if (!inFlyout && triggerTarget) {
+      e.preventDefault();
+      openFlyoutAndFocusFirst(triggerTarget);
+      return;
+    }
+  }
+
+  if (e.key === closeKey && activeFlyout !== null) {
+    e.preventDefault();
+    closeFlyoutAndReturnFocus();
   }
 });
 
@@ -548,8 +758,8 @@ document.addEventListener('contextmenu', (e) => e.preventDefault());
 
 // Blur dismiss
 window.addEventListener('blur', () => {
-  currentView = 'main';
-  renderView();
+  cancelFlyoutTimers();
+  setActiveFlyout(null);
   setTimeout(() => {
     const api = getApi();
     if (api && api.hide) api.hide();
@@ -560,7 +770,8 @@ window.addEventListener('blur', () => {
 renderView();
 
 function resetToMain() {
-  currentView = 'main';
+  cancelFlyoutTimers();
+  setActiveFlyout(null);
   renderView();
 }
 
@@ -575,7 +786,10 @@ function initIpc() {
     api.onState((state) => {
       if (state) {
         currentState = { ...currentState, ...state };
-        if (state.resetView) currentView = 'main';
+        if (state.resetView) {
+          cancelFlyoutTimers();
+          activeFlyout = null;
+        }
       }
       renderView();
     });
