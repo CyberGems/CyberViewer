@@ -929,7 +929,7 @@
   .menu-wrap { position: relative; -webkit-app-region: no-drag; display: flex; align-items: center; }
   .menu-ico { width: 15px; height: 15px; display: block; flex-shrink: 0; }
   .win-ico { width: 15px; height: 15px; display: block; flex-shrink: 0; }
-  #btn-menu.open { color: var(--cyber-accent-ink); background: rgba(var(--cyber-accent-rgb),0.10); }
+  #btn-menu.open { color: var(--cyber-win-hover-ink); background: rgba(var(--cyber-win-hover-tint-rgb),0.10); }
   /* Menu tooltip suppression while open is handled in ttSuppressedWhileOpen() */
 
   /* ── TITLEBAR UPDATE BUTTON (CyberPaste pattern) ── */
@@ -5994,7 +5994,7 @@
 
   #btn-shortcuts.hidden { display: none; }
   #titlebar-properties-btn[hidden] { display: none; }
-  #btn-shortcuts.open { color: var(--cyber-accent-ink); background: rgba(var(--cyber-accent-rgb), 0.10); }
+  #btn-shortcuts.open { color: var(--cyber-win-hover-ink); background: rgba(var(--cyber-win-hover-tint-rgb), 0.10); }
 
   /* Shortcuts-guide tooltip suppression while open is handled in ttSuppressedWhileOpen() */
   #btn-shortcuts.open:hover,
