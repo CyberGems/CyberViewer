@@ -189,7 +189,7 @@ function loadSettings() {
         if (data.app.videoMuted === undefined) data.app.videoMuted = false;
         if (data.app.closeChoiceMade === undefined) data.app.closeChoiceMade = false;
         if (data.app.showSuiteRecommendations === undefined) data.app.showSuiteRecommendations = true;
-      if (data.app.dblClickAction === undefined) data.app.dblClickAction = 'fullscreen';
+        if (data.app.dblClickAction === undefined) data.app.dblClickAction = 'fullscreen';
         if (data.app.toggleHotkey === undefined || data.app.toggleHotkey === '') {
           data.app.toggleHotkey = DEFAULT_TOGGLE_HOTKEY;
         }
@@ -333,7 +333,7 @@ function armQuitReveal() {
     quitRevealTimer = null;
     if (!win || win.isDestroyed()) return;
     if (quitCloseReadyReceived) return;
-    
+
     if (win.isMinimized()) win.restore();
     if (!win.isVisible()) win.show();
     win.focus();
@@ -352,6 +352,7 @@ function clearQuitTimers() {
 app.on('before-quit', () => {
   isQuitting = true;
   quitRequested = true;
+  if (trayMenuPrewarmTimer) { clearTimeout(trayMenuPrewarmTimer); trayMenuPrewarmTimer = null; }
 });
 
 const initialFilePaths = process.argv.map(arg => getFilePathFromArgs([arg])).filter(Boolean);
@@ -718,7 +719,7 @@ function createWindow() {
   // Electron cancels a close when the renderer's beforeunload handler requests
   // confirmation. Only its explicit acknowledgement may retry the close.
   win.webContents.on('will-prevent-unload', () => {
-    
+
     if (win.isDestroyed()) return;
     if (quitRequested) {
       // The user explicitly asked to quit (tray Exit, first-close dialog). The
@@ -974,16 +975,18 @@ function getSuiteAppsList(lang) {
 }
 
 let trayMenuWin = null;
+let trayMenuLoaded = false;
+let trayMenuPrewarmTimer = null;
 let trayMenuAnchor = null;
 let trayMenuHideTimer = null;
 let trayMenuShowPending = false;
 let trayMenuShowFallback = null;
-let trayMenuRevealTimer = null;
+let trayMenuPendingGeo = null;
 let trayMenuLastShown = 0;
 let trayMenuOpen = false;
 const TRAY_MENU_CARD_WIDTH = 292;
 const TRAY_MENU_FLYOUT_WIDTH = 292;
-const TRAY_MENU_FLYOUT_GAP = 8;
+const TRAY_MENU_FLYOUT_GAP = 4;
 const TRAY_MENU_FLYOUT_SPAN = TRAY_MENU_FLYOUT_GAP + TRAY_MENU_FLYOUT_WIDTH;
 const TRAY_MENU_SHADOW_PAD = 24;
 const TRAY_MENU_WINDOW_WIDTH = TRAY_MENU_CARD_WIDTH + TRAY_MENU_FLYOUT_SPAN + 2 * TRAY_MENU_SHADOW_PAD;
@@ -1027,7 +1030,7 @@ function buildTrayMenuState(resetView) {
 }
 
 function trayMenuGeometry(iconBounds, _windowW, windowH) {
-  let b = (iconBounds && typeof iconBounds.x === 'number' && (iconBounds.width || iconBounds.height))
+  let b = (iconBounds && typeof iconBounds.x === 'number')
     ? { x: iconBounds.x, y: iconBounds.y, width: iconBounds.width || 0, height: iconBounds.height || 0 }
     : null;
   if (!b) {
@@ -1045,7 +1048,6 @@ function trayMenuGeometry(iconBounds, _windowW, windowH) {
   const gap = 4;
   const pad = TRAY_MENU_SHADOW_PAD;
   const cardW = TRAY_MENU_CARD_WIDTH;
-  const mainWindowW = cardW + 2 * pad;
   const cardH = windowH - 2 * pad;
 
   let cardX;
@@ -1074,18 +1076,24 @@ function trayMenuGeometry(iconBounds, _windowW, windowH) {
     verticalAlign = 'bottom';
   }
 
-  const mainWindowX = Math.min(Math.max(cardX - pad, work.x + 2), work.x + work.width - mainWindowW - 2);
-  const spaceLeft = mainWindowX - (work.x + 2);
-  const spaceRight = (work.x + work.width - 2) - (mainWindowX + mainWindowW);
+  cardX = Math.min(Math.max(cardX, work.x + 4), work.x + work.width - cardW - 4);
+  cardY = Math.min(Math.max(cardY, work.y + 4), work.y + work.height - cardH - 4);
+
+  const spaceLeft = cardX - work.x;
+  const spaceRight = (work.x + work.width) - (cardX + cardW);
   const preferLeft = cx >= work.x + work.width / 2;
   const flyoutSide = preferLeft
     ? ((spaceLeft >= TRAY_MENU_FLYOUT_SPAN || spaceLeft >= spaceRight) ? 'left' : 'right')
     : ((spaceRight >= TRAY_MENU_FLYOUT_SPAN || spaceRight >= spaceLeft) ? 'right' : 'left');
 
+  const mainWindowX = cardX - pad;
   const rawWindowX = flyoutSide === 'left' ? mainWindowX - TRAY_MENU_FLYOUT_SPAN : mainWindowX;
-  const windowX = Math.min(Math.max(rawWindowX, work.x + 2), work.x + work.width - TRAY_MENU_WINDOW_WIDTH - 2);
-  const screenBottom = (display.bounds ? display.bounds.y + display.bounds.height : work.y + work.height) - 2;
-  const windowY = Math.min(Math.max(cardY - pad, work.y + 2), screenBottom - windowH);
+  const minWindowX = work.x - pad;
+  const maxWindowX = Math.max(minWindowX, work.x + work.width + pad - TRAY_MENU_WINDOW_WIDTH);
+  const windowX = Math.min(Math.max(rawWindowX, minWindowX), maxWindowX);
+  const minWindowY = work.y - pad;
+  const maxWindowY = Math.max(minWindowY, work.y + work.height + pad - windowH);
+  const windowY = Math.min(Math.max(cardY - pad, minWindowY), maxWindowY);
 
   trayMenuFlyoutSide = flyoutSide;
   trayMenuVerticalAlign = verticalAlign;
@@ -1096,12 +1104,14 @@ function trayMenuGeometry(iconBounds, _windowW, windowH) {
 function ensureTrayMenuWin() {
   if (trayMenuWin && !trayMenuWin.isDestroyed()) return trayMenuWin;
 
+  trayMenuLoaded = false;
   const windowW = TRAY_MENU_WINDOW_WIDTH;
-  trayMenuWin = new BrowserWindow({
+  const menuWin = new BrowserWindow({
     width: windowW,
     height: TRAY_MENU_EST_HEIGHT,
     show: false,
     frame: false,
+    thickFrame: false,
     transparent: true,
     hasShadow: false,
     resizable: false,
@@ -1111,6 +1121,7 @@ function ensureTrayMenuWin() {
     skipTaskbar: true,
     alwaysOnTop: true,
     focusable: true,
+    paintWhenInitiallyHidden: true,
     backgroundColor: '#00000000',
     webPreferences: {
       preload: path.join(__dirname, 'tray-preload.js'),
@@ -1119,22 +1130,23 @@ function ensureTrayMenuWin() {
       backgroundThrottling: false
     }
   });
+  trayMenuWin = menuWin;
 
-  trayMenuWin.setAlwaysOnTop(true, 'pop-up-menu');
-  lockTrayNavigation(trayMenuWin);
-  trayMenuWin.loadFile(path.join(__dirname, 'tray-menu.html')).catch((error) => {
+  menuWin.setAlwaysOnTop(true, 'pop-up-menu');
+  lockTrayNavigation(menuWin);
+  menuWin.loadFile(path.join(__dirname, 'tray-menu.html')).catch((error) => {
     console.error('[TRAY] the tray menu failed to load:', error);
   });
 
   // A dead tray renderer leaves no dead menu: the window is dropped and the
   // next opening rebuilds it.
-  trayMenuWin.webContents.on('render-process-gone', (_event, details) => {
+  menuWin.webContents.on('render-process-gone', (_event, details) => {
     if (details.reason === 'clean-exit') return;
     console.error('[TRAY] tray menu renderer gone:', details.reason);
-    if (trayMenuWin && !trayMenuWin.isDestroyed()) trayMenuWin.destroy();
+    if (!menuWin.isDestroyed()) menuWin.destroy();
   });
 
-  trayMenuWin.on('blur', () => {
+  menuWin.on('blur', () => {
     if (trayMenuHideTimer) return;
     if (Date.now() - trayMenuLastShown < 250) return;
     trayMenuHideTimer = setTimeout(() => {
@@ -1143,94 +1155,151 @@ function ensureTrayMenuWin() {
     }, 120);
   });
 
-  trayMenuWin.on('closed', () => {
-    trayMenuWin = null;
-    trayMenuOpen = false;
+  menuWin.on('closed', () => {
+    if (trayMenuWin === menuWin) {
+      trayMenuWin = null;
+      trayMenuLoaded = false;
+      trayMenuOpen = false;
+    }
   });
 
-  trayMenuWin.webContents.on('preload-error', (_e, pPath, error) => {
+  menuWin.webContents.on('preload-error', (_e, pPath, error) => {
     console.error('[TRAY-PRELOAD-ERROR]', pPath, error);
   });
 
-  trayMenuWin.webContents.once('did-finish-load', () => {
-    if (!trayMenuWin || trayMenuWin.isDestroyed()) return;
-    trayMenuWin.webContents.send('tray-menu-state', buildTrayMenuState(true));
+  menuWin.webContents.once('did-finish-load', () => {
+    if (trayMenuWin !== menuWin || menuWin.isDestroyed()) return;
+    trayMenuLoaded = true;
+    menuWin.webContents.send('tray-menu-state', { ...buildTrayMenuState(true), prepareReveal: trayMenuShowPending });
   });
 
-  return trayMenuWin;
+  return menuWin;
+}
+
+function schedulePrewarmTrayMenuWin() {
+  if (trayMenuPrewarmTimer) { clearTimeout(trayMenuPrewarmTimer); trayMenuPrewarmTimer = null; }
+  if (isQuitting || !tray || tray.isDestroyed()) return;
+  trayMenuPrewarmTimer = setTimeout(() => {
+    trayMenuPrewarmTimer = null;
+    if (isQuitting || !tray || tray.isDestroyed() || trayMenuWin) return;
+    try { ensureTrayMenuWin(); } catch (_) { /* ignore */ }
+  }, 80);
+}
+
+function resolveTrayAnchor(eventBounds) {
+  let cursor = null;
+  try { cursor = screen.getCursorScreenPoint(); } catch (_) { cursor = null; }
+  const nearCursor = (r) => {
+    if (!cursor) return true;
+    const cx = r.x + r.width / 2;
+    const cy = r.y + r.height / 2;
+    return Math.abs(cx - cursor.x) <= 80 && Math.abs(cy - cursor.y) <= 80;
+  };
+  if (eventBounds && typeof eventBounds.x === 'number' && (eventBounds.width || eventBounds.height)) {
+    const r = { x: eventBounds.x, y: eventBounds.y, width: eventBounds.width || 0, height: eventBounds.height || 0 };
+    if (nearCursor(r)) return r;
+  }
+  try {
+    const tb = tray && tray.getBounds();
+    if (tb && typeof tb.x === 'number' && (tb.width > 0 || tb.height > 0)) {
+      const r = { x: tb.x, y: tb.y, width: tb.width, height: tb.height };
+      if (nearCursor(r)) return r;
+    }
+  } catch (_) { /* ignore */ }
+  return cursor ? { x: cursor.x, y: cursor.y, width: 0, height: 0 } : { x: 0, y: 0, width: 0, height: 0 };
+}
+
+function boundsClose(a, b, tol = 2) {
+  return (
+    Math.abs(a.x - b.x) <= tol &&
+    Math.abs(a.y - b.y) <= tol &&
+    Math.abs(a.width - b.width) <= tol &&
+    Math.abs(a.height - b.height) <= tol
+  );
+}
+
+function applyTrayBounds(win, geo) {
+  try {
+    const before = win.getBounds();
+    if (boundsClose(before, geo)) return;
+    win.setBounds(geo, false);
+    const after = win.getBounds();
+    if (!boundsClose(after, geo)) {
+      win.setBounds(geo, false);
+    }
+  } catch (_) { /* ignore */ }
 }
 
 function revealTrayMenuWin() {
   if (!trayMenuWin || trayMenuWin.isDestroyed()) return;
   if (trayMenuShowFallback) { clearTimeout(trayMenuShowFallback); trayMenuShowFallback = null; }
   trayMenuShowPending = false;
+  if (trayMenuPendingGeo) {
+    applyTrayBounds(trayMenuWin, trayMenuPendingGeo);
+  }
+  trayMenuLastShown = Date.now();
   if (!trayMenuWin.isVisible()) {
-    try { trayMenuWin.setOpacity(0); } catch (_) { /* ignore */ }
     trayMenuWin.show();
-    if (trayMenuRevealTimer) clearTimeout(trayMenuRevealTimer);
-    trayMenuRevealTimer = setTimeout(() => {
-      trayMenuRevealTimer = null;
-      if (trayMenuWin && !trayMenuWin.isDestroyed()) {
-        try { trayMenuWin.setOpacity(1); } catch (_) { /* ignore */ }
-      }
-    }, 40);
-  } else {
-    try { trayMenuWin.setOpacity(1); } catch (_) { /* ignore */ }
   }
   trayMenuWin.focus();
-  trayMenuLastShown = Date.now();
+  try {
+    trayMenuWin.webContents.send('tray-menu-show');
+  } catch (_) { /* ignore */ }
 }
 
 function showCustomTrayMenu(eventBounds) {
   if (!tray || tray.isDestroyed()) return;
-  let b = (eventBounds && typeof eventBounds.x === 'number' && (eventBounds.width || eventBounds.height))
-    ? eventBounds : null;
-  if (!b) { try { b = tray.getBounds(); } catch (_) { b = null; } }
-  if (!b || (!b.width && !b.height)) {
-    let p = null;
-    try { p = screen.getCursorScreenPoint(); } catch (_) { p = { x: 0, y: 0 }; }
-    b = p ? { x: p.x, y: p.y, width: 0, height: 0 } : { x: 0, y: 0, width: 0, height: 0 };
+  if (trayMenuHideTimer) { clearTimeout(trayMenuHideTimer); trayMenuHideTimer = null; }
+  if (trayMenuPrewarmTimer) { clearTimeout(trayMenuPrewarmTimer); trayMenuPrewarmTimer = null; }
+  if (trayMenuShowFallback) { clearTimeout(trayMenuShowFallback); trayMenuShowFallback = null; }
+
+  // Never reuse a previously shown/hidden BrowserWindow: Chromium on Windows
+  // suspends Viz while hidden and retains/evicts stale DirectComposition frames
+  // across hide->show, causing 2nd-click flicker and cross-monitor side jumps.
+  if (trayMenuWin && !trayMenuWin.isDestroyed() && trayMenuWin.isVisible()) {
+    const stale = trayMenuWin;
+    trayMenuWin = null;
+    trayMenuLoaded = false;
+    try { stale.destroy(); } catch (_) { /* ignore */ }
   }
 
-  trayMenuAnchor = b;
-  if (trayMenuHideTimer) { clearTimeout(trayMenuHideTimer); trayMenuHideTimer = null; }
+  trayMenuAnchor = resolveTrayAnchor(eventBounds);
+  const windowW = TRAY_MENU_WINDOW_WIDTH;
+  const initialH = mainViewHeight || lastTrayMenuHeight || TRAY_MENU_EST_HEIGHT;
+  const geo = trayMenuGeometry(trayMenuAnchor, windowW, initialH);
 
   const w = ensureTrayMenuWin();
   if (!w || w.isDestroyed()) return;
 
   trayMenuOpen = true;
-
-  const windowW = TRAY_MENU_WINDOW_WIDTH;
-  const initialH = mainViewHeight || lastTrayMenuHeight || TRAY_MENU_EST_HEIGHT;
-  const geo = trayMenuGeometry(trayMenuAnchor, windowW, initialH);
-  const current = w.getBounds();
-  if (current.x !== geo.x || current.y !== geo.y || current.width !== geo.width || current.height !== geo.height) {
-    w.setBounds(geo);
-  }
+  applyTrayBounds(w, geo);
+  trayMenuPendingGeo = geo;
 
   trayMenuShowPending = true;
-  if (trayMenuShowFallback) { clearTimeout(trayMenuShowFallback); trayMenuShowFallback = null; }
   trayMenuShowFallback = setTimeout(() => {
     trayMenuShowFallback = null;
     if (trayMenuShowPending) revealTrayMenuWin();
-  }, 500);
+  }, 450);
 
-  w.webContents.send('tray-menu-state', buildTrayMenuState(true));
+  if (trayMenuLoaded) {
+    w.webContents.send('tray-menu-state', { ...buildTrayMenuState(true), prepareReveal: true });
+  }
 }
 
 function hideCustomTrayMenu() {
   if (trayMenuHideTimer) { clearTimeout(trayMenuHideTimer); trayMenuHideTimer = null; }
   if (trayMenuShowFallback) { clearTimeout(trayMenuShowFallback); trayMenuShowFallback = null; }
-  if (trayMenuRevealTimer) { clearTimeout(trayMenuRevealTimer); trayMenuRevealTimer = null; }
+  if (trayMenuPrewarmTimer) { clearTimeout(trayMenuPrewarmTimer); trayMenuPrewarmTimer = null; }
   trayMenuShowPending = false;
+  trayMenuPendingGeo = null;
   trayMenuOpen = false;
-  if (trayMenuWin && !trayMenuWin.isDestroyed()) {
-    try { trayMenuWin.setOpacity(1); } catch (_) { /* ignore */ }
-    if (trayMenuWin.isVisible()) {
-      trayMenuWin.hide();
-    }
-    trayMenuWin.webContents.send('tray-menu-reset');
+  const menuWin = trayMenuWin;
+  trayMenuWin = null;
+  trayMenuLoaded = false;
+  if (menuWin && !menuWin.isDestroyed()) {
+    try { menuWin.destroy(); } catch (_) { /* ignore */ }
   }
+  schedulePrewarmTrayMenuWin();
 }
 
 function updateCustomTrayMenuState() {
@@ -1415,28 +1484,32 @@ ipcMain.on('tray-menu-hide', () => {
   hideCustomTrayMenu();
 });
 
-ipcMain.on('tray-menu-ready', (_event, rect) => {
-  if (trayMenuWin && !trayMenuWin.isDestroyed() && trayMenuAnchor && rect && rect.height) {
+ipcMain.on('tray-menu-ready', (event, rect) => {
+  if (!trayMenuWin || trayMenuWin.isDestroyed() || event.sender !== trayMenuWin.webContents) return;
+  if (rect && rect.height) {
     const windowW = TRAY_MENU_WINDOW_WIDTH;
     const isMain = rect.view === 'main' || !rect.view;
-
+    const desiredH = isMain
+      ? Math.min(Math.max(rect.height, 350), 750)
+      : Math.min(Math.max(rect.height, mainViewHeight), 750);
     if (isMain) {
-      const naturalMainH = Math.min(Math.max(rect.height, 350), 750);
-      mainViewHeight = naturalMainH;
-      lastTrayMenuHeight = naturalMainH;
-      const currentBounds = trayMenuWin.getBounds();
-      if (Math.abs(currentBounds.height - naturalMainH) > 4 || Math.abs(currentBounds.width - windowW) > 4) {
-        trayMenuWin.setBounds(trayMenuGeometry(trayMenuAnchor, windowW, naturalMainH));
+      mainViewHeight = desiredH;
+      lastTrayMenuHeight = desiredH;
+    }
+    if (trayMenuAnchor) {
+      const geo = trayMenuGeometry(trayMenuAnchor, windowW, desiredH);
+      trayMenuPendingGeo = geo;
+      if (trayMenuShowPending && rect.prepared) {
+        revealTrayMenuWin();
+        return;
       }
-    } else {
-      const desiredH = Math.min(Math.max(rect.height, mainViewHeight), 750);
-      const currentBounds = trayMenuWin.getBounds();
-      if (Math.abs(currentBounds.height - desiredH) > 4 || Math.abs(currentBounds.width - windowW) > 4) {
-        trayMenuWin.setBounds(trayMenuGeometry(trayMenuAnchor, windowW, desiredH));
+      if (trayMenuWin.isVisible()) {
+        applyTrayBounds(trayMenuWin, geo);
       }
     }
+  } else if (trayMenuShowPending && rect && rect.prepared) {
+    revealTrayMenuWin();
   }
-  if (trayMenuShowPending) revealTrayMenuWin();
 });
 
 ipcMain.on('tray-menu-request-state', (event) => {
@@ -1592,17 +1665,17 @@ ipcMain.on('youtube:file-drop', (event, files) => {
   if (!youtubePlayer?.acceptsDrop(event) || !Array.isArray(files)) return;
   const entries = files.slice(0, 2000).filter(file => file && typeof file.path === 'string' &&
     file.path.length > 0 && file.path.length <= 4096).map(file => ({
-    path: file.path,
-    name: typeof file.name === 'string' ? file.name.slice(0, 512) : path.basename(file.path),
-    size: Number.isFinite(file.size) ? Math.max(0, file.size) : 0,
-    type: typeof file.type === 'string' ? file.type.slice(0, 128) : ''
-  }));
+      path: file.path,
+      name: typeof file.name === 'string' ? file.name.slice(0, 512) : path.basename(file.path),
+      size: Number.isFinite(file.size) ? Math.max(0, file.size) : 0,
+      type: typeof file.type === 'string' ? file.type.slice(0, 128) : ''
+    }));
   if (entries.length) win.webContents.send('youtube:file-drop', entries);
 });
 
 ipcMain.handle('tabs:native-context-menu', (event, items) => {
   if (!youtubePlayer?.accepts(event) || !Array.isArray(items) ||
-      items.length < 1 || items.length > 12) return null;
+    items.length < 1 || items.length > 12) return null;
   const win = BrowserWindow.fromWebContents(event.sender);
   const validItem = item => {
     if (!item) return false;
@@ -2388,7 +2461,7 @@ function scheduleThumbCacheEviction() {
     evictTimer = null;
     try {
       evictThumbCache(thumbCachePath);
-    } catch (_) {}
+    } catch (_) { }
   }, 10000);
 }
 
@@ -3221,7 +3294,7 @@ ipcMain.on('show-context-menu', (event, props) => {
                 const abs = resolveAllowedPath(props.path);
                 fs.readFile(abs, (err, data) => {
                   if (!err) {
-                    writeClipboardImage(data).catch(() => {});
+                    writeClipboardImage(data).catch(() => { });
                   }
                 });
               } catch (_) { /* ignore */ }
@@ -3324,7 +3397,7 @@ ipcMain.on('show-context-menu', (event, props) => {
                 const abs = resolveAllowedPath(props.path);
                 fs.readFile(abs, (err, data) => {
                   if (!err) {
-                    writeClipboardImage(data).catch(() => {});
+                    writeClipboardImage(data).catch(() => { });
                   }
                 });
               } catch (_) { /* ignore */ }
