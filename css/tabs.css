@@ -119,7 +119,8 @@ body.tab-drag-active #image-tab-list .image-tab { cursor: grabbing; }
   align-items: center;
   justify-content: center;
   gap: 4px;
-  border: 1px solid var(--cyber-border);
+  /* Flat like the titlebar buttons: no idle outline, hover paints the tile. */
+  border: 0;
   border-radius: 6px;
   background: rgba(var(--cyber-tint-rgb), .03);
   color: var(--cyber-text);
@@ -131,8 +132,8 @@ body.tab-drag-active #image-tab-list .image-tab { cursor: grabbing; }
 #image-tabs-count { font-size: 11px; font-weight: 700; color: var(--cyber-text); font-variant-numeric: tabular-nums; }
 #image-tabs-list-btn { width: auto; min-width: 34px; padding: 0 10px; }
 #image-tabs-list-btn .menu-ico { width: 12px; height: 12px; color: var(--cyber-muted); opacity: .85; }
-.tab-bar-button:hover { border-color: rgba(var(--cyber-accent-rgb), .45); background: rgba(var(--cyber-accent-rgb), .08); color: var(--cyber-accent-ink); }
-.tab-bar-button:hover #image-tabs-count { color: var(--cyber-accent-ink); }
+.tab-bar-button:hover { background: rgba(var(--cyber-win-hover-tint-rgb), .08); color: var(--cyber-win-hover-ink); }
+.tab-bar-button:hover #image-tabs-count { color: var(--cyber-win-hover-ink); }
 .tab-bar-nav-btn {
   align-self: center;
   width: 22px;
@@ -149,7 +150,7 @@ body.tab-drag-active #image-tab-list .image-tab { cursor: grabbing; }
   cursor: pointer;
 }
 .tab-bar-nav-btn .menu-ico { width: 13px; height: 13px; }
-.tab-bar-nav-btn:hover { color: var(--cyber-accent-ink); background: rgba(var(--cyber-accent-rgb), .08); }
+.tab-bar-nav-btn:hover { color: var(--cyber-win-hover-ink); background: rgba(var(--cyber-win-hover-tint-rgb), .08); }
 .tab-bar-nav-btn:disabled { opacity: .3; cursor: default; }
 .tab-bar-nav-btn:disabled:hover { background: transparent; color: var(--cyber-muted); }
 .tab-bar-nav-btn[hidden] { display: none; }
