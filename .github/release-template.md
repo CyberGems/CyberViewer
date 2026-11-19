@@ -8,7 +8,7 @@
 
 <!-- IMPORTANT FOR AGENTS & MAINTAINERS: Always rewrite this entire section and highlights with the ACTUAL release notes for this specific new version before tagging. NEVER leave or copy previous version notes! Use 25-45 words for the summary, lead with user-facing changes, and do not repeat the app name or version. Keep the Spanish mirror inside the details block in sync: translate the summary and rewrite the highlights. -->
 <!-- changelog-summary:start -->
-System tray submenus for Recent files, Help, and More from CyberGems now open as side-by-side flyout panels beside the main card. Tray navigation is locked in a sandboxed window, external links are validated, startup errors report clearly, and the main window shows without stalling.
+Eliminates system tray menu flicker on repeated opens and position jumps when switching between mixed-DPI monitors using a fresh prewarmed tray window with two-step transparent reveal, and tightens the tray flyout gap to 4px.
 <!-- changelog-summary:end -->
 
 > **New to CyberViewer?** A fast Windows media viewer for images, video and audio, with on-the-spot edits, tabs, favorites, slideshows, and a session that reopens where you left it.
@@ -17,15 +17,15 @@ System tray submenus for Recent files, Help, and More from CyberGems now open as
 
 ### ✨ Key Features & Highlights
 
-- 🪟 **Side-by-side tray flyout panels**: `Recent files`, `Help`, and `More from CyberGems` open beside the main tray menu on hover or click, support arrow navigation and `Escape`, and flip cleanly to match your taskbar position.
-- 🛡️ **Hardened tray and startup**: The tray window runs sandboxed with locked navigation, only web URLs reach the system browser, dead tray renderers rebuild on reopen, startup errors show in a dialog, and the main window reveals even if first paint misses.
+- 🪟 **Flicker-free multi-monitor tray menu**: Replaced window hide/reuse with a fresh prewarmed tray window and two-step transparent reveal so repeated clicks and mixed-DPI monitor switches open cleanly without jumps or flicker.
+- 🎯 **Unified `4px` tray flyout gap**: Tightened the horizontal spacing between the main tray card and its side-by-side flyout panels (`Recent files`, `Help`, and `More from CyberGems`) to `4px`.
 
 <details>
 <summary><b>🇪🇸 Ver notas de la versión en Español</b></summary>
 
 ### 🚀 Novedades de esta versión
 
-Los submenús de bandeja para Archivos recientes, Ayuda y Más de CyberGems ahora se abren como paneles flyout laterales junto a la tarjeta principal. La bandeja se ejecuta aislada en sandbox, valida enlaces externos, informa fallos de arranque y revela la ventana principal sin bloqueos.
+Elimina el parpadeo del menú de bandeja en aperturas repetidas y los saltos de posición al cambiar entre monitores con DPI mixto mediante una ventana precalentada con revelado transparente en dos pasos, y ajusta el espacio de los flyouts a 4px.
 
 > **¿Nuevo en CyberViewer?** Un visor de medios rápido para Windows (imágenes, vídeo y audio), con edición al instante, pestañas, favoritos, pases de diapositivas y una sesión que reabre donde la dejaste.
 
@@ -33,8 +33,8 @@ Los submenús de bandeja para Archivos recientes, Ayuda y Más de CyberGems ahor
 
 ### ✨ Novedades destacadas
 
-- **Paneles flyout laterales en la bandeja**: `Archivos recientes`, `Ayuda` y `Más de CyberGems` se abren junto al menú principal al pasar el cursor o pulsar, admiten navegación con flechas y `Escape` y se orientan según la barra de tareas.
-- **Bandeja y arranque reforzados**: La ventana de bandeja corre en sandbox con bloqueo de navegación, solo se abren URLs web en el navegador, un renderizador muerto se reconstruye al reabrir, los errores de arranque se muestran en un diálogo y la ventana principal aparece aunque falle el primer pintado.
+- **Menú de bandeja sin parpadeos en multimonitor**: Se reemplazó la reutilización tras ocultar por una ventana precalentada con revelado transparente en dos pasos para abrir sin parpadeos ni saltos entre monitores con DPI mixto.
+- **Espaciado unificado de `4px` en flyouts**: Se ajustó a `4px` la separación horizontal entre la tarjeta principal de la bandeja y los paneles laterales (`Archivos recientes`, `Ayuda` y `Más de CyberGems`).
 
 ### ℹ️ Antes de instalar
 
