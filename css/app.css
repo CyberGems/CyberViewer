@@ -93,6 +93,15 @@
     --cyber-star-ink: var(--cyber-star);
     --cyber-danger-ink: var(--cyber-danger);
 
+    /* Titlebar button hover: icons brighten to a neutral whitish ink over a
+       neutral tint, mirroring the gray theme's hover feel (suite standard).
+       Gray and light override all four tokens back onto their own accent
+       family, so only this default theme shows the whitish hover. */
+    --cyber-win-hover-ink: var(--cyber-text-bright);
+    --cyber-win-hover-tint-rgb: var(--cyber-tint-rgb);
+    --cyber-win-close-ink: var(--cyber-win-hover-ink);
+    --cyber-win-close-tint-rgb: var(--cyber-win-hover-tint-rgb);
+
     --cyber-on-accent: #061018;        /* label on a solid accent fill */
     --cyber-on-accent-2: #08111c;
     --cyber-text-on-panel: #ffffff;    /* text over a translucent panel */
@@ -892,9 +901,9 @@
     outline-offset: 2px;
   }
 
-  .win-btn:hover { color: var(--cyber-accent-ink); background: rgba(var(--cyber-accent-rgb),0.08); }
+  .win-btn:hover { color: var(--cyber-win-hover-ink); background: rgba(var(--cyber-win-hover-tint-rgb),0.08); }
   body.restore-pointer-pending #win-min:hover { color: var(--cyber-muted); background: none; }
-  #win-close:hover { color: var(--cyber-accent2-ink); background: rgba(var(--cyber-accent2-rgb),0.12); }
+  #win-close:hover { color: var(--cyber-win-close-ink); background: rgba(var(--cyber-win-close-tint-rgb),0.12); }
   /* Neutral crisp divider between the app controls and the window controls */
   .win-sep {
     width: 1px;
@@ -7980,6 +7989,11 @@ html[data-theme='gray'] {
   --cyber-accent: #c9c9c9;
   --cyber-accent-rgb: 201, 201, 201;
   --cyber-accent-ink: #dcdcdc;
+  /* Titlebar hover keeps the neutral accent family (see base tokens). */
+  --cyber-win-hover-ink: var(--cyber-accent-ink);
+  --cyber-win-hover-tint-rgb: var(--cyber-accent-rgb);
+  --cyber-win-close-ink: var(--cyber-accent2-ink);
+  --cyber-win-close-tint-rgb: var(--cyber-accent2-rgb);
   --cyber-accent-bright: #e2e2e2;
   --cyber-accent2: #9c9c9c;
   --cyber-accent2-rgb: 156, 156, 156;
@@ -8096,6 +8110,11 @@ html[data-theme='light'] {
   --cyber-danger-ink: #c81e1e;
   --cyber-danger-bright: #e11d48;
   --cyber-brand-accent: #0284c7;
+  /* Titlebar hover keeps the accent family with darkened ink (see base tokens). */
+  --cyber-win-hover-ink: var(--cyber-accent-ink);
+  --cyber-win-hover-tint-rgb: var(--cyber-accent-rgb);
+  --cyber-win-close-ink: var(--cyber-accent2-ink);
+  --cyber-win-close-tint-rgb: var(--cyber-accent2-rgb);
 
   --cyber-text-on-panel: #101720;
   --cyber-text-bright: #0b1220;
