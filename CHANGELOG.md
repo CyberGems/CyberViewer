@@ -2,7 +2,7 @@
 
 All notable changes to CyberViewer are documented here.
 
-## [1.23.4] - 2026-11-19
+## [1.23.5] - 2026-11-19
 
 ### 🇺🇸 English
 
