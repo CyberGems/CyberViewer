@@ -3294,7 +3294,7 @@ ipcMain.on('show-context-menu', (event, props) => {
                 const abs = resolveAllowedPath(props.path);
                 fs.readFile(abs, (err, data) => {
                   if (!err) {
-                    writeClipboardImage(data).catch(() => { });
+                    writeClipboardImage(data).catch(() => {});
                   }
                 });
               } catch (_) { /* ignore */ }
@@ -3397,7 +3397,7 @@ ipcMain.on('show-context-menu', (event, props) => {
                 const abs = resolveAllowedPath(props.path);
                 fs.readFile(abs, (err, data) => {
                   if (!err) {
-                    writeClipboardImage(data).catch(() => { });
+                    writeClipboardImage(data).catch(() => {});
                   }
                 });
               } catch (_) { /* ignore */ }

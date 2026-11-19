@@ -775,7 +775,7 @@ window.addEventListener('blur', () => {
   }, 100);
 });
 
-function resetHiddenState() {
+function resetToMain() {
   cancelPendingReveal();
   cancelFlyoutTimers();
   setActiveFlyout(null);
@@ -812,7 +812,7 @@ function initIpc() {
   }
 
   if (api.onReset) {
-    api.onReset(() => resetHiddenState());
+    api.onReset(() => resetToMain());
   }
 
   ipcInitialized = true;
