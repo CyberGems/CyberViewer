@@ -109,7 +109,7 @@ body.tab-drag-active #image-tab-list .image-tab { cursor: grabbing; }
 .dirty .image-tab-dirty { display: block; }
 .image-tab-close { display: inline-flex; align-items: center; justify-content: center; padding: 0; width: 26px; height: 25px; margin-right: 3px; border-radius: 4px; flex-shrink: 0; opacity: .6; }
 .image-tab-close .menu-ico { display: block; width: 14px; height: 14px; }
-.image-tab-close:hover { color: var(--cyber-accent2); background: rgba(255,255,255,.08); opacity: 1; }
+.image-tab-close:hover { color: var(--cyber-win-close-ink); background: rgba(var(--cyber-win-close-tint-rgb),.08); opacity: 1; }
 .tab-bar-button {
   align-self: center;
   width: 28px;
