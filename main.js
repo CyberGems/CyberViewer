@@ -10,6 +10,7 @@ const os = require('os');
 const crypto = require('crypto');
 const { pathToFileURL } = require('url');
 const { execFile, spawn } = require('child_process');
+const { formatTrayTooltip } = require('./lib/tray-tooltip');
 
 // Dev isolation: automated verification runs must never touch the user's saved
 // session/settings. Launching with --cv-dev-session redirects userData into a
@@ -1306,12 +1307,6 @@ function updateCustomTrayMenuState() {
   if (trayMenuWin && !trayMenuWin.isDestroyed()) {
     trayMenuWin.webContents.send('tray-menu-state', buildTrayMenuState(false));
   }
-}
-
-function formatTrayTooltip(shortcut) {
-  const clean = String(shortcut || '').trim();
-  const text = clean ? `CyberViewer · ${clean}` : 'CyberViewer';
-  return text.length > 63 ? `${text.slice(0, 62)}…` : text;
 }
 
 // Tooltip depends on the toggle hotkey, state on visibility/language/recents;
