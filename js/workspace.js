@@ -101,10 +101,14 @@ window.CVWorkspace = (() => {
   async function scan(tab, seq) {
     const filePath = tab.image.file.path;
     if (!isElectron || !filePath || window.CVYouTubeSource.isYouTube(filePath)) return;
+    if (window.CVFormats.isVideo(tab.image) && state.mainImageReady) {
+      try { await state.mainImageReady; } catch (_) { /* ignore */ }
+      if (seq !== state.openSeq || model.active !== tab) return;
+    }
     const dir = pathKey(folderDirFromPath(filePath));
     const cached = folderScanCache.get(dir);
     if (cached?.files && Date.now() - cached.scannedAt < 2000) {
-      if (seq === state.openSeq && model.active === tab) { mergeNeighbors(cached.files, filePath, seq); restoreSidebar(tab); }
+      if (seq === state.openSeq && model.active === tab) { mergeNeighbors(cached.files, filePath, seq); restoreSidebar(tab, { alreadyBuilt: true }); }
       return;
     }
     try {
@@ -113,13 +117,18 @@ window.CVWorkspace = (() => {
       mergeNeighbors(neighbors, filePath, seq);
       const entry = folderScanCache.get(dir);
       if (entry) { entry.files = neighbors; entry.scannedAt = Date.now(); }
-      restoreSidebar(tab);
+      restoreSidebar(tab, { alreadyBuilt: true });
     } catch (error) { console.error('Unable to scan tab folder:', error); }
   }
-  function restoreSidebar(tab) {
+  function restoreSidebar(tab, { alreadyBuilt = false } = {}) {
     const hidden = new Set(tab.hiddenPaths.map(pathKey));
-    state.images.forEach(image => { image.hidden = hidden.has(pathKey(image.file.path)) && image !== tab.image; });
-    buildSidebar();
+    let changedHidden = false;
+    state.images.forEach(image => {
+      const nextHidden = hidden.has(pathKey(image.file.path)) && image !== tab.image;
+      if (!!image.hidden !== nextHidden) changedHidden = true;
+      image.hidden = nextHidden;
+    });
+    if (!alreadyBuilt || changedHidden) buildSidebar();
     if ($('sidebar-scroll')) $('sidebar-scroll').scrollTop = tab.scrollTop;
   }
   async function activate(id, { force = false, source } = {}) {
@@ -831,7 +840,14 @@ window.CVWorkspace = (() => {
         }
         model.nextId = Math.max(0, ...model.tabs.map(tab => Number(tab.id.slice(4)))) + 1;
         const target = model.tabs.find(tab => tab.id === result.session.activeId) || model.tabs[0];
-        if (target) await activate(target.id, { force: true });
+        if (target) {
+          if (result.hasPendingOpen) {
+            model.activate(target.id);
+            clearViewer({ loading: true });
+          } else {
+            await activate(target.id, { force: true });
+          }
+        }
       } catch (error) { console.error('Unable to restore workspace:', error); showToast(text('tabs_session_load_error'), 'warning', 5000); }
     }
     ready = true;

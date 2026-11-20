@@ -1601,7 +1601,8 @@ ipcMain.on('workspace-close-ready', event => {
   scheduleQuitRetry();
 });
 ipcMain.handle('session:load', () => {
-  if (!loadSettings().app.restoreSession) return { ok: true, session: { version: 1, activeId: null, tabs: [] } };
+  const hasPendingOpen = pendingOpenPaths.length > 0;
+  if (!loadSettings().app.restoreSession) return { ok: true, session: { version: 1, activeId: null, tabs: [] }, hasPendingOpen };
   const result = sessionStore.read();
   result.session.tabs = result.session.tabs.map(tab => {
     // Inactive paths are validated only when activated. An offline network
@@ -1610,7 +1611,7 @@ ipcMain.handle('session:load', () => {
     if (draftPath) pathAllowlist.allow(draftPath);
     return { ...tab, draftPath };
   });
-  return result;
+  return { ...result, hasPendingOpen };
 });
 ipcMain.handle('session:save', (_event, snapshot) => {
   if (!loadSettings().app.restoreSession) return { ok: false, error: 'SESSION_DISABLED' };
@@ -2457,9 +2458,6 @@ ipcMain.handle('clear-thumbnail-cache', () => {
  * stuck behind dozens of sibling thumbnails.
  */
 const THUMB_CONCURRENCY = 3;
-let thumbInFlight = 0;
-/** @type {{ resolve: () => void, priority: boolean }[]} */
-const thumbWaiters = [];
 let audioMetadataModulePromise = null;
 
 let evictTimer = null;
@@ -2473,33 +2471,44 @@ function scheduleThumbCacheEviction() {
   }, 10000);
 }
 
-function acquireThumbSlot(priority) {
-  if (thumbInFlight < THUMB_CONCURRENCY) {
-    thumbInFlight++;
-    return Promise.resolve();
-  }
-  return new Promise((resolve) => {
-    const entry = { resolve, priority: !!priority };
-    if (entry.priority) {
-      // Ahead of the first non-priority waiter (preserve FIFO among priorities)
-      let insertAt = 0;
-      while (insertAt < thumbWaiters.length && thumbWaiters[insertAt].priority) {
-        insertAt++;
+function createSlotQueue(concurrency) {
+  let inFlight = 0;
+  /** @type {{ resolve: () => void, priority: boolean }[]} */
+  const waiters = [];
+  return {
+    acquire(priority) {
+      if (inFlight < concurrency) {
+        inFlight++;
+        return Promise.resolve();
       }
-      thumbWaiters.splice(insertAt, 0, entry);
-    } else {
-      thumbWaiters.push(entry);
+      return new Promise((resolve) => {
+        const entry = { resolve, priority: !!priority };
+        if (entry.priority) {
+          // Ahead of the first non-priority waiter (preserve FIFO among priorities)
+          let insertAt = 0;
+          while (insertAt < waiters.length && waiters[insertAt].priority) {
+            insertAt++;
+          }
+          waiters.splice(insertAt, 0, entry);
+        } else {
+          waiters.push(entry);
+        }
+      }).then(() => {
+        inFlight++;
+      });
+    },
+    release() {
+      inFlight = Math.max(0, inFlight - 1);
+      const next = waiters.shift();
+      if (next) next.resolve();
     }
-  }).then(() => {
-    thumbInFlight++;
-  });
+  };
 }
 
-function releaseThumbSlot() {
-  thumbInFlight = Math.max(0, thumbInFlight - 1);
-  const next = thumbWaiters.shift();
-  if (next) next.resolve();
-}
+const thumbSlots = createSlotQueue(THUMB_CONCURRENCY);
+// Video thumbnails spawn a hidden BrowserWindow decoder; running only one at a
+// time avoids starving hardware decode slots during folder scans or switches.
+const videoThumbSlots = createSlotQueue(1);
 
 async function renderAudioCoverThumb(filePath) {
   try {
@@ -2620,7 +2629,8 @@ ipcMain.handle('get-thumbnail', async (event, filePath, opts) => {
       return toMediaUrl(cacheFile);
     }
 
-    await acquireThumbSlot(priority);
+    const slotQueue = isVideo ? videoThumbSlots : thumbSlots;
+    await slotQueue.acquire(priority);
     try {
       if (fs.existsSync(cacheFile)) {
         return toMediaUrl(cacheFile);
@@ -2654,7 +2664,7 @@ ipcMain.handle('get-thumbnail', async (event, filePath, opts) => {
       scheduleThumbCacheEviction();
       return toMediaUrl(cacheFile);
     } finally {
-      releaseThumbSlot();
+      slotQueue.release();
     }
   } catch (e) {
     return null;
@@ -3553,7 +3563,7 @@ if (!gotTheLock) {
     });
     registerMediaProtocol();
     pathAllowlist.allow(thumbCachePath);
-    evictThumbCache(thumbCachePath);
+    scheduleThumbCacheEviction();
 
     createWindow();
     win.webContents.setBackgroundThrottling(false);

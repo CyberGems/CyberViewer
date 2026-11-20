@@ -1144,6 +1144,7 @@ function mergeNeighbors(neighbors, filePath, seq) {
   updateCounter();
   updateFileStats();
   schedulePriorityThumb(targetIdx);
+  if (window.CVVideo && window.CVVideo.active()) window.CVVideo.sync();
 
   const { done: doneCount, total: totalCount } = getFolderThumbStats();
   updateThumbProgress(doneCount, totalCount);
@@ -3037,16 +3038,25 @@ async function loadThumb(i, imgEl, opts) {
   const isLive = () => seq === state.openSeq && state.images[i] === im && imgEl.isConnected;
   const key = im.file?.path || im.url || im;
 
+  // Reuse cached thumb URL — avoids waiting or duplicate IPC when already hydrated
+  if (im.thumbUrl) {
+    setSidebarThumbSrc(i, imgEl);
+    return;
+  }
+
   const isCurrent = i === state.currentIdx || i === state.current;
   const priority = !!(opts && opts.priority) || isCurrent;
+  const mainIsVideo = state.mainImageReadyIdx >= 0 && window.CVFormats.isVideo(state.images[state.mainImageReadyIdx]);
 
-  // Let the opened image claim disk/CPU first
-  if (!priority && state.mainImageReady && state.mainImageReadyIdx !== i) {
+  // Let the opened media claim disk/CPU/GPU first. Video thumbnails spawn a
+  // hidden BrowserWindow decoder, so wait for mainImageReady even for the
+  // active video and while a main video is decoding its first frame.
+  if (state.mainImageReady && (window.CVFormats.isVideo(im) || mainIsVideo || (!priority && state.mainImageReadyIdx !== i))) {
     try { await state.mainImageReady; } catch (_) { /* ignore */ }
   }
   if (!isLive()) return;
 
-  // Reuse cached thumb URL — avoids duplicate IPC when background scan already warmed the cache
+  // Re-check after awaiting mainImageReady in case another caller populated it
   if (im.thumbUrl) {
     setSidebarThumbSrc(i, imgEl);
     return;

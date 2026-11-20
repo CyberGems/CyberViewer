@@ -26,6 +26,11 @@ window.CVVideo = (() => {
   let previewStarted = false;
   let previewPendingTime = -1;
   let loadedAt = 0;
+  // Timeline of the latest local media open, in ms since load() started:
+  // metadata parsed, first frame decoded, saved position restored and the
+  // moment the spinner gave way to the frame. Read it with
+  // CVVideo.openTiming() or as the cv-media-open measure in DevTools.
+  let openTiming = null;
   const text = key => (I18N[state.settings.app.language || 'en'] || I18N.en)[key];
   const active = () => window.CVFormats.isPlayable(state.images[state.current]);
   const imageActions = new Set(['save', 'save-as', 'export-pdf', 'print', 'copy',
@@ -272,11 +277,22 @@ window.CVVideo = (() => {
     element.setAttribute('aria-label', image.file.name);
     let finished = false;
     let restorePending = savedTime > 0;
+    const openStart = performance.now();
+    const timing = openTiming = { file: image.file.name, startedAt: Math.round(performance.timeOrigin + openStart),
+      metadata: null, firstFrame: null, restored: null, ready: null, failed: false };
+    const stamp = key => { if (timing[key] === null) timing[key] = Math.round(performance.now() - openStart); };
+    const settle = () => {
+      stamp('ready');
+      try { performance.measure('cv-media-open', { start: openStart, detail: { ...timing } }); } catch (_) { /* diagnostics only */ }
+      console.debug('[media-open]', JSON.stringify(timing));
+    };
     const live = () => token === generation && owner === image && state.images[state.current] === image;
     const fail = () => {
       if (!live()) return;
       clearTimeout(timeout);
       finished = true;
+      timing.failed = true;
+      settle();
       image.loaded = false;
       element.pause();
       element.classList.remove('loaded');
@@ -288,6 +304,7 @@ window.CVVideo = (() => {
     };
     const ready = () => {
       if (!live() || finished || element.seeking || element.readyState < 2) return;
+      stamp('firstFrame');
       // Some Matroska files cannot seek while the demuxer is still starting.
       // Decode the first frame before restoring the saved position, then wait
       // for that seek to finish before exposing the tab as ready.
@@ -301,6 +318,7 @@ window.CVVideo = (() => {
           }
         }
       }
+      if (savedTime > 0) stamp('restored');
       finished = true;
       clearTimeout(timeout);
       image.w = element.videoWidth; image.h = element.videoHeight;
@@ -314,13 +332,29 @@ window.CVVideo = (() => {
       element.pause();
       syncTools(); sync(); reveal();
       window.CVAudioVisuals.refresh();
+      settle();
       onReady();
+      // Defer container track probing until frame 0 is on screen so initial
+      // module load and metadata reads never compete with opening the video.
+      const probePath = image.file && image.file.path;
+      if (probePath && window.electronAPI?.getVideoAudioCodec && !image.audioProbe) {
+        window.electronAPI.getVideoAudioCodec(probePath).then(result => {
+          if (!result || !result.ok || !live()) return;
+          image.audioProbe = result.codec ? 'available' : 'unavailable';
+          image.audioCodec = result.codec;
+          audioStatus = image.audioProbe;
+          sync();
+        }).catch(() => { /* keep pending */ });
+      }
       if (live() && window.CVMedia.shouldPlayMediaOnOpen(state.settings.app, image)) void play();
     };
+    const metadata = () => { if (live()) stamp('metadata'); };
+    element.addEventListener('loadedmetadata', metadata);
     element.addEventListener('loadeddata', ready);
     element.addEventListener('seeked', ready);
     element.addEventListener('error', fail);
     cleanup = () => {
+      element.removeEventListener('loadedmetadata', metadata);
       element.removeEventListener('loadeddata', ready);
       element.removeEventListener('seeked', ready); element.removeEventListener('error', fail);
     };
@@ -328,19 +362,6 @@ window.CVVideo = (() => {
     element.src = url;
     element.load();
     sync(); syncTools();
-    // music-metadata decides audio availability from the container's tracks
-    // (verified: silent files expose no audio track and no sampleRate), so a
-    // silent file disables volume right away without decoding anything.
-    const probePath = image.file && image.file.path;
-    if (probePath && window.electronAPI?.getVideoAudioCodec && !image.audioProbe) {
-      window.electronAPI.getVideoAudioCodec(probePath).then(result => {
-        if (!result || !result.ok || token !== generation || owner !== image) return;
-        image.audioProbe = result.codec ? 'available' : 'unavailable';
-        image.audioCodec = result.codec;
-        audioStatus = image.audioProbe;
-        sync();
-      }).catch(() => { /* keep pending */ });
-    }
   }
 
   async function play() {
@@ -664,9 +685,6 @@ window.CVVideo = (() => {
       if (Number.isFinite(prefs.videoVolume)) element.volume = Math.max(0, Math.min(1, prefs.videoVolume));
       element.muted = prefs.videoMuted === true;
       $('video-preview').removeAttribute('src');
-      if (!window.CVFormats.isAudio(owner)) {
-        try { $('video-preview').src = element.currentSrc || ''; } catch (_) { /* preview stays off */ }
-      }
       previewLast = -1;
       loadedAt = Date.now();
       sync();
@@ -728,9 +746,11 @@ window.CVVideo = (() => {
     const seekPreviewTo = (time) => {
       if (window.CVFormats.isAudio(owner)) return;
       try {
-        if (previewVideo.src !== element.currentSrc) previewVideo.src = element.currentSrc;
+        const assigned = previewVideo.src !== element.currentSrc;
+        if (assigned) previewVideo.src = element.currentSrc;
         const target = Math.min(time + 0.05, Math.max(0, (element.duration || 0) - 0.05));
-        if (typeof previewVideo.fastSeek === 'function') previewVideo.fastSeek(target);
+        if (assigned || previewVideo.readyState < 1) previewVideo.currentTime = target;
+        else if (typeof previewVideo.fastSeek === 'function') previewVideo.fastSeek(target);
         else previewVideo.currentTime = target;
         previewLast = time;
       } catch (_) { /* ignore */ }
@@ -826,5 +846,6 @@ window.CVVideo = (() => {
     ['play', 'pause', 'ended'].forEach(event => element.addEventListener(event, reveal));
     localize();
   }
-  return { element, active, load, unload, toggle, toggleMute, seekBy, sync, syncTools, localize, initialize, imageActions, reveal, closeMenu, handleVideoDblClick, cyclePlaybackRate, setPlaybackRate };
+  return { element, active, load, unload, toggle, toggleMute, seekBy, sync, syncTools, localize, initialize, imageActions, reveal, closeMenu, handleVideoDblClick, cyclePlaybackRate, setPlaybackRate,
+    openTiming: () => (openTiming ? { ...openTiming } : null) };
 })();

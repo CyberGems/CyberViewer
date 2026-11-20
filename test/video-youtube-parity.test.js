@@ -31,7 +31,7 @@ describe('video player youtube parity (phase 1)', () => {
     assert.match(player, /if \(videoClickTimer\) return;\s*videoClickTimer = setTimeout\(\(\) => \{\s*videoClickTimer = null;\s*void toggle\(\);\s*\}, 230\);/);
     assert.match(player, /function handleVideoDblClick\(\) \{\s*if \(videoClickTimer\) \{ clearTimeout\(videoClickTimer\); videoClickTimer = null; \}/);
     assert.match(appJs, /if \(window\.CVVideo\.active\(\)\) \{ window\.CVVideo\.handleVideoDblClick\(\); return; \}/);
-    assert.match(player, /return \{ element, active, load, unload, toggle, toggleMute, seekBy, sync, syncTools, localize, initialize, imageActions, reveal, closeMenu, handleVideoDblClick, cyclePlaybackRate, setPlaybackRate \};/);
+    assert.match(player, /return \{ element, active, load, unload, toggle, toggleMute, seekBy, sync, syncTools, localize, initialize, imageActions, reveal, closeMenu, handleVideoDblClick, cyclePlaybackRate, setPlaybackRate,\s*openTiming:/);
   });
 
   it('adds a youtube-style speed panel with display, track and presets', () => {
