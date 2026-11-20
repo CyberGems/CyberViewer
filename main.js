@@ -298,6 +298,10 @@ let win;
 let youtubePlayer;
 let tray = null;
 let isQuitting = false;
+// True while the Alt key is down. Windows turns Alt+F4 into a native close
+// before the F4 keydown reaches the webview, so the close handler needs it to
+// tell an explicit quit from the X.
+let altHeld = false;
 // True between an explicit user quit request (tray Exit, first-close dialog)
 // and the moment the window actually closes.
 let quitRequested = false;
@@ -696,6 +700,14 @@ function createWindow() {
   });
 
   win.on('close', (event) => {
+    // Alt+F4 arrives as a native close before its keydown: while Alt is held
+    // the close is an explicit quit, not the X, so it skips the close-choice
+    // dialog and lets the renderer's close chain run.
+    if (altHeld && !isQuitting) {
+      isQuitting = true;
+      quitRequested = true;
+      quitCloseReadyReceived = false;
+    }
     if (!isQuitting) {
       const s = loadSettings().app;
       // Ask once unless the user already chose a closing behavior.
@@ -3600,9 +3612,14 @@ function applyWindowsSnapFallback(win, input) {
 // Alt+F4 is the close shortcut even when the X is set to hide to the tray.
 app.on('browser-window-created', (_event, window) => {
   window.webContents.on('before-input-event', (event, input) => {
+    if (input.key === 'Alt') altHeld = input.type !== 'keyUp';
     if (input.type === 'keyDown' && input.alt && input.key === 'F4') {
       event.preventDefault();
+      // Mark the quit as user-requested: the renderer's beforeunload prevention
+      // would otherwise cancel the quit and leave the window restored.
       isQuitting = true;
+      quitRequested = true;
+      quitCloseReadyReceived = false;
       app.quit();
       return;
     }
