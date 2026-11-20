@@ -1310,7 +1310,8 @@ function updateCustomTrayMenuState() {
 
 function formatTrayTooltip(shortcut) {
   const clean = String(shortcut || '').trim();
-  return clean ? `CyberViewer · ${clean}` : 'CyberViewer';
+  const text = clean ? `CyberViewer · ${clean}` : 'CyberViewer';
+  return text.length > 63 ? `${text.slice(0, 62)}…` : text;
 }
 
 // Tooltip depends on the toggle hotkey, state on visibility/language/recents;
