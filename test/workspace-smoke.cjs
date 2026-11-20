@@ -127,7 +127,7 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 153);
     assert.equal(await evaluate("return document.querySelectorAll('#main-img').length;"), 1);
     await evaluate("$('image-tabs-list-btn').click(); $('tab-search').value = '149.png'; $('tab-search').dispatchEvent(new Event('input'));");
-    assert.equal(await evaluate("return $('tab-switcher-list').querySelectorAll('button').length;"), 1);
+    assert.equal(await evaluate("return $('tab-switcher-list').querySelectorAll('.tab-switcher-item-open').length;"), 1);
     await evaluate("$('tab-switcher').hidden = true; window.CVWorkspace.closeTabs(window.CVWorkspace.model.tabs.filter(tab => tab.image.file.path.includes('bulk')).map(tab => tab.id));");
     assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 3);
 
@@ -334,11 +334,15 @@ app.whenReady().then(async () => {
     const pointer = await evaluate('return window.electronAPI.getPointerInWindow();');
     assert.ok(Number.isFinite(pointer.x) && Number.isFinite(pointer.y),
       'native cursor coordinates should be available independently of title hover events');
+    await waitFor(() => evaluate('return !restorePointerPending || !!restorePointerAnchor;'),
+      'restore pointer guard settled');
     await evaluate(`if (restorePointerPending && restorePointerAnchor) {
       updateRestorePointerGuard({ screenX: restorePointerAnchor.screenX + 3, screenY: restorePointerAnchor.screenY });
     }`);
     assert.equal(await evaluate('return !!titlebarTooltipPoll;'), true);
     await evaluate('clearInterval(titlebarTooltipPoll); titlebarTooltipPoll = null;');
+    await waitFor(() => evaluate('return Date.now() >= ttRestoreSuppressUntil;'),
+      'restore tooltip suppression elapsed');
     const inside = { x: clippedTitle.title.x + clippedTitle.title.width / 2,
       y: clippedTitle.title.y + clippedTitle.title.height / 2, focused: true };
     await evaluate('updateTitlebarTooltipFromPointer(' + JSON.stringify(inside) + ');');
