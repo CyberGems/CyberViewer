@@ -296,6 +296,10 @@ app.whenReady().then(async () => {
 
     await evaluate("$('video-autoplay').click();");
     await waitFor(() => JSON.parse(fs.readFileSync(path.join(dataDir,'settings.json'),'utf8')).app.videoAutoplay === true, 'autoplay enabled preference saved');
+    await evaluate("$('video-remember-state').click();");
+    await waitFor(() => JSON.parse(fs.readFileSync(path.join(dataDir,'settings.json'),'utf8')).app.keepMediaPausedOnTabReturn === false, 'remember-state toggle saved off');
+    await evaluate("$('video-remember-state').click();");
+    await waitFor(() => JSON.parse(fs.readFileSync(path.join(dataDir,'settings.json'),'utf8')).app.keepMediaPausedOnTabReturn === true, 'remember-state toggle saved on');
     await evaluate("openConfig(); $('cfg-keep-media-paused').checked=false; $('cfg-keep-media-paused').dispatchEvent(new Event('change')); closeModal('modal-config');");
     // The autoplay check needs a genuinely new tab: a reused one would keep
     // its previous media state instead of following the autoplay preference.

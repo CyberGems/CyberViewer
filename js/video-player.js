@@ -90,6 +90,7 @@ window.CVVideo = (() => {
     $('video-mute').setAttribute('aria-pressed', String(element.muted));
     $('video-loop').setAttribute('aria-checked', String(element.loop));
     $('video-autoplay').setAttribute('aria-checked', String(state.settings.app.videoAutoplay !== false));
+    $('video-remember-state').setAttribute('aria-checked', String(state.settings.app.keepMediaPausedOnTabReturn !== false));
     $('video-sibling-tabs').setAttribute('aria-checked', String(state.settings.app.mediaSiblingsNewTab === true));
     const duration = Number.isFinite(element.duration) ? element.duration : 0;
     const current = Number.isFinite(element.currentTime) ? element.currentTime : 0;
@@ -146,6 +147,9 @@ window.CVVideo = (() => {
   function setMenu(open) {
     $('video-menu').hidden = !open;
     $('video-more').setAttribute('aria-expanded', String(open));
+    // Switch rows mirror the live settings, so the menu never shows stale
+    // state after a change from Config or another surface.
+    if (open) sync();
     setSpeedPanel(false);
     reveal();
   }
@@ -673,6 +677,11 @@ window.CVVideo = (() => {
     $('video-loop').addEventListener('click', () => { element.loop = !element.loop; persistVideoPrefs(); sync(); });
     $('video-autoplay').addEventListener('click', () => {
       state.settings.app.videoAutoplay = state.settings.app.videoAutoplay === false;
+      window.electronAPI?.saveSettings(state.settings.app);
+      sync();
+    });
+    $('video-remember-state').addEventListener('click', () => {
+      state.settings.app.keepMediaPausedOnTabReturn = state.settings.app.keepMediaPausedOnTabReturn === false;
       window.electronAPI?.saveSettings(state.settings.app);
       sync();
     });
