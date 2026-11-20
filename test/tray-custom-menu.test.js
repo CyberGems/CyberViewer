@@ -11,6 +11,7 @@ const trayMenuHtml = fs.readFileSync(path.join(root, 'tray-menu.html'), 'utf8');
 const trayMenuCss = fs.readFileSync(path.join(root, 'css', 'tray-menu.css'), 'utf8');
 const html = fs.readFileSync(path.join(root, 'CyberViewer.html'), 'utf8');
 const appJs = fs.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
+const trayTooltipJs = fs.readFileSync(path.join(root, 'lib', 'tray-tooltip.js'), 'utf8');
 const uiI18n = JSON.parse(fs.readFileSync(path.join(root, 'i18n', 'ui.json'), 'utf8'));
 const suite = JSON.parse(fs.readFileSync(path.join(root, 'assets', 'suite', 'suite.json'), 'utf8'));
 
@@ -81,8 +82,9 @@ describe('suite-standard tray popup wiring', () => {
   });
 
   it('formats the tooltip as brand plus toggle shortcut', () => {
-    assert.match(mainJs, /function formatTrayTooltip\(/);
-    assert.match(mainJs, /CyberViewer · \$\{clean\}/);
+    assert.match(mainJs, /require\('\.\/lib\/tray-tooltip'\)/);
+    assert.match(trayTooltipJs, /function formatTrayTooltip\(/);
+    assert.match(trayTooltipJs, /CyberViewer · \$\{clean\}/);
   });
 
   it('gates suite suggestions behind showSuiteRecommendations in tray and About', () => {
