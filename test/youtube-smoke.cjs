@@ -261,6 +261,10 @@ app.whenReady().then(async () => {
     await evaluate('await window.CVWorkspace.activate(' + JSON.stringify(listId) + ');');
     await waitFor(async () => (await info())?.videoId === second && (await info())?.index === 1, 'playlist selection across tab switches');
     assert.equal((await info()).state, 5, 'Optional pause is preserved across YouTube tabs');
+    await evaluate("$('youtube-remember-state').click();");
+    await waitFor(() => JSON.parse(fs.readFileSync(path.join(dir,'settings.json'),'utf8')).app.keepMediaPausedOnTabReturn === false, 'remember-state chip saved off');
+    await evaluate("$('youtube-remember-state').click();");
+    await waitFor(() => JSON.parse(fs.readFileSync(path.join(dir,'settings.json'),'utf8')).app.keepMediaPausedOnTabReturn === true, 'remember-state chip saved on');
     await evaluate('state.settings.app.videoAutoplay=false; state.settings.app.keepMediaPausedOnTabReturn=false; await window.electronAPI.saveSettings(state.settings.app);');
     assert.equal(webContents.getAllWebContents().filter(w => w.getURL().endsWith('/assets/youtube-player.html')).length, 1, 'Only one YouTube renderer stays active');
     console.log('PASS fullscreen buttons/double-click/Escape, modal layering, full playlist, next video, retained playlist position and decoder release');

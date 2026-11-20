@@ -38,6 +38,7 @@ window.CVYouTube = (() => {
     $('youtube-previous').disabled = !info?.ready || !window.CVYouTubeSource.from(owner)?.playlistId;
     $('youtube-next').disabled = $('youtube-previous').disabled;
     $('youtube-loop').disabled = $('youtube-previous').disabled;
+    $('youtube-remember-state').checked = state.settings.app.keepMediaPausedOnTabReturn !== false;
   }
   function isPlaylist() { return !!(owner && window.CVYouTubeSource.from(owner)?.playlistId); }
   async function copyLink() {
@@ -143,6 +144,10 @@ window.CVYouTube = (() => {
     $('youtube-previous').addEventListener('click', () => command('previous'));
     $('youtube-next').addEventListener('click', () => command('next'));
     $('youtube-loop').addEventListener('change', () => command('loop', { enabled: $('youtube-loop').checked }));
+    $('youtube-remember-state').addEventListener('change', () => {
+      state.settings.app.keepMediaPausedOnTabReturn = $('youtube-remember-state').checked;
+      window.electronAPI.saveSettings(state.settings.app);
+    });
     $('youtube-copy').addEventListener('click', () => void copyLink());
     $('youtube-retry').addEventListener('click', () => { if (owner) void window.CVWorkspace.activate(window.CVWorkspace.model.activeId, { force: true }); });
     $('youtube-browser').addEventListener('click', () => {
