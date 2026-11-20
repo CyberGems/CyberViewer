@@ -6133,8 +6133,6 @@ document.addEventListener('keydown', e => {
         if (updateBtn && updateBtn.style.display !== 'none') updateBtn.click();
         return;
       }
-      case 'n': e.preventDefault(); if (isElectron) window.electronAPI.minimize(); return;
-      case 'x': e.preventDefault(); if (isElectron) window.electronAPI.maximize(); return;
     }
     if (e.key === 'F4') { e.preventDefault(); if (isElectron) window.electronAPI.close(); return; }
   }
@@ -9129,7 +9127,7 @@ if (isElectron) {
       document.body.classList.add('window-maximized');
       btn.classList.add('maximized');
       btn.innerHTML = WIN_RESTORE_ICO;
-      // Tooltip card text; the Alt+X badge comes from data-tooltip-kbd.
+      // Tooltip card text; the window gesture badge comes from data-tooltip-kbd.
       btn.dataset.tooltip = t.menu_restore || 'Restore';
     } else {
       document.body.classList.remove('window-maximized');

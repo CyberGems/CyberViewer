@@ -215,8 +215,10 @@ describe('title bar Help menu', () => {
     // Hotkey wiring in the global keydown handler
     assert.match(appJs, /case 'm': e\.preventDefault\(\); \$\('btn-menu'\)\.click\(\); return;/);
     assert.match(appJs, /if \(updateBtn && updateBtn\.style\.display !== 'none'\) updateBtn\.click\(\);/);
-    assert.match(appJs, /case 'n': e\.preventDefault\(\); if \(isElectron\) window\.electronAPI\.minimize\(\); return;/);
-    assert.match(appJs, /case 'x': e\.preventDefault\(\); if \(isElectron\) window\.electronAPI\.maximize\(\); return;/);
+    // Window controls use the Windows gestures (Win+Down / Win+Up), so the
+    // title bar no longer defines Alt+N or Alt+X handlers.
+    assert.doesNotMatch(appJs, /case 'n':/);
+    assert.doesNotMatch(appJs, /case 'x':/);
     assert.match(appJs, /if \(e\.key === 'F4'\) \{ e\.preventDefault\(\); if \(isElectron\) window\.electronAPI\.close\(\); return; \}/);
     assert.match(appJs, /if \(e\.key === 'F1'\) \{ e\.preventDefault\(\); \$\('btn-about'\)\.click\(\); return; \}/);
     assert.match(appJs, /if \(e\.key === '\?'\) \{ e\.preventDefault\(\); setShortcutsPopoverOpen\(\$\('shortcuts-popover'\)\.hidden\); return; \}/);
@@ -227,7 +229,7 @@ describe('title bar Help menu', () => {
     const badges = [
       ['logo-trigger', 'F1'],
       ['btn-shortcuts', '?'], ['btn-config', 'Ctrl+,'], ['btn-menu', 'Alt+M'],
-      ['btn-about', 'F1'], ['win-min', 'Alt+N'], ['win-max', 'Alt+X'], ['win-close', 'Alt+F4']
+      ['btn-about', 'F1'], ['win-min', 'Win+↓'], ['win-max', 'Win+↑'], ['win-close', 'Alt+F4']
     ];
     for (const [id, kbd] of badges) {
       const escaped = kbd.replace(/[+,?]/g, m => '\\' + m);
