@@ -126,6 +126,13 @@ function ttSuppressedWhileOpen(el) {
 function ttPositionCard() {
   if (!ttCard || !ttAnchor) return;
   const rect = ttAnchor.getBoundingClientRect();
+  // The card keeps the left of the previous show, and a fixed element is laid
+  // out as shrink-to-fit against the room that is left on its right. Near the
+  // window border that wrapped the label mid-word ("Maximiza / r") and then
+  // pushed the card over the edge. Park it on the left margin before measuring
+  // so it can take its natural width, then clamp it into the window below.
+  ttCard.style.left = `${TT_VIEWPORT_MARGIN}px`;
+  ttCard.style.top = '0px';
   const card = ttCard.getBoundingClientRect();
   let left = rect.left + rect.width / 2 - card.width / 2;
   left = Math.max(TT_VIEWPORT_MARGIN, Math.min(left, window.innerWidth - card.width - TT_VIEWPORT_MARGIN));
