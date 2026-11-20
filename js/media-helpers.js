@@ -38,8 +38,11 @@
 
   function shouldPlayMediaOnOpen(settings, image) {
     if (image?.suppressAutoplayUntilPlayed) return false;
-    if (settings?.keepMediaPausedOnTabReturn !== false && typeof image?.pausedOnTabReturn === 'boolean') {
-      return !image.pausedOnTabReturn;
+    if (typeof image?.pausedOnTabReturn === 'boolean') {
+      // Returning to a tab the player already unloaded: restore its previous
+      // state, or with playback retention off stay quiet rather than
+      // autoplaying media the user last left paused.
+      return settings?.keepMediaPausedOnTabReturn !== false ? !image.pausedOnTabReturn : false;
     }
     return settings?.videoAutoplay !== false;
   }

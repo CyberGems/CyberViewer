@@ -297,11 +297,14 @@ app.whenReady().then(async () => {
     await evaluate("$('video-autoplay').click();");
     await waitFor(() => JSON.parse(fs.readFileSync(path.join(dataDir,'settings.json'),'utf8')).app.videoAutoplay === true, 'autoplay enabled preference saved');
     await evaluate("openConfig(); $('cfg-keep-media-paused').checked=false; $('cfg-keep-media-paused').dispatchEvent(new Event('change')); closeModal('modal-config');");
+    // The autoplay check needs a genuinely new tab: a reused one would keep
+    // its previous media state instead of following the autoplay preference.
+    await evaluate("window.CVWorkspace.closeTabs(window.CVWorkspace.model.tabs.filter(tab => tab.image.file.name === 'autoplay.mp4').map(tab => tab.id), { discard: true, remember: false });");
     await open('autoplay.mp4'); await loaded();
     await waitFor(() => evaluate('return !window.CVVideo.element.paused && window.CVVideo.element.currentTime > .2;'), 'autoplay starts a newly loaded video');
     await evaluate('window.CVVideo.element.pause();');
     await open(path.basename(file)); await loaded();
-    await waitFor(() => evaluate('return !window.CVVideo.element.paused;'), 'paused tab resumes with the default behavior');
+    await waitFor(() => evaluate('return window.CVVideo.element.paused;'), 'returning to a tab keeps it paused with retention off');
     await evaluate("openConfig(); $('cfg-keep-media-paused').checked=true; $('cfg-keep-media-paused').dispatchEvent(new Event('change')); closeModal('modal-config'); window.CVVideo.element.pause();");
     assert.equal(await evaluate('return state.settings.app.keepMediaPausedOnTabReturn;'), true);
     await open('autoplay.mp4'); await loaded();

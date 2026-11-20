@@ -30,7 +30,8 @@ describe('tab media playback', () => {
     assert.equal(shouldPlayMediaOnOpen({ videoAutoplay: true }, { pausedOnTabReturn: true }), false);
     assert.equal(shouldPlayMediaOnOpen({ videoAutoplay: false, keepMediaPausedOnTabReturn: true }, {}), false);
     assert.equal(shouldPlayMediaOnOpen({ videoAutoplay: true, keepMediaPausedOnTabReturn: true }, {}), true);
-    assert.equal(shouldPlayMediaOnOpen({ videoAutoplay: true, keepMediaPausedOnTabReturn: false }, { pausedOnTabReturn: true }), true);
+    assert.equal(shouldPlayMediaOnOpen({ videoAutoplay: true, keepMediaPausedOnTabReturn: false }, { pausedOnTabReturn: true }), false);
+    assert.equal(shouldPlayMediaOnOpen({ videoAutoplay: true, keepMediaPausedOnTabReturn: false }, { pausedOnTabReturn: false }), false);
     assert.equal(shouldPlayMediaOnOpen({ videoAutoplay: false, keepMediaPausedOnTabReturn: false }, { pausedOnTabReturn: false }), false);
     assert.equal(shouldPlayMediaOnOpen({ videoAutoplay: true, keepMediaPausedOnTabReturn: true },
       { pausedOnTabReturn: false, suppressAutoplayUntilPlayed: true }), false);
