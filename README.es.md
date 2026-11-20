@@ -16,7 +16,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Licencia-GPL--3.0-1F2428.svg?style=flat-square&color=334155" alt="Licencia" />&nbsp;
   <img src="https://img.shields.io/badge/Plataforma-Windows_10%2F11-1F2428.svg?style=flat-square&color=334155" alt="Plataforma" />&nbsp;
-  <img src="https://img.shields.io/badge/Electron-35-1F2428.svg?style=flat-square&logo=electron&logoColor=white&color=334155" alt="Electron" />&nbsp;
+  <img src="https://img.shields.io/badge/Electron-45-1F2428.svg?style=flat-square&logo=electron&logoColor=white&color=334155" alt="Electron" />&nbsp;
   <a href="https://github.com/CyberGems/CyberViewer/wiki/Home-es"><img src="https://img.shields.io/badge/Wiki-Documentaci%C3%B3n-1F2428?style=flat-square&logo=gitbook&logoColor=white&color=334155" alt="Wiki" /></a>&nbsp;
   <a href="https://github.com/CyberGems/CyberViewer/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/Notas_de_la_versi%C3%B3n-1F2428?style=flat-square&color=334155" alt="Notas de la versión" /></a>
 </p>
@@ -60,7 +60,7 @@
 
 ## 👋 Introducción
 
-Abre una foto, un video o una pista de audio y aparece en la misma ventana, a tamaño completo, en segundos. Las imágenes se mantienen nítidas con cualquier zoom y se pueden recortar, rotar, redimensionar, voltear o corregir de color al momento; el video se reproduce en pestañas de medios junto a ellas, con control de velocidad, repetición y vista previa de fotogramas en la barra de progreso; el audio comparte reproductor, atajos y restauración de posición. Las pestañas, los favoritos y los archivos recientes mantienen tu trabajo a mano, y cualquier carpeta puede convertirse en una presentación a pantalla completa; activa **Restaurar sesión anterior** y todo el espacio de trabajo se reabre tras reiniciar. Cuando una imagen está lista, cópiala, imprímela, expórtala a PDF o úsala como fondo de escritorio, sin abrir un editor completo. Tus ajustes y favoritos se respaldan de forma programada en la carpeta que elijas, para que una reinstalación no te cueste la configuración. Construido con **Electron 35** y **JavaScript vanilla**.
+Abre una foto, un video o una pista de audio y aparece en la misma ventana, a tamaño completo, en segundos. Las imágenes se mantienen nítidas con cualquier zoom y se pueden recortar, rotar, redimensionar, voltear o corregir de color al momento; el video se reproduce en pestañas de medios junto a ellas, con control de velocidad, repetición y vista previa de fotogramas en la barra de progreso; el audio comparte reproductor, atajos y restauración de posición. Las pestañas, los favoritos y los archivos recientes mantienen tu trabajo a mano, y cualquier carpeta puede convertirse en una presentación a pantalla completa; activa **Restaurar sesión anterior** y todo el espacio de trabajo se reabre tras reiniciar. Cuando una imagen está lista, cópiala, imprímela, expórtala a PDF o úsala como fondo de escritorio, sin abrir un editor completo. Tus ajustes y favoritos se respaldan de forma programada en la carpeta que elijas, para que una reinstalación no te cueste la configuración. Construido con **Electron 45** y **JavaScript vanilla**.
 
 *Gratuito y de código abierto (GPLv3). CyberViewer no añade publicidad ni analítica. La reproducción opcional de YouTube se conecta a YouTube y usa su reproductor oficial.*
 
@@ -247,7 +247,7 @@ Consulta [¿Cómo se usa CyberViewer?](https://github.com/CyberGems/CyberViewer/
 ## 🛠️ Stack tecnológico y arquitectura
 
 - **Plataforma:** Windows 10 / 11 (x64)
-- **Framework:** Electron 35.5.1 + JavaScript vanilla
+- **Framework:** Electron 45.3.0 + JavaScript vanilla
 - **Seguridad:** `contextIsolation: true`, `nodeIntegration: false`, protocolo propio `cvlocal://` con lista de permitidos de rutas, cabeceras CSP
 - **UI:** ventana propia sin marco, esquinas redondeadas de DWM, consciente de DPI en múltiples monitores
 

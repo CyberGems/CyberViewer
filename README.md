@@ -16,7 +16,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/License-GPL--3.0-1F2428.svg?style=flat-square&color=334155" alt="License" />&nbsp;
   <img src="https://img.shields.io/badge/Platform-Windows_10%2F11-1F2428.svg?style=flat-square&color=334155" alt="Platform" />&nbsp;
-  <img src="https://img.shields.io/badge/Electron-35-1F2428.svg?style=flat-square&logo=electron&logoColor=white&color=334155" alt="Electron" />&nbsp;
+  <img src="https://img.shields.io/badge/Electron-45-1F2428.svg?style=flat-square&logo=electron&logoColor=white&color=334155" alt="Electron" />&nbsp;
   <a href="https://github.com/CyberGems/CyberViewer/wiki"><img src="https://img.shields.io/badge/Wiki-Documentation-1F2428?style=flat-square&logo=gitbook&logoColor=white&color=334155" alt="Wiki" /></a>&nbsp;
   <a href="https://github.com/CyberGems/CyberViewer/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/Changelog-1F2428?style=flat-square&color=334155" alt="Changelog" /></a>
 </p>
@@ -60,7 +60,7 @@
 
 ## 👋 Introduction
 
-Open a photo, a video or an audio track and it appears in the same window, at full size, in seconds. Images stay sharp at any zoom and can be cropped, rotated, resized, flipped or color-corrected on the spot; video plays in media tabs beside them, with speed control, repeat and frame previews on the progress bar; audio shares the same player, shortcuts and position restore. Tabs, favorites and recent files keep your work within reach, and any folder can become a fullscreen slideshow; turn on *Restore previous session* and the whole workspace reopens after a restart. When an image is ready, copy it, print it, export it to PDF or set it as your wallpaper — no full editor required. Your settings and favorites are backed up on a schedule to the folder you pick, so a reinstall doesn't cost you your setup. Built with **Electron 35** and **vanilla JavaScript**.
+Open a photo, a video or an audio track and it appears in the same window, at full size, in seconds. Images stay sharp at any zoom and can be cropped, rotated, resized, flipped or color-corrected on the spot; video plays in media tabs beside them, with speed control, repeat and frame previews on the progress bar; audio shares the same player, shortcuts and position restore. Tabs, favorites and recent files keep your work within reach, and any folder can become a fullscreen slideshow; turn on *Restore previous session* and the whole workspace reopens after a restart. When an image is ready, copy it, print it, export it to PDF or set it as your wallpaper — no full editor required. Your settings and favorites are backed up on a schedule to the folder you pick, so a reinstall doesn't cost you your setup. Built with **Electron 45** and **vanilla JavaScript**.
 
 *Free and open source (GPLv3). CyberViewer adds no advertising or analytics. Optional YouTube playback connects to YouTube and uses its official player.*
 
@@ -247,7 +247,7 @@ See [How Do You Use CyberViewer?](https://github.com/CyberGems/CyberViewer/wiki/
 ## 🛠️ Tech Stack & Architecture
 
 - **Platform:** Windows 10 / 11 (x64)
-- **Framework:** Electron 35.5.1 + vanilla JavaScript
+- **Framework:** Electron 45.3.0 + vanilla JavaScript
 - **Security:** `contextIsolation: true`, `nodeIntegration: false`, custom `cvlocal://` protocol with path allowlist, CSP headers
 - **UI:** Custom frameless window, DWM-rounded corners, multi-monitor DPI-aware
 
