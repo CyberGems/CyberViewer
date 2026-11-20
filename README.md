@@ -1,477 +1,477 @@
-<p align="center">
-  English · <a href="./README.es.md">Español</a>
-</p>
-
-<p align="center">
-  <a href="https://cybergems.org/apps/cyberviewer/">
-    <img src="https://cybergems.org/banners/cyberviewer.png" alt="Images, video and audio, all in one viewer" />
-  </a>
-</p>
-
-<p align="center">
-  <a href="https://github.com/CyberGems/CyberViewer/releases/latest"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FCyberGems%2FCyberViewer%2Fmain%2Fpackage.json&query=%24.version&prefix=%20Download%20v&suffix=%20&style=for-the-badge&label=&labelColor=0891B2&color=0891B2" alt="Download Latest Release" /><img src="https://img.shields.io/badge/Windows_10%2F11_(64--bit)-2563EB?style=for-the-badge" alt="Windows 10/11 (64-bit)" /></a>
-  &nbsp;<a href="https://github.com/CyberGems/CyberViewer/releases"><img src="https://img.shields.io/badge/All_releases-30363D?style=for-the-badge&logo=github&logoColor=white" alt="All Releases" /></a>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/License-GPL--3.0-1F2428.svg?style=flat-square&color=334155" alt="License" />&nbsp;
-  <img src="https://img.shields.io/badge/Platform-Windows_10%2F11-1F2428.svg?style=flat-square&color=334155" alt="Platform" />&nbsp;
-  <img src="https://img.shields.io/badge/Electron-35-1F2428.svg?style=flat-square&logo=electron&logoColor=white&color=334155" alt="Electron" />&nbsp;
-  <a href="https://github.com/CyberGems/CyberViewer/wiki"><img src="https://img.shields.io/badge/Wiki-Documentation-1F2428?style=flat-square&logo=gitbook&logoColor=white&color=334155" alt="Wiki" /></a>&nbsp;
-  <a href="https://github.com/CyberGems/CyberViewer/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/Changelog-1F2428?style=flat-square&color=334155" alt="Changelog" /></a>
-</p>
-
----
-
-<div align="center">
-
-### Images, video and audio in one fast window — and the fixes you need without leaving it
-
-</div>
-
----
-
-## 📑 Table of Contents
-
-- [👋 Introduction](#-introduction)
-- [🖼️ Screenshots](#️-screenshots)
-- [🎯 Why CyberViewer?](#-why-cyberviewer)
-- [✨ Key Features](#-key-features)
-- [⬇️ Installation](#️-installation)
-- [🧭 Using the App](#-using-the-app)
-- [🛠️ Tech Stack & Architecture](#️-tech-stack--architecture)
-- [⌨️ Keyboard Shortcuts](#️-keyboard-shortcuts)
-- [❤️ Donate](#️-donate)
-- [📄 License](#-license)
-- [❓ FAQ](#-faq)
-- [🔗 See also](#-see-also)
-
-<details>
-<summary><strong>🔗 Related links (outside this README)</strong></summary>
-
-- 🌐 [CyberViewer on the web](https://cybergems.org/apps/cyberviewer/) — overview, download and SmartScreen guide
-- 📚 [Documentation & FAQ — Wiki](https://github.com/CyberGems/CyberViewer/wiki) — troubleshooting and deep-dives
-- 💾 [Releases](https://github.com/CyberGems/CyberViewer/releases) — installers, portable builds and changelog
-- 🟣 [CyberGems suite](https://github.com/CyberGems) — all open-source apps
-
-</details>
-
----
-
-## 👋 Introduction
-
-Open a photo, a video or an audio track and it appears in the same window, at full size, in seconds. Images stay sharp at any zoom and can be cropped, rotated, resized, flipped or color-corrected on the spot; video plays in media tabs beside them, with speed control, repeat and frame previews on the progress bar; audio shares the same player, shortcuts and position restore. Tabs, favorites and recent files keep your work within reach, and any folder can become a fullscreen slideshow; turn on *Restore previous session* and the whole workspace reopens after a restart. When an image is ready, copy it, print it, export it to PDF or set it as your wallpaper — no full editor required. Your settings and favorites are backed up on a schedule to the folder you pick, so a reinstall doesn't cost you your setup. Built with **Electron 35** and **vanilla JavaScript**.
-
-*Free and open source (GPLv3). CyberViewer adds no advertising or analytics. Optional YouTube playback connects to YouTube and uses its official player.*
-
+<p align="center">
+  English · <a href="./README.es.md">Español</a>
+</p>
+
+<p align="center">
+  <a href="https://cybergems.org/apps/cyberviewer/">
+    <img src="https://cybergems.org/banners/cyberviewer.png" alt="Images, video and audio, all in one viewer" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/CyberGems/CyberViewer/releases/latest"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FCyberGems%2FCyberViewer%2Fmain%2Fpackage.json&query=%24.version&prefix=%20Download%20v&suffix=%20&style=for-the-badge&label=&labelColor=0891B2&color=0891B2" alt="Download Latest Release" /><img src="https://img.shields.io/badge/Windows_10%2F11_(64--bit)-2563EB?style=for-the-badge" alt="Windows 10/11 (64-bit)" /></a>
+  &nbsp;<a href="https://github.com/CyberGems/CyberViewer/releases"><img src="https://img.shields.io/badge/All_releases-30363D?style=for-the-badge&logo=github&logoColor=white" alt="All Releases" /></a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/License-GPL--3.0-1F2428.svg?style=flat-square&color=334155" alt="License" />&nbsp;
+  <img src="https://img.shields.io/badge/Platform-Windows_10%2F11-1F2428.svg?style=flat-square&color=334155" alt="Platform" />&nbsp;
+  <img src="https://img.shields.io/badge/Electron-35-1F2428.svg?style=flat-square&logo=electron&logoColor=white&color=334155" alt="Electron" />&nbsp;
+  <a href="https://github.com/CyberGems/CyberViewer/wiki"><img src="https://img.shields.io/badge/Wiki-Documentation-1F2428?style=flat-square&logo=gitbook&logoColor=white&color=334155" alt="Wiki" /></a>&nbsp;
+  <a href="https://github.com/CyberGems/CyberViewer/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/Changelog-1F2428?style=flat-square&color=334155" alt="Changelog" /></a>
+</p>
+
+---
+
+<div align="center">
+
+### Images, video and audio in one fast window — and the fixes you need without leaving it
+
+</div>
+
+---
+
+## 📑 Table of Contents
+
+- [👋 Introduction](#-introduction)
+- [🖼️ Screenshots](#️-screenshots)
+- [🎯 Why CyberViewer?](#-why-cyberviewer)
+- [✨ Key Features](#-key-features)
+- [⬇️ Installation](#️-installation)
+- [🧭 Using the App](#-using-the-app)
+- [🛠️ Tech Stack & Architecture](#️-tech-stack--architecture)
+- [⌨️ Keyboard Shortcuts](#️-keyboard-shortcuts)
+- [❤️ Donate](#️-donate)
+- [📄 License](#-license)
+- [❓ FAQ](#-faq)
+- [🔗 See also](#-see-also)
+
+<details>
+<summary><strong>🔗 Related links (outside this README)</strong></summary>
+
+- 🌐 [CyberViewer on the web](https://cybergems.org/apps/cyberviewer/) — overview, download and SmartScreen guide
+- 📚 [Documentation & FAQ — Wiki](https://github.com/CyberGems/CyberViewer/wiki) — troubleshooting and deep-dives
+- 💾 [Releases](https://github.com/CyberGems/CyberViewer/releases) — installers, portable builds and changelog
+- 🟣 [CyberGems suite](https://github.com/CyberGems) — all open-source apps
+
+</details>
+
+---
+
+## 👋 Introduction
+
+Open a photo, a video or an audio track and it appears in the same window, at full size, in seconds. Images stay sharp at any zoom and can be cropped, rotated, resized, flipped or color-corrected on the spot; video plays in media tabs beside them, with speed control, repeat and frame previews on the progress bar; audio shares the same player, shortcuts and position restore. Tabs, favorites and recent files keep your work within reach, and any folder can become a fullscreen slideshow; turn on *Restore previous session* and the whole workspace reopens after a restart. When an image is ready, copy it, print it, export it to PDF or set it as your wallpaper — no full editor required. Your settings and favorites are backed up on a schedule to the folder you pick, so a reinstall doesn't cost you your setup. Built with **Electron 35** and **vanilla JavaScript**.
+
+*Free and open source (GPLv3). CyberViewer adds no advertising or analytics. Optional YouTube playback connects to YouTube and uses its official player.*
+
 
 - **Privacy:** see [PRIVACY.md](PRIVACY.md). CyberViewer does not send your data anywhere by itself. The only automatic connections are listed there, and none of them carries personal data.
 
----
-
-<!-- Screenshots: pending the bilingual EN/ES gallery in the capture plan at https://github.com/CyberGems/CyberGems.github.io/blob/main/docs/screenshots.md — replace the blockquote, keep this heading and the TOC entry. -->
-
-## 🖼️ Screenshots
-
-> Coming soon...
-
----
-
-## 🎯 Why CyberViewer?
-
-Most image viewers are either bloated with features you never use or so barebones they feel like an afterthought. CyberViewer strikes the perfect balance: **instant loading, smooth browsing, and essential editing tools**, all wrapped in a sleek, distraction-free interface.
-
-| Need | Solution |
-|---|---|
-| Open images instantly | Streaming `cvlocal://` protocol with no full RAM load, even for large files |
-| Browse a whole folder | Thumbnail sidebar with lazy loading and radar scan progress |
-| Quick edits without Photoshop | Rotate, crop, resize, flip, adjust brightness/contrast/saturation/blur |
-| Immersive viewing | Fullscreen mode with auto-hiding UI, slideshow with loop |
-| Set the desktop wallpaper | Fill, Fit, Center, or Span the current image across Windows |
-| Stay in your workflow | System tray, recent images, auto-start, global hotkey, Explorer context menu |
-| Bilingual (EN / ES) | Complete UI localization with instant language switching |
-
----
-
-## ✨ Key Features
-
-### 🖼️ Viewing
-- **Image tabs:** open multiple files together, reorder tabs, search by name or path, and reopen closed tabs. Each tab keeps its zoom, pan, and pending rotation. Folder navigation stays in the current tab; use the thumbnail context menu or middle-click to open another tab. A tab with unsaved changes stays open when navigating to another image.
-- **Tab strip extras:** double-click the empty strip to open files, right-click it for a context menu with reopen-closed-tab and close-all, use the edge arrows while the tabs overflow, and open the switcher for a searchable list with a close-all footer.
-- **Media tabs:** optional type icons distinguish images, video, audio, and YouTube. In **Configuration → Interface**, you can hide them. **Configuration → General → Remember playback state between tabs** is on by default, so media resumes or stays paused when you return.
-- **Drag and drop:** the center of the viewer opens dropped files in new tabs by default, or can replace the current tab. Dropping on the tab strip always opens files at the release position.
-- **Optional session restore:** enable **Configuration → General → Restore previous session** to recover tab order, the active image, views, pending rotations, and pasted images after restarting. Missing files stay in their tabs and can be located again. Session data stays local and separate from settings backups; disabling the option removes the saved session.
-- **Lightning-fast open:** custom streaming protocol loads images without hogging RAM
-- **Supported formats:** JPG, JPEG, PNG, GIF, WebP, BMP, TIFF, TIF, ICO, and AVIF
-- **Folder browsing:** thumbnail sidebar with lazy loading, priority queue, and scan progress indicator
-- **Zoom and pan:** 5% to 2000%, fit-to-window, original size (1:1), mouse wheel, and drag
-- **Animated GIF support:** toggle playback on or off
-- **Fullscreen immersive mode:** ghost UI auto-hides for distraction-free viewing
-- **Drag and drop:** drop images or folders directly onto the window
-- **Clipboard paste:** paste images from the clipboard (`Ctrl+V`)
-
-### ▶️ Video playback
-- Open MP4, M4V, WebM, MOV, and MKV through the file picker, drag and drop, folder navigation, or tabs. Support depends on the video and audio codecs inside each file and the computer's decoder capabilities.
-- Play/pause, seek, adjust volume, mute, and loop. Videos play automatically on open by default; turn **Autoplay on open** off in the **…** menu for manual playback. The preference is saved. Press **Space** to play/pause, **Left/Right** to skip 5 seconds, or **M** to mute. **Up/Down** still navigates between files.
-- **YouTube-style touches:** click the video to pause or resume and double-click it for fullscreen; use the previous/next buttons to jump between videos in the folder; open the speed panel (0.25×–3×) from the **…** menu or cycle it with `>` / `<`; and hover the seek bar for a timestamp with a frame preview. Loop, volume, mute, and speed persist between sessions.
-- Compact controls sit over the video and hide during playback after inactivity. The **…** menu provides loop, properties, open, and audio information. Image editing bars are hidden while viewing video.
-- Use the fullscreen button or **Ctrl+F** for native fullscreen with the complete frame fitted to the screen. Only the video remains after the controls and cursor hide; moving the pointer or pressing a key reveals the controls. **Esc** returns to the window (or closes the playback menu first).
-- One active player keeps inactive tabs lightweight. Playback position survives tab changes and, when session restore is enabled, restarts.
-- Video thumbnails are static frames. Image editing, image copying, wallpaper, and print/export actions are disabled for videos. Slideshows continue to show images and skip videos.
-- Unsupported video codecs show an error. Silent videos play without automatic audio notices; volume and mute are dimmed and disabled when playback yields no decodable audio, and recover if audio becomes available later. Audio information is available on request in the playback menu. HEVC and multichannel audio are not universally supported; there is no bundled transcoder or external player dependency.
-
-### Audio playback and visualizations
-- Open MP3, PCM WAV, FLAC, Ogg Vorbis/Opus (.ogg, .oga, .opus), and AAC (.aac ADTS, .m4a MP4) directly, without conversion or an additional playback engine. Unusual codecs or profiles inside these containers may not be supported.
-- Audio shares the video playback controls, shortcuts, volume, loop, speed and optional session position restoration. Previous/next stays within audio files and opens the neighboring track in the same tab; enable "Open previous/next in a new tab" in the player menu to keep one tab per track.
-- Choose Spectrum, Oscilloscope, Radial, Particles, Aurora, Tunnel, Terrain, Helix, Matrix, Fireworks or Effects off from the playback menu. The selected style is remembered. Each style has its own composition and an accent-based color palette, and they all react to the track's bass, highs and overall energy. Visuals ease in when playback starts and settle smoothly when paused or finished, then stop drawing. They run at up to 30 fps on a canvas capped at 1440 × 810 pixels and stop immediately while hidden. Reduced-motion preferences keep them static. Playing audio continues when hidden to the tray.
-
-### Codec compatibility
-
-These are the container and codec combinations exercised by CyberViewer's local playback smoke tests. They are a practical reference, not a guarantee that every file using the same extension or codec profile will decode.
-
-| Media | Container / extension | Combination covered by playback tests |
-|---|---|---|
-| Video | MP4, M4V, MOV, MKV | H.264/AVC video with AAC-LC audio; tested from MP4 and remuxed into the other containers |
-| Video | WebM | VP9 video with Opus audio |
-| Audio | MP3 | MPEG-1 Layer III, 128 kb/s |
-| Audio | WAV | 16-bit PCM, 44.1 kHz, mono |
-| Audio | FLAC | 16-bit FLAC, 16 kHz |
-| Audio | OGG, OGA, OPUS | Ogg Vorbis at 16 kHz; Ogg Opus, mono voice encoding |
-| Audio | AAC, M4A | AAC-LC in ADTS (`.aac`) and MP4 (`.m4a`) |
-
-Playback can still vary with codec profile, bitrate, sample rate, channel layout, and the decoders available to the Electron/Windows build. HEVC and multichannel audio are not universally supported; CyberViewer does not transcode media.
-
-### YouTube videos and playlists
-- Choose **Open YouTube link** in the main menu or press **Ctrl+L**. Paste a video, Shorts, live stream, or public playlist link. Links containing a video and a playlist retain that context; timestamps and playlist indexes are supported.
-- The official YouTube player provides playback, volume, captions, quality, and its playlist selector. CyberViewer adds previous/next, playlist repeat, retry, opening the current video in YouTube, and native fullscreen (**Ctrl+F**, **Esc** to exit). Its footer stays outside the video and disappears in fullscreen.
-- **Autoplay on open** in the link dialog shares the saved local-video preference. YouTube can still require a click on its own Play button. One online player is active at a time; changing tabs or suspending the application releases it. Optional session restore retains the current item and playback position.
-- Internet access and permission to embed are required. Private, age-restricted, removed, region-blocked, and embedding-disabled items may be unavailable. Errors offer retry or opening in YouTube. This phase uses the embedded playlist directly, without a separate searchable playlist catalog, account sign-in, or downloads.
-- YouTube controls its stream, recommendations, advertising, and data processing under its own policies. Remote content runs in a separate sandbox without access to CyberViewer's file or settings APIs.
-
-### Media properties
-- Open **Properties** for an image, local video, audio track, YouTube video, or playlist to inspect its source and media details. Local video previews use a frame from the file; YouTube previews use the video's thumbnail when available.
-- YouTube playlist properties show the current position and total count when available. Copy actions provide the source path or link and a concise properties summary.
-
-### ✏️ Editing
-- **Rotate:** left 90° (`Q`) or right 90° (`E`) with save/discard workflow
-- **Crop:** interactive overlay with handles and optional create-copy mode
-- **Resize:** width and height controls with aspect lock, presets (720p, 1080p, 25%, 50%, 200%), and quality resampling
-- **Adjust:** brightness, contrast, saturation, blur, grayscale, and invert with live A/B preview
-- **Flip:** horizontal (`H`) or vertical (`Shift+H`)
-
-### 🎬 Slideshow
-- Start, pause, and stop controls with a dedicated HUD
-- Configurable interval: 2s, 3s, 5s, or 10s
-- Loop mode for the current folder
-- Option to enter fullscreen on start
-
-### 📁 File Operations
-- **Save** (overwrite) or **Save As**
-- **Copy** the image to the clipboard (`Ctrl+C`) or copy its file path
-- **Move to trash** (`Delete`)
-- **Show in folder** or open the containing folder
-- **Export to PDF** and **Print** with page size, orientation, and margin controls
-- **Set as wallpaper** with Fill, Fit, Center, or Span styles, even directly from pasted or dropped images
-- **Favorites** with dedicated add, remove, and view actions
-- **Recent history** with up to 10 files and 10 folders
-
-### ⚙️ System Integration
-- **System tray:** suite-standard popup menu anchored to the tray icon with show/hide, open file, recent files with thumbnails, help links, and other CyberGems suite apps (optional, also hidden from About via Configuration); minimize/close-to-tray behavior and a first-close dialog that asks whether to stay in the tray or quit
-- **Auto-start with Windows:** launch minimized on sign-in
-- **Global hotkey:** configurable show/hide shortcut, default `Alt+Shift+V`
-- **Explorer context menu:** right-click supported images to open them in CyberViewer
-- **File associations:** set CyberViewer as the default viewer for JPG, PNG, GIF, WebP, BMP, TIFF, ICO, or AVIF, with separate image, video and audio default-app checkboxes in the installer (MP4, M4V, WebM, MOV, MKV, MP3, WAV, FLAC, OGG, OGA, OPUS, AAC, M4A). The System tab shows the current viewer per format and links to the Windows settings.
-- **Single resident instance:** Explorer opens and additional launches send images to tabs in the existing window
-- **Auto-update:** built-in GitHub Releases updater with silent install
-- **Settings backup:** export or import configuration and favorites as JSON
-- **Scheduled automatic backups:** save settings and favorites on a schedule (on startup, hourly, daily, weekly, or monthly; daily by default), keep a chosen number of backups with automatic pruning, and pick a custom folder. Restore any backup from **Configuration → Backup & Data**: restoring saves a safety backup of the current state first, and **Backup Now** triggers a run on demand
-
-### 🎨 Customization
-- **Themes:** CyberViewer (dark with accent), Gray (refined grayscale, no colour), and Light (light with accent)
-- **Accent colors:** Cyan, Pink, Green, Orange, Violet, Blue, Red, and Mint
-- **Background styles:** Auto (follows the theme), Checker-dark, Checker-light, or Solid
-- **Interface tweaks:** sidebar, toolbar, status bar, tooltips, shortcut guide, auto-hide delays, and double-click behavior
-- **Tabbed settings:** General, Appearance, Interface, Slideshow, System, and Backup & Data
-
----
-
-## ⬇️ Installation
-
-### Install (Recommended)
-
-1. Download the latest installer or portable build from [Releases](https://github.com/CyberGems/CyberViewer/releases/latest)
-2. Run the `CyberViewer-Setup` installer or the portable executable
-3. Launch CyberViewer and press `Alt+Shift+V` to show or hide it from anywhere. No other requirements needed: you do **not** need Node.js
-
-### 🛡️ Windows SmartScreen
-
-Windows may show a SmartScreen warning the first time you run the CyberViewer installer: this is an unsigned hobby app, so Windows hasn't built reputation for the file yet. This is expected; the source is public so you can inspect exactly what it does. The same can appear when launching the portable build.
-
-To continue:
-
-<details>
-<summary><strong>See how to run the installer (step by step)</strong></summary>
-
-Windows shows this warning for any installer without a paid code-signing certificate; it does not mean the file is unsafe. Do <strong>not</strong> click "Don't run":
-
-1. Run the `CyberViewer-Setup.exe` installer. Windows may show the blue "Windows protected your PC" dialog.
-
-![Windows SmartScreen warning](https://cybergems.org/branding/smartscreen-warning.svg)
-
-2. Click the small **More info** link. The expanded dialog shows your installer: `CyberViewer-Setup.exe`.
-
-![SmartScreen dialog after More info](https://cybergems.org/branding/smartscreen-runanyway.svg)
-
-3. Click **Run anyway**. The installer starts normally.
-
-You can verify the file independently: compare the SHA with the GitHub release, scan it on VirusTotal, or build from source. More details: [SmartScreen guide on the website](https://cybergems.org/download#smartscreen).
-
-</details>
-
----
-
-## 🧭 Using the App
-
-CyberViewer shows or hides from anywhere with `Alt+Shift+V`; you can also drop a folder or a media file straight onto the window.
-
-1. Drag a folder onto CyberViewer, or open files with `Ctrl+O`: images, local video (MP4, MKV, WebM…) and audio (MP3, FLAC, Ogg…) open in tabs inside the same window.
-2. Move through files with the arrow keys or click thumbnails in the sidebar; the tab bar marks what is an image, a video, audio or YouTube.
-3. For images, `B` or `0` fits the window, `A` restores the original size, and scrolling zooms around the pointer; for video and audio, `Space` plays or pauses, `←` / `→` skip 5 seconds and `M` mutes.
-
-Paste a YouTube video, Short, live stream or playlist into **Open YouTube link** (`Ctrl+L`) and watch it without leaving the app — it needs internet and a video that allows embedding. While music plays, pick one of its visualizations from the playback menu. Press `Enter` for fullscreen and `Esc` to leave it. Closing the window can leave CyberViewer running in the tray; a first-close dialog asks whether to stay or quit.
-
-See [How Do You Use CyberViewer?](https://github.com/CyberGems/CyberViewer/wiki/How-Do-You-Use) for everyday examples and the full guides.
-
----
-
-## 🛠️ Tech Stack & Architecture
-
-- **Platform:** Windows 10 / 11 (x64)
-- **Framework:** Electron 35.5.1 + vanilla JavaScript
-- **Security:** `contextIsolation: true`, `nodeIntegration: false`, custom `cvlocal://` protocol with path allowlist, CSP headers
-- **UI:** Custom frameless window, DWM-rounded corners, multi-monitor DPI-aware
-
-```
-CyberViewer/
-├── main.js              Electron main process: IPC, tray, protocol, and window management
-├── preload.js           contextBridge → window.electronAPI (secure IPC)
-├── tray-preload.js      Tray menu preload
-├── CyberViewer.html     Shell markup (all UI modals/menus)
-├── tray-menu.html       Custom tray popup
-├── css/app.css          Styles
-├── js/
-│   ├── app.js           Renderer UI logic
-│   └── media-helpers.js Pure helpers (mediaUrl, canvasExport, filters)
-├── lib/                 Shared Node helpers
-│   ├── paths.js         Path normalization, allowlist, MIME types
-│   ├── thumb-cache.js   Thumbnail caching/eviction
-│   ├── window-bounds.js Window bounds clamping/DPI awareness
-│   ├── updater.js       electron-updater integration
-│   ├── session-store.js Tab session persistence for restore
-│   ├── youtube-player.js Isolated YouTube playback state
-│   ├── auto-backup.js   Scheduled backups with pruning and restore
-│   └── settings-backup.js Import/export settings
-├── i18n/
-│   ├── menu.json        Menu, tray, and dialog strings (EN/ES)
-│   ├── ui.json          Renderer UI strings (source of truth)
-│   └── ui.js            Generated loader (npm run i18n:sync)
-├── assets/              Icons
-└── test/                Node unit tests
-```
-
-### Building from Source (Developers)
-
-Only needed if you want to work on CyberViewer or build it yourself; regular users can skip this section.
-
-#### Prerequisites
-
-- **Node.js LTS** → https://nodejs.org
-- Windows 10/11 (x64)
-
-#### Development
-
-```powershell
-cd C:\path\to\CyberViewer
-npm install
-npm start
-```
-
-#### Checks and localization
-
-```powershell
-npm test
-npm run lint
-npm run test:workspace # isolated image/tab regression tests
-npm run test:video     # isolated video tests; requires FFmpeg on PATH (development only)
-npm run test:youtube   # live YouTube/playlist tests with an isolated profile; requires internet
-npm run i18n:sync       # regenerate i18n/ui.js from i18n/ui.json
-```
-
-#### Build (Production)
-
-```powershell
-npm run build            # NSIS installer + portable
-npm run build:portable   # portable only
-```
-
-#### Outputs (in `dist/`)
-
-| Artifact | Description |
-|---|---|
-| `CyberViewer-Setup-<version>.exe` | NSIS installer |
-| `CyberViewer-Portable-<version>.exe` | Portable build |
-
-#### NSIS Installer Features
-- Optional "Set CyberViewer as default image viewer" (checked by default)
-- Per-user (HKCU) file associations
-- Desktop/Start Menu shortcuts
-- Bilingual installer (en_US, es_ES)
-
-### 🔒 Security
-
-- `webSecurity` enabled with Content-Security-Policy
-- Local images served through `cvlocal://` protocol (streamed) with path allowlist
-- Allowlist expansion only accepts **existing supported image or video files**
-- Folder scans only run for neighbors of an existing supported media file
-- Media streams support byte ranges for seeking without reading a complete video into RAM
-- Renderer runs with `nodeIntegration: false` and `contextIsolation: true`
-- DevTools IPC disabled in packaged builds
-
-### 🔄 Updates
-
-Installed (NSIS) builds use **electron-updater** against GitHub Releases:
-
-1. **About → Check for Updates** (or menu Help)
-2. **Download update** when a newer version is available
-3. **Install & restart:** silent install, no wizard, and automatic relaunch
-
-Download/install is always user-requested. With "Check for updates on startup" enabled (default), the app notifies on startup that an update exists (toast + About banner), but will not download until you ask.
-
-Portable builds cannot self-update in-app; use **Open releases page**.
-
----
-
-## ⌨️ Keyboard Shortcuts
-
-| Key | Action |
-|---|---|
-| `Ctrl+O` | Open images, videos or audio |
-| `Ctrl+L` | Open a YouTube video or playlist link |
-| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
-| `Ctrl+W` | Close tab |
-| `Ctrl+Shift+T` | Reopen closed tab |
-| `W` | Open containing folder |
-| `Ctrl+Shift+F` | Open folder |
-| `Ctrl+S` | Save As |
-| `Ctrl+P` | Print / Export PDF |
-| `Ctrl+C` | Copy image to clipboard |
-| `Ctrl+V` | Paste image from clipboard |
-| `F` | Toggle favorite |
-| `Ctrl+,` | Open settings |
-| `P` | Properties |
-| `←` `↑` / `Backspace` | Previous file; in video, `←` seeks 5 seconds |
-| `→` `↓` | Next file; in video, `→` seeks 5 seconds |
-| `Space` | Next image, play/pause video, or play/pause slideshow |
-| `M` | Mute/unmute video |
-| `Q` / `E` | Rotate left / right 90° |
-| `C` | Crop |
-| `R` | Resize |
-| `J` | Adjust (color/tone) |
-| `H` / `Shift+H` | Flip horizontal / vertical |
-| `B` | Fit to window |
-| `A` | View at actual size (1:1) |
-| `Enter` / `G` | Toggle fullscreen |
-| `S` | Start/pause slideshow |
-| `Delete` | Move to trash |
-| `+` / `-` | Zoom in / out |
-| `0` | Fit to window |
-| `Esc` | Close overlays/modals/cancel crop |
-
----
-
-## ❤️ Donate
-
-**CyberViewer** is 100% free and open source. If it helps you, please consider [donating](https://cybergems.org/donate) or [starring the repo on GitHub](https://github.com/CyberGems/CyberViewer) to support continued development. [Read the full story](https://cybergems.org/about/) behind the project. Thank you! 🙏
-
-<p align="center">
-  <a href="https://www.paypal.com/donate/?hosted_button_id=M4PY3UPJA5Y6Q"><img src="https://img.shields.io/badge/Donate-PayPal-0070BA?style=for-the-badge&logo=paypal" alt="Donate via PayPal" /></a>
-</p>
-
-<p align="center">
-  <a href="https://ko-fi.com/cybergems"><img src="https://img.shields.io/badge/Support_me_on_Ko--fi-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Support me on Ko-fi" /></a>
-</p>
-
-<p align="center">
-  <a href="https://buymeacoffee.com/cybergems"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me a Coffee" /></a>
-</p>
-
-<div align="center">
-
-<details>
-<summary><b>Crypto donations (BTC, ETH, USDT, LTC): click to view addresses</b></summary>
-
-| Asset | Address | QR |
-|---|---|---|
-| **BTC** | <pre><code>bc1q5mxzz05nmvsheqzx7970euswta3fksxzcfzag4</code></pre> | <img src="docs/donate/qr-btc.png" width="90" height="90" alt="BTC QR" /> |
-| **ETH** | <pre><code>0x79b703Ec0f77493679Fcd280aF3b983E20c580B8</code></pre> | <img src="docs/donate/qr-eth.png" width="90" height="90" alt="ETH QR" /> |
-| **USDT (ERC20 / BEP20)** | <pre><code>0x79b703Ec0f77493679Fcd280aF3b983E20c580B8</code></pre> | <img src="docs/donate/qr-eth.png" width="90" height="90" alt="USDT QR" /> |
-| **USDT (TRC20)** | <pre><code>TSVbSk1HSyZ1NprCnAYiw56ECwXgH887mD</code></pre> | <img src="docs/donate/qr-usdt-tron.png" width="90" height="90" alt="USDT TRC20 QR" /> |
-| **LTC** | <pre><code>LWGnEHgcFCE2BRkzLnsdPDD8Y8ZeDK577X</code></pre> | <img src="docs/donate/qr-ltc.png" width="90" height="90" alt="LTC QR" /> |
-
-> ⚠️ Send only the selected asset on the indicated network. Using the wrong network will result in permanent loss of funds.
-
-</details>
-
-</div>
-
----
-
-## 📄 License
-
-CyberViewer is distributed under the terms of the GNU General Public License v3.0. See [LICENSE](./LICENSE) for the full license text.
-
-Copyright (C) 2026 CyberGems
-
----
-
-## ❓ FAQ
-
-For frequently asked questions, troubleshooting guides, and detailed configuration instructions, visit the [FAQ](https://github.com/CyberGems/CyberViewer/wiki/FAQ) or the [online documentation](https://cybergems.org/docs/cyberviewer/FAQ).
-
----
-
-<div align="center" style="background:#0D0F17; border:1px solid rgba(0,255,255,0.12); border-radius:12px; padding:28px 20px; margin-top:32px;">
-
-### Thanks for using CyberViewer! 🎉
-
-Made by [**CyberGems**](https://cybergems.org)
-
-</div>
-<p align="center">
-  <a href="https://www.reddit.com/submit?url=https%3A%2F%2Fcybergems.org%2Fapps%2Fcyberviewer%2F&title=CyberViewer%3A%20free%20%26%20open-source%20desktop%20tool%20for%20Windows"><img src="https://img.shields.io/badge/Share_on_Reddit-FF4500?style=for-the-badge&logo=reddit&logoColor=white" alt="Share on Reddit" /></a>
-  &nbsp;<a href="https://twitter.com/intent/tweet?text=CyberViewer%3A%20free%20%26%20open-source%20desktop%20tool%20for%20Windows&url=https%3A%2F%2Fcybergems.org%2Fapps%2Fcyberviewer%2F"><img src="https://img.shields.io/badge/Share_on_X-1DA1F2?style=for-the-badge&logo=x&logoColor=white" alt="Share on X" /></a>
-  &nbsp;<a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fcybergems.org%2Fapps%2Fcyberviewer%2F"><img src="https://img.shields.io/badge/Share_on_Facebook-1877F2?style=for-the-badge&logo=facebook&logoColor=white" alt="Share on Facebook" /></a>
-  &nbsp;<a href="mailto:?subject=CyberViewer%3A%20free%20%26%20open-source%20desktop%20tool%20for%20Windows&body=CyberViewer%3A%20free%20%26%20open-source%20desktop%20tool%20for%20Windows%20https%3A%2F%2Fcybergems.org%2Fapps%2Fcyberviewer%2F"><img src="https://img.shields.io/badge/Share_by_Email-EA4335?style=for-the-badge&logo=gmail&logoColor=white" alt="Share by Email" /></a>
-  &nbsp;<a href="https://t.me/share/url?url=https%3A%2F%2Fcybergems.org%2Fapps%2Fcyberviewer%2F&text=CyberViewer%3A%20free%20%26%20open-source%20desktop%20tool%20for%20Windows"><img src="https://img.shields.io/badge/Share_on_Telegram-26A5E4?style=for-the-badge&logo=telegram&logoColor=white" alt="Share on Telegram" /></a>
-  &nbsp;<a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fcybergems.org%2Fapps%2Fcyberviewer%2F"><img src="https://img.shields.io/badge/Share_on_LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white" alt="Share on LinkedIn" /></a>
-</p>
-
----
-
-## 🔗 See also
-
-More free, open-source, privacy-first apps from [**CyberGems**](https://github.com/CyberGems):
-
-| App | Description |
-|:---:|---|
-| 🕐&nbsp;[**CyberClock**](https://github.com/CyberGems/CyberClock#readme) | Desktop clock with analog & digital display, calendar, timer, stopwatch and relaxation module. |
-| 📢&nbsp;[**CyberFeeds**](https://github.com/CyberGems/CyberFeeds#readme) | High-performance, local-first RSS and Atom reader built for speed, privacy and clean reading. |
-| 🚀&nbsp;[**CyberLauncher**](https://github.com/CyberGems/CyberLauncher#readme) | Windows application launcher with hot corners, scheduler, system monitor and integrated terminal. |
-| 💻&nbsp;[**CyberManager**](https://github.com/CyberGems/CyberManager#readme) | Lightweight, high-performance task manager, virtualized and NT-native, a powerful Task Manager alternative. |
-| 📝&nbsp;[**CyberNotes**](https://github.com/CyberGems/CyberNotes#readme) | Privacy-focused note-taking app with rich text, folders, tabs and bcrypt-protected local storage. |
-| ⚡&nbsp;[**CyberPaste**](https://github.com/CyberGems/CyberPaste#readme) | Privacy-first clipboard manager for text, code, images, HTML and files. |
-| 📸&nbsp;[**CyberSnap**](https://github.com/CyberGems/CyberSnap#readme) | Screen capture and annotation suite with vector tools, high-speed OCR, screen recording and color picker. |
-| ⭐&nbsp;[**CyberTray**](https://github.com/CyberGems/CyberTray#readme) | High-performance tray launcher with hotspots, system monitoring, process manager and PIN-protected file vault. |
-| 🛡️&nbsp;[**CyberWall**](https://github.com/CyberGems/CyberWall#readme) | User-friendly Windows firewall with real-time per-app rules powered by the WFP kernel engine. |
-
-➡️ **[Browse all apps at cybergems.org](https://cybergems.org)**
+---
+
+<!-- Screenshots: pending the bilingual EN/ES gallery in the capture plan at https://github.com/CyberGems/CyberGems.github.io/blob/main/docs/screenshots.md — replace the blockquote, keep this heading and the TOC entry. -->
+
+## 🖼️ Screenshots
+
+> Coming soon...
+
+---
+
+## 🎯 Why CyberViewer?
+
+Most image viewers are either bloated with features you never use or so barebones they feel like an afterthought. CyberViewer strikes the perfect balance: **instant loading, smooth browsing, and essential editing tools**, all wrapped in a sleek, distraction-free interface.
+
+| Need | Solution |
+|---|---|
+| Open images instantly | Streaming `cvlocal://` protocol with no full RAM load, even for large files |
+| Browse a whole folder | Thumbnail sidebar with lazy loading and radar scan progress |
+| Quick edits without Photoshop | Rotate, crop, resize, flip, adjust brightness/contrast/saturation/blur |
+| Immersive viewing | Fullscreen mode with auto-hiding UI, slideshow with loop |
+| Set the desktop wallpaper | Fill, Fit, Center, or Span the current image across Windows |
+| Stay in your workflow | System tray, recent images, auto-start, global hotkey, Explorer context menu |
+| Bilingual (EN / ES) | Complete UI localization with instant language switching |
+
+---
+
+## ✨ Key Features
+
+### 🖼️ Viewing
+- **Image tabs:** open multiple files together, reorder tabs, search by name or path, and reopen closed tabs. Each tab keeps its zoom, pan, and pending rotation. Folder navigation stays in the current tab; use the thumbnail context menu or middle-click to open another tab. A tab with unsaved changes stays open when navigating to another image.
+- **Tab strip extras:** double-click the empty strip to open files, right-click it for a context menu with reopen-closed-tab and close-all, use the edge arrows while the tabs overflow, and open the switcher for a searchable list with a close-all footer.
+- **Media tabs:** optional type icons distinguish images, video, audio, and YouTube. In **Configuration → Interface**, you can hide them. **Configuration → General → Remember playback state between tabs** is on by default, so media resumes or stays paused when you return.
+- **Drag and drop:** the center of the viewer opens dropped files in new tabs by default, or can replace the current tab. Dropping on the tab strip always opens files at the release position.
+- **Optional session restore:** enable **Configuration → General → Restore previous session** to recover tab order, the active image, views, pending rotations, and pasted images after restarting. Missing files stay in their tabs and can be located again. Session data stays local and separate from settings backups; disabling the option removes the saved session.
+- **Lightning-fast open:** custom streaming protocol loads images without hogging RAM
+- **Supported formats:** JPG, JPEG, PNG, GIF, WebP, BMP, TIFF, TIF, ICO, and AVIF
+- **Folder browsing:** thumbnail sidebar with lazy loading, priority queue, and scan progress indicator
+- **Zoom and pan:** 5% to 2000%, fit-to-window, original size (1:1), mouse wheel, and drag
+- **Animated GIF support:** toggle playback on or off
+- **Fullscreen immersive mode:** ghost UI auto-hides for distraction-free viewing
+- **Drag and drop:** drop images or folders directly onto the window
+- **Clipboard paste:** paste images from the clipboard (`Ctrl+V`)
+
+### ▶️ Video playback
+- Open MP4, M4V, WebM, MOV, and MKV through the file picker, drag and drop, folder navigation, or tabs. Support depends on the video and audio codecs inside each file and the computer's decoder capabilities.
+- Play/pause, seek, adjust volume, mute, and loop. Videos play automatically on open by default; turn **Autoplay on open** off in the **…** menu for manual playback. The preference is saved. Press **Space** to play/pause, **Left/Right** to skip 5 seconds, or **M** to mute. **Up/Down** still navigates between files.
+- **YouTube-style touches:** click the video to pause or resume and double-click it for fullscreen; use the previous/next buttons to jump between videos in the folder; open the speed panel (0.25×–3×) from the **…** menu or cycle it with `>` / `<`; and hover the seek bar for a timestamp with a frame preview. Loop, volume, mute, and speed persist between sessions.
+- Compact controls sit over the video and hide during playback after inactivity. The **…** menu provides loop, properties, open, and audio information. Image editing bars are hidden while viewing video.
+- Use the fullscreen button or **Ctrl+F** for native fullscreen with the complete frame fitted to the screen. Only the video remains after the controls and cursor hide; moving the pointer or pressing a key reveals the controls. **Esc** returns to the window (or closes the playback menu first).
+- One active player keeps inactive tabs lightweight. Playback position survives tab changes and, when session restore is enabled, restarts.
+- Video thumbnails are static frames. Image editing, image copying, wallpaper, and print/export actions are disabled for videos. Slideshows continue to show images and skip videos.
+- Unsupported video codecs show an error. Silent videos play without automatic audio notices; volume and mute are dimmed and disabled when playback yields no decodable audio, and recover if audio becomes available later. Audio information is available on request in the playback menu. HEVC and multichannel audio are not universally supported; there is no bundled transcoder or external player dependency.
+
+### Audio playback and visualizations
+- Open MP3, PCM WAV, FLAC, Ogg Vorbis/Opus (.ogg, .oga, .opus), and AAC (.aac ADTS, .m4a MP4) directly, without conversion or an additional playback engine. Unusual codecs or profiles inside these containers may not be supported.
+- Audio shares the video playback controls, shortcuts, volume, loop, speed and optional session position restoration. Previous/next stays within audio files and opens the neighboring track in the same tab; enable "Open previous/next in a new tab" in the player menu to keep one tab per track.
+- Choose Spectrum, Oscilloscope, Radial, Particles, Aurora, Tunnel, Terrain, Helix, Matrix, Fireworks or Effects off from the playback menu. The selected style is remembered. Each style has its own composition and an accent-based color palette, and they all react to the track's bass, highs and overall energy. Visuals ease in when playback starts and settle smoothly when paused or finished, then stop drawing. They run at up to 30 fps on a canvas capped at 1440 × 810 pixels and stop immediately while hidden. Reduced-motion preferences keep them static. Playing audio continues when hidden to the tray.
+
+### Codec compatibility
+
+These are the container and codec combinations exercised by CyberViewer's local playback smoke tests. They are a practical reference, not a guarantee that every file using the same extension or codec profile will decode.
+
+| Media | Container / extension | Combination covered by playback tests |
+|---|---|---|
+| Video | MP4, M4V, MOV, MKV | H.264/AVC video with AAC-LC audio; tested from MP4 and remuxed into the other containers |
+| Video | WebM | VP9 video with Opus audio |
+| Audio | MP3 | MPEG-1 Layer III, 128 kb/s |
+| Audio | WAV | 16-bit PCM, 44.1 kHz, mono |
+| Audio | FLAC | 16-bit FLAC, 16 kHz |
+| Audio | OGG, OGA, OPUS | Ogg Vorbis at 16 kHz; Ogg Opus, mono voice encoding |
+| Audio | AAC, M4A | AAC-LC in ADTS (`.aac`) and MP4 (`.m4a`) |
+
+Playback can still vary with codec profile, bitrate, sample rate, channel layout, and the decoders available to the Electron/Windows build. HEVC and multichannel audio are not universally supported; CyberViewer does not transcode media.
+
+### YouTube videos and playlists
+- Choose **Open YouTube link** in the main menu or press **Ctrl+L**. Paste a video, Shorts, live stream, or public playlist link. Links containing a video and a playlist retain that context; timestamps and playlist indexes are supported.
+- The official YouTube player provides playback, volume, captions, quality, and its playlist selector. CyberViewer adds previous/next, playlist repeat, retry, opening the current video in YouTube, and native fullscreen (**Ctrl+F**, **Esc** to exit). Its footer stays outside the video and disappears in fullscreen.
+- **Autoplay on open** in the link dialog shares the saved local-video preference. YouTube can still require a click on its own Play button. One online player is active at a time; changing tabs or suspending the application releases it. Optional session restore retains the current item and playback position.
+- Internet access and permission to embed are required. Private, age-restricted, removed, region-blocked, and embedding-disabled items may be unavailable. Errors offer retry or opening in YouTube. This phase uses the embedded playlist directly, without a separate searchable playlist catalog, account sign-in, or downloads.
+- YouTube controls its stream, recommendations, advertising, and data processing under its own policies. Remote content runs in a separate sandbox without access to CyberViewer's file or settings APIs.
+
+### Media properties
+- Open **Properties** for an image, local video, audio track, YouTube video, or playlist to inspect its source and media details. Local video previews use a frame from the file; YouTube previews use the video's thumbnail when available.
+- YouTube playlist properties show the current position and total count when available. Copy actions provide the source path or link and a concise properties summary.
+
+### ✏️ Editing
+- **Rotate:** left 90° (`Q`) or right 90° (`E`) with save/discard workflow
+- **Crop:** interactive overlay with handles and optional create-copy mode
+- **Resize:** width and height controls with aspect lock, presets (720p, 1080p, 25%, 50%, 200%), and quality resampling
+- **Adjust:** brightness, contrast, saturation, blur, grayscale, and invert with live A/B preview
+- **Flip:** horizontal (`H`) or vertical (`Shift+H`)
+
+### 🎬 Slideshow
+- Start, pause, and stop controls with a dedicated HUD
+- Configurable interval: 2s, 3s, 5s, or 10s
+- Loop mode for the current folder
+- Option to enter fullscreen on start
+
+### 📁 File Operations
+- **Save** (overwrite) or **Save As**
+- **Copy** the image to the clipboard (`Ctrl+C`) or copy its file path
+- **Move to trash** (`Delete`)
+- **Show in folder** or open the containing folder
+- **Export to PDF** and **Print** with page size, orientation, and margin controls
+- **Set as wallpaper** with Fill, Fit, Center, or Span styles, even directly from pasted or dropped images
+- **Favorites** with dedicated add, remove, and view actions
+- **Recent history** with up to 10 files and 10 folders
+
+### ⚙️ System Integration
+- **System tray:** suite-standard popup menu anchored to the tray icon with show/hide, open file, recent files with thumbnails, help links, and other CyberGems suite apps (optional, also hidden from About via Configuration); minimize/close-to-tray behavior and a first-close dialog that asks whether to stay in the tray or quit
+- **Auto-start with Windows:** launch minimized on sign-in
+- **Global hotkey:** configurable show/hide shortcut, default `Alt+Shift+V`
+- **Explorer context menu:** right-click supported images to open them in CyberViewer
+- **File associations:** set CyberViewer as the default viewer for JPG, PNG, GIF, WebP, BMP, TIFF, ICO, or AVIF, with separate image, video and audio default-app checkboxes in the installer (MP4, M4V, WebM, MOV, MKV, MP3, WAV, FLAC, OGG, OGA, OPUS, AAC, M4A). The System tab shows the current viewer per format and links to the Windows settings.
+- **Single resident instance:** Explorer opens and additional launches send images to tabs in the existing window
+- **Auto-update:** built-in GitHub Releases updater with silent install
+- **Settings backup:** export or import configuration and favorites as JSON
+- **Scheduled automatic backups:** save settings and favorites on a schedule (on startup, hourly, daily, weekly, or monthly; daily by default), keep a chosen number of backups with automatic pruning, and pick a custom folder. Restore any backup from **Configuration → Backup & Data**: restoring saves a safety backup of the current state first, and **Backup Now** triggers a run on demand
+
+### 🎨 Customization
+- **Themes:** CyberViewer (dark with accent), Gray (refined grayscale, no colour), and Light (light with accent)
+- **Accent colors:** Cyan, Pink, Green, Orange, Violet, Blue, Red, and Mint
+- **Background styles:** Auto (follows the theme), Checker-dark, Checker-light, or Solid
+- **Interface tweaks:** sidebar, toolbar, status bar, tooltips, shortcut guide, auto-hide delays, and double-click behavior
+- **Tabbed settings:** General, Appearance, Interface, Slideshow, System, and Backup & Data
+
+---
+
+## ⬇️ Installation
+
+### Install (Recommended)
+
+1. Download the latest installer or portable build from [Releases](https://github.com/CyberGems/CyberViewer/releases/latest)
+2. Run the `CyberViewer-Setup` installer or the portable executable
+3. Launch CyberViewer and press `Alt+Shift+V` to show or hide it from anywhere. No other requirements needed: you do **not** need Node.js
+
+### 🛡️ Windows SmartScreen
+
+Windows may show a SmartScreen warning the first time you run the CyberViewer installer: this is an unsigned hobby app, so Windows hasn't built reputation for the file yet. This is expected; the source is public so you can inspect exactly what it does. The same can appear when launching the portable build.
+
+To continue:
+
+<details>
+<summary><strong>See how to run the installer (step by step)</strong></summary>
+
+Windows shows this warning for any installer without a paid code-signing certificate; it does not mean the file is unsafe. Do <strong>not</strong> click "Don't run":
+
+1. Run the `CyberViewer-Setup.exe` installer. Windows may show the blue "Windows protected your PC" dialog.
+
+![Windows SmartScreen warning](https://cybergems.org/branding/smartscreen-warning.svg)
+
+2. Click the small **More info** link. The expanded dialog shows your installer: `CyberViewer-Setup.exe`.
+
+![SmartScreen dialog after More info](https://cybergems.org/branding/smartscreen-runanyway.svg)
+
+3. Click **Run anyway**. The installer starts normally.
+
+You can verify the file independently: compare the SHA with the GitHub release, scan it on VirusTotal, or build from source. More details: [SmartScreen guide on the website](https://cybergems.org/download#smartscreen).
+
+</details>
+
+---
+
+## 🧭 Using the App
+
+CyberViewer shows or hides from anywhere with `Alt+Shift+V`; you can also drop a folder or a media file straight onto the window.
+
+1. Drag a folder onto CyberViewer, or open files with `Ctrl+O`: images, local video (MP4, MKV, WebM…) and audio (MP3, FLAC, Ogg…) open in tabs inside the same window.
+2. Move through files with the arrow keys or click thumbnails in the sidebar; the tab bar marks what is an image, a video, audio or YouTube.
+3. For images, `B` or `0` fits the window, `A` restores the original size, and scrolling zooms around the pointer; for video and audio, `Space` plays or pauses, `←` / `→` skip 5 seconds and `M` mutes.
+
+Paste a YouTube video, Short, live stream or playlist into **Open YouTube link** (`Ctrl+L`) and watch it without leaving the app — it needs internet and a video that allows embedding. While music plays, pick one of its visualizations from the playback menu. Press `Enter` for fullscreen and `Esc` to leave it. Closing the window can leave CyberViewer running in the tray; a first-close dialog asks whether to stay or quit.
+
+See [How Do You Use CyberViewer?](https://github.com/CyberGems/CyberViewer/wiki/How-Do-You-Use) for everyday examples and the full guides.
+
+---
+
+## 🛠️ Tech Stack & Architecture
+
+- **Platform:** Windows 10 / 11 (x64)
+- **Framework:** Electron 35.5.1 + vanilla JavaScript
+- **Security:** `contextIsolation: true`, `nodeIntegration: false`, custom `cvlocal://` protocol with path allowlist, CSP headers
+- **UI:** Custom frameless window, DWM-rounded corners, multi-monitor DPI-aware
+
+```
+CyberViewer/
+├── main.js              Electron main process: IPC, tray, protocol, and window management
+├── preload.js           contextBridge → window.electronAPI (secure IPC)
+├── tray-preload.js      Tray menu preload
+├── CyberViewer.html     Shell markup (all UI modals/menus)
+├── tray-menu.html       Custom tray popup
+├── css/app.css          Styles
+├── js/
+│   ├── app.js           Renderer UI logic
+│   └── media-helpers.js Pure helpers (mediaUrl, canvasExport, filters)
+├── lib/                 Shared Node helpers
+│   ├── paths.js         Path normalization, allowlist, MIME types
+│   ├── thumb-cache.js   Thumbnail caching/eviction
+│   ├── window-bounds.js Window bounds clamping/DPI awareness
+│   ├── updater.js       electron-updater integration
+│   ├── session-store.js Tab session persistence for restore
+│   ├── youtube-player.js Isolated YouTube playback state
+│   ├── auto-backup.js   Scheduled backups with pruning and restore
+│   └── settings-backup.js Import/export settings
+├── i18n/
+│   ├── menu.json        Menu, tray, and dialog strings (EN/ES)
+│   ├── ui.json          Renderer UI strings (source of truth)
+│   └── ui.js            Generated loader (npm run i18n:sync)
+├── assets/              Icons
+└── test/                Node unit tests
+```
+
+### Building from Source (Developers)
+
+Only needed if you want to work on CyberViewer or build it yourself; regular users can skip this section.
+
+#### Prerequisites
+
+- **Node.js LTS** → https://nodejs.org
+- Windows 10/11 (x64)
+
+#### Development
+
+```powershell
+cd C:\path\to\CyberViewer
+npm install
+npm start
+```
+
+#### Checks and localization
+
+```powershell
+npm test
+npm run lint
+npm run test:workspace # isolated image/tab regression tests
+npm run test:video     # isolated video tests; requires FFmpeg on PATH (development only)
+npm run test:youtube   # live YouTube/playlist tests with an isolated profile; requires internet
+npm run i18n:sync       # regenerate i18n/ui.js from i18n/ui.json
+```
+
+#### Build (Production)
+
+```powershell
+npm run build            # NSIS installer + portable
+npm run build:portable   # portable only
+```
+
+#### Outputs (in `dist/`)
+
+| Artifact | Description |
+|---|---|
+| `CyberViewer-Setup-<version>.exe` | NSIS installer |
+| `CyberViewer-Portable-<version>.exe` | Portable build |
+
+#### NSIS Installer Features
+- Optional "Set CyberViewer as default image viewer" (checked by default)
+- Per-user (HKCU) file associations
+- Desktop/Start Menu shortcuts
+- Bilingual installer (en_US, es_ES)
+
+### 🔒 Security
+
+- `webSecurity` enabled with Content-Security-Policy
+- Local images served through `cvlocal://` protocol (streamed) with path allowlist
+- Allowlist expansion only accepts **existing supported image or video files**
+- Folder scans only run for neighbors of an existing supported media file
+- Media streams support byte ranges for seeking without reading a complete video into RAM
+- Renderer runs with `nodeIntegration: false` and `contextIsolation: true`
+- DevTools IPC disabled in packaged builds
+
+### 🔄 Updates
+
+Installed (NSIS) builds use **electron-updater** against GitHub Releases:
+
+1. **About → Check for Updates** (or menu Help)
+2. **Download update** when a newer version is available
+3. **Install & restart:** silent install, no wizard, and automatic relaunch
+
+Download/install is always user-requested. With "Check for updates on startup" enabled (default), the app notifies on startup that an update exists (toast + About banner), but will not download until you ask.
+
+Portable builds cannot self-update in-app; use **Open releases page**.
+
+---
+
+## ⌨️ Keyboard Shortcuts
+
+| Key | Action |
+|---|---|
+| `Ctrl+O` | Open images, videos or audio |
+| `Ctrl+L` | Open a YouTube video or playlist link |
+| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
+| `Ctrl+W` | Close tab |
+| `Ctrl+Shift+T` | Reopen closed tab |
+| `W` | Open containing folder |
+| `Ctrl+Shift+F` | Open folder |
+| `Ctrl+S` | Save As |
+| `Ctrl+P` | Print / Export PDF |
+| `Ctrl+C` | Copy image to clipboard |
+| `Ctrl+V` | Paste image from clipboard |
+| `F` | Toggle favorite |
+| `Ctrl+,` | Open settings |
+| `P` | Properties |
+| `←` `↑` / `Backspace` | Previous file; in video, `←` seeks 5 seconds |
+| `→` `↓` | Next file; in video, `→` seeks 5 seconds |
+| `Space` | Next image, play/pause video, or play/pause slideshow |
+| `M` | Mute/unmute video |
+| `Q` / `E` | Rotate left / right 90° |
+| `C` | Crop |
+| `R` | Resize |
+| `J` | Adjust (color/tone) |
+| `H` / `Shift+H` | Flip horizontal / vertical |
+| `B` | Fit to window |
+| `A` | View at actual size (1:1) |
+| `Enter` / `G` | Toggle fullscreen |
+| `S` | Start/pause slideshow |
+| `Delete` | Move to trash |
+| `+` / `-` | Zoom in / out |
+| `0` | Fit to window |
+| `Esc` | Close overlays/modals/cancel crop |
+
+---
+
+## ❤️ Donate
+
+**CyberViewer** is 100% free and open source. If it helps you, please consider [donating](https://cybergems.org/donate) or [starring the repo on GitHub](https://github.com/CyberGems/CyberViewer) to support continued development. [Read the full story](https://cybergems.org/about/) behind the project. Thank you! 🙏
+
+<p align="center">
+  <a href="https://www.paypal.com/donate/?hosted_button_id=M4PY3UPJA5Y6Q"><img src="https://img.shields.io/badge/Donate-PayPal-0070BA?style=for-the-badge&logo=paypal" alt="Donate via PayPal" /></a>
+</p>
+
+<p align="center">
+  <a href="https://ko-fi.com/cybergems"><img src="https://img.shields.io/badge/Support_me_on_Ko--fi-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Support me on Ko-fi" /></a>
+</p>
+
+<p align="center">
+  <a href="https://buymeacoffee.com/cybergems"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me a Coffee" /></a>
+</p>
+
+<div align="center">
+
+<details>
+<summary><b>Crypto donations (BTC, ETH, USDT, LTC): click to view addresses</b></summary>
+
+| Asset | Address | QR |
+|---|---|---|
+| **BTC** | <pre><code>bc1q5mxzz05nmvsheqzx7970euswta3fksxzcfzag4</code></pre> | <img src="docs/donate/qr-btc.png" width="90" height="90" alt="BTC QR" /> |
+| **ETH** | <pre><code>0x79b703Ec0f77493679Fcd280aF3b983E20c580B8</code></pre> | <img src="docs/donate/qr-eth.png" width="90" height="90" alt="ETH QR" /> |
+| **USDT (ERC20 / BEP20)** | <pre><code>0x79b703Ec0f77493679Fcd280aF3b983E20c580B8</code></pre> | <img src="docs/donate/qr-eth.png" width="90" height="90" alt="USDT QR" /> |
+| **USDT (TRC20)** | <pre><code>TSVbSk1HSyZ1NprCnAYiw56ECwXgH887mD</code></pre> | <img src="docs/donate/qr-usdt-tron.png" width="90" height="90" alt="USDT TRC20 QR" /> |
+| **LTC** | <pre><code>LWGnEHgcFCE2BRkzLnsdPDD8Y8ZeDK577X</code></pre> | <img src="docs/donate/qr-ltc.png" width="90" height="90" alt="LTC QR" /> |
+
+> ⚠️ Send only the selected asset on the indicated network. Using the wrong network will result in permanent loss of funds.
+
+</details>
+
+</div>
+
+---
+
+## 📄 License
+
+CyberViewer is distributed under the terms of the GNU General Public License v3.0. See [LICENSE](./LICENSE) for the full license text.
+
+Copyright (C) 2026 CyberGems
+
+---
+
+## ❓ FAQ
+
+For frequently asked questions, troubleshooting guides, and detailed configuration instructions, visit the [FAQ](https://github.com/CyberGems/CyberViewer/wiki/FAQ) or the [online documentation](https://cybergems.org/docs/cyberviewer/FAQ).
+
+---
+
+<div align="center" style="background:#0D0F17; border:1px solid rgba(0,255,255,0.12); border-radius:12px; padding:28px 20px; margin-top:32px;">
+
+### Thanks for using CyberViewer! 🎉
+
+Made by [**CyberGems**](https://cybergems.org)
+
+</div>
+<p align="center">
+  <a href="https://www.reddit.com/submit?url=https%3A%2F%2Fcybergems.org%2Fapps%2Fcyberviewer%2F&title=CyberViewer%3A%20free%20%26%20open-source%20desktop%20tool%20for%20Windows"><img src="https://img.shields.io/badge/Share_on_Reddit-FF4500?style=for-the-badge&logo=reddit&logoColor=white" alt="Share on Reddit" /></a>
+  &nbsp;<a href="https://twitter.com/intent/tweet?text=CyberViewer%3A%20free%20%26%20open-source%20desktop%20tool%20for%20Windows&url=https%3A%2F%2Fcybergems.org%2Fapps%2Fcyberviewer%2F"><img src="https://img.shields.io/badge/Share_on_X-1DA1F2?style=for-the-badge&logo=x&logoColor=white" alt="Share on X" /></a>
+  &nbsp;<a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fcybergems.org%2Fapps%2Fcyberviewer%2F"><img src="https://img.shields.io/badge/Share_on_Facebook-1877F2?style=for-the-badge&logo=facebook&logoColor=white" alt="Share on Facebook" /></a>
+  &nbsp;<a href="mailto:?subject=CyberViewer%3A%20free%20%26%20open-source%20desktop%20tool%20for%20Windows&body=CyberViewer%3A%20free%20%26%20open-source%20desktop%20tool%20for%20Windows%20https%3A%2F%2Fcybergems.org%2Fapps%2Fcyberviewer%2F"><img src="https://img.shields.io/badge/Share_by_Email-EA4335?style=for-the-badge&logo=gmail&logoColor=white" alt="Share by Email" /></a>
+  &nbsp;<a href="https://t.me/share/url?url=https%3A%2F%2Fcybergems.org%2Fapps%2Fcyberviewer%2F&text=CyberViewer%3A%20free%20%26%20open-source%20desktop%20tool%20for%20Windows"><img src="https://img.shields.io/badge/Share_on_Telegram-26A5E4?style=for-the-badge&logo=telegram&logoColor=white" alt="Share on Telegram" /></a>
+  &nbsp;<a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fcybergems.org%2Fapps%2Fcyberviewer%2F"><img src="https://img.shields.io/badge/Share_on_LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white" alt="Share on LinkedIn" /></a>
+</p>
+
+---
+
+## 🔗 See also
+
+More free, open-source, privacy-first apps from [**CyberGems**](https://github.com/CyberGems):
+
+| App | Description |
+|:---:|---|
+| 🕐&nbsp;[**CyberClock**](https://github.com/CyberGems/CyberClock#readme) | Desktop clock with analog & digital display, calendar, timer, stopwatch and relaxation module. |
+| 📢&nbsp;[**CyberFeeds**](https://github.com/CyberGems/CyberFeeds#readme) | High-performance, local-first RSS and Atom reader built for speed, privacy and clean reading. |
+| 🚀&nbsp;[**CyberLauncher**](https://github.com/CyberGems/CyberLauncher#readme) | Windows application launcher with hot corners, scheduler, system monitor and integrated terminal. |
+| 💻&nbsp;[**CyberManager**](https://github.com/CyberGems/CyberManager#readme) | Lightweight, high-performance task manager, virtualized and NT-native, a powerful Task Manager alternative. |
+| 📝&nbsp;[**CyberNotes**](https://github.com/CyberGems/CyberNotes#readme) | Privacy-focused note-taking app with rich text, folders, tabs and bcrypt-protected local storage. |
+| ⚡&nbsp;[**CyberPaste**](https://github.com/CyberGems/CyberPaste#readme) | Privacy-first clipboard manager for text, code, images, HTML and files. |
+| 📸&nbsp;[**CyberSnap**](https://github.com/CyberGems/CyberSnap#readme) | Screen capture and annotation suite with vector tools, high-speed OCR, screen recording and color picker. |
+| ⭐&nbsp;[**CyberTray**](https://github.com/CyberGems/CyberTray#readme) | High-performance tray launcher with hotspots, system monitoring, process manager and PIN-protected file vault. |
+| 🛡️&nbsp;[**CyberWall**](https://github.com/CyberGems/CyberWall#readme) | User-friendly Windows firewall with real-time per-app rules powered by the WFP kernel engine. |
+
+➡️ **[Browse all apps at cybergems.org](https://cybergems.org)**

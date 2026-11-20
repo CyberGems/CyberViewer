@@ -2,7 +2,7 @@
 
 CyberViewer runs on your PC and keeps your data on your PC. It has **no account, no telemetry, no analytics SDK and no ads**. It never sends your session data, images or settings to its author or to anyone else.
 
-Everything it knows (session data, images or settings) stays in `%APPDATA%\CyberViewer\` (settings, session images, backups, thumbnail cache and logs). The custom installer cleans file associations; app-data removal is not configured in the repo scripts.
+Everything it knows (session data, images or settings) stays in `%APPDATA%\CyberViewer\` (settings, session images, backups, thumbnail cache and logs). The installer cleans file associations but does not remove app data.
 
 ## When CyberViewer goes online
 

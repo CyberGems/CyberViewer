@@ -2,7 +2,7 @@
 
 CyberViewer funciona en tu PC y guarda tus datos en tu PC. **No tiene cuenta, telemetría, SDK de analítica ni anuncios.** Nunca envía tu datos de sesión, imágenes o ajustes a su autor ni a nadie más.
 
-Todo lo que sabe (datos de sesión, imágenes o ajustes) se queda en `%APPDATA%\CyberViewer\` (ajustes, imágenes de sesión, copias, caché de miniaturas y logs). El instalador personalizado limpia las asociaciones de archivos; el borrado de datos no está configurado en los scripts del repo.
+Todo lo que sabe (datos de sesión, imágenes o ajustes) se queda en `%APPDATA%\CyberViewer\` (ajustes, imágenes de sesión, copias, caché de miniaturas y logs). El instalador limpia las asociaciones de archivos, pero no elimina los datos de la app.
 
 ## Cuándo CyberViewer se conecta a internet
 
