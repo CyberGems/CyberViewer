@@ -7888,7 +7888,7 @@ const CONFIG_CONTROL_ICON_BY_ID = {
   'cfg-clear-recent-images': 'image',
   'cfg-suite-recs': 'diamond',
   'cfg-autostart': 'play',
-  'cfg-update-notifications': 'refresh',
+  'cfg-update-notifications': 'rotate-cw',
   'cfg-contextmenu': 'settings',
   'cfg-restore-session': 'restore',
   'cfg-keep-media-paused': 'pause',
