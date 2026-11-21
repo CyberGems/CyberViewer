@@ -7888,6 +7888,7 @@ const CONFIG_CONTROL_ICON_BY_ID = {
   'cfg-clear-recent-images': 'image',
   'cfg-suite-recs': 'diamond',
   'cfg-autostart': 'play',
+  'cfg-update-notifications': 'refresh',
   'cfg-contextmenu': 'settings',
   'cfg-restore-session': 'restore',
   'cfg-keep-media-paused': 'pause',
@@ -7967,6 +7968,7 @@ function openConfig() {
   if ($('cfg-tray-recent-images')) $('cfg-tray-recent-images').checked = s.trayRecentImages !== false;
   if ($('cfg-suite-recs')) $('cfg-suite-recs').checked = s.showSuiteRecommendations !== false;
   $('cfg-autostart').checked = s.autoStart;
+  $('cfg-update-notifications').checked = s.checkUpdatesOnStartup !== false;
   $('cfg-contextmenu').checked = s.contextMenuEnabled || false;
   $('cfg-restore-session').checked = s.restoreSession === true;
   $('cfg-keep-media-paused').checked = s.keepMediaPausedOnTabReturn !== false;
@@ -8099,6 +8101,7 @@ function collectConfigSettings() {
     trayRecentImages: !!($('cfg-tray-recent-images') && $('cfg-tray-recent-images').checked),
     showSuiteRecommendations: !!($('cfg-suite-recs') && $('cfg-suite-recs').checked),
     autoStart: $('cfg-autostart').checked,
+    checkUpdatesOnStartup: $('cfg-update-notifications').checked,
     preferredDisplayId: $('cfg-monitor').value,
     language: $('cfg-lang').value,
     accentColor: accentColor,
@@ -10186,6 +10189,7 @@ $('btn-go-end').addEventListener('click', (e) => {
       autoToggle.addEventListener('click', () => {
         state.settings.app.checkUpdatesOnStartup = !(state.settings.app.checkUpdatesOnStartup !== false);
         syncAutoToggle();
+        $('cfg-update-notifications').checked = state.settings.app.checkUpdatesOnStartup !== false;
         if (isElectron) {
           window.electronAPI.saveSettings(state.settings.app);
         }
