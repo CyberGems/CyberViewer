@@ -3621,6 +3621,11 @@ function applyWindowsSnapFallback(win, input) {
 
 // Alt+F4 is the close shortcut even when the X is set to hide to the tray.
 app.on('browser-window-created', (_event, window) => {
+  // Alt+Tab (or any other focus loss) swallows the Alt keyup, so a stale flag
+  // would turn a later X click into an explicit quit.
+  window.on('blur', () => {
+    altHeld = false;
+  });
   window.webContents.on('before-input-event', (event, input) => {
     if (input.key === 'Alt') altHeld = input.type !== 'keyUp';
     if (input.type === 'keyDown' && input.alt && input.key === 'F4') {
