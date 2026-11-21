@@ -21,10 +21,10 @@
   },
   "dependencies": {
     "electron-updater": "^6.8.11",
-    "music-metadata": "^12.4.0"
+    "music-metadata": "^12.7.0"
   },
   "devDependencies": {
-    "electron": "^45.3.0",
+    "electron": "^45.3.4",
     "electron-builder": "^24.0.0",
     "eslint": "^9.0.0"
   },
