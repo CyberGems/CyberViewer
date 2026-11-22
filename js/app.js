@@ -9147,13 +9147,15 @@ if (isElectron) {
       document.body.classList.add('window-maximized');
       btn.classList.add('maximized');
       btn.innerHTML = WIN_RESTORE_ICO;
-      // Tooltip card text; the window gesture badge comes from data-tooltip-kbd.
+      // Tooltip card text and gesture badge: Windows restores with Win+Down.
       btn.dataset.tooltip = t.menu_restore || 'Restore';
+      btn.dataset.tooltipKbd = 'Win+↓';
     } else {
       document.body.classList.remove('window-maximized');
       btn.classList.remove('maximized');
       btn.innerHTML = WIN_MAX_ICO;
       btn.dataset.tooltip = t.maximize || 'Maximize';
+      btn.dataset.tooltipKbd = 'Win+↑';
     }
     suppressTooltips();
     releaseTooltipsOnNextPointer();
