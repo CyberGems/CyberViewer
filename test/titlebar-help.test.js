@@ -236,6 +236,10 @@ describe('title bar Help menu', () => {
       assert.match(html, new RegExp(`id="${id}"[^>]*data-tooltip-kbd="${escaped}"`), `${id} should badge ${kbd}`);
     }
 
+    // Minimize drops its badge while maximized, because Win+Down restores then.
+    assert.match(appJs, /delete minBtn\.dataset\.tooltipKbd;/);
+    assert.match(appJs, /minBtn\.dataset\.tooltipKbd = 'Win\+↓';/);
+
     // Tooltip card renders each key token as its own <kbd> chip (CyberNotes naming)
     assert.match(appJs, /function ttRenderKbd\(kbdText\)/);
     assert.match(appJs, /kbd\.className = 'tooltip-shortcut-key';/);

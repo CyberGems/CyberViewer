@@ -9140,6 +9140,7 @@ if (isElectron) {
 
   window.electronAPI.onWinState(winState => {
     const btn = $('win-max');
+    const minBtn = $('win-min');
     const uiLang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
     const t = I18N[uiLang] || I18N.en;
     // Avoid native title tooltips (they can stick after minimize/restore)
@@ -9150,12 +9151,15 @@ if (isElectron) {
       // Tooltip card text and gesture badge: Windows restores with Win+Down.
       btn.dataset.tooltip = t.menu_restore || 'Restore';
       btn.dataset.tooltipKbd = 'Win+↓';
+      // Win+Down restores, so Minimize has no shortcut to advertise.
+      delete minBtn.dataset.tooltipKbd;
     } else {
       document.body.classList.remove('window-maximized');
       btn.classList.remove('maximized');
       btn.innerHTML = WIN_MAX_ICO;
       btn.dataset.tooltip = t.maximize || 'Maximize';
       btn.dataset.tooltipKbd = 'Win+↑';
+      minBtn.dataset.tooltipKbd = 'Win+↓';
     }
     suppressTooltips();
     releaseTooltipsOnNextPointer();
