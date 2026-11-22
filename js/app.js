@@ -9484,12 +9484,13 @@ $('btn-go-end').addEventListener('click', (e) => {
     const t = tAbout();
     const s = updateStatus;
     el.style.color = 'var(--cyber-muted)';
-    // The formats-box banner already covers available, downloaded and the
-    // up-to-date result: echoing "CyberViewer is up to date" in this small
-    // line too read as a duplicate, so the line only carries the states the
-    // banner does not (checking, downloading progress, error).
-    if (s.state === 'available' || s.state === 'downloaded' || s.state === 'not-available') {
+    // Release banners already cover available and downloaded. Keep the
+    // up-to-date result in the Updates section after the temporary notice fades.
+    if (s.state === 'available' || s.state === 'downloaded') {
       el.textContent = '';
+    } else if (s.state === 'not-available') {
+      el.textContent = t.about_up_to_date;
+      el.style.color = 'var(--cyber-ok)';
     } else if (s.state === 'checking') {
       el.textContent = t.about_checking;
     } else if (s.state === 'downloading') {
@@ -9909,7 +9910,12 @@ $('btn-go-end').addEventListener('click', (e) => {
     updateStatus = { state: 'checking' };
     syncUpdateActions(overlay);
 
-    const res = await window.electronAPI.checkForUpdates();
+    let res;
+    try {
+      res = await window.electronAPI.checkForUpdates();
+    } catch (error) {
+      res = { ok: false, error: String(error?.message || error) };
+    }
     if (!res || !res.ok) {
       if (res && (res.portable || res.error === 'PORTABLE_NO_AUTO_UPDATE' || res.error === 'DEV_NO_AUTO_UPDATE')) {
         // Dev and portable builds cannot use electron-updater by design;
