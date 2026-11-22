@@ -9223,17 +9223,10 @@ if (isElectron) {
       await window.CVWorkspace.restore();
       scheduleInitialTrayPinReminder();
       // Startup update check is owned by main (electron-updater); badge + 1× toast
-      if (window.electronAPI.onUpdateStatus) {
-        window.electronAPI.onUpdateStatus((status) => {
-          if (window.__cvApplyUpdateStatus) {
-            window.__cvApplyUpdateStatus(status, { fromStartup: true });
-          }
-        });
-      }
       if (window.electronAPI.getUpdateStatus) {
         window.electronAPI.getUpdateStatus().then((status) => {
           if (status && window.__cvApplyUpdateStatus) {
-            window.__cvApplyUpdateStatus(status, { fromStartup: true });
+            window.__cvApplyUpdateStatus(status);
           }
         }).catch(() => {});
       }
@@ -9406,16 +9399,15 @@ $('btn-go-end').addEventListener('click', (e) => {
    * Startup auto-check only toasts when checkUpdatesOnStartup is on;
    * download-ready always toasts once (user already requested the download).
    */
-  function maybeToastUpdateStatus(status, opts) {
+  function maybeToastUpdateStatus(status) {
     if (!status || !status.state) return;
-    const fromStartup = !!(opts && opts.fromStartup);
     const n = ensureUpdateNotify();
     const t = tAbout();
     const ver = status.version ? String(status.version) : '';
     if (!ver) return;
 
     if (status.state === 'available') {
-      if (fromStartup && state.settings.app.checkUpdatesOnStartup === false) return;
+      if (state.settings.app.checkUpdatesOnStartup === false) return;
       if (n.lastNotifiedAvailable === ver) return;
       const msg = (t.about_notify_startup || 'Update available: v{version}')
         .replace('{version}', ver);
@@ -9435,17 +9427,20 @@ $('btn-go-end').addEventListener('click', (e) => {
     }
   }
 
-  function applyUpdateStatus(status, opts) {
+  function applyUpdateStatus(status) {
     updateStatus = status || { state: 'idle' };
     window.__cvUpdateStatus = updateStatus;
     syncUpdateActions(overlay);
     syncTitleBarUpdateButton();
     syncUpdatePopup(false);
-    maybeToastUpdateStatus(updateStatus, opts);
+    maybeToastUpdateStatus(updateStatus);
   }
   window.__cvApplyUpdateStatus = applyUpdateStatus;
   window.__cvSyncUpdateBadge = syncTitleBarUpdateButton;
-  window.__cvSyncTitleBarUpdateButton = syncTitleBarUpdateButton;
+  window.__cvSyncTitleBarUpdateButton = () => {
+    syncTitleBarUpdateButton();
+    syncUpdatePopup(false);
+  };
 
   let aboutFormatsFlashTimer = null;
 
@@ -9594,7 +9589,9 @@ $('btn-go-end').addEventListener('click', (e) => {
     const aboutOpen = overlay.classList.contains('active');
     const skipped = String((state.settings.app.updateNotify && state.settings.app.updateNotify.skippedVersion) || '');
     const key = `${s}:${version}`;
+    const autoAllowed = state.settings.app.checkUpdatesOnStartup !== false;
     const show = !aboutOpen && (s === 'available' || s === 'downloading' || s === 'downloaded') &&
+      (s !== 'available' || autoAllowed || ignoreSkip) &&
       (ignoreSkip || (key !== popupDismissedKey && (s !== 'available' || version !== skipped)));
     if (!show) {
       updatePopupEl.classList.remove('visible');
