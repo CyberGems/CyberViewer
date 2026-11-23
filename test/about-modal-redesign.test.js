@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 
 const root = path.join(__dirname, '..');
 const appJs = fs.readFileSync(path.join(root, 'js', 'app.js'), 'utf8');
+const html = fs.readFileSync(path.join(root, 'CyberViewer.html'), 'utf8');
 const css = fs.readFileSync(path.join(root, 'css', 'app.css'), 'utf8');
 const uiI18n = JSON.parse(fs.readFileSync(path.join(root, 'i18n', 'ui.json'), 'utf8'));
 const mainJs = fs.readFileSync(path.join(root, 'main.js'), 'utf8');
@@ -59,17 +60,10 @@ describe('About modal redesign (CyberFeeds pattern)', () => {
     assert.match(tpl, /class="about-maintenance"/);
   });
 
-  it('uses the CyberFeeds switch for the startup auto-check toggle', () => {
-    const start = appJs.indexOf('overlay.innerHTML = `');
-    const end = appJs.indexOf('overlay.querySelector(\'#about-close-btn\')', start);
-    const tpl = appJs.slice(start, end);
-    assert.match(tpl, /id="about-auto-update-toggle" role="switch"/);
-    assert.match(tpl, /class="custom-switch \$\{state\.settings\.app\.checkUpdatesOnStartup !== false \? 'active' : ''\}"/);
-    // toggle is a button driven by click, syncing aria-checked + the switch class
-    assert.match(appJs, /autoToggle\.addEventListener\('click', \(\) => \{[\s\S]*?checkUpdatesOnStartup[\s\S]*?syncAutoToggle\(\);/);
-    assert.match(appJs, /autoToggle\.setAttribute\('aria-checked', on \? 'true' : 'false'\)/);
-    // old checkbox wiring is gone
-    assert.doesNotMatch(appJs, /about-startup-update-toggle/);
+  it('keeps the startup check preference in Configuration', () => {
+    assert.match(html, /id="cfg-update-notifications" role="switch"/);
+    assert.match(appJs, /checkUpdatesOnStartup: \$\('cfg-update-notifications'\)\.checked/);
+    assert.doesNotMatch(appJs, /about-auto-update-toggle|about-startup-update-toggle/);
   });
 
   it('picks 4 random sibling apps from local suite icons (offline-safe)', () => {
@@ -130,7 +124,7 @@ describe('About modal redesign (CyberFeeds pattern)', () => {
     assert.doesNotMatch(appJs, /'github': '<path d="M15 22v-4a4\.8 4\.8 0 0 0-1-3\.5c3 0 6-1\.5 6-6/);
   });
 
-  it('styles the modal like CyberFeeds: transparent overlay, gradient card, switch', () => {
+  it('styles the modal like CyberFeeds: transparent overlay and gradient card', () => {
     // lighter backdrop so the app shows through (the requested transparency)
     assert.match(css, /#about-overlay\s*\{\s*background: rgba\(0, 0, 0, 0\.55\);\s*backdrop-filter: blur\(4px\);/);
     // 440px gradient card with accent-tinted border
@@ -162,8 +156,6 @@ describe('About modal redesign (CyberFeeds pattern)', () => {
     assert.match(css, /\.about-maintenance\s*\{[\s\S]*?border: 1px solid var\(--cyber-border\);\s*border-radius: 10px;/);
     assert.match(css, /\.about-action-btn\s*\{[\s\S]*?min-height: 40px;/);
     // custom switch (44x24, accent when active)
-    assert.match(css, /\.custom-switch\s*\{[\s\S]*?width: 44px;[\s\S]*?height: 24px;/);
-    assert.match(css, /\.custom-switch\.active\s*\{\s*background: var\(--cyber-accent\);/);
     // suite strip items
     assert.match(css, /\.about-suite-app\s*\{[\s\S]*?width: 40px;\s*height: 40px;\s*border-radius: 10px;/);
   });
@@ -181,40 +173,28 @@ describe('About modal redesign (CyberFeeds pattern)', () => {
     }
   });
 
-  it('update actions use shared cancel/primary buttons with icons', () => {
-    const start = appJs.indexOf('overlay.innerHTML = `');
-    const end = appJs.indexOf('overlay.querySelector(\'#about-close-btn\')', start);
-    const tpl = appJs.slice(start, end);
-    // idle check button: ghost class + refresh icon + sentence-case label
-    assert.match(tpl, /id="about-btn-update" class="top-btn btn-cancel about-action-btn about-action-ghost">\s*\$\{iconHtml\('rotate-cw'\)\}\s*<span>\$\{t\.about_check_updates\}<\/span>/);
-    // download: primary + download icon
-    assert.match(tpl, /id="about-btn-download" class="top-btn btn-primary about-action-btn about-action-primary"[\s\S]*?\$\{iconHtml\('download'\)\}/);
-    // install: primary + check icon
-    assert.match(tpl, /id="about-btn-install" class="top-btn btn-primary about-action-btn about-action-primary"[\s\S]*?\$\{iconHtml\('check-circle'\)\}/);
-    // release page link stays ghost
-    assert.match(tpl, /id="about-btn-release" class="top-btn btn-cancel about-action-btn about-action-ghost about-release-btn"/);
-    // old all-caps outline variants are gone
-    assert.doesNotMatch(tpl, /about-action-accent/);
-    assert.doesNotMatch(tpl, /id="about-btn-(download|install)" class="top-btn active/);
-    // check-circle icon exists in the catalog
-    assert.match(appJs, /'check-circle': '<circle cx="12" cy="12" r="9"\/><path d="M8\.5 12\.5l2\.5 2\.5 4\.5-5\.5"\/>'/);
+  it('keeps About to a single check action and an accessible result', () => {
+    const start = appJs.indexOf('class="about-maintenance"');
+    const maintenance = appJs.slice(start, appJs.indexOf('</div>', start));
+    assert.ok(start > 0);
+    assert.match(maintenance, /id="about-btn-update" class="top-btn btn-cancel about-action-btn about-action-ghost"/);
+    assert.match(maintenance, /iconHtml\('rotate-cw'\)/);
+    assert.match(maintenance, /id="about-update-status" class="about-update-status" role="status"/);
+    assert.doesNotMatch(maintenance, /id="about-btn-(download|install|release)"/);
+    assert.doesNotMatch(maintenance, /about-release-notes|about-update-progress/);
   });
 
   it('spins the refresh icon while the update check runs', () => {
-    assert.match(appJs, /spinIco\.classList\.toggle\('spin-icon', s === 'checking'\)/);
+    assert.match(appJs, /classList\.toggle\('spin-icon', checking\)/);
     assert.match(css, /\.about-action-btn \.spin-icon\s*\{\s*animation: about-spin 0\.8s linear infinite;/);
     assert.match(css, /@keyframes about-spin\s*\{/);
   });
 
-  it('shows the auto-update hint under the toggle (CyberFeeds pattern)', () => {
-    const start = appJs.indexOf('overlay.innerHTML = `');
-    const end = appJs.indexOf('overlay.querySelector(\'#about-close-btn\')', start);
-    const tpl = appJs.slice(start, end);
-    // hint renders right after the toggle row, guarded by the i18n key
-    assert.match(tpl, /<\/div>\s*\$\{t\.about_auto_updates_hint \? `<div class="about-update-hint">\$\{t\.about_auto_updates_hint\}<\/div>` : ''\}/);
-    assert.match(css, /\.about-update-hint\s*\{[\s\S]*?font-size: 10px;/);
-    assert.ok(uiI18n.en.about_auto_updates_hint, 'missing EN about_auto_updates_hint');
-    assert.ok(uiI18n.es.about_auto_updates_hint, 'missing ES about_auto_updates_hint');
+  it('explains the update check preference in Configuration in both languages', () => {
+    assert.match(html, /id="cfg-update-notifications-desc" data-i18n="about_auto_updates_hint"/);
+    assert.match(html, /aria-describedby="cfg-update-notifications-desc"/);
+    assert.ok(uiI18n.en.about_auto_updates_hint);
+    assert.ok(uiI18n.es.about_auto_updates_hint);
   });
 
   it('keeps About actions sentence-case with shared CyberLauncher button styling', () => {
@@ -235,13 +215,13 @@ describe('About modal redesign (CyberFeeds pattern)', () => {
     assert.match(css, /\.about-logo\s*\{[\s\S]*?width: 76px;\s*height: 76px;/);
   });
 
-  it('uses CyberFeeds sentence-case labels for update actions in both languages', () => {
+  it('uses aligned sentence-case labels in both languages', () => {
     assert.equal(uiI18n.en.about_check_updates, 'Check for updates');
     assert.equal(uiI18n.es.about_check_updates, 'Buscar actualizaciones');
-    assert.equal(uiI18n.en.about_install_btn, 'Restart and update');
-    assert.equal(uiI18n.es.about_install_btn, 'Reiniciar y actualizar');
-    assert.equal(uiI18n.en.about_download_btn, 'Download update');
-    assert.equal(uiI18n.es.about_download_btn, 'Descargar actualización');
+    assert.equal(uiI18n.en.about_install_btn, 'Restart to update');
+    assert.equal(uiI18n.es.about_install_btn, 'Reiniciar para actualizar');
+    assert.equal(uiI18n.en.update_now, 'Update now');
+    assert.equal(uiI18n.es.update_now, 'Actualizar ahora');
   });
 
   it('offers the diagnostics copy button between issues and releases', () => {

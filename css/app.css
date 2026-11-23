@@ -7155,33 +7155,6 @@
   line-height: 1.5;
   white-space: nowrap;
 }
-/* Transient update notice: replaces the badge rows for a few seconds so the
-   check feedback is visible without scrolling. The box height is pinned by JS
-   so the swap never changes the modal layout. */
-.about-formats.is-noticing {
-  justify-content: center;
-}
-.about-formats.is-noticing > :not(.about-formats-notice) {
-  display: none;
-}
-.about-formats-notice {
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.45;
-  color: var(--cyber-accent-ink);
-  animation: about-notice-in 180ms ease;
-}
-.about-formats-notice[data-tone='ok'] {
-  color: var(--cyber-accent3-ink);
-}
-.about-formats-notice[data-tone='error'] {
-  color: var(--cyber-accent2-ink);
-}
-@keyframes about-notice-in {
-  from { opacity: 0; transform: translateY(3px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
 /* Sectioned layout (CyberFeeds pattern): divider-lined titles + bordered boxes */
 .about-section {
   margin-top: 16px;
@@ -7213,76 +7186,6 @@
   border-radius: 10px;
   padding: 12px;
 }
-.about-auto-update-row {
-  display: flex;
-  justify-content: center;
-  padding: 2px 0 0;
-}
-.about-auto-update {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  margin: 0;
-  padding: 0;
-  cursor: pointer;
-}
-.about-auto-update:focus-visible {
-  outline: 2px solid var(--cyber-accent);
-  outline-offset: 3px;
-  border-radius: 4px;
-}
-.about-auto-update-label {
-  font-size: 12px;
-  color: var(--cyber-text);
-  font-family: var(--font-ui);
-}
-/* Switch (CyberFeeds custom-switch) */
-.custom-switch {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  width: 44px;
-  min-width: 44px;
-  flex-shrink: 0;
-  height: 24px;
-  background: var(--cyber-switch-off);
-  border: none;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.25);
-  user-select: none;
-}
-.custom-switch::after {
-  content: '';
-  position: absolute;
-  left: 3px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--cyber-knob);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
-  transition: left 0.2s ease, background-color 0.2s ease;
-}
-.custom-switch.active {
-  background: var(--cyber-accent);
-  box-shadow: 0 0 10px rgba(var(--cyber-accent-rgb), 0.35);
-}
-.custom-switch.active::after {
-  left: 23px;
-  background-color: var(--cyber-knob-on);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.2 8.35 6.45 11.45 12.8 4.7' fill='none' stroke='%2312161e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 12px 12px;
-}
-
 /* Suite strip (MÁS DE CYBERGEMS) */
 .about-suite {
   display: flex;
@@ -7328,12 +7231,6 @@
 .about-suite-more:hover {
   color: var(--cyber-accent-ink);
 }
-.about-update-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 7px;
-}
 .about-action-btn {
   width: 100%;
   gap: 6px;
@@ -7357,14 +7254,6 @@
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
-.about-action-accent {
-  border-color: var(--cyber-accent);
-  color: var(--cyber-accent-ink);
-}
-.about-action-muted {
-  border-color: rgba(var(--cyber-accent-rgb), 0.22);
-  color: var(--cyber-muted);
-}
 /* The update check is a routine action, not a cancellation: its hover
    follows the standard accent hover instead of the cancel pink. */
 #about-btn-update:hover:not(:disabled) {
@@ -7385,91 +7274,16 @@
 .about-update-status:empty {
   display: none;
 }
-.about-update-hint {
-  margin-top: 0;
-  font-size: 10px;
-  line-height: 1.4;
-  color: var(--cyber-muted);
-  text-align: center;
-  opacity: 0.9;
-}
-
-/* Update banner: a green status pill (good news, and unmistakably not a
-   button), centered and with the suite's dotted-badge look. */
-.about-update-banner {
-  display: none;
-  width: fit-content;
-  margin: 0 auto;
-  padding: 4px 12px;
-  border: 1px solid rgba(var(--cyber-accent3-rgb), 0.3);
-  background: rgba(var(--cyber-accent3-rgb), 0.1);
-  color: var(--cyber-accent3-ink);
-  font-family: var(--font-ui);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1.5;
-  border-radius: 999px;
-  text-align: center;
-}
-.about-update-banner.visible {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-.about-update-banner::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--cyber-accent3);
-  box-shadow: 0 0 6px rgba(var(--cyber-accent3-rgb), 0.7);
-  flex-shrink: 0;
-}
-.about-update-banner.ready {
-  background: rgba(var(--cyber-accent3-rgb), 0.16);
-}
-
-.about-update-details {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  gap: 6px;
-  align-items: center;
-  margin-bottom: 0;
-}
-/* Version chips: tinted, borderless, so they read as status, not buttons. */
-.about-update-version-card {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-  padding: 8px 10px;
-  border-radius: 6px;
-  background: rgba(var(--cyber-tint-rgb), 0.05);
-}
-.about-update-version-card.latest {
-  background: rgba(var(--cyber-accent-rgb), 0.07);
-}
-.about-update-version-arrow {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--cyber-accent-ink);
-}
-.about-update-version-arrow svg {
-  width: 18px;
-  height: 18px;
-}
-
-/* ── MAIN-WINDOW UPDATE POPUP (CyberFeeds pattern) ──
-   Fixed bottom-right card: changelog peek when available, progress while
-   downloading, restart when ready. Per-version dismissible. */
 #update-popup {
   position: fixed;
   right: 14px;
   bottom: 48px;
-  z-index: 999998;
-  width: 400px;
+  z-index: 1000000;
+  box-sizing: border-box;
+  width: 440px;
   max-width: calc(100vw - 28px);
+  max-height: calc(100vh - 72px);
+  overflow: auto;
   display: none;
   flex-direction: column;
   gap: 10px;
@@ -7482,6 +7296,9 @@
 #update-popup.visible {
   display: flex;
   animation: update-popup-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+body:not(:has(#about-overlay.active)):has(.modal-overlay.active) #update-popup {
+  visibility: hidden;
 }
 @keyframes update-popup-in {
   from { opacity: 0; transform: translateY(14px); }
@@ -7512,24 +7329,16 @@
   gap: 3px;
 }
 .update-popup-title {
+  margin: 0;
   font-size: 12.5px;
   font-weight: 700;
   color: var(--cyber-text);
   line-height: 1.3;
 }
-.update-popup-version-tags {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.update-popup-version-arrow {
-  color: var(--cyber-muted);
-  font-size: 10px;
-}
-.update-popup-badge,
-.update-popup-badge-current {
+.update-popup-badge {
   display: inline-flex;
   align-items: center;
+  align-self: flex-start;
   padding: 0 6px;
   border-radius: 4px;
   border: 1px solid var(--cyber-border);
@@ -7561,7 +7370,7 @@
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
-.update-popup-close:hover {
+.update-popup-close:hover:not(:disabled) {
   background: rgba(var(--cyber-accent2-rgb), 0.12);
   color: var(--cyber-accent2-ink);
 }
@@ -7577,9 +7386,11 @@
   letter-spacing: 0;
   text-transform: none;
   color: var(--cyber-muted);
-  margin-bottom: 6px;
+  margin: 0 0 6px;
 }
 .update-popup-changelog-list {
+  max-height: 108px;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -7618,27 +7429,65 @@
   color: var(--cyber-muted);
   margin-bottom: 6px;
 }
-.update-popup-progress-pct {
+.update-popup-progress-value {
   font-weight: 700;
   color: var(--cyber-accent-ink);
   font-family: var(--font-mono, monospace);
 }
-.update-popup-ready {
+.update-popup-progress progress {
+  display: block;
+  width: 100%;
+  height: 7px;
+  appearance: none;
+}
+.update-popup-progress progress::-webkit-progress-bar {
+  background: var(--cyber-dim);
+  border: 1px solid var(--cyber-border);
+  border-radius: 5px;
+}
+.update-popup-progress progress::-webkit-progress-value {
+  background: var(--cyber-accent);
+  border-radius: 5px;
+  transition: width 120ms linear;
+}
+.update-popup-hint,
+.update-popup-error {
+  margin: 0;
   font-size: 11.5px;
-  font-weight: 600;
+  line-height: 1.4;
+  color: var(--cyber-muted);
+}
+.update-popup-error,
+.about-update-status[data-result='error'] {
+  color: var(--cyber-accent2-ink);
+}
+.about-update-status[data-result='available'] {
   color: var(--cyber-accent-ink);
+}
+.about-update-status[data-result='latest'] {
+  color: var(--cyber-ok);
+}
+#about-btn-update:disabled,
+#update-popup button:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 .update-popup-footer {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 6px;
 }
-.update-popup-secondary-row {
-  display: flex;
-  gap: 6px;
+
+@media (900px <= width <= 1360px) {
+  #about-overlay:has(+ #update-popup.visible) {
+    padding-right: 458px;
+  }
 }
-.update-popup-secondary-row .update-popup-btn {
-  flex: 1;
+
+@media (prefers-reduced-motion: reduce) {
+  #update-popup.visible,
+  .about-action-btn .spin-icon { animation: none; }
 }
 .update-popup-btn {
   display: inline-flex;
@@ -7659,8 +7508,7 @@
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
-.update-popup-btn .menu-ico { width: 13px; height: 13px; }
-.update-popup-btn:hover {
+.update-popup-btn:hover:not(:disabled) {
   border-color: rgba(var(--cyber-accent-rgb), 0.45);
   background: rgba(var(--cyber-accent-rgb), 0.08);
   color: var(--cyber-text);
@@ -7672,107 +7520,11 @@
   font-weight: 700;
   box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.25);
 }
-.update-popup-btn.is-primary:hover {
+.update-popup-btn.is-primary:hover:not(:disabled) {
   filter: brightness(1.12);
   background: var(--cyber-accent);
   color: var(--cyber-on-accent-2);
 }
-.about-update-version-label,
-.about-release-notes-heading {
-  font-size: 10px;
-  font-family: var(--font-ui);
-  font-weight: 600;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--cyber-muted);
-}
-.about-update-version-card.latest .about-update-version-label {
-  color: var(--cyber-accent-ink);
-}
-.about-update-version-value {
-  overflow: hidden;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--cyber-text);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.about-update-version-card.latest .about-update-version-value {
-  color: var(--cyber-accent-ink);
-}
-.about-release-notes {
-  margin-top: 0;
-  margin-bottom: 0;
-}
-.about-release-notes-heading {
-  margin-bottom: 6px;
-}
-.about-release-notes-body {
-  max-height: 180px;
-  overflow-y: auto;
-  padding: 9px 10px;
-  border: 1px solid rgba(var(--cyber-tint-rgb), 0.1);
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.25);
-  color: var(--cyber-text);
-  font-size: 11px;
-  line-height: 1.45;
-  word-break: break-word;
-  scrollbar-width: thin;
-}
-.about-release-note-heading {
-  margin: 2px 0 5px;
-  color: var(--cyber-text);
-  font-size: 11px;
-  font-weight: 700;
-}
-.about-release-note-list {
-  margin: 2px 0 6px;
-  padding-left: 16px;
-}
-.about-release-note-item {
-  margin: 2px 0;
-}
-.about-release-note-item-nested {
-  margin-left: 12px;
-}
-.about-release-note-paragraph {
-  margin: 2px 0 6px;
-}
-.about-release-btn {
-  margin-top: 0;
-  /* Secondary action: a permanent subtle outline so it reads as a button,
-     not a text link. Hover strengthens it. */
-  border-color: rgba(var(--cyber-accent-rgb), 0.28);
-  background: rgba(var(--cyber-accent-rgb), 0.05);
-}
-.about-release-btn:hover:not(:disabled) {
-  border-color: rgba(var(--cyber-accent-rgb), 0.45);
-  background: rgba(var(--cyber-accent-rgb), 0.09);
-  color: var(--cyber-text);
-}
-
-.about-update-progress { width: 100%; margin-bottom: 0; }
-.about-update-track {
-  width: 100%;
-  height: 4px;
-  background: var(--cyber-dim);
-  border: 1px solid var(--cyber-border);
-  overflow: hidden;
-  border-radius: 2px;
-}
-.about-update-bar {
-  height: 100%;
-  width: 0%;
-  background: var(--cyber-accent);
-  transition: width 120ms linear;
-}
-#about-btn-update:disabled,
-#about-btn-download:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
   /* ── MODAL: PRINT / EXPORT PDF ── */
   #modal-print-export .modal-box {
     max-width: 760px;
@@ -8186,17 +7938,13 @@ html[data-theme='light'] #modal-config input:checked + .slider {
 html[data-theme='light'] input:checked + .slider {
   background: var(--cyber-accent-bright);
 }
-html[data-theme='light'] .custom-switch.active {
-  background: var(--cyber-accent-bright);
-}
 html[data-theme='light'] #modal-config .config-nav-btn.active .config-nav-icon,
 html[data-theme='light'] #modal-config .config-nav-btn.active .config-nav-svg {
   filter: none;
 }
 /* Gray theme: the accent track is pale, so the ON thumb goes dark with a
    white check (suite graphite treatment). */
-html[data-theme='gray'] input:checked + .slider:before,
-html[data-theme='gray'] .custom-switch.active::after {
+html[data-theme='gray'] input:checked + .slider:before {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.2 8.35 6.45 11.45 12.8 4.7' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 

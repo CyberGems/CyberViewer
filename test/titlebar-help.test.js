@@ -289,55 +289,28 @@ describe('title bar Help menu', () => {
     assert.equal(ui.en.titlebar_update_btn, undefined);
     assert.equal(ui.es.titlebar_update_btn, undefined);
 
-    // JS updater controller: permanently hidden while auto-check updates is disabled
+    // The titlebar and Alt+U reopen the same pending notice.
     assert.match(appJs, /function syncTitleBarUpdateButton\(\)/);
-    assert.match(appJs, /const autoCheckOff = state\.settings\.app\.checkUpdatesOnStartup === false;/);
-    assert.match(appJs, /const pending = !!\(s && \(s\.state === 'available' \|\| s\.state === 'downloaded'\)\) && !autoCheckOff;/);
-    assert.match(appJs, /updateBtn\.style\.display\s*=\s*pending \? 'inline-flex' : 'none';/);
-    assert.doesNotMatch(appJs, /updateBtn\.classList\.toggle\('ready'/);
-    assert.match(appJs, /titlebarUpdateBtn\.addEventListener\('click',\s*\(e\)\s*=>\s*\{[\s\S]*?openAbout\(\);/);
+    assert.match(appJs, /const pending = pendingUpdate\(\);\s*button\.style\.display = pending \? 'inline-flex' : 'none';/);
+    assert.match(appJs, /titlebarUpdateBtn\.addEventListener\('click',[\s\S]*?openUpdatePopup\(e.currentTarget\);/);
+    assert.match(appJs, /case 'u':\s*\{[\s\S]*?\$\('titlebar-update-btn'\)[\s\S]*?updateBtn.click\(\);/);
   });
 
-  it('orders About modal update controls: banner, actions, progress, cards, status, notes', () => {
-    const bannerIdx = appJs.indexOf('id="about-update-banner"');
-    const detailsIdx = appJs.indexOf('id="about-update-details"');
-    const progressIdx = appJs.indexOf('id="about-update-progress"');
-    const actionsIdx = appJs.indexOf('class="about-update-actions"');
-    const statusIdx = appJs.indexOf('id="about-update-status"');
-    const notesIdx = appJs.indexOf('id="about-release-notes"');
-    const releaseBtnIdx = appJs.indexOf('id="about-btn-release"');
-    const toggleIdx = appJs.indexOf('id="about-auto-update-toggle"');
-    const hintIdx = appJs.indexOf('about_auto_updates_hint');
-
-    assert.ok(bannerIdx > 0, 'about-update-banner must be present');
-    assert.ok(actionsIdx > bannerIdx, 'action buttons must follow the banner');
-    assert.ok(progressIdx > actionsIdx, 'progress must follow action buttons');
-    assert.ok(detailsIdx > progressIdx, 'version cards must follow progress');
-    assert.ok(statusIdx > detailsIdx, 'status text must follow version cards');
-    assert.ok(notesIdx > statusIdx, 'release notes must be below the status text');
-    assert.ok(releaseBtnIdx > notesIdx, 'view release page button must follow notes');
-    // The auto-check toggle and its hint close the section, after the release
-    // link and the portable hint.
-    assert.ok(toggleIdx > releaseBtnIdx, 'auto-check toggle must come after the release button');
-    assert.ok(hintIdx > toggleIdx, 'auto-check hint must follow the toggle');
-    // Maintenance box is a flex column with gap; children carry no outer margins
-    assert.match(css, /\.about-release-notes\s*\{[\s\S]*?margin-top:\s*0;[\s\S]*?margin-bottom:\s*0;/);
+  it('opens the notice on a manual check while keeping the result in About', () => {
+    assert.match(appJs, /checkResult = 'available';\s*manualVersion = result.version;[\s\S]*?openUpdatePopup\(/);
+    assert.match(appJs, /id="about-btn-update"[\s\S]*?id="about-update-status"/);
+    assert.doesNotMatch(appJs, /id="about-(?:update-banner|update-details|update-progress|release-notes|auto-update-toggle)"/);
   });
 
   it('provides a dismissible main-window update popup with per-version skip', () => {
-    // Popup card driven by the same status pipeline as the About modal
     assert.match(appJs, /updatePopupEl\.id = 'update-popup';/);
-    assert.match(appJs, /function syncUpdatePopup\(ignoreSkip\)/);
-    assert.match(appJs, /syncUpdatePopup\(false\);\s*maybeToastUpdateStatus/);
-    // The simulator previews the popup ignoring the per-version skip
-    assert.match(appJs, /syncUpdatePopup\(true\);/);
-    // Skip persists in updateNotify; downloading clears it
-    assert.match(appJs, /notify\.skippedVersion = String\(updateStatus\.version\)/);
+    assert.match(appJs, /dismissedStage = popupStage\(\);/);
+    assert.match(appJs, /app\.updateNotify = \{ \.\.\.app\.updateNotify, skippedVersion: version \};/);
     assert.match(appJs, /notify\.skippedVersion = null;/);
-    // A live subscription keeps the popup working with the About closed
-    assert.match(appJs, /window\.electronAPI\.onUpdateStatus\(\(status\) => \{\s*applyUpdateStatus\(status\);\s*\}\);/);
-    // Fixed bottom-right card, hidden until a state makes it visible
+    assert.match(appJs, /window\.electronAPI\.onUpdateStatus\(\(status\) => \{\s*receivedLiveStatus = true;\s*applyUpdateStatus\(status\);/);
     assert.match(css, /#update-popup\s*\{[^}]*position: fixed;[^}]*right: 14px;[^}]*bottom: 48px;/);
     assert.match(css, /#update-popup\.visible\s*\{\s*display: flex;/);
+    assert.match(appJs, /button\('release', t.update_view_github\) \+ button\('skip', t.about_skip_version\)[\s\S]*?button\('dismiss', t.update_later\)[\s\S]*?button\('download'/);
+    assert.match(appJs, /button\('dismiss', t.update_background\) \+ button\('cancel', t.update_cancel/);
   });
 });

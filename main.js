@@ -3569,9 +3569,7 @@ if (!gotTheLock) {
     win.webContents.setBackgroundThrottling(false);
 
     const settings = loadSettings();
-    initUpdater(settings.app, {
-      beforeQuitInstall: () => { isQuitting = true; }
-    });
+    initUpdater(settings.app);
     createTray();
     applyToggleHotkey(settings.app && settings.app.toggleHotkey);
     initAutoBackup();

@@ -99,8 +99,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Updates (electron-updater) — download/install always user-requested
   getUpdateInfo: () => ipcRenderer.invoke('update:get-info'),
   checkForUpdates: () => ipcRenderer.invoke('update:check'),
-  downloadUpdate: () => ipcRenderer.invoke('update:download'),
-  installUpdate: () => ipcRenderer.invoke('update:install'),
+  downloadUpdate: (version) => ipcRenderer.invoke('update:download', version),
+  cancelUpdateDownload: (version) => ipcRenderer.invoke('update:cancel-download', version),
+  installUpdate: (version) => ipcRenderer.invoke('update:install', version),
   openReleasesPage: () => ipcRenderer.invoke('update:open-releases'),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
   getUpdateStatus: () => ipcRenderer.invoke('update:get-status'),

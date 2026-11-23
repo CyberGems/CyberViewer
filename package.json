@@ -20,6 +20,7 @@
     "test:youtube": "node scripts/test-youtube.cjs"
   },
   "dependencies": {
+    "builder-util-runtime": "9.7.0",
     "electron-updater": "^6.8.11",
     "music-metadata": "^12.4.0"
   },

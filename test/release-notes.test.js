@@ -169,8 +169,8 @@ describe('localized release notes', () => {
     assert.equal(releaseNotes.extractLocalizedReleaseNotes(null, 'es'), '');
   });
 
-  it('is wired into the About dialog with the interface language', () => {
-    assert.match(appJs, /window\.CVReleaseNotes\.extractLocalizedReleaseNotes\(rawBody, lang\)/);
+  it('is wired into the floating notice with the interface language', () => {
+    assert.match(appJs, /window\.CVReleaseNotes\.parseChangelogPeek\(rawNotes, lang, 4\)/);
     assert.match(appJs, /const lang = \(state\.settings\.app && state\.settings\.app\.language\) \|\| 'en';/);
     // Loaded before app.js in the renderer
     const releaseScriptIdx = html.indexOf('<script src="js/release-notes.js"></script>');

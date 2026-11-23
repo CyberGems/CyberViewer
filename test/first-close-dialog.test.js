@@ -39,7 +39,7 @@ describe('first-close dialog (minimize to tray vs quit)', () => {
     // The tray icon is resident: created at startup for the single instance
     // regardless of closeToTray, and never destroyed by a settings save
     assert.match(mainJs, /const gotTheLock = app\.requestSingleInstanceLock\(\);/);
-    assert.match(mainJs, /initUpdater\(settings\.app,[\s\S]*?createTray\(\);/);
+    assert.match(mainJs, /initUpdater\(settings\.app\);\s*createTray\(\);/);
     assert.doesNotMatch(mainJs, /isEphemeral|let allowMultipleInstances/);
     assert.doesNotMatch(mainJs, /tray\.destroy\(\)/);
 

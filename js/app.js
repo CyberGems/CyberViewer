@@ -2883,10 +2883,7 @@ function executeAction(data) {
       openTrayPinReminder();
       break;
     case 'check-updates':
-      btnAbout.click();
-      setTimeout(() => {
-        if (typeof window.checkUpdatesGlobal === 'function') window.checkUpdatesGlobal(true);
-      }, 80);
+      void window.openAbout?.().then(() => window.checkUpdatesGlobal?.());
       break;
     case 'fit-to-window': {
       const im = state.images[state.current];
@@ -9226,7 +9223,7 @@ if (isElectron) {
       applySettings();
       await window.CVWorkspace.restore();
       scheduleInitialTrayPinReminder();
-      // Startup update check is owned by main (electron-updater); badge + 1× toast
+      // Read any update already detected by the main process.
       if (window.electronAPI.getUpdateStatus) {
         window.electronAPI.getUpdateStatus().then((status) => {
           if (status && window.__cvApplyUpdateStatus) {
@@ -9340,614 +9337,323 @@ $('btn-go-end').addEventListener('click', (e) => {
   overlay.className = 'modal-overlay';
   document.body.appendChild(overlay);
 
+  const updatePopupEl = document.createElement('div');
+  updatePopupEl.id = 'update-popup';
+  updatePopupEl.tabIndex = -1;
+  updatePopupEl.setAttribute('role', 'dialog');
+  updatePopupEl.setAttribute('aria-labelledby', 'update-popup-title');
+  document.body.appendChild(updatePopupEl);
+
   let updateStatus = { state: 'idle' };
-  let unsubUpdateStatus = null;
+  let checkResult = '';
+  let checking = false;
+  let manualVersion = '';
+  let dismissedStage = '';
+  let renderedKey = '';
+  let renderedNotes = '';
+  let actionError = null;
+  let popupOpener = null;
+  let receivedLiveStatus = false;
 
   function tAbout() {
-    const lang = (state.settings.app && state.settings.app.language) || 'en';
-    return I18N[lang] || I18N.en;
+    return I18N[state.settings.app.language] || I18N.en;
   }
 
-  function ensureUpdateNotify() {
-    const app = ensureAppSettings();
-    if (!app.updateNotify || typeof app.updateNotify !== 'object') {
-      app.updateNotify = {
-        lastNotifiedAvailable: null,
-        lastNotifiedDownloaded: null
-      };
-    }
-    if (app.updateNotify.lastNotifiedAvailable === undefined) {
-      app.updateNotify.lastNotifiedAvailable = null;
-    }
-    if (app.updateNotify.lastNotifiedDownloaded === undefined) {
-      app.updateNotify.lastNotifiedDownloaded = null;
-    }
-    return app.updateNotify;
+  function pendingUpdate() {
+    const { state: phase, version } = updateStatus;
+    if (!version || !['available', 'downloading', 'downloaded', 'installing'].includes(phase)) return false;
+    if (phase !== 'available' || manualVersion === version) return true;
+    const skipped = state.settings.app.updateNotify?.skippedVersion;
+    const normalize = value => String(value || '').trim().toLowerCase().replace(/^v/, '');
+    return state.settings.app.checkUpdatesOnStartup !== false && normalize(skipped) !== normalize(version);
   }
 
-  /** Square CyberPaste-style update button on the titlebar — visible while an update is pending. */
   function syncTitleBarUpdateButton() {
-    const updateBtn = $('titlebar-update-btn');
-    const oldBadge = $('update-menu-badge');
-    if (oldBadge) oldBadge.remove();
-    const menuBtn = $('btn-menu');
-    if (menuBtn) menuBtn.classList.remove('has-update-badge');
-
-    if (!updateBtn) return;
-
-    // Permanently hidden while automatic update checks are disabled.
-    const autoCheckOff = state.settings.app.checkUpdatesOnStartup === false;
-    const s = updateStatus;
-    const pending = !!(s && (s.state === 'available' || s.state === 'downloaded')) && !autoCheckOff;
-    const t = tAbout();
-    const ver = (s && s.version) ? String(s.version) : '';
-
-    updateBtn.style.display = pending ? 'inline-flex' : 'none';
-
+    const button = $('titlebar-update-btn');
+    const pending = pendingUpdate();
+    button.style.display = pending ? 'inline-flex' : 'none';
     if (pending) {
-      const tip = s.state === 'downloaded'
-        ? (t.update_badge_ready || 'Update ready: v{version} — click to install')
-            .replace('{version}', ver)
-        : (t.update_badge_available || 'Update available: v{version} — click for details')
-            .replace('{version}', ver);
-      updateBtn.setAttribute('aria-label', tip);
-      // Tooltip card text; the Alt+U badge comes from data-tooltip-kbd.
-      updateBtn.dataset.tooltip = tip;
+      const t = tAbout();
+      const label = t.update_show_notice.replace('{version}', updateStatus.version);
+      button.setAttribute('aria-label', label);
+      setCyberTooltip(button, label);
     } else {
-      delete updateBtn.dataset.tooltip;
+      setCyberTooltip(button, '');
     }
   }
 
-  /**
-   * Toast at most once per version for available / downloaded.
-   * Startup auto-check only toasts when checkUpdatesOnStartup is on;
-   * download-ready always toasts once (user already requested the download).
-   */
-  function maybeToastUpdateStatus(status) {
-    if (!status || !status.state) return;
-    const n = ensureUpdateNotify();
+  function syncAboutCheck() {
+    const button = overlay.querySelector('#about-btn-update');
+    if (!button) return;
+    button.disabled = checking;
+    button.querySelector('.menu-ico')?.classList.toggle('spin-icon', checking);
+
+    const line = overlay.querySelector('#about-update-status');
     const t = tAbout();
-    const ver = status.version ? String(status.version) : '';
-    if (!ver) return;
-
-    if (status.state === 'available') {
-      if (state.settings.app.checkUpdatesOnStartup === false) return;
-      if (n.lastNotifiedAvailable === ver) return;
-      const msg = (t.about_notify_startup || 'Update available: v{version}')
-        .replace('{version}', ver);
-      showToast(msg, 'info');
-      n.lastNotifiedAvailable = ver;
-      persistAppSettings();
-      return;
-    }
-
-    if (status.state === 'downloaded') {
-      if (n.lastNotifiedDownloaded === ver) return;
-      const msg = (t.about_notify_ready || 'Update ready: v{version} — open About to install')
-        .replace('{version}', ver);
-      showToast(msg, 'success');
-      n.lastNotifiedDownloaded = ver;
-      persistAppSettings();
-    }
+    const result = checking ? 'checking' : checkResult;
+    line.textContent = {
+      checking: t.about_checking,
+      available: t.update_check_available,
+      latest: t.about_up_to_date,
+      error: t.about_update_err,
+      dev: t.about_dev_hint
+    }[result] || '';
+    line.dataset.result = result;
   }
 
   function applyUpdateStatus(status) {
-    updateStatus = status || { state: 'idle' };
-    window.__cvUpdateStatus = updateStatus;
-    syncUpdateActions(overlay);
-    syncTitleBarUpdateButton();
-    syncUpdatePopup(false);
-    maybeToastUpdateStatus(updateStatus);
-  }
-  window.__cvApplyUpdateStatus = applyUpdateStatus;
-  window.__cvSyncUpdateBadge = syncTitleBarUpdateButton;
-  window.__cvSyncTitleBarUpdateButton = () => {
-    syncTitleBarUpdateButton();
-    syncUpdatePopup(false);
-  };
-
-  let aboutFormatsFlashTimer = null;
-
-  /**
-   * Swap the About formats box content for a transient update notice. The
-   * status line in the updates section sits below the fold at the default
-   * window size, so checking / up-to-date / error mirror here, where they are
-   * always visible. Empty text restores the badge rows.
-   */
-  function flashAboutUpdateNotice(text, tone) {
-    const box = overlay.querySelector('.about-formats');
-    if (!box) return;
-    const notice = box.querySelector('.about-formats-notice');
-    if (aboutFormatsFlashTimer) { clearTimeout(aboutFormatsFlashTimer); aboutFormatsFlashTimer = null; }
-    if (!text) {
-      box.classList.remove('is-noticing');
-      box.style.height = '';
-      if (notice) notice.remove();
-      return;
+    const next = status || { state: 'idle' };
+    if (next.version !== updateStatus.version) {
+      manualVersion = '';
+      dismissedStage = '';
     }
-    // Pin the box to its current rendered height so swapping the badge rows
-    // for the notice never shifts the modal layout.
-    box.style.height = `${box.offsetHeight}px`;
-    box.classList.add('is-noticing');
-    if (notice) {
-      notice.textContent = text;
-      notice.dataset.tone = tone || 'info';
-    } else {
-      const el = document.createElement('div');
-      el.className = 'about-formats-notice';
-      el.setAttribute('aria-live', 'polite');
-      el.textContent = text;
-      el.dataset.tone = tone || 'info';
-      box.prepend(el);
-    }
-    aboutFormatsFlashTimer = setTimeout(() => flashAboutUpdateNotice(''), 4000);
-  }
-
-  function renderUpdateStatusText(el) {
-    if (!el) return;
-    const t = tAbout();
-    const s = updateStatus;
-    el.style.color = 'var(--cyber-muted)';
-    // Release banners already cover available and downloaded. Keep the
-    // up-to-date result in the Updates section after the temporary notice fades.
-    if (s.state === 'available' || s.state === 'downloaded') {
-      el.textContent = '';
-    } else if (s.state === 'not-available') {
-      el.textContent = t.about_up_to_date;
-      el.style.color = 'var(--cyber-ok)';
-    } else if (s.state === 'checking') {
-      el.textContent = t.about_checking;
-    } else if (s.state === 'downloading') {
-      el.textContent = (t.about_downloading || 'Downloading… {percent}%')
-        .replace('{percent}', String(s.percent || 0));
-      el.style.color = 'var(--cyber-accent-ink)';
-    } else if (s.state === 'error') {
-      if (s.hint) {
-        // Dev/portable notices are informational, not failures.
-        el.textContent = s.message;
-        el.style.color = 'var(--cyber-muted)';
-      } else {
-        // Skip the "(No se pudo buscar actualizaciones.)" echo when the upstream
-        // error text already equals the localized message.
-        const detail = s.message && s.message !== t.about_update_err ? ` (${s.message})` : '';
-        el.textContent = `${t.about_update_err}${detail}`;
-        el.style.color = 'var(--cyber-accent2-ink)';
-      }
-    } else {
-      el.textContent = '';
-    }
-
-    if (!overlay.classList.contains('active')) return;
-    if (s.state === 'checking') flashAboutUpdateNotice(t.about_checking, 'info');
-    else if (s.state === 'not-available') flashAboutUpdateNotice(t.about_up_to_date, 'ok');
-    else if (s.state === 'error') flashAboutUpdateNotice(el.textContent, s.hint ? 'info' : 'error');
-    else flashAboutUpdateNotice('');
-  }
-
-  // Dev console simulator, in the spirit of CyberNotes' update preview:
-  // __cvSimulateUpdate('available' | 'downloading' | 'downloaded' |
-  // 'not-available' | 'error' | 'reset'[, version]). Renders through the same
-  // pipeline as real statuses but never toasts, persists nothing and does not
-  // touch the real updater.
-  window.__cvSimulateUpdate = (state, version) => {
-    const simVersion = version || '9.9.9';
-    const states = {
-      available: { state: 'available', version: simVersion },
-      downloading: { state: 'downloading', percent: 42 },
-      downloaded: { state: 'downloaded', version: simVersion },
-      ready: { state: 'downloaded', version: simVersion },
-      'not-available': { state: 'not-available' },
-      uptodate: { state: 'not-available' },
-      error: { state: 'error', message: 'Simulated failure' },
-      reset: { state: 'idle' },
-      off: { state: 'idle' },
-      idle: { state: 'idle' }
-    };
-    const next = states[String(state || '').toLowerCase()];
-    if (!next) {
-      console.warn('[CyberViewer] __cvSimulateUpdate states: ' + Object.keys(states).join(', '));
-      return window.__cvUpdateStatus || null;
-    }
+    if (next.version !== updateStatus.version || next.state !== updateStatus.state) actionError = null;
     updateStatus = next;
     window.__cvUpdateStatus = updateStatus;
-    syncUpdateActions(overlay);
     syncTitleBarUpdateButton();
-    syncUpdatePopup(true);
-    return next;
-  };
+    syncUpdatePopup();
+  }
 
-  // ── MAIN-WINDOW UPDATE POPUP (CyberFeeds pattern) ──
-  // A fixed bottom-right card driven by the same status pipeline as the About
-  // modal: available shows a language-aware changelog peek, downloading shows
-  // progress and downloaded offers the restart. The About modal suppresses it
-  // while open, and a per-version skip persists in updateNotify.skippedVersion.
-  const updatePopupEl = document.createElement('div');
-  updatePopupEl.id = 'update-popup';
-  updatePopupEl.setAttribute('role', 'dialog');
-  updatePopupEl.setAttribute('aria-label', 'Update');
-  document.body.appendChild(updatePopupEl);
+  window.__cvApplyUpdateStatus = (status) => {
+    if (!receivedLiveStatus) applyUpdateStatus(status);
+  };
+  window.__cvSyncTitleBarUpdateButton = () => {
+    syncAboutCheck();
+    syncTitleBarUpdateButton();
+    syncUpdatePopup();
+  };
 
   const escapePopupHtml = (value) => String(value).replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
 
-  let popupAppVersion = '';
-  let popupAppVersionFetched = false;
-  let popupDismissedKey = '';
-  let popupRenderedKey = ''; // download ticks patch the rendered popup in place instead of rebuilding it
+  function popupStage() {
+    return (updateStatus.state === 'installing' ? 'downloaded' : updateStatus.state) + ':' + updateStatus.version;
+  }
 
-  function popupOpenReleaseUrl() {
-    const version = updateStatus.version ? String(updateStatus.version) : '';
-    const tag = version.startsWith('v') ? version : `v${version}`;
-    const url = updateStatus.releaseUrl || `https://github.com/CyberGems/CyberViewer/releases/tag/${tag}`;
-    if (window.electronAPI.openExternal) {
-      window.electronAPI.openExternal(url);
+  function dismissUpdatePopup() {
+    dismissedStage = popupStage();
+    syncUpdatePopup();
+    popupOpener?.focus();
+    popupOpener = null;
+  }
+
+  function openUpdatePopup(opener) {
+    popupOpener = opener || null;
+    dismissedStage = '';
+    syncUpdatePopup();
+    if (updatePopupEl.classList.contains('visible')) updatePopupEl.focus();
+  }
+
+  function updatePopupProgress() {
+    const bar = updatePopupEl.querySelector('progress');
+    const readout = updatePopupEl.querySelector('.update-popup-progress-value');
+    if (!bar || !readout) return;
+    const { percent, transferred, total } = updateStatus;
+    bar.value = Math.max(0, Math.min(100, percent || 0));
+    if (total > 0 && Number.isFinite(transferred)) {
+      const units = new Intl.NumberFormat(state.settings.app.language, {
+        style: 'unit', unit: 'megabyte', maximumFractionDigits: 1
+      });
+      readout.textContent = `${units.format(transferred / 1000000)} / ${units.format(total / 1000000)}`;
     } else {
-      window.open(url, '_blank', 'noopener,noreferrer');
+      readout.textContent = `${bar.value}%`;
     }
   }
 
-  function syncUpdatePopup(ignoreSkip) {
-    const t = tAbout();
-    const s = updateStatus.state;
-    const version = updateStatus.version ? String(updateStatus.version) : '';
-    const aboutOpen = overlay.classList.contains('active');
-    const skipped = String((state.settings.app.updateNotify && state.settings.app.updateNotify.skippedVersion) || '');
-    const key = `${s}:${version}`;
-    const autoAllowed = state.settings.app.checkUpdatesOnStartup !== false;
-    const show = !aboutOpen && (s === 'available' || s === 'downloading' || s === 'downloaded') &&
-      (s !== 'available' || autoAllowed || ignoreSkip) &&
-      (ignoreSkip || (key !== popupDismissedKey && (s !== 'available' || version !== skipped)));
-    if (!show) {
+  function syncUpdatePopup() {
+    const { state: phase, version, cancelling, portableUrl, notesLoading } = updateStatus;
+    if (!pendingUpdate() || dismissedStage === popupStage()) {
       updatePopupEl.classList.remove('visible');
-      popupRenderedKey = '';
+      renderedKey = '';
       return;
     }
 
-    // download-progress fires per chunk, and a full innerHTML rebuild per tick
-    // destroys the hovered footer button and restarts its 0.15s transitions,
-    // which reads as a high-speed flicker on the Discard button. Within one
-    // downloading render only the percentage and the bar move, so patch those
-    // nodes in place and keep the subtree (and its hover states) intact.
-    if (s === 'downloading' && popupRenderedKey === key) {
-      const percent = Math.max(0, Math.min(100, updateStatus.percent || 0));
-      const pct = updatePopupEl.querySelector('.update-popup-progress-pct');
-      const bar = updatePopupEl.querySelector('.about-update-bar');
-      if (pct) pct.textContent = `${percent}%`;
-      if (bar) bar.style.width = `${percent}%`;
+    const lang = state.settings.app.language || 'en';
+    const rawNotes = updateStatus.releaseBody || updateStatus.releaseNotes || '';
+    const error = actionError || (updateStatus.downloadFailed && 'update_download_failed')
+      || (updateStatus.installFailed && 'update_install_failed');
+    const key = [phase, version, lang, cancelling, notesLoading, portableUrl, error].join(':');
+    if (renderedKey === key && renderedNotes === rawNotes) {
+      if (phase === 'downloading') updatePopupProgress();
       return;
     }
 
-    let titleText = '';
-    if (s === 'available') {
-      titleText = t.about_update_avail || 'Update available!';
-    } else if (s === 'downloading') {
-      titleText = (t.about_downloading || 'Downloading… {percent}%')
-        .replace('{percent}%', '').replace(/\s+/g, ' ').trim();
-    } else {
-      titleText = t.about_downloaded || 'Update ready to install';
-    }
-    titleText = String(titleText).replace(/\.$/, '');
+    const t = tAbout();
+    const active = updatePopupEl.contains(document.activeElement) ? document.activeElement : null;
+    const activeAction = active?.dataset.popupAction;
+    const title = {
+      available: t.update_check_available,
+      downloading: cancelling ? t.update_cancelling : t.update_downloading,
+      downloaded: t.about_downloaded,
+      installing: t.update_installing
+    }[phase];
+    const items = window.CVReleaseNotes.parseChangelogPeek(rawNotes, lang, 4);
+    const noteList = items.length ? `<div class="update-popup-changelog-list">${items.map(item => `
+      <div class="update-popup-changelog-item${item.isSubItem ? ' is-sub' : ''}">
+        <span class="update-popup-changelog-bullet" aria-hidden="true">&#8226;</span>
+        <span>${escapePopupHtml(item.text)}</span>
+      </div>`).join('')}</div>`
+      : `<div class="update-popup-changelog-empty">${t[notesLoading ? 'update_notes_loading' : 'update_notes_unavailable']}</div>`;
 
-    const versionTags = `
-      ${popupAppVersion ? `<span class="update-popup-badge-current" title="${t.about_current_version || 'Current'}">v${escapePopupHtml(popupAppVersion)}</span>` : ''}
-      ${popupAppVersion && version ? '<span class="update-popup-version-arrow">&#8594;</span>' : ''}
-      ${version ? `<span class="update-popup-badge" title="${t.about_latest_version || 'Latest'}">v${escapePopupHtml(version)}</span>` : ''}`;
-
-    let bodyHtml = '';
-    if (s === 'available') {
-      const lang = state.settings.app.language || 'en';
-      const items = (window.CVReleaseNotes && window.CVReleaseNotes.parseChangelogPeek)
-        ? window.CVReleaseNotes.parseChangelogPeek(updateStatus.releaseBody || updateStatus.releaseNotes || '', lang, 4)
-        : [];
-      bodyHtml = `
-        <div class="update-popup-changelog">
-          <div class="update-popup-changelog-header">${t.about_release_notes || "What's new"}</div>
-          ${items.length ? `<div class="update-popup-changelog-list">${items.map((item) => `
-            <div class="update-popup-changelog-item${item.isSubItem ? ' is-sub' : ''}">
-              <span class="update-popup-changelog-bullet">&#8226;</span>
-              <span>${escapePopupHtml(item.text)}</span>
-            </div>`).join('')}</div>`
-          : `<div class="update-popup-changelog-empty">${t.about_popup_peek_empty || 'Open About for the full release notes.'}</div>`}
-        </div>`;
-    } else if (s === 'downloading') {
-      const percent = Math.max(0, Math.min(100, updateStatus.percent || 0));
-      bodyHtml = `
-        <div class="update-popup-progress">
-          <div class="update-popup-progress-meta">
-            <span>${t.about_download_btn || 'Download'}&#8230;</span>
-            <span class="update-popup-progress-pct">${percent}%</span>
-          </div>
-          <div class="about-update-track"><div class="about-update-bar" style="width:${percent}%"></div></div>
-        </div>`;
+    const button = (action, text, { primary = false, disabled = false } = {}) =>
+      `<button type="button" class="update-popup-btn${primary ? ' is-primary' : ''}" data-popup-action="${action}"${disabled ? ' disabled' : ''}>${text}</button>`;
+    let actions = '';
+    if (phase === 'available') {
+      actions = button('release', t.update_view_github) + button('skip', t.about_skip_version)
+        + button('dismiss', t.update_later)
+        + button('download', portableUrl ? t.update_download_portable : t.update_now, { primary: true });
+    } else if (phase === 'downloading') {
+      actions = button('dismiss', t.update_background) + button('cancel', t.update_cancel, { disabled: cancelling });
     } else {
-      bodyHtml = `<div class="update-popup-ready">${t.about_downloaded || 'Update ready to install'}</div>`;
-    }
-
-    let footerHtml = '';
-    if (s === 'available') {
-      footerHtml = `
-        <div class="update-popup-secondary-row">
-          <button type="button" class="update-popup-btn" data-popup-action="release">${iconHtml('external-link')}<span>${t.about_view_release || 'View release page'}</span></button>
-          <button type="button" class="update-popup-btn" data-popup-action="skip">${iconHtml('skip-forward')}<span>${t.about_skip_version || 'Skip this version'}</span></button>
-        </div>
-        <button type="button" class="update-popup-btn is-primary" data-popup-action="download">${iconHtml('download')}<span>${t.about_download_btn || 'Download update'}</span></button>`;
-    } else if (s === 'downloading') {
-      footerHtml = `<button type="button" class="update-popup-btn" data-popup-action="dismiss"><span>${t.about_dismiss || 'Dismiss'}</span></button>`;
-    } else {
-      footerHtml = `
-        <button type="button" class="update-popup-btn" data-popup-action="dismiss"><span>${t.about_dismiss || 'Dismiss'}</span></button>
-        <button type="button" class="update-popup-btn is-primary" data-popup-action="install">${iconHtml('rotate-cw')}<span>${t.about_install_btn || 'Restart and update'}</span></button>`;
+      actions = button('dismiss', t.update_later, { disabled: phase === 'installing' })
+        + button('install', t.about_install_btn, { primary: true, disabled: phase === 'installing' });
     }
 
     updatePopupEl.innerHTML = `
       <div class="update-popup-header">
-        <span class="update-popup-icon">${iconHtml('sparkles')}</span>
+        <span class="update-popup-icon" aria-hidden="true">${iconHtml({
+          available: 'sparkles', downloading: 'download', downloaded: 'check-circle', installing: 'rotate-cw'
+        }[phase])}</span>
         <div class="update-popup-title-group">
-          <span class="update-popup-title">${escapePopupHtml(titleText)}</span>
-          <div class="update-popup-version-tags">${versionTags}</div>
+          <h2 class="update-popup-title" id="update-popup-title">${title}</h2>
+          <span class="update-popup-badge">v${escapePopupHtml(version)}</span>
         </div>
-        <button type="button" class="update-popup-close" data-popup-action="dismiss" aria-label="${t.about_dismiss || 'Dismiss'}">&#10005;</button>
+        <button type="button" class="update-popup-close" data-popup-action="dismiss"
+          aria-label="${phase === 'downloading' ? t.update_background : t.update_later}"${phase === 'installing' ? ' disabled' : ''}>&#10005;</button>
       </div>
-      ${bodyHtml}
-      <div class="update-popup-footer">${footerHtml}</div>
+      <section class="update-popup-changelog">
+        <h3 class="update-popup-changelog-header">${t.about_release_notes}</h3>
+        ${noteList}
+      </section>
+      ${phase === 'downloading' ? `<div class="update-popup-progress">
+        <div class="update-popup-progress-meta">
+          <span id="update-popup-progress-label">${t.update_progress}</span>
+          <span class="update-popup-progress-value"></span>
+        </div>
+        <progress max="100" value="0" aria-labelledby="update-popup-progress-label"></progress>
+      </div>` : ''}
+      ${portableUrl ? `<p class="update-popup-hint">${t.about_portable_hint}</p>` : ''}
+      ${error ? `<p class="update-popup-error" role="alert">${t[error]}</p>` : ''}
+      <div class="update-popup-footer">${actions}</div>
     `;
 
-    updatePopupEl.querySelectorAll('[data-popup-action]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const action = btn.dataset.popupAction;
-        if (action === 'dismiss') {
-          popupDismissedKey = `${updateStatus.state}:${updateStatus.version || ''}`;
-          syncUpdatePopup(false);
-        } else if (action === 'skip') {
-          const notify = ensureUpdateNotify();
-          if (updateStatus.version) notify.skippedVersion = String(updateStatus.version);
-          else popupDismissedKey = `${updateStatus.state}:`;
-          persistAppSettings();
-          syncUpdatePopup(false);
-        } else if (action === 'download') {
-          const notify = ensureUpdateNotify();
-          notify.skippedVersion = null;
-          persistAppSettings();
-          startUpdateDownload();
-        } else if (action === 'install') {
-          if (window.electronAPI.installUpdate) {
-            // Resolve pending unsaved changes before the installer spawns:
-            // a quit blocked by the discard modal races NSIS and fails.
-            window.CVWorkspace.requestUpdateInstall(
-              () => window.electronAPI.installUpdate().then((res) => !!(res && res.ok)));
-          }
-        } else if (action === 'release') {
-          popupOpenReleaseUrl();
-        }
-      });
-    });
-
-    popupRenderedKey = (s === 'downloading') ? key : '';
+    renderedKey = key;
+    renderedNotes = rawNotes;
+    if (phase === 'downloading') updatePopupProgress();
     updatePopupEl.classList.add('visible');
-  }
-
-  async function startUpdateDownload() {
-    updateStatus = { state: 'downloading', percent: 0 };
-    window.__cvUpdateStatus = updateStatus;
-    syncUpdateActions(overlay);
-    syncTitleBarUpdateButton();
-    syncUpdatePopup(false);
-    const res = (isElectron && window.electronAPI.downloadUpdate)
-      ? await window.electronAPI.downloadUpdate()
-      : { ok: false, error: 'unavailable' };
-    if (!res || !res.ok) {
-      updateStatus = { state: 'error', message: (res && res.error) || 'Download failed' };
-      window.__cvUpdateStatus = updateStatus;
-      syncUpdateActions(overlay);
-      syncTitleBarUpdateButton();
-      syncUpdatePopup(false);
+    if (active) {
+      const replacement = activeAction && [...updatePopupEl.querySelectorAll('button')].find(
+        button => button.className === active.className && button.dataset.popupAction === activeAction && !button.disabled
+      );
+      (replacement || updatePopupEl).focus();
     }
   }
 
-  if (isElectron && window.electronAPI.getVersion && !popupAppVersionFetched) {
-    popupAppVersionFetched = true;
-    window.electronAPI.getVersion().then((v) => {
-      popupAppVersion = String(v || '');
-      syncUpdatePopup(false);
-    }).catch(() => {});
+  async function runPopupAction(action, errorKey) {
+    if (!action) return false;
+    actionError = null;
+    syncUpdatePopup();
+    const { version, state: phase } = updateStatus;
+    try {
+      if ((await action())?.ok) return true;
+    } catch (error) {
+      console.error('[Updater] Action failed:', error);
+    }
+    if (updateStatus.version === version && updateStatus.state === phase) {
+      actionError = errorKey;
+      syncUpdatePopup();
+    }
+    return false;
   }
 
-  // Live statuses must reach the popup even when the About modal has never
-  // been opened; the About keeps its own subscription for its lifetime.
+  async function openUpdateLink(url) {
+    const result = await window.electronAPI.openExternal(url);
+    return { ok: result?.success };
+  }
+
+  updatePopupEl.addEventListener('click', event => {
+    const button = event.target.closest('[data-popup-action]');
+    if (!button) return;
+    const { version, releaseUrl, portableUrl } = updateStatus;
+    switch (button.dataset.popupAction) {
+      case 'dismiss':
+        dismissUpdatePopup();
+        break;
+      case 'skip': {
+        const app = ensureAppSettings();
+        app.updateNotify = { ...app.updateNotify, skippedVersion: version };
+        manualVersion = '';
+        persistAppSettings();
+        dismissUpdatePopup();
+        syncTitleBarUpdateButton();
+        break;
+      }
+      case 'release':
+        void runPopupAction(() => openUpdateLink(releaseUrl), 'update_link_failed');
+        break;
+      case 'download':
+        if (portableUrl) {
+          void runPopupAction(() => openUpdateLink(portableUrl), 'update_link_failed');
+        } else {
+          manualVersion = version;
+          const notify = state.settings.app.updateNotify;
+          if (notify?.skippedVersion) {
+            notify.skippedVersion = null;
+            persistAppSettings();
+          }
+          void runPopupAction(() => window.electronAPI.downloadUpdate(version), 'update_download_failed');
+        }
+        break;
+      case 'cancel':
+        void runPopupAction(() => window.electronAPI.cancelUpdateDownload(version), 'update_cancel_failed');
+        break;
+      case 'install':
+        // Confirm edits and flush the workspace before letting NSIS start.
+        window.CVWorkspace.requestUpdateInstall(() => runPopupAction(
+          () => window.electronAPI.installUpdate(version), 'update_install_failed'
+        ));
+        break;
+    }
+  });
+
+  updatePopupEl.addEventListener('keydown', event => {
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (updateStatus.state !== 'installing') dismissUpdatePopup();
+  });
+
   if (isElectron && window.electronAPI.onUpdateStatus) {
     window.electronAPI.onUpdateStatus((status) => {
+      receivedLiveStatus = true;
       applyUpdateStatus(status);
     });
   }
 
-  function syncUpdateBanner(root) {
-    if (!root) return;
-    const banner = root.querySelector('#about-update-banner');
-    if (!banner) return;
-    const t = tAbout();
-    const s = updateStatus;
-    banner.classList.remove('visible', 'ready');
-    if (s.state === 'available') {
-      banner.textContent = `${t.about_update_avail} (v${s.version || ''})`;
-      banner.classList.add('visible');
-    } else if (s.state === 'downloaded') {
-      banner.textContent = `${t.about_downloaded}${s.version ? ' (v' + s.version + ')' : ''}`;
-      banner.classList.add('visible', 'ready');
-    } else {
-      banner.textContent = '';
-    }
-  }
-
-  function syncUpdateReleaseDetails(root) {
-    if (!root) return;
-    const details = root.querySelector('#about-update-details');
-    const notes = root.querySelector('#about-release-notes');
-    const notesBody = root.querySelector('#about-release-notes-body');
-    const releaseBtn = root.querySelector('#about-btn-release');
-    const isRelease = updateStatus.state === 'available' || updateStatus.state === 'downloaded';
-
-    if (details) details.style.display = isRelease ? '' : 'none';
-    if (releaseBtn) releaseBtn.style.display = isRelease ? '' : 'none';
-    if (notes) notes.style.display = isRelease && updateStatus.releaseNotes ? '' : 'none';
-    const lang = (state.settings.app && state.settings.app.language) || 'en';
-    const rawBody = isRelease ? (updateStatus.releaseBody || updateStatus.releaseNotes || '') : '';
-    const localizedBody = rawBody
-      ? window.CVReleaseNotes.extractLocalizedReleaseNotes(rawBody, lang)
-      : '';
-    renderReleaseNotes(notesBody, localizedBody);
-
-    const latest = root.querySelector('#about-latest-version');
-    if (latest) latest.textContent = isRelease && updateStatus.version ? `v${updateStatus.version}` : '—';
-  }
-
-  // Inline markdown for release notes: [text](url) renders as text and
-  // **bold** renders as a strong node. Everything else stays plain text.
-  function appendInlineNoteText(el, text) {
-    const plain = String(text).replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
-    const parts = plain.split(/(\*\*[^*]+\*\*)/g);
-    for (const part of parts) {
-      if (!part) continue;
-      if (part.length > 4 && part.startsWith('**') && part.endsWith('**')) {
-        const strong = document.createElement('strong');
-        strong.textContent = part.slice(2, -2);
-        el.appendChild(strong);
-      } else {
-        el.appendChild(document.createTextNode(part));
-      }
-    }
-  }
-
-  function renderReleaseNotes(el, body) {
-    if (!el) return;
-    el.textContent = '';
-    const lines = String(body || '').replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').split('\n');
-    let list = null;
-
-    const flushList = () => {
-      if (!list) return;
-      el.appendChild(list);
-      list = null;
-    };
-
-    for (const line of lines) {
-      const text = line.trim();
-      const heading = text.match(/^#{1,6}\s+(.*)$/);
-      const bullet = text.match(/^[-*]\s+(.*)$/);
-      if (heading) {
-        flushList();
-        const title = heading[1].trim();
-        if (title) {
-          const node = document.createElement('div');
-          node.className = 'about-release-note-heading';
-          appendInlineNoteText(node, title);
-          el.appendChild(node);
-        }
-      } else if (bullet) {
-        if (!list) {
-          list = document.createElement('ul');
-          list.className = 'about-release-note-list';
-        }
-        const item = document.createElement('li');
-        // One nesting level: indented bullets render with extra indentation.
-        if (/^[\t ]/.test(line)) item.className = 'about-release-note-item about-release-note-item-nested';
-        else item.className = 'about-release-note-item';
-        appendInlineNoteText(item, bullet[1].trim());
-        list.appendChild(item);
-      } else if (!text || /^---+$/.test(text)) {
-        flushList();
-      } else {
-        flushList();
-        const paragraph = document.createElement('p');
-        paragraph.className = 'about-release-note-paragraph';
-        appendInlineNoteText(paragraph, text);
-        el.appendChild(paragraph);
-      }
-    }
-    flushList();
-  }
-
-  function syncUpdateActions(root) {
-    if (!root) return;
-    const checkBtn = root.querySelector('#about-btn-update');
-    const downloadBtn = root.querySelector('#about-btn-download');
-    const installBtn = root.querySelector('#about-btn-install');
-    const progress = root.querySelector('#about-update-progress');
-    const bar = root.querySelector('#about-update-bar');
-    const statusEl = root.querySelector('#about-update-status');
-    const s = updateStatus.state;
-
-    if (checkBtn) {
-      checkBtn.disabled = s === 'checking' || s === 'downloading';
-      checkBtn.style.display = (s === 'available' || s === 'downloaded' || s === 'downloading') ? 'none' : '';
-      const spinIco = checkBtn.querySelector('.menu-ico');
-      if (spinIco) spinIco.classList.toggle('spin-icon', s === 'checking');
-    }
-    if (downloadBtn) {
-      downloadBtn.style.display = s === 'available' ? '' : 'none';
-      downloadBtn.disabled = false;
-    }
-    if (installBtn) {
-      installBtn.style.display = s === 'downloaded' ? '' : 'none';
-    }
-    if (progress) {
-      progress.style.display = s === 'downloading' ? '' : 'none';
-    }
-    if (bar) {
-      bar.style.width = Math.max(0, Math.min(100, s === 'downloading' ? (updateStatus.percent || 0) : 0)) + '%';
-    }
-    // The available/downloaded banner carries the news: hide the formats box
-    // so the update content sits higher in the hero.
-    const formatsBox = root.querySelector('.about-formats');
-    if (formatsBox) {
-      formatsBox.style.display = (s === 'available' || s === 'downloaded') ? 'none' : '';
-    }
-    renderUpdateStatusText(statusEl);
-    syncUpdateBanner(root);
-    syncUpdateReleaseDetails(root);
-  }
-
   window.checkUpdatesGlobal = async function() {
-    const t = tAbout();
-    if (!isElectron || !window.electronAPI.checkForUpdates) return;
-
-    updateStatus = { state: 'checking' };
-    syncUpdateActions(overlay);
-
-    let res;
+    if (!isElectron || checking) return;
+    checking = true;
+    syncAboutCheck();
     try {
-      res = await window.electronAPI.checkForUpdates();
-    } catch (error) {
-      res = { ok: false, error: String(error?.message || error) };
-    }
-    if (!res || !res.ok) {
-      if (res && (res.portable || res.error === 'PORTABLE_NO_AUTO_UPDATE' || res.error === 'DEV_NO_AUTO_UPDATE')) {
-        // Dev and portable builds cannot use electron-updater by design;
-        // surface an informational hint instead of a failure.
-        updateStatus = {
-          state: 'error',
-          message: (res.portable || res.error === 'PORTABLE_NO_AUTO_UPDATE')
-            ? t.about_portable_hint
-            : t.about_dev_hint,
-          hint: true
-        };
-        syncUpdateActions(overlay);
-        return res;
+      const result = await window.electronAPI.checkForUpdates();
+      if (result?.ok && result.available) {
+        checkResult = 'available';
+        manualVersion = result.version;
+        syncTitleBarUpdateButton();
+        openUpdatePopup(overlay.querySelector('#about-btn-update'));
+      } else if (result?.ok) {
+        checkResult = 'latest';
+      } else {
+        checkResult = result?.error === 'DEV_NO_AUTO_UPDATE' ? 'dev' : 'error';
       }
-      updateStatus = { state: 'error', message: (res && res.error) || 'Update check failed' };
-      syncUpdateActions(overlay);
-      return res;
+    } catch (error) {
+      console.error('[Updater] Check failed:', error);
+      checkResult = 'error';
+    } finally {
+      checking = false;
+      syncAboutCheck();
     }
-
-    // Events usually settle UI first; safety net if still checking
-    if (updateStatus.state === 'checking') {
-      updateStatus = {
-        state: 'not-available',
-        version: res.version || ''
-      };
-      syncUpdateActions(overlay);
-    }
-    return res;
   };
 
   // Curated About claims: formats the file filter accepts AND the Chromium
@@ -9962,11 +9668,6 @@ $('btn-go-end').addEventListener('click', (e) => {
     const version = (isElectron && window.electronAPI.getVersion)
       ? await window.electronAPI.getVersion()
       : '';
-    const updateInfo = (isElectron && window.electronAPI.getUpdateInfo)
-      ? await window.electronAPI.getUpdateInfo()
-      : { canUpdate: false, portable: false };
-
-    const verLabel = version ? `v${version}` : 'v—';
     const versionLabel = (t.about_version_label || 'VERSION {version}')
       .replace('{version}', version || '—');
 
@@ -10039,51 +9740,11 @@ $('btn-go-end').addEventListener('click', (e) => {
               <span class="about-section-rule"></span>
             </div>
             <div class="about-maintenance">
-              <div id="about-update-banner" class="about-update-banner" aria-live="polite"></div>
-              <div class="about-update-actions">
-                <button type="button" id="about-btn-update" class="top-btn btn-cancel about-action-btn about-action-ghost">
-                  ${iconHtml('rotate-cw')}
-                  <span>${t.about_check_updates}</span>
-                </button>
-                <button type="button" id="about-btn-download" class="top-btn btn-primary about-action-btn about-action-primary" style="display:none">
-                  ${iconHtml('download')}
-                  <span>${t.about_download_btn}</span>
-                </button>
-                <button type="button" id="about-btn-install" class="top-btn btn-primary about-action-btn about-action-primary" style="display:none">
-                  ${iconHtml('check-circle')}
-                  <span>${t.about_install_btn}</span>
-                </button>
-              </div>
-              <div id="about-update-progress" class="about-update-progress" style="display:none">
-                <div class="about-update-track"><div id="about-update-bar" class="about-update-bar"></div></div>
-              </div>
-              <div id="about-update-details" class="about-update-details" style="display:none">
-                <div class="about-update-version-card">
-                  <span class="about-update-version-label">${t.about_current_version || 'Current'}</span>
-                  <span class="about-update-version-value">${verLabel}</span>
-                </div>
-                <span class="about-update-version-arrow" aria-hidden="true">${iconHtml('arrow-right')}</span>
-                <div class="about-update-version-card latest">
-                  <span class="about-update-version-label">${t.about_latest_version || 'Latest'}</span>
-                  <span id="about-latest-version" class="about-update-version-value">—</span>
-                </div>
-              </div>
-              <div id="about-update-status" class="about-update-status" aria-live="polite"></div>
-              <div id="about-release-notes" class="about-release-notes" style="display:none">
-                <div class="about-release-notes-heading">${t.about_release_notes || "What's new"}</div>
-                <div id="about-release-notes-body" class="about-release-notes-body"></div>
-              </div>
-              <button type="button" id="about-btn-release" class="top-btn btn-cancel about-action-btn about-action-ghost about-release-btn" style="display:none">
-                ${t.about_view_release || 'View release page'}
+              <button type="button" id="about-btn-update" class="top-btn btn-cancel about-action-btn about-action-ghost">
+                ${iconHtml('rotate-cw')}
+                <span>${t.about_check_updates}</span>
               </button>
-              ${!updateInfo.canUpdate && updateInfo.portable ? `<div class="about-update-hint">${t.about_portable_hint}</div>` : !updateInfo.canUpdate && updateInfo.packaged === false ? `<div class="about-update-hint">${t.about_dev_hint}</div>` : ''}
-              <div class="about-auto-update-row">
-                <button type="button" class="about-auto-update" id="about-auto-update-toggle" role="switch" aria-checked="${state.settings.app.checkUpdatesOnStartup !== false ? 'true' : 'false'}" aria-label="${t.about_check_on_startup}">
-                  <span class="custom-switch ${state.settings.app.checkUpdatesOnStartup !== false ? 'active' : ''}" aria-hidden="true"></span>
-                  <span class="about-auto-update-label">${t.about_check_on_startup}</span>
-                </button>
-              </div>
-              ${t.about_auto_updates_hint ? `<div class="about-update-hint">${t.about_auto_updates_hint}</div>` : ''}
+              <div id="about-update-status" class="about-update-status" role="status"></div>
             </div>
           </div>
 
@@ -10187,48 +9848,7 @@ $('btn-go-end').addEventListener('click', (e) => {
       requestAnimationFrame(syncAboutFade);
     }
 
-    const autoToggle = overlay.querySelector('#about-auto-update-toggle');
-    if (autoToggle) {
-      const syncAutoToggle = () => {
-        const on = state.settings.app.checkUpdatesOnStartup !== false;
-        autoToggle.setAttribute('aria-checked', on ? 'true' : 'false');
-        const sw = autoToggle.querySelector('.custom-switch');
-        if (sw) sw.classList.toggle('active', on);
-      };
-      autoToggle.addEventListener('click', () => {
-        state.settings.app.checkUpdatesOnStartup = !(state.settings.app.checkUpdatesOnStartup !== false);
-        syncAutoToggle();
-        $('cfg-update-notifications').checked = state.settings.app.checkUpdatesOnStartup !== false;
-        if (isElectron) {
-          window.electronAPI.saveSettings(state.settings.app);
-        }
-        // The titlebar update button is permanently hidden while auto-check is off.
-        if (typeof window.__cvSyncTitleBarUpdateButton === 'function') {
-          window.__cvSyncTitleBarUpdateButton();
-        }
-      });
-    }
-
-    overlay.querySelector('#about-btn-update').addEventListener('click', () => {
-      window.checkUpdatesGlobal(true);
-    });
-    overlay.querySelector('#about-btn-download').addEventListener('click', () => {
-      startUpdateDownload();
-    });
-    overlay.querySelector('#about-btn-install').addEventListener('click', () => {
-      window.CVWorkspace.requestUpdateInstall(
-        () => window.electronAPI.installUpdate().then((res) => !!(res && res.ok)));
-    });
-    overlay.querySelector('#about-btn-release').addEventListener('click', () => {
-      const version = updateStatus.version ? String(updateStatus.version) : '';
-      const tag = version.startsWith('v') ? version : `v${version}`;
-      const url = updateStatus.releaseUrl || `https://github.com/CyberGems/CyberViewer/releases/tag/${tag}`;
-      if (window.electronAPI.openExternal) {
-        window.electronAPI.openExternal(url);
-      } else {
-        window.open(url, '_blank', 'noopener,noreferrer');
-      }
-    });
+    overlay.querySelector('#about-btn-update').addEventListener('click', window.checkUpdatesGlobal);
 
     // Copy diagnostic info (CyberFeeds pattern): snapshot versions + OS to
     // clipboard, then flash a check + "copied" tooltip for 1.8s
@@ -10276,29 +9896,14 @@ $('btn-go-end').addEventListener('click', (e) => {
       });
     }
 
-    if (unsubUpdateStatus) unsubUpdateStatus();
-    if (window.electronAPI.onUpdateStatus) {
-      unsubUpdateStatus = window.electronAPI.onUpdateStatus((status) => {
-        applyUpdateStatus(status);
-      });
-    }
-
-    syncUpdateActions(overlay);
+    syncAboutCheck();
     overlay.classList.add('active');
     refreshModalOpenFlag();
-    // One surface at a time: the popup hides while the About is open.
-    syncUpdatePopup(false);
   }
 
   function closeAbout() {
     overlay.classList.remove('active');
     refreshModalOpenFlag();
-    // The update may still be pending: the popup returns when the About closes.
-    syncUpdatePopup(false);
-    if (unsubUpdateStatus) {
-      unsubUpdateStatus();
-      unsubUpdateStatus = null;
-    }
   }
 
   overlay.addEventListener('click', e => { if (e.target === overlay) closeAbout(); });
@@ -10310,7 +9915,7 @@ $('btn-go-end').addEventListener('click', (e) => {
     titlebarUpdateBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      openAbout();
+      openUpdatePopup(e.currentTarget);
     });
   }
 })();
@@ -10649,10 +10254,7 @@ $('btn-config').addEventListener('click', openConfig);
       case 'help-donate':     openTitlebarHelpLink('donate'); break;
       case 'about':          $('btn-about').click(); break;
       case 'check-updates':
-        $('btn-about').click();
-        setTimeout(() => {
-          if (typeof window.checkUpdatesGlobal === 'function') window.checkUpdatesGlobal(true);
-        }, 80);
+        void window.openAbout?.().then(() => window.checkUpdatesGlobal?.());
         break;
       case 'quit':
         if (isElectron && window.electronAPI && window.electronAPI.close) window.electronAPI.close();
