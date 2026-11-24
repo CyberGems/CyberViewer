@@ -35,6 +35,13 @@ window.CVWorkspace = (() => {
 
   const text = key => (I18N[state.settings.app.language || 'en'] || I18N.en)[key];
   const edited = tab => tab.view.hasChanges || !tab.image.file.path;
+  function syncTitle() {
+    if (!isElectron) return;
+    const tab = model.active;
+    const name = tab?.image?.file?.name || '';
+    const title = name ? `CyberViewer · ${name}${edited(tab) ? '*' : ''}` : 'CyberViewer';
+    if (document.title !== title) document.title = title;
+  }
   const retained = image => model.tabs.some(tab => tab.image === image) || model.closed.some(tab => tab.image === image);
   function release(image) {
     if (retained(image)) return;
@@ -595,6 +602,7 @@ window.CVWorkspace = (() => {
   function render() {
     const bar = $('image-tabs');
     const list = $('image-tab-list');
+    syncTitle();
     if (!bar || !list) return;
     bar.hidden = !model.tabs.length;
     document.body.classList.toggle('has-image-tabs', !!model.tabs.length);
@@ -769,6 +777,7 @@ window.CVWorkspace = (() => {
     await image.draftPromise;
   }
   function changed() {
+    syncTitle();
     if (!ready || !isElectron || !state.settings.app.restoreSession) return;
     clearTimeout(sessionTimer);
     sessionTimer = setTimeout(() => void flush(), 400);
@@ -1114,6 +1123,6 @@ window.CVWorkspace = (() => {
   }
   return { model, get busy() { return busy; }, get ready() { return ready; }, capture, render,
     activate, openPath, openFiles, dropFiles, openYouTube, beforeShow, viewFor, restoreView, closeTabs, reopen,
-    contextMenu, barMenu, clearPreloads, release, changed, flush, settingsChanged, restore, edit, dialog,
+    contextMenu, barMenu, clearPreloads, release, changed, flush, settingsChanged, restore, edit, dialog, syncTitle,
     suspend, resume, imageBound, relocate, fileDeleted, initialize, isEditing, canSwitch, requestUpdateInstall };
 })();

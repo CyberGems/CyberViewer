@@ -822,7 +822,7 @@ if (titlebarFilenameBase && typeof ResizeObserver !== 'undefined') {
   new ResizeObserver(syncTitlebarFilenameTooltip).observe(titlebarFilenameBase);
 }
 
-/** Keep the window title and fullscreen banner in sync with the active image. */
+/** Keep the in-app title bar and fullscreen banner in sync with the active image. The native window title is handled by CVWorkspace.syncTitle(). */
 function syncFilenameDisplays(image = state.images[state.current]) {
   const viewerFilename = $('viewer-filename');
   const titlebarFilename = $('titlebar-filename');
