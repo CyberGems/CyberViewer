@@ -15,10 +15,15 @@ window.CVAudioWaveform = (() => {
   // Peak resolution kept per track. Well above the bar's pixel width, so
   // resizing the window never re-decodes the file.
   const BUCKETS = 1500;
-  // ~48 MB at 128 kb/s is roughly a 50-minute track. Past this the decode
-  // buffer and the extra peak pass stop being worth the wait.
-  const MAX_BYTES = 48 * 1024 * 1024;
-  const MAX_SECONDS = 40 * 60;
+  // Peak memory of a full decode is the Float32 PCM at 8 kHz, about 110 MB per
+  // hour, and it is released as soon as the 6 KB peak array exists. Above this
+  // cap the file is skipped: a three-hour audiobook would stall for a shape a
+  // few hundred pixels wide, and the plain bar stays perfectly usable.
+  //
+  // Decoding in byte ranges was measured and rejected: Chromium only accepts a
+  // mid-file slice for raw ADTS AAC. FLAC, Ogg/Opus and MP4 need their stream
+  // header, so chunking would work for one format out of five.
+  const MAX_DECODE_BYTES = 160 * 1024 * 1024;
   const MAX_CACHE = 8;
   const cache = new Map();
   let peaks = null;
@@ -139,10 +144,10 @@ window.CVAudioWaveform = (() => {
     if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
 
-  async function load(target, duration) {
+  async function load(target) {
     const current = ++token;
     started = true;
-    if (target.size > MAX_BYTES || duration > MAX_SECONDS) return;
+    if (target.size > MAX_DECODE_BYTES) return;
     const key = keyOf(target);
     let result = cache.get(key);
     if (!result) {
@@ -167,7 +172,7 @@ window.CVAudioWaveform = (() => {
   // The player calls this on every timeline sync, so decoding starts as soon as
   // the duration is known and never blocks the attach.
   function setProgress(current, duration) {
-    if (!started && file && duration > 0) void load(file, duration);
+    if (!started && file && duration > 0) void load(file);
     if (!ready) return;
     const next = duration > 0 ? current / duration : 0;
     if (Math.abs(next - progress) < .0005) return;
