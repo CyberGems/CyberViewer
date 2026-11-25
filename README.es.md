@@ -342,10 +342,10 @@ npm run build:portable   # solo portable
 Las builds instaladas (NSIS) usan **electron-updater** contra GitHub Releases:
 
 1. **Acerca de → Buscar actualizaciones** (o menú Ayuda)
-2. **Descargar actualización** cuando haya una versión más reciente
-3. **Instalar y reiniciar:** instalación silenciosa, sin asistente y relanzamiento automático
+2. Cuando hay una versión más reciente aparece un botón en la barra de título; ábrelo para leer las notas de la versión y elige **Actualizar ahora** o **Descargar en segundo plano**
+3. **Reiniciar para actualizar:** instalación silenciosa, sin asistente y relanzamiento automático
 
-La descarga y la instalación siempre las solicita el usuario. Con «Buscar actualizaciones al iniciar» activado (predeterminado), la app te avisa al arrancar que existe una actualización (toast + banner de Acerca de), pero no descargará hasta que se lo pidas.
+La descarga y la instalación siempre las solicita el usuario. Con **Avisos de actualización** activado en Configuración > Sistema (predeterminado), la app muestra el aviso de actualización por sí sola cuando una comprobación encuentra una versión nueva, pero no descargará hasta que se lo pidas.
 
 Las builds portables no pueden actualizarse dentro de la app; usa **Abrir página de releases**.
 

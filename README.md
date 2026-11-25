@@ -342,10 +342,10 @@ npm run build:portable   # portable only
 Installed (NSIS) builds use **electron-updater** against GitHub Releases:
 
 1. **About → Check for Updates** (or menu Help)
-2. **Download update** when a newer version is available
-3. **Install & restart:** silent install, no wizard, and automatic relaunch
+2. A button appears in the title bar when a newer version is available; open it to read the release notes and choose **Update now** or **Download in background**
+3. **Restart to update:** silent install, no wizard, and automatic relaunch
 
-Download/install is always user-requested. With "Check for updates on startup" enabled (default), the app notifies on startup that an update exists (toast + About banner), but will not download until you ask.
+Download/install is always user-requested. With **Update notifications** enabled in Settings > System (default), the app shows the update notice on its own when a check finds a new version, but will not download until you ask.
 
 Portable builds cannot self-update in-app; use **Open releases page**.
 
