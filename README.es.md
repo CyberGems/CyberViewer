@@ -25,7 +25,7 @@
 
 <div align="center">
 
-### Imágenes, video y audio en una sola ventana rápida, y los ajustes que necesitas sin salir de ella
+### Recorre imágenes, video y audio en una ventana rápida, con ajustes que no te hacen salir de ella.
 
 </div>
 
