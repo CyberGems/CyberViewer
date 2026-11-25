@@ -31,7 +31,19 @@ jobs:
       - run: npm install
       - name: Ensure FFmpeg
         shell: pwsh
-        run: if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) { choco install ffmpeg -y --no-progress }
+        run: |
+          # Chocolatey can exit 0 while installing nothing when its community
+          # feed hiccups ("Unable to find package 'ffmpeg'"). Retry, then fail
+          # here so a missing FFmpeg is reported as an environment problem
+          # instead of a confusing test failure.
+          for ($attempt = 1; $attempt -le 3; $attempt++) {
+            if (Get-Command ffmpeg -ErrorAction SilentlyContinue) { exit 0 }
+            choco install ffmpeg -y --no-progress
+            if (Get-Command ffmpeg -ErrorAction SilentlyContinue) { exit 0 }
+            Start-Sleep -Seconds 15
+          }
+          Write-Error 'FFmpeg is still unavailable after three install attempts; the video suite cannot run on this runner.'
+          exit 1
       - run: npm run test:video
       - name: Upload video test screenshots
         if: failure()
