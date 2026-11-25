@@ -70,6 +70,11 @@ describe('auto-backup pure logic', () => {
       customPath: '',
       lastBackupTime: 0
     });
+
+    // A block that exists without an explicit boolean keeps the default too,
+    // instead of silently disabling scheduled backups.
+    assert.equal(autoBackup.pickAutoBackupSettings({ frequency: 'weekly' }).enabled, true);
+    assert.equal(autoBackup.pickAutoBackupSettings({ enabled: false }).enabled, false);
   });
 
   it('formats backup filenames', () => {
