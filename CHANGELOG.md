@@ -2,6 +2,42 @@
 
 All notable changes to CyberViewer are documented here.
 
+## [1.24.0] - 2026-11-25
+
+### 🇺🇸 English
+
+- One update notice now owns the whole update flow: a floating card shows the release notes for your language, download progress with transferred and total size, background download, cancel, and restart to update. The title bar button opens it, the About dialog keeps a single check control, and the old duplicated banner, badge and toasts are gone.
+- Update notifications are exposed in Settings, and an automatic check respects that preference: with notices off, no card appears by itself, while a manual check from About always shows its result and keeps "up to date" visible.
+- "Remember state" is now reachable without opening Settings: a switch in the video More menu next to Autoplay on open, and a matching chip in the YouTube footer. Both mirror the live setting, so they never show stale state.
+- Returning to a media tab with playback retention off keeps the media paused. Autoplay now governs only genuinely new opens, so a tab you left paused is never resumed by switching back to it.
+- The window title shows the active file, with an asterisk while there are unsaved changes.
+- Title bar shortcuts follow the suite convention with one modifier, and Windows gestures are advertised instead of duplicated: Win+Up maximizes or restores, Win+Down minimizes or restores. Alt+F4 always quits, even when the X is set to minimize, hide or switch to the tray, and a lost Alt keyup after Alt+Tab no longer turns a later X click into a quit.
+- Local videos open faster: container audio probing waits until the first frame is on screen, and an open-timing diagnostic records metadata, first frame, position restore and ready milestones.
+- Fixed a tooltip card that wrapped its label mid-word and pushed itself past the window edge near the border.
+- The tray tooltip is capped at 63 characters with an ellipsis, matching what Windows displays.
+- Tab bar and title bar buttons share the flat whitish hover of the default theme; the gray and light themes keep their own close-button and accent families.
+- A settings block without an `enabled` property keeps scheduled backups on, as documented, instead of silently disabling them.
+- Privacy policy and AI disclosure ship in both languages, per app: no account, no telemetry, the exact online connections listed, and a statement that CyberViewer ships no AI features and makes no model calls at runtime.
+- README refinements: Electron 45 badges and stack notes, a GitHub Sponsors entry, and spaced crypto icons in the donation table.
+- Release tooling: winget markers are app-specific, the CI FFmpeg step retries and fails loudly when Chocolatey installs nothing, and two Windows-only path tests no longer fail on other platforms.
+
+### 🇪🇸 Español
+
+- Un solo aviso de actualización concentra ahora todo el flujo: una tarjeta flotante muestra las notas de la versión en tu idioma, el progreso de descarga con tamaño transferido y total, descarga en segundo plano, cancelación y reinicio para actualizar. El botón de la barra de título la abre, el diálogo Acerca de conserva un único control de comprobación y desaparecen el banner, la insignia y los toasts duplicados.
+- Los avisos de actualización se exponen en Ajustes y la comprobación automática respeta esa preferencia: con los avisos desactivados no aparece ninguna tarjeta por sí sola, mientras que una comprobación manual desde Acerca de siempre muestra su resultado y mantiene visible "actualizado".
+- "Recordar estado" queda accesible sin abrir Ajustes: un interruptor en el menú Más del video junto a Reproducir al abrir, y un chip equivalente en el pie de YouTube. Ambos reflejan el ajuste en vivo, así que nunca muestran estado obsoleto.
+- Volver a una pestaña de medios con la retención de reproducción desactivada mantiene el medio pausado. La reproducción automática pasa a regir solo aperturas nuevas, así que una pestaña que dejaste en pausa nunca se reanuda al regresar a ella.
+- El título de la ventana muestra el archivo activo, con un asterisco mientras haya cambios sin guardar.
+- Los atajos de la barra de título siguen la convención de la suite con un solo modificador, y los gestos de Windows se anuncian en lugar de duplicarse: Win+Arriba maximiza o restaura, Win+Abajo minimiza o restaura. Alt+F4 siempre sale, incluso con la X configurada para minimizar, ocultar o pasar a la bandeja, y una tecla Alt perdida tras Alt+Tab ya no convierte un clic posterior en la X en una salida.
+- Los videos locales abren más rápido: la detección de audio del contenedor espera a que el primer fotograma esté en pantalla, y un diagnóstico de tiempos de apertura registra los hitos de metadatos, primer fotograma, restauración de posición y listo.
+- Corregida una tarjeta de tooltip que partía su etiqueta a mitad de palabra y se salía del borde de la ventana cerca del límite.
+- El tooltip de la bandeja se limita a 63 caracteres con puntos suspensivos, igual que lo muestra Windows.
+- Los botones de la barra de pestañas y de la barra de título comparten el hover plano blanquecino del tema por defecto; los temas gris y claro conservan sus propias familias de botón de cierre y de acento.
+- Un bloque de ajustes sin la propiedad `enabled` mantiene activos los respaldos programados, como está documentado, en lugar de desactivarlos en silencio.
+- La política de privacidad y la divulgación de IA se publican en ambos idiomas, por app: sin cuenta, sin telemetría, con las conexiones en línea exactas enumeradas y la declaración de que CyberViewer no incluye funciones de IA ni hace llamadas a modelos en ejecución.
+- Refinamientos del README: insignias y notas de stack de Electron 45, una entrada de GitHub Sponsors y iconos de criptomonedas espaciados en la tabla de donaciones.
+- Herramientas de release: los marcadores de winget son específicos por app, el paso de FFmpeg en CI reintenta y falla de forma visible cuando Chocolatey no instala nada, y dos pruebas de rutas exclusivas de Windows ya no fallan en otras plataformas.
+
 ## [1.23.5] - 2026-11-19
 
 ### 🇺🇸 English
