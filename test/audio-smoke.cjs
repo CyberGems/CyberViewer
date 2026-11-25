@@ -79,7 +79,10 @@ async function waitFor(callback, label) {
 app.whenReady().then(async () => {
   let win;
   await waitFor(() => (win = BrowserWindow.getAllWindows().find(w => w.webContents.getURL().includes('CyberViewer.html'))), 'window');
-  const evaluate = body => win.webContents.executeJavaScript('(async()=>{' + body + '})()');
+  // userGesture: the visualizer only wires its AudioContext after real sticky
+  // activation, so a script without a gesture would never create the analyser
+  // and every animation assertion would fail for the wrong reason.
+  const evaluate = body => win.webContents.executeJavaScript('(async()=>{' + body + '})()', true);
   await waitFor(() => evaluate('return window.CVWorkspace?.ready;'), 'workspace');
   const errors = [];
   win.webContents.on('console-message', event => { if (event.level === 'error') errors.push(event.message); });
@@ -211,7 +214,7 @@ app.whenReady().then(async () => {
     await evaluate('await window.CVVideo.toggle();');
     await waitFor(() => evaluate('return window.CVVideo.element.currentTime > .15 && window.CVVideo.element.webkitAudioDecodedByteCount > 0;'), 'WAV audio decoded');
     const renderStats = {};
-    for (const mode of ['spectrum', 'waveform', 'radial', 'particles', 'aurora', 'tunnel', 'terrain', 'helix', 'grid', 'flares']) {
+    for (const mode of ['spectrum', 'waveform', 'envelope', 'radial', 'particles', 'aurora', 'tunnel', 'terrain', 'helix', 'grid', 'flares']) {
       await evaluate(`$('audio-visualizer').value='${mode}'; $('audio-visualizer').dispatchEvent(new Event('change'));`);
       await evaluate('window.__paintTimes=[];');
       await delay(180);
@@ -321,7 +324,7 @@ app.whenReady().then(async () => {
     await evaluate("closeModal('modal-properties');");
     await evaluate("$('video-mute').click(); $('video-loop').click(); window.CVVideo.setPlaybackRate(1.25);");
     assert.equal(await evaluate('return window.CVVideo.element.muted && window.CVVideo.element.loop && window.CVVideo.element.playbackRate===1.25;'), true);
-    console.log('PASS PCM WAV, five animated modes, smooth pause/end, 30 fps cap, hide/off and shared controls');
+    console.log('PASS PCM WAV, every animated mode, smooth pause/end, 30 fps cap, hide/off and shared controls');
     await open('Silence.mp3'); await ready();
     await evaluate('await window.CVVideo.toggle();');
     await waitFor(() => evaluate('return window.CVVideo.element.currentTime > .15 && window.CVVideo.element.webkitAudioDecodedByteCount > 0;'), 'MP3 decoder');

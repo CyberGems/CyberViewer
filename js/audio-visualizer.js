@@ -9,10 +9,14 @@ window.CVAudioVisuals = (() => {
   const ctx = canvas.getContext('2d', { alpha: false });
   const select = document.getElementById('audio-visualizer');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-  const styles = new Set(['spectrum', 'waveform', 'radial', 'particles', 'aurora',
+  const styles = new Set(['spectrum', 'waveform', 'envelope', 'radial', 'particles', 'aurora',
     'tunnel', 'terrain', 'helix', 'grid', 'flares', 'off']);
   const bands = new Float32Array(64);
   const peaks = new Float32Array(64);
+  // RMS per slice plus its held peak; both accumulate only while playing, so a
+  // paused canvas keeps the exact envelope it froze at.
+  const slices = new Float32Array(64);
+  const slicePeaks = new Float32Array(64);
   const wavePoints = new Float32Array(192);
   const stars = Array.from({ length: 64 }, (_, i) => ({
     angle: i * 2.399963, radius: 0.16 + (i % 17) / 21,
@@ -30,7 +34,12 @@ window.CVAudioVisuals = (() => {
   let frequencies = null, waveform = null;
   let frame = 0, lastPaint = 0, elapsed = 0, level = 0;
   let energy = 0, bass = 0, highs = 0, waveGain = 1, spin = 0, flow = 0;
+  let envelopeClock = 0;
+  // One envelope column every 1/24 s keeps the scroll time-accurate even when
+  // frames are dropped; 64 columns hold roughly the last 2.7 seconds.
+  const envelopeStep = 1 / 24;
   let palette = null, backdrop = null, barGradient = null, ribbonGradient = null;
+  let envelopeGradient = null;
   let auroraGradients = [];
   const tau = Math.PI * 2;
   // Fireworks launch sites: fixed positions, periods and particle angles keep
@@ -106,6 +115,13 @@ window.CVAudioVisuals = (() => {
     ribbonGradient.addColorStop(0, color(hue + 65, .08));
     ribbonGradient.addColorStop(.35, color(hue + 65, .7));
     ribbonGradient.addColorStop(.7, color(hue, .85)); ribbonGradient.addColorStop(1, color(hue, .05));
+    // Mirrored halves meet at the centre axis, so both read as one shape.
+    envelopeGradient = ctx.createLinearGradient(0, h * .09, 0, h * .73);
+    envelopeGradient.addColorStop(0, color(hue, .9, 72));
+    envelopeGradient.addColorStop(.42, color(hue, .78));
+    envelopeGradient.addColorStop(.5, color(hue + 20, .28, 88));
+    envelopeGradient.addColorStop(.58, color(hue, .78));
+    envelopeGradient.addColorStop(1, color(hue, .9, 72));
     auroraGradients = [0, 1, 2].map(i => {
       const gradient = ctx.createLinearGradient(0, h * .15, 0, h * .64);
       gradient.addColorStop(0, color(hue + i * 50, 0));
@@ -129,12 +145,45 @@ window.CVAudioVisuals = (() => {
 
   function sample(delta) {
     analyser.getByteFrequencyData(frequencies);
-    if (mode === 'waveform' || mode === 'helix') {
+    if (mode === 'waveform' || mode === 'helix' || mode === 'envelope') {
       analyser.getByteTimeDomainData(waveform);
-      if (mode === 'waveform') {
+      if (mode !== 'helix') {
         let amplitude = .015;
         for (let i = 0; i < waveform.length; i += 4) amplitude = Math.max(amplitude, Math.abs(waveform[i] - 128) / 128);
         waveGain += (Math.min(8, .35 / amplitude) - waveGain) * (1 - Math.exp(-delta / .15));
+      }
+    }
+    if (mode === 'envelope') {
+      const last = slices.length - 1;
+      // Body is RMS (perceived loudness), the silhouette is true peak: the
+      // pairing audio editors use. waveGain normalizes both to the frame.
+      let sum = 0, peak = 0;
+      for (let i = 0; i < waveform.length; i += 2) {
+        const value = (waveform[i] - 128) / 128;
+        sum += value * value;
+        peak = Math.max(peak, Math.abs(value));
+      }
+      const rms = Math.sqrt(sum / (waveform.length / 2));
+      const body = Math.min(1, rms * waveGain * 2.6);
+      const crest = Math.min(1, peak * waveGain * 2.4);
+      envelopeClock += delta;
+      while (envelopeClock >= envelopeStep) {
+        envelopeClock -= envelopeStep;
+        // Shift first, then write. Columns the history has not reached yet stay
+        // empty and grow in from the right, so the opening reads as a waveform
+        // building up instead of a uniform block.
+        slices.copyWithin(0, 1); slicePeaks.copyWithin(0, 1);
+        slices[last] = body; slicePeaks[last] = crest;
+      }
+      // Between steps the newest column keeps the loudest sample of its own
+      // window; it resets on the next shift, so nothing accumulates across
+      // columns the way a running maximum would.
+      slices[last] = Math.max(slices[last], body);
+      slicePeaks[last] = Math.max(slicePeaks[last], crest);
+      // Caps fall at a fixed rate instead of with the level, so transients
+      // leave a short readable trail behind the scrolling shape.
+      for (let i = 0; i < slices.length; i++) {
+        slicePeaks[i] = Math.max(slices[i], slicePeaks[i] - delta * .5);
       }
     }
     let sum = 0, low = 0, top = 0;
@@ -217,6 +266,48 @@ window.CVAudioVisuals = (() => {
     for (const x of [w * .1, w * .9]) {
       ctx.fillStyle = palette.white; ctx.beginPath(); ctx.arc(x, cy, unit * .003, 0, tau); ctx.fill();
     }
+  }
+
+  // A scrolling audio-envelope view: the classic editor waveform, full peak
+  // silhouette around a centre axis with the RMS body traced inside it.
+  function envelope(w, h, unit) {
+    const span = w * .8, step = span / (slices.length - 1), axis = h * .41;
+    const max = h * .3;
+    const xAt = i => w * .1 + i * step;
+    // The history enters at the right edge and scrolls left. While a track
+    // starts, the columns it has not reached hold zero and simply show the
+    // axis, so the shape visibly grows out of the right side.
+    ctx.fillStyle = palette.soft; ctx.fillRect(w * .1, axis, span, 1);
+    // A low glow pulses with the bass, grounding the shape to the mix.
+    ctx.fillStyle = color(palette.hue, .05 + bass * level * .22);
+    ctx.fillRect(w * .1, axis + unit * .004, span, unit * .008);
+    const top = i => axis - Math.min(1, slicePeaks[i] * level) * max;
+    const bottom = i => axis + Math.min(1, slicePeaks[i] * level) * max;
+    // One closed silhouette: up along the peaks, back along their mirror.
+    ctx.fillStyle = envelopeGradient; ctx.globalAlpha = .5 + level * .45;
+    ctx.beginPath();
+    ctx.moveTo(xAt(0), top(0));
+    for (let i = 1; i < slices.length; i++) ctx.lineTo(xAt(i), top(i));
+    for (let i = slices.length - 1; i >= 0; i--) ctx.lineTo(xAt(i), bottom(i));
+    ctx.closePath(); ctx.fill();
+    // The RMS body sits inside as a brighter, narrower band.
+    const rmsTop = i => axis - Math.min(1, slices[i] * level) * max * .82;
+    const rmsBottom = i => axis + Math.min(1, slices[i] * level) * max * .82;
+    ctx.fillStyle = color(palette.hue + 25, .55, 80);
+    ctx.globalAlpha = .35 + level * .5;
+    ctx.beginPath();
+    ctx.moveTo(xAt(0), rmsTop(0));
+    for (let i = 1; i < slices.length; i++) ctx.lineTo(xAt(i), rmsTop(i));
+    for (let i = slices.length - 1; i >= 0; i--) ctx.lineTo(xAt(i), rmsBottom(i));
+    ctx.closePath(); ctx.fill();
+    // Crisp crest and mirror lines keep the silhouette legible at a glance.
+    ctx.globalAlpha = .55 + level * .45;
+    line(slices.length, top, Math.max(1.5, unit * .0028), palette.white);
+    ctx.globalAlpha = .3 + level * .35;
+    line(slices.length, bottom, Math.max(1, unit * .002), palette.ink);
+    ctx.globalAlpha = .22 + level * .3;
+    line(slices.length, rmsTop, 1, color(palette.hue + 65, .85));
+    ctx.globalAlpha = 1;
   }
 
   function eclipse(w, h, unit) {
@@ -490,6 +581,7 @@ window.CVAudioVisuals = (() => {
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     if (mode === 'spectrum') spectrum(w, h, unit);
     else if (mode === 'waveform') ribbon(w, h, unit);
+    else if (mode === 'envelope') envelope(w, h, unit);
     else if (mode === 'radial') eclipse(w, h, unit);
     else if (mode === 'particles') constellation(w, h, unit);
     else if (mode === 'aurora') aurora(w, h, unit);
@@ -550,8 +642,9 @@ window.CVAudioVisuals = (() => {
 
   function attach(next) {
     stopFrames(); level = 0; elapsed = 0; energy = 0; bass = 0; highs = 0;
-    waveGain = 1; spin = 0; flow = 0;
+    waveGain = 1; spin = 0; flow = 0; envelopeClock = 0;
     bands.fill(0); peaks.fill(0); waveform?.fill(128);
+    slices.fill(0); slicePeaks.fill(0);
     image = next && window.CVFormats.isAudio(next) ? next : null;
     stage.hidden = !image;
     document.getElementById('audio-visualizer-row').hidden = !image;
