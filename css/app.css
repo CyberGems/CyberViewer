@@ -5149,8 +5149,9 @@
   .cfg-select-trigger[aria-expanded='true'] svg { transform: rotate(180deg); }
   .cfg-select-menu {
     position: fixed;
-    /* Above the player transport (12) and menus (20) when used outside a modal. */
-    z-index: 40;
+    /* Above every host surface that uses it: the config modal, the player
+       transport (12) and the player menu panel (999999). */
+    z-index: 1000001;
     width: max-content;
     max-width: min(320px, calc(100vw - 16px));
     max-height: min(260px, calc(100vh - 16px));

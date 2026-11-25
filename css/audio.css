@@ -4,7 +4,7 @@
   inset: 0;
   z-index: 2;
   overflow: hidden;
-  background: #040404;
+  background: #020202;
   pointer-events: none;
 }
 #audio-stage[hidden], #audio-canvas[hidden], #audio-visualizer-row[hidden] { display: none !important; }
@@ -66,8 +66,7 @@ body.audio-active.image-error #audio-stage { display: none; }
   cursor: pointer;
 }
 #audio-visualizer:focus-visible { outline: 2px solid var(--cyber-accent); outline-offset: 2px; }
-/* The styled trigger takes the row width in the player menu. */
-#audio-visualizer-row .cfg-select-shell { display: block; width: 100%; }
+#audio-visualizer-row .cfg-select-shell { display: block; flex: 1 1 auto; min-width: 0; }
 #audio-visualizer-row .cfg-select-trigger { width: 100%; }
 @media (max-height: 450px) {
   .audio-caption { bottom: 90px; }

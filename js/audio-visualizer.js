@@ -118,9 +118,9 @@ window.CVAudioVisuals = (() => {
     // grey ramp (R=G=B), so it carries no hue of its own and the accent lives
     // only in the shapes.
     backdrop = ctx.createRadialGradient(w * .5, h * .42, 0, w * .5, h * .42, unit * .78);
-    backdrop.addColorStop(0, '#0b0b0b');
-    backdrop.addColorStop(.55, '#080808');
-    backdrop.addColorStop(1, '#040404');
+    backdrop.addColorStop(0, '#070707');
+    backdrop.addColorStop(.55, '#050505');
+    backdrop.addColorStop(1, '#020202');
     barGradient = ctx.createLinearGradient(0, h * .19, 0, h * .61);
     barGradient.addColorStop(0, '#e9faff'); barGradient.addColorStop(.25, color(hue + 60));
     barGradient.addColorStop(.65, color(hue)); barGradient.addColorStop(1, color(hue, .15));
@@ -246,7 +246,7 @@ window.CVAudioVisuals = (() => {
       ctx.fillRect(x, baseline - unit * .006 - peaks[i] * level * h * .38 - 5, width, 2);
       ctx.globalAlpha = 1;
       // Dark crosscuts make these feel like stacked luminous cells.
-      ctx.fillStyle = '#040404';
+      ctx.fillStyle = '#020202';
       const segments = Math.min(22, Math.floor(bar / (unit * .015)));
       for (let j = 1; j <= segments; j++) ctx.fillRect(x, baseline - j * unit * .015, width, 1);
     }
@@ -590,7 +590,7 @@ window.CVAudioVisuals = (() => {
   function paint() {
     if (!palette) return;
     const w = canvas.width, h = canvas.height, unit = Math.min(w, h);
-    ctx.globalAlpha = 1; ctx.fillStyle = '#040404'; ctx.fillRect(0, 0, w, h);
+    ctx.globalAlpha = 1; ctx.fillStyle = '#020202'; ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = backdrop; ctx.fillRect(0, 0, w, h);
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     if (mode === 'spectrum') spectrum(w, h, unit);
