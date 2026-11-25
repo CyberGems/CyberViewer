@@ -16,7 +16,12 @@ const {
 const { clearThumbCache, evictThumbCache } = require('../lib/thumb-cache');
 
 describe('cleanFsPath', () => {
-  it('strips file:// and resolves', () => {
+  // cleanFsPath normalizes Windows paths: its file:// and cvlocal:// branches
+  // only strip the leading slash of /C:/... on win32 and then hand the string to
+  // the host path.resolve, so these two contracts are meaningful on Windows only.
+  const win32Only = { skip: process.platform === 'win32' ? false : 'requires win32 path semantics' };
+
+  it('strips file:// and resolves', win32Only, () => {
     const sample = path.resolve('C:\\Images\\photo.png');
     const url = 'file:///' + sample.replace(/\\/g, '/');
     const cleaned = cleanFsPath(url);
@@ -30,7 +35,7 @@ describe('cleanFsPath', () => {
     assert.equal(cleaned.toLowerCase(), sample.toLowerCase());
   });
 
-  it('recovers legacy drive-as-host form', () => {
+  it('recovers legacy drive-as-host form', win32Only, () => {
     const cleaned = cleanFsPath('cvlocal://c/Users/test/pic.png');
     assert.match(cleaned.toLowerCase(), /c:\\users\\test\\pic\.png$/);
   });
