@@ -42,10 +42,16 @@ window.CVAudioVisuals = (() => {
   let envelopeGradient = null;
   let auroraGradients = [];
   const tau = Math.PI * 2;
+  // Horizontal inset of every composition. The canvas spans the whole viewer;
+  // this keeps the drawn shapes off the very edge without shrinking them into
+  // the caption's narrow column, which the earlier 10% inset did by accident.
+  const inset = .04;
   // Fireworks launch sites: fixed positions, periods and particle angles keep
   // every burst a pure function of elapsed, so pauses stay perfectly static.
+  // Sites span the inset edges so the whole width carries bursts, not a
+  // centred cluster.
   const bursts = Array.from({ length: 6 }, (_, i) => ({
-    x: .2 + (i % 3) * .3, y: .2 + Math.floor(i / 3) * .23,
+    x: .1 + (i % 3) * .4, y: .2 + Math.floor(i / 3) * .23,
     period: 2.4 + (i % 3) * .55, offset: i * .19, bin: 5 + i * 9,
     angles: Array.from({ length: 22 }, (_, j) => j / 22 * tau + (i % 3 - 1) * .17 + (j % 4) * .05),
     reach: Array.from({ length: 22 }, (_, j) => .65 + ((j * 7 + i * 3) % 5) * .1)
@@ -111,7 +117,7 @@ window.CVAudioVisuals = (() => {
     barGradient = ctx.createLinearGradient(0, h * .19, 0, h * .61);
     barGradient.addColorStop(0, '#e9faff'); barGradient.addColorStop(.25, color(hue + 60));
     barGradient.addColorStop(.65, color(hue)); barGradient.addColorStop(1, color(hue, .15));
-    ribbonGradient = ctx.createLinearGradient(w * .1, 0, w * .9, 0);
+    ribbonGradient = ctx.createLinearGradient(w * inset, 0, w * (1 - inset), 0);
     ribbonGradient.addColorStop(0, color(hue + 65, .08));
     ribbonGradient.addColorStop(.35, color(hue + 65, .7));
     ribbonGradient.addColorStop(.7, color(hue, .85)); ribbonGradient.addColorStop(1, color(hue, .05));
@@ -205,19 +211,19 @@ window.CVAudioVisuals = (() => {
   function line(points, yFor, width, stroke) {
     ctx.strokeStyle = stroke; ctx.lineWidth = width; ctx.beginPath();
     for (let i = 0; i < points; i++) {
-      const x = canvas.width * (.1 + .8 * i / (points - 1)), y = yFor(i);
+      const x = canvas.width * (inset + (1 - inset * 2) * i / (points - 1)), y = yFor(i);
       if (!i) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
     ctx.stroke();
   }
 
   function spectrum(w, h, unit) {
-    const span = w * .8, step = span / bands.length, baseline = h * .6;
+    const span = w * (1 - inset * 2), step = span / bands.length, baseline = h * .6;
     // A gentle sway keeps the whole array breathing with the track's energy.
     const sway = Math.sin(elapsed * .7) * unit * .012 * (.25 + energy) * level;
-    ctx.fillStyle = palette.soft; ctx.fillRect(w * .1, baseline + 1, span, 1);
+    ctx.fillStyle = palette.soft; ctx.fillRect(w * inset, baseline + 1, span, 1);
     ctx.fillStyle = color(palette.hue, .08 + bass * level * .4);
-    ctx.fillRect(w * .1, baseline + 3, span, unit * .005);
+    ctx.fillRect(w * inset, baseline + 3, span, unit * .005);
     for (let i = 0; i < bands.length; i++) {
       const value = bands[i] * level, bar = unit * .006 + Math.pow(value, 1.3) * h * .38;
       const x = (w - span) / 2 + i * step + sway, width = Math.max(2, step * .64);
@@ -249,11 +255,11 @@ window.CVAudioVisuals = (() => {
     }
     ctx.fillStyle = ribbonGradient; ctx.beginPath();
     for (let i = 0; i < n; i++) {
-      const x = w * (.1 + .8 * i / (n - 1));
+      const x = w * (inset + (1 - inset * 2) * i / (n - 1));
       const y = cy + wavePoints[i] * h * .33;
       if (!i) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
-    for (let i = n - 1; i >= 0; i--) ctx.lineTo(w * (.1 + .8 * i / (n - 1)), cy - wavePoints[i] * h * .2);
+    for (let i = n - 1; i >= 0; i--) ctx.lineTo(w * (inset + (1 - inset * 2) * i / (n - 1)), cy - wavePoints[i] * h * .2);
     ctx.closePath(); ctx.fill();
     const top = i => cy + wavePoints[i] * h * .33;
     line(n, top, unit * .014, color(palette.hue, .08));
@@ -263,7 +269,7 @@ window.CVAudioVisuals = (() => {
     // Echo ghosts trail the crests so the ribbon reads as moving energy.
     line(n, i => cy + wavePoints[i] * h * .33 * .62 + unit * .012, 1, color(palette.hue + 20, .2 + level * .16));
     line(n, i => cy - wavePoints[i] * h * .2 * .5 - unit * .012, 1, color(palette.hue + 65, .14 + level * .12));
-    for (const x of [w * .1, w * .9]) {
+    for (const x of [w * inset, w * (1 - inset)]) {
       ctx.fillStyle = palette.white; ctx.beginPath(); ctx.arc(x, cy, unit * .003, 0, tau); ctx.fill();
     }
   }
@@ -271,16 +277,16 @@ window.CVAudioVisuals = (() => {
   // A scrolling audio-envelope view: the classic editor waveform, full peak
   // silhouette around a centre axis with the RMS body traced inside it.
   function envelope(w, h, unit) {
-    const span = w * .8, step = span / (slices.length - 1), axis = h * .41;
+    const span = w * (1 - inset * 2), step = span / (slices.length - 1), axis = h * .41;
     const max = h * .3;
-    const xAt = i => w * .1 + i * step;
+    const xAt = i => w * inset + i * step;
     // The history enters at the right edge and scrolls left. While a track
     // starts, the columns it has not reached hold zero and simply show the
     // axis, so the shape visibly grows out of the right side.
-    ctx.fillStyle = palette.soft; ctx.fillRect(w * .1, axis, span, 1);
+    ctx.fillStyle = palette.soft; ctx.fillRect(w * inset, axis, span, 1);
     // A low glow pulses with the bass, grounding the shape to the mix.
     ctx.fillStyle = color(palette.hue, .05 + bass * level * .22);
-    ctx.fillRect(w * .1, axis + unit * .004, span, unit * .008);
+    ctx.fillRect(w * inset, axis + unit * .004, span, unit * .008);
     const top = i => axis - Math.min(1, slicePeaks[i] * level) * max;
     const bottom = i => axis + Math.min(1, slicePeaks[i] * level) * max;
     // One closed silhouette: up along the peaks, back along their mirror.
@@ -405,11 +411,11 @@ window.CVAudioVisuals = (() => {
           + value * .11) * h * level;
       };
       ctx.fillStyle = auroraGradients[layer]; ctx.globalAlpha = .15 + level * .7;
-      ctx.beginPath(); ctx.moveTo(w * .1, cy - unit * .16 * level);
-      for (let i = 0; i < count; i++) ctx.lineTo(w * (.1 + .8 * i / (count - 1)), heightAt(i));
+      ctx.beginPath(); ctx.moveTo(w * inset, cy - unit * .16 * level);
+      for (let i = 0; i < count; i++) ctx.lineTo(w * (inset + (1 - inset * 2) * i / (count - 1)), heightAt(i));
       for (let i = count - 1; i >= 0; i--) {
         const edge = Math.sin(i / (count - 1) * Math.PI);
-        ctx.lineTo(w * (.1 + .8 * i / (count - 1)), heightAt(i) - unit * (.05 + energy * .2) * edge * level);
+        ctx.lineTo(w * (inset + (1 - inset * 2) * i / (count - 1)), heightAt(i) - unit * (.05 + energy * .2) * edge * level);
       }
       ctx.closePath(); ctx.fill();
       // Crests glow brighter when cymbals and highs carry the track.
@@ -449,7 +455,7 @@ window.CVAudioVisuals = (() => {
 
   // Layered ridges scroll at parallax speeds with the spectrum as skyline.
   function terrain(w, h, unit) {
-    const rows = 7, cols = 72, left = w * .08, span = w * .84, floor = h * .68;
+    const rows = 7, cols = 72, left = w * inset, span = w * (1 - inset * 2), floor = h * .68;
     for (let r = 0; r < rows; r++) {
       const depth = r / (rows - 1);
       const cy = h * (.32 + depth * .3);
@@ -477,7 +483,7 @@ window.CVAudioVisuals = (() => {
 
   // Twin strands rotate through each other, amplitude riding the waveform.
   function helix(w, h, unit) {
-    const n = 96, cy = h * .4, left = w * .08, span = w * .84;
+    const n = 96, cy = h * .4, left = w * inset, span = w * (1 - inset * 2);
     const amp = h * .15 * level;
     const sway = i => {
       const x = i / (n - 1);
@@ -511,11 +517,12 @@ window.CVAudioVisuals = (() => {
   function ledGrid(w, h, unit) {
     const rows = 8, gap = unit * .012;
     let cell = Math.min(unit * .34 / rows - gap, unit * .045);
-    // Square cells never stretch: wider windows get more columns (within the
-    // spectrum resolution) instead of wider cells.
-    let cols = Math.round((w * .9 + gap) / (cell + gap));
-    cols = Math.max(16, Math.min(40, cols));
-    cell = Math.min(cell, (w * .92 + gap) / cols - gap);
+    // Square cells never stretch: wider windows get more columns instead of
+    // wider cells. The cap is the spectrum resolution (64 bands), so a wide
+    // window fills its width with real data rather than leaving side margins.
+    let cols = Math.round((w * (1 - inset * 2) + gap) / (cell + gap));
+    cols = Math.max(16, Math.min(64, cols));
+    cell = Math.min(cell, (w * (1 - inset * 2) + gap) / cols - gap);
     const left = (w - (cols * (cell + gap) - gap)) / 2;
     const bottom = h * .56;
     ctx.fillStyle = palette.soft;
