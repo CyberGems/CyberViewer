@@ -153,9 +153,9 @@ window.CVVideo = (() => {
   function setMenu(open) {
     $('video-menu').hidden = !open;
     $('video-more').setAttribute('aria-expanded', String(open));
-    // Switch rows mirror the live settings, so the menu never shows stale
-    // state after a change from Config or another surface.
-    if (open) sync();
+    // The styled select floats in the body, so it must close with its menu.
+    if (!open) window.CVConfigSelects.close();
+    else sync();
     setSpeedPanel(false);
     reveal();
   }
@@ -599,7 +599,11 @@ window.CVVideo = (() => {
     let menuDismissClick = false;
     window.addEventListener('pointerdown', event => {
       keyboardFocus = false;
-      const overPopup = !!event.target.closest('#video-menu, #video-more, #video-speed, #video-speed-panel');
+      // The visualizer select lives inside the menu, but its popup is appended
+      // to the body, so a press on either belongs to the select, not to a
+      // dismissal of the player menu.
+      const overSelect = !!event.target.closest('.cfg-select-shell, .cfg-select-menu');
+      const overPopup = !!event.target.closest('#video-menu, #video-more, #video-speed, #video-speed-panel') || overSelect;
       menuDismissClick = (!$('video-menu').hidden || !$('video-speed-panel').hidden) && !overPopup;
       if (!overPopup) closeMenu();
     }, true);

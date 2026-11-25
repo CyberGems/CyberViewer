@@ -5119,9 +5119,9 @@
     border-color: var(--preview-accent);
     box-shadow: 0 0 10px rgba(var(--preview-accent-rgb), 0.35);
   }
-  #modal-config select.cfg-select.is-enhanced { display: none; }
-  #modal-config .cfg-select-shell { display: block; flex: 0 1 180px; min-width: 120px; max-width: 180px; }
-  #modal-config .cfg-select-trigger {
+  select.cfg-select.is-enhanced { display: none; }
+  
+  .cfg-select-trigger {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -5138,43 +5138,47 @@
     cursor: pointer;
     transition: background .15s, border-color .15s;
   }
-  #modal-config .cfg-select-trigger:hover,
-  #modal-config .cfg-select-trigger[aria-expanded='true'] {
-    border-color: rgba(var(--preview-accent-rgb), .55);
-    background: rgba(var(--preview-accent-rgb), .08);
+  .cfg-select-trigger:hover,
+  .cfg-select-trigger[aria-expanded='true'] {
+    border-color: rgba(var(--preview-accent-rgb, var(--cyber-accent-rgb)), .55);
+    background: rgba(var(--preview-accent-rgb, var(--cyber-accent-rgb)), .08);
   }
-  #modal-config .cfg-select-trigger:focus-visible { outline: 2px solid var(--preview-accent); outline-offset: 2px; }
-  #modal-config .cfg-select-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  #modal-config .cfg-select-trigger svg { width: 15px; height: 15px; flex: 0 0 15px; color: var(--preview-accent); transition: transform .15s; }
-  #modal-config .cfg-select-trigger[aria-expanded='true'] svg { transform: rotate(180deg); }
-  #modal-config .cfg-select-menu {
+  .cfg-select-trigger:focus-visible { outline: 2px solid var(--preview-accent, var(--cyber-accent)); outline-offset: 2px; }
+  .cfg-select-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cfg-select-trigger svg { width: 15px; height: 15px; flex: 0 0 15px; color: var(--preview-accent, var(--cyber-accent)); transition: transform .15s; }
+  .cfg-select-trigger[aria-expanded='true'] svg { transform: rotate(180deg); }
+  .cfg-select-menu {
     position: fixed;
-    z-index: 2;
+    /* Above the player transport (12) and menus (20) when used outside a modal. */
+    z-index: 40;
     width: max-content;
     max-width: min(320px, calc(100vw - 16px));
     max-height: min(260px, calc(100vh - 16px));
     overflow-y: auto;
     padding: 4px;
-    border: 1px solid rgba(var(--preview-accent-rgb), .42);
+    border: 1px solid rgba(var(--preview-accent-rgb, var(--cyber-accent-rgb)), .42);
     border-radius: 7px;
     background: var(--cyber-panel);
     box-shadow: 0 14px 30px rgba(0, 0, 0, .42);
   }
-  #modal-config .cfg-select-menu::-webkit-scrollbar { width: 6px; }
-  #modal-config .cfg-select-menu::-webkit-scrollbar-track { background: transparent; }
-  #modal-config .cfg-select-menu::-webkit-scrollbar-thumb { background: var(--cyber-dim); border-radius: 6px; }
-  #modal-config .cfg-select-menu::-webkit-scrollbar-button { display: none; }
-  #modal-config .cfg-select-option {
+  .cfg-select-menu::-webkit-scrollbar { width: 6px; }
+  .cfg-select-menu::-webkit-scrollbar-track { background: transparent; }
+  .cfg-select-menu::-webkit-scrollbar-thumb { background: var(--cyber-dim); border-radius: 6px; }
+  .cfg-select-menu::-webkit-scrollbar-button { display: none; }
+  .cfg-select-option {
     padding: 8px 10px;
     border-radius: 4px;
     color: var(--cyber-text);
     font: 500 12px/1.35 var(--font-ui);
     cursor: pointer;
   }
-  #modal-config .cfg-select-option[aria-selected='true'] { color: var(--preview-accent-ink, var(--cyber-accent-ink)); }
-  #modal-config .cfg-select-option:hover,
-  #modal-config .cfg-select-option.is-active { background: rgba(var(--preview-accent-rgb), .13); }
-  #modal-config .cfg-select-option[aria-disabled='true'] { opacity: .45; cursor: default; }
+  .cfg-select-option[aria-selected='true'] { color: var(--preview-accent-ink, var(--cyber-accent-ink)); }
+  .cfg-select-option:hover,
+  .cfg-select-option.is-active { background: rgba(var(--preview-accent-rgb, var(--cyber-accent-rgb)), .13); }
+  .cfg-select-option[aria-disabled='true'] { opacity: .45; cursor: default; }
+  /* Modal keeps its own column sizing for the trigger. */
+  #modal-config .cfg-select-shell { display: block; flex: 0 1 180px; min-width: 120px; max-width: 180px; }
+
   #modal-config .cfg-range {
     accent-color: var(--preview-accent);
   }

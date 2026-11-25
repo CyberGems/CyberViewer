@@ -1,10 +1,14 @@
 'use strict';
 
-// Theme-aware menus for Configuration. The original selects remain the source
-// of truth for settings, translations, and dynamically discovered monitors.
+// Theme-aware menus for Configuration and the player. The original selects stay
+// the source of truth for values, translations and dynamically discovered
+// monitors; this replaces only their popup with a styled menu.
 window.CVConfigSelects = (() => {
   const modal = document.getElementById('modal-config');
   let opened = null;
+
+  const rowLabel = select => select.closest('.config-row')?.querySelector('.config-name')?.textContent?.trim()
+    || select.getAttribute('aria-label') || '';
 
   function close(restoreFocus = false) {
     if (!opened) return;
@@ -21,14 +25,14 @@ window.CVConfigSelects = (() => {
     const trigger = select.parentElement?.querySelector('.cfg-select-trigger');
     if (!trigger) return;
     const value = select.selectedOptions[0]?.textContent?.trim() || '';
-    const label = select.closest('.config-row')?.querySelector('.config-name')?.textContent?.trim() || '';
+    const label = rowLabel(select);
     trigger.querySelector('.cfg-select-value').textContent = value;
     trigger.setAttribute('aria-label', label ? `${label}: ${value}` : value);
     trigger.disabled = select.disabled;
   }
 
   function syncAll() {
-    modal.querySelectorAll('select.cfg-select').forEach(sync);
+    document.querySelectorAll('select.cfg-select').forEach(sync);
     if (opened) open(opened.select, opened.trigger);
   }
 
@@ -52,7 +56,7 @@ window.CVConfigSelects = (() => {
     menu.className = 'cfg-select-menu';
     menu.id = 'cfg-select-listbox';
     menu.setAttribute('role', 'listbox');
-    menu.setAttribute('aria-label', select.closest('.config-row')?.querySelector('.config-name')?.textContent?.trim() || '');
+    menu.setAttribute('aria-label', rowLabel(select));
     const items = options.map((option, index) => {
       const item = document.createElement('div');
       item.className = 'cfg-select-option';
@@ -73,7 +77,9 @@ window.CVConfigSelects = (() => {
       menu.appendChild(item);
       return item;
     });
-    modal.appendChild(menu);
+    // Anchored to the body so the menu escapes overflow-clipped containers
+    // such as the player menu panel.
+    document.body.appendChild(menu);
     trigger.setAttribute('aria-controls', menu.id);
     trigger.setAttribute('aria-expanded', 'true');
     position(trigger, menu);
@@ -120,7 +126,10 @@ window.CVConfigSelects = (() => {
     }
   }
 
-  modal.querySelectorAll('select.cfg-select').forEach(select => {
+  // Give one select the styled trigger and popup. Safe to call more than once.
+  function enhance(select) {
+    if (!select || select.dataset.cfgEnhanced === 'true') return;
+    select.dataset.cfgEnhanced = 'true';
     const shell = document.createElement('span');
     shell.className = 'cfg-select-shell';
     select.before(shell);
@@ -140,13 +149,16 @@ window.CVConfigSelects = (() => {
     trigger.addEventListener('click', () => opened?.trigger === trigger ? close(true) : open(select, trigger));
     trigger.addEventListener('keydown', event => onKeydown(event, select, trigger));
     sync(select);
-  });
+  }
+
+  document.querySelectorAll('select.cfg-select').forEach(enhance);
+
   document.addEventListener('pointerdown', event => {
     if (opened && !opened.menu.contains(event.target) && !opened.trigger.contains(event.target)) close();
   });
-  modal.querySelector('.config-content').addEventListener('scroll', () => {
+  modal?.querySelector('.config-content')?.addEventListener('scroll', () => {
     if (opened) position(opened.trigger, opened.menu);
   }, { passive: true });
   window.addEventListener('resize', () => { if (opened) position(opened.trigger, opened.menu); });
-  return { close, sync: syncAll };
+  return { close, sync: syncAll, enhance };
 })();
