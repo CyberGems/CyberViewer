@@ -106,6 +106,7 @@ window.CVVideo = (() => {
     seek.value = String(current);
     seek.style.setProperty('--video-progress', `${duration ? current / duration * 100 : 0}%`);
     seek.setAttribute('aria-valuetext', $('video-time').textContent);
+    window.CVAudioWaveform.setProgress(current, duration);
     $('video-volume').value = String(element.volume);
     $('video-volume').style.setProperty('--video-progress', `${element.muted ? 0 : element.volume * 100}%`);
     syncSiblings();
@@ -220,6 +221,7 @@ window.CVVideo = (() => {
   function unload() {
     generation++;
     window.CVAudioVisuals.attach(null);
+    window.CVAudioWaveform.attach(null);
     clearTimeout(timeout);
     timeout = null;
     if (owner) owner.pausedOnTabReturn = element.paused;
@@ -271,6 +273,7 @@ window.CVVideo = (() => {
     audioStatus = image.audioProbe || 'pending';
     const audio = window.CVFormats.isAudio(image);
     window.CVAudioVisuals.attach(image);
+    window.CVAudioWaveform.attach(image);
     mainImg.onload = null; mainImg.onerror = null; mainImg.removeAttribute('src');
     mainImg.hidden = true;
     element.hidden = false;
@@ -580,6 +583,7 @@ window.CVVideo = (() => {
   }
   function initialize() {
     window.CVAudioVisuals.initialize(element);
+    window.CVAudioWaveform.initialize();
     const controls = $('video-controls');
     controls.addEventListener('focusin', reveal);
     controls.addEventListener('focusout', () => {

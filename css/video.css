@@ -55,6 +55,29 @@ body.ghost-mode #video-heading { display: block; }
 }
 .video-timeline, .video-actions, .video-sound { display: flex; align-items: center; }
 .video-timeline { margin: 0 5px 6px; }
+/* Full-track waveform sits behind the seek input, which keeps its own track,
+   thumb and pointer behaviour. Only audio displays it. */
+#audio-track-waveform { display: none; }
+body.audio-active #audio-track-waveform {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+body.audio-active.waveform-ready #audio-track-waveform { opacity: 1; }
+body.audio-active .video-timeline { height: 34px; }
+body.audio-active #video-seek { position: relative; z-index: 1; }
+/* With a waveform underneath, the native range would draw a hard progress line
+   over the shape. Audio keeps the input for its semantics and keyboard access,
+   but the track and thumb turn transparent and the waveform draws the position
+   itself. The element stays visible, so its focus ring still works. */
+body.audio-active.waveform-ready #video-seek::-webkit-slider-runnable-track { background: transparent; }
+body.audio-active.waveform-ready #video-seek::-webkit-slider-thumb { opacity: 0; }
+body.audio-active #video-seek:focus-visible { outline: 2px solid var(--cyber-accent); outline-offset: 3px; border-radius: 4px; }
 .video-actions { gap: 6px; min-height: 38px; }
 .video-sound { gap: 2px; margin-right: 12px; }
 .video-action-spacer { flex: 1; }

@@ -384,6 +384,7 @@
         <div id="video-heading"></div>
         <div class="video-transport">
           <div class="video-timeline">
+            <canvas id="audio-track-waveform" aria-hidden="true"></canvas>
             <input id="video-seek" type="range" min="0" max="1" step="0.1" value="0" data-i18n-aria="video_seek" disabled>
             <div id="video-seek-preview" hidden>
               <video id="video-preview" muted preload="metadata"></video>
@@ -1829,6 +1830,7 @@
 <script src="js/workspace.js"></script>
 <script src="js/video-player.js"></script>
 <script src="js/audio-visualizer.js"></script>
+<script src="js/audio-waveform.js"></script>
 <script src="js/youtube-player.js"></script>
 <script src="js/config-selects.js"></script>
 <script src="js/app.js"></script>

@@ -231,6 +231,29 @@ app.whenReady().then(async () => {
     const fps = await evaluate(`return (window.__analysisReads-${counter.reads})*1000/(performance.now()-${counter.time});`);
     assert.ok(fps > 10 && fps <= 32, 'Live analysis/drawing remains capped near 30 fps: ' + fps);
     assert.ok(await evaluate('return window.__audioPeak > 20;'), 'Analyser receives real audio, not CORS-muted silence');
+    // Full-track waveform under the seek bar: decoded once from the file, not
+    // the live analyser, so this check is independent of the styles above.
+    // It runs after the fps probe because reading a wide canvas costs track
+    // time, and the probe above is sensitive to how long the track keeps going.
+    await waitFor(() => evaluate('return document.body.classList.contains("waveform-ready");'), 'track waveform ready');
+    const wave = await evaluate(`const c=$('audio-track-waveform'), x=c.getContext('2d');
+      const d=x.getImageData(0,0,c.width,c.height).data, heights=[];
+      for(let px=0;px<c.width;px++){let top=-1,bottom=-1;
+        for(let py=0;py<c.height;py++){const i=(py*c.width+px)*4;
+          if(d[i+3]>10){if(top<0)top=py;bottom=py;}}
+        heights.push(top<0?0:bottom-top+1);}
+      return {width:c.width,height:c.height,lit:heights.filter(h=>h>0).length};`);
+    assert.ok(wave.width > 100 && wave.height > 4, 'track waveform canvas has real pixel size');
+    assert.ok(wave.lit > wave.width * .9, 'track waveform spans the whole seek bar: ' + wave.lit + '/' + wave.width);
+    const waveBefore = await evaluate("return $('audio-track-waveform').toDataURL();");
+    // A value far from the live position, so the repaint cannot be mistaken for
+    // the timeline's own sync. No pause here: later assertions measure the shape
+    // captured immediately before pausing, and pausing early would disturb them.
+    await evaluate('window.CVAudioWaveform.setProgress(.02, 12);');
+    await delay(120);
+    assert.notEqual(await evaluate("return $('audio-track-waveform').toDataURL();"), waveBefore,
+      'track waveform repaints its played portion');
+    console.log('PASS full-track waveform is decoded from the file and drawn across the seek bar');
     win.webContents.debugger.attach('1.3');
     await win.webContents.debugger.sendCommand('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
     await waitFor(() => evaluate('return matchMedia("(prefers-reduced-motion: reduce)").matches;'), 'reduced motion');
@@ -241,6 +264,11 @@ app.whenReady().then(async () => {
     win.webContents.debugger.detach();
     await delay(100);
     // Dialogs must never interrupt playback (openModal used to pause the media).
+    // The 12 s fixture can run out during the checks above (a completed track is
+    // paused with ended=true), so rewind and restart before measuring playback.
+    await evaluate(`const e=window.CVVideo.element;
+      if(e.ended || e.paused){ e.currentTime=1; await window.CVVideo.toggle(); }`);
+    await waitFor(() => evaluate('return !window.CVVideo.element.paused && !window.CVVideo.element.ended;'), 'playback restarted for the dialog check');
     await evaluate('$("btn-config").click();');
     assert.equal(await evaluate("return $('modal-config').classList.contains('active');"), true, 'Config dialog opens during playback');
     assert.equal(await evaluate('return !window.CVVideo.element.paused;'), true, 'Playback continues while the config dialog is open');
