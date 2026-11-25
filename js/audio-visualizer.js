@@ -112,8 +112,15 @@ window.CVAudioVisuals = (() => {
     palette.secondary = color(hue + 65); palette.white = '#e9faff';
     palette.stars = Array.from({ length: 3 }, (_, i) => color(hue + i * 42));
     const w = canvas.width, h = canvas.height, unit = Math.min(w, h);
-    backdrop = ctx.createRadialGradient(w * .5, h * .4, 0, w * .5, h * .4, unit * .72);
-    backdrop.addColorStop(0, color(hue, .1, 30)); backdrop.addColorStop(1, '#05090f');
+    // A near-black neutral field with a faint vignette. Earlier this was an
+    // accent wash at 10% lightness, which read as a coloured patch behind every
+    // shape and competed with the composition itself. The ground is now a pure
+    // grey ramp (R=G=B), so it carries no hue of its own and the accent lives
+    // only in the shapes.
+    backdrop = ctx.createRadialGradient(w * .5, h * .42, 0, w * .5, h * .42, unit * .78);
+    backdrop.addColorStop(0, '#0b0b0b');
+    backdrop.addColorStop(.55, '#080808');
+    backdrop.addColorStop(1, '#040404');
     barGradient = ctx.createLinearGradient(0, h * .19, 0, h * .61);
     barGradient.addColorStop(0, '#e9faff'); barGradient.addColorStop(.25, color(hue + 60));
     barGradient.addColorStop(.65, color(hue)); barGradient.addColorStop(1, color(hue, .15));
@@ -239,7 +246,7 @@ window.CVAudioVisuals = (() => {
       ctx.fillRect(x, baseline - unit * .006 - peaks[i] * level * h * .38 - 5, width, 2);
       ctx.globalAlpha = 1;
       // Dark crosscuts make these feel like stacked luminous cells.
-      ctx.fillStyle = '#05090f';
+      ctx.fillStyle = '#040404';
       const segments = Math.min(22, Math.floor(bar / (unit * .015)));
       for (let j = 1; j <= segments; j++) ctx.fillRect(x, baseline - j * unit * .015, width, 1);
     }
@@ -583,7 +590,7 @@ window.CVAudioVisuals = (() => {
   function paint() {
     if (!palette) return;
     const w = canvas.width, h = canvas.height, unit = Math.min(w, h);
-    ctx.globalAlpha = 1; ctx.fillStyle = '#05090f'; ctx.fillRect(0, 0, w, h);
+    ctx.globalAlpha = 1; ctx.fillStyle = '#040404'; ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = backdrop; ctx.fillRect(0, 0, w, h);
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     if (mode === 'spectrum') spectrum(w, h, unit);

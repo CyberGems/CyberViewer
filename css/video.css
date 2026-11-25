@@ -395,6 +395,10 @@ body.video-idle #video-overlay-flash { opacity: 0 !important; }
   pointer-events: none;
   z-index: 5;
 }
+/* Audio has no frame to preview: the hover chip carries the timestamp alone,
+   instead of an empty black box where a video frame would go. */
+body.audio-active #video-preview { display: none; }
+body.audio-active #video-seek-preview { bottom: calc(100% + 4px); }
 /* Visibility (not display) keeps the preview video's decoder pipeline alive:
    toggling display on every hover mounts/unmounts a second hardware decoder,
    which visibly churns the main video's compositor surface on GPU decode. */
@@ -408,9 +412,11 @@ body.video-idle #video-overlay-flash { opacity: 0 !important; }
   object-fit: cover;
   transition: opacity .08s ease;
 }
-/* High-quality sweeps hide the previous frame until the settled one is
-   decoded, so the same stale thumb does not follow the cursor across the bar. */
+/* Audio has no frame to preview: the hover chip carries the timestamp alone,
+   instead of an empty black box where a video frame would go. */
 #video-seek-preview.preview-pending #video-preview { opacity: 0; }
+/* The chip sits tight over the waveform, which has no thumbnail above it. */
+body.audio-active #video-seek-preview-time { margin-top: 0; }
 #video-seek-preview-time {
   margin-top: 4px;
   padding: 1px 7px;
