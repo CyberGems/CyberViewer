@@ -66,6 +66,29 @@ body.audio-active.image-error #audio-stage { display: none; }
   cursor: pointer;
 }
 #audio-visualizer:focus-visible { outline: 2px solid var(--cyber-accent); outline-offset: 2px; }
+/* Arrows flanking the styled picker: one click steps a style instead of
+   opening the full list. The styled shell keeps the remaining width. */
+.visualizer-picker { display: flex; align-items: center; gap: 6px; }
+.visualizer-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--cyber-border);
+  border-radius: 6px;
+  background: rgba(var(--cyber-tint-rgb), 0.04);
+  color: var(--cyber-text);
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.visualizer-arrow:hover { border-color: rgba(var(--cyber-accent-rgb), .55); background: rgba(var(--cyber-accent-rgb), .1); }
+.visualizer-arrow:focus-visible { outline: 2px solid var(--cyber-accent); outline-offset: 2px; }
+.visualizer-arrow:active { background: rgba(var(--cyber-accent-rgb), .18); }
+.visualizer-arrow svg { width: 15px; height: 15px; color: var(--cyber-accent); }
+/* The styled trigger takes the row width in the player menu. */
 #audio-visualizer-row .cfg-select-shell { display: block; flex: 1 1 auto; min-width: 0; }
 #audio-visualizer-row .cfg-select-trigger { width: 100%; }
 @media (max-height: 450px) {

@@ -675,6 +675,54 @@ window.CVAudioVisuals = (() => {
     catch (error) { console.error('Audio visualization failed:', error); }
     resize(); refresh();
   }
+  // Every style the picker can reach, in menu order. 'off' stays last so the
+  // cycle can step through the visual styles and land on it predictably.
+  const order = ['spectrum', 'waveform', 'envelope', 'radial', 'particles', 'aurora',
+    'tunnel', 'terrain', 'helix', 'grid', 'flares', 'off'];
+
+  // Single entry point for arrows and keyboard: they all drive the real select,
+  // so the value, the styled label, persistence and the change handler stay in
+  // one path instead of three that could drift apart.
+  function cycle(step) {
+    if (!image) return;
+    const index = order.indexOf(mode);
+    const from = index < 0 ? 0 : index;
+    const next = order[(from + step + order.length) % order.length];
+    if (next === mode) return;
+    select.value = next;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  // Arrows flanking the styled picker, so one click steps a style instead of
+  // opening the list. Built here because the select is moved into its shell.
+  function buildPicker() {
+    const shell = select.closest('.cfg-select-shell');
+    const row = document.getElementById('audio-visualizer-row');
+    if (!shell || !row) return;
+    const arrow = (direction, key) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'visualizer-arrow';
+      button.dataset.i18nAria = key;
+      button.setAttribute('aria-label', text(key));
+      button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+        + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'
+        + (direction < 0 ? 'm15 18-6-6 6-6' : 'm9 18 6-6-6-6') + '"/></svg>';
+      button.addEventListener('click', () => cycle(direction));
+      return button;
+    };
+    const wrap = document.createElement('div');
+    wrap.className = 'visualizer-picker';
+    shell.before(wrap);
+    wrap.append(arrow(-1, 'audio_visual_prev'), shell, arrow(1, 'audio_visual_next'));
+    // The shortcut is not visible anywhere else, so the picker advertises it.
+    const trigger = shell.querySelector('.cfg-select-trigger');
+    if (trigger && typeof window.setCyberTooltip === 'function') {
+      window.setCyberTooltip(trigger, text('audio_visualizer_hint'));
+      trigger.dataset.tooltipKbd = 'V';
+    }
+  }
+
   function initialize(element) {
     media = element; select.value = mode;
     select.addEventListener('change', () => {
@@ -682,11 +730,12 @@ window.CVAudioVisuals = (() => {
       try { localStorage.setItem('cv_audio_visualizer', mode); } catch (_) { /* optional */ }
       void updateMode();
     });
+    buildPicker();
     ['playing', 'pause', 'ended', 'emptied'].forEach(event => media.addEventListener(event, refresh));
     document.addEventListener('visibilitychange', () => { resize(); refresh(); });
     reducedMotion.addEventListener('change', () => { void updateMode(); });
     new ResizeObserver(resize).observe(stage);
     new MutationObserver(resize).observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'data-theme'] });
   }
-  return { initialize, attach, prepare, refresh, localize };
+  return { initialize, attach, prepare, refresh, localize, cycle };
 })();

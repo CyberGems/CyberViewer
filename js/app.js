@@ -6228,6 +6228,13 @@ document.addEventListener('keydown', e => {
     if (key === 'arrowleft' || key === 'arrowright') { e.preventDefault(); window.CVVideo.seekBy(key === 'arrowleft' ? -5 : 5); return; }
     if (key === 'm') { e.preventDefault(); if (!e.repeat) window.CVVideo.toggleMute(); return; }
     if (key === '>' || key === '<') { e.preventDefault(); if (!e.repeat) window.CVVideo.cyclePlaybackRate(key === '>' ? 1 : -1); return; }
+    // Step the audio visualizations without opening a menu. Audio only, where
+    // the target is unambiguous; Shift+V walks the list backwards.
+    if (key === 'v' && window.CVFormats.isAudio(state.images[state.current])) {
+      e.preventDefault();
+      if (!e.repeat) window.CVAudioVisuals.cycle(e.shiftKey ? -1 : 1);
+      return;
+    }
   }
 
   if (pendingRotation) {
