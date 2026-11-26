@@ -1183,12 +1183,11 @@
     overflow: hidden;
     white-space: nowrap;
     text-align: right;
+    /* Header text is informational, not a row: no hover colour and no pointer
+       cursor, so it never reads as clickable. pointer-events stays on so the
+       native title still reveals a truncated name. */
     pointer-events: auto;
     cursor: default;
-    transition: color 120ms ease;
-  }
-  .menu-header-sub:hover {
-    color: var(--cyber-text);
   }
   .menu-header-sub-prefix {
     flex: 0 0 auto;
@@ -1202,6 +1201,7 @@
     white-space: nowrap;
     flex: 0 1 auto;
   }
+
   .menu-header-sub-ext {
     flex: 0 0 auto;
     white-space: nowrap;
@@ -1209,9 +1209,6 @@
     font-weight: 600;
     letter-spacing: 0.02em;
     opacity: 0.85;
-  }
-  .menu-header-sub:hover .menu-header-sub-ext {
-    opacity: 1;
   }
 
   /* Color accents per context type */
@@ -2067,22 +2064,23 @@
   /* A name too long for the strip scrolls instead of being cut with an ellipsis,
      so the full file name stays readable. JS adds .is-marquee only when the text
      actually overflows, and the distance/duration are set inline. */
-  .thumb-item .thumb-name.is-marquee .thumb-name-text {
+  /* The scroll only runs while the card is hovered: a resting sidebar stays
+     still, and the name moves exactly when someone is pointing at it. The
+     animation is declared on the hover rule, so it starts from the first frame
+     instead of sitting paused off-screen. */
+  .thumb-item:hover .thumb-name.is-marquee .thumb-name-text {
     text-overflow: clip;
     overflow: visible;
     animation: thumb-marquee var(--marquee-duration, 6s) linear infinite;
-    animation-delay: 900ms;
     padding-right: 18px;
   }
-  /* Pause the scroll while the pointer rests on the card, so reading it is easy. */
-  .thumb-item:hover .thumb-name.is-marquee .thumb-name-text { animation-play-state: paused; }
   @keyframes thumb-marquee {
     0%, 12% { transform: translateX(0); }
     88%, 100% { transform: translateX(var(--marquee-distance, -50%)); }
   }
   @media (prefers-reduced-motion: reduce) {
     /* Reduced motion keeps the ellipsis; no scrolling text. */
-    .thumb-item .thumb-name.is-marquee .thumb-name-text {
+    .thumb-item:hover .thumb-name.is-marquee .thumb-name-text {
       animation: none;
       overflow: hidden;
       text-overflow: ellipsis;

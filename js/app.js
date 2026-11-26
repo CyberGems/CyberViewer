@@ -2138,9 +2138,18 @@ function buildMenuTemplate(type, data) {
         shortcut: 'Space', action: () => void window.CVVideo.toggle() }] : []),
       { label: getTxt('tabs_open_new'), action: () => openImagePath(filePath) },
       { label: getTxt('menu_show'), action: () => window.electronAPI.showItemInFolder(filePath) },
-      { label: getTxt('menu_copy_path'), action: () => navigator.clipboard.writeText(filePath) },
+      // Media cards copy the file path, not an image path.
+      { label: getTxt('menu_copy_file_path'), action: () => navigator.clipboard.writeText(filePath) },
       { label: getTxt('menu_props'), action: async () => { await openImagePath(filePath); await state.mainImageReady; showPropertiesPanel(filePath); } },
       { label: getTxt((state.settings.app.favorites || []).includes(filePath) ? 'favorite_remove' : 'favorite_add'), action: () => toggleFavoritePath(filePath) },
+      // The playable branch returns before the shared thumbnail block, so the
+      // card-size toggle is repeated here for audio and video cards.
+      ...(type === 'thumb' ? [{
+        label: getTxt('menu_compact_cards'),
+        type: 'checkbox',
+        checked: state.settings.app.compactSidebarCards === true,
+        action: () => setCompactSidebarCards(state.settings.app.compactSidebarCards !== true)
+      }] : []),
       { type: 'separator' },
       { label: getTxt('menu_trash'), danger: true, action: () => executeAction({ action: 'request-delete', index: data.index ?? state.current, path: filePath }) }
     ];

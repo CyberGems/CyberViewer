@@ -63,6 +63,13 @@ if (!fs.existsSync(path.join(dataDir, names[0]))) {
     const image = nativeImage.createFromBitmap(bitmap, { width: 240, height: 160 });
     fs.writeFileSync(path.join(dataDir, name), image.toPNG());
   });
+  // A short silent MP3, so the sidebar also holds a card from the playable
+  // branch (audio and video return their own menu before the shared thumb one).
+  // Valid MPEG-1 Layer III frames keep the metadata reader and the decoder
+  // happy; only the card and its menu are exercised here.
+  const silentFrame = Buffer.alloc(417);
+  silentFrame.set([0xff, 0xfb, 0x90, 0x00]);
+  fs.writeFileSync(path.join(dataDir, 'Track.mp3'), Buffer.concat(Array(60).fill(silentFrame)));
 }
 
 require('../main');
@@ -135,38 +142,40 @@ app.whenReady().then(async () => {
     });
   `);
   console.log('captions: ' + JSON.stringify(captions, null, 2));
-  assert.equal(captions.length, 3, 'three cards rendered');
+  assert.equal(captions.length, 4, 'three images plus one audio card rendered');
+  assert.ok(captions.some(c => c.name === 'Track'), 'the audio card is among them');
 
   const long = captions.find(c => c.name.startsWith('A rather long'));
   const short = captions.find(c => c.name === 'Short');
+  const audio = captions.find(c => c.name === 'Track');
   assert.ok(long, 'long caption card present');
   assert.ok(short, 'short caption card present');
   assert.ok(long.stripWidth > 0, 'caption strip has a measurable width');
-  assert.equal(long.marquee, true, 'an overflowing name scrolls');
+  assert.equal(long.marquee, true, 'an overflowing name is marked to scroll');
   assert.match(long.distance, /^-\d+px$/, 'scroll distance is set in pixels');
   assert.match(long.duration, /^\d+s$/, 'scroll duration is set');
   assert.ok(parseInt(long.distance, 10) < 0, 'distance moves the text leftwards');
   assert.equal(short.marquee, false, 'a name that fits does not scroll');
   assert.equal(short.distance, '', 'a name that fits has no scroll distance');
 
-  // The style must really animate: sample the transform matrix twice.
-  // Keyframes hold at 0 during the first 12% of the 10s cycle, so the samples
-  // start after that hold instead of reading two identical zero positions.
-  const motion = await evaluate(`
-    const text = document.querySelector('#sidebar .thumb-item .thumb-name-text');
+  // At rest the caption must not move: the overflow is recorded, but no
+  // animation runs until the pointer is over the card.
+  const resting = await evaluate(`
+    const item = document.querySelector('#sidebar .thumb-item');
+    const text = item.querySelector('.thumb-name-text');
     const read = () => new DOMMatrixReadOnly(getComputedStyle(text).transform).m41;
-    await new Promise(r => setTimeout(r, 1700));
     const first = read();
     await new Promise(r => setTimeout(r, 900));
-    return { first, second: read(), animation: getComputedStyle(text).animationName };
+    return { first, second: read(), animation: getComputedStyle(text).animationName,
+             hovering: item.matches(':hover') };
   `);
-  console.log('marquee motion: ' + JSON.stringify(motion));
-  assert.equal(motion.animation, 'thumb-marquee', 'the caption runs the marquee animation');
-  assert.ok(motion.first < 0, 'the caption shifts left as the animation advances: ' + motion.first);
-  assert.ok(motion.second < motion.first, 'the caption keeps moving between samples: ' + motion.second);
+  console.log('resting: ' + JSON.stringify(resting));
+  assert.equal(resting.hovering, false, 'no pointer on the card at rest');
+  assert.equal(resting.animation, 'none', 'a resting caption runs no animation');
+  assert.equal(resting.first, resting.second, 'a resting caption does not move');
 
-  // Hover must pause the animation instead of restarting it. :hover only
-  // reacts to real input, so this moves the OS cursor through the webContents.
+  // On hover the animation starts and advances. :hover only reacts to real
+  // input, so this moves the OS cursor through the webContents.
   const cardPoint = await evaluate(`
     const item = document.querySelector('#sidebar .thumb-item');
     const rect = item.getBoundingClientRect();
@@ -180,13 +189,33 @@ app.whenReady().then(async () => {
   const hover = await evaluate(`
     const item = document.querySelector('#sidebar .thumb-item');
     const text = item.querySelector('.thumb-name-text');
-    return { hovering: item.matches(':hover'), state: getComputedStyle(text).animationPlayState };
+    const read = () => new DOMMatrixReadOnly(getComputedStyle(text).transform).m41;
+    // The keyframes hold at 0 for the first 12% of the cycle (1.2s of the 10s
+    // scroll), so the samples are taken once the movement has begun.
+    await new Promise(r => setTimeout(r, 2400));
+    const first = read();
+    await new Promise(r => setTimeout(r, 1000));
+    return { hovering: item.matches(':hover'), animation: getComputedStyle(text).animationName,
+             state: getComputedStyle(text).animationPlayState, first, second: read() };
   `);
   console.log('hover: ' + JSON.stringify(hover));
   assert.equal(hover.hovering, true, 'the cursor is over the card');
-  assert.equal(hover.state, 'paused', 'hovering pauses the marquee');
+  assert.equal(hover.animation, 'thumb-marquee', 'hovering starts the marquee');
+  assert.equal(hover.state, 'running', 'the hovered marquee is running, not paused');
+  assert.ok(hover.first < 0, 'the hovered caption has begun to shift: ' + hover.first);
+  assert.ok(hover.second < hover.first, 'the hovered caption keeps moving: ' + hover.second);
   // Move away so the next checks see the resting state.
   win.webContents.sendInputEvent({ type: 'mouseMove', x: cardPoint.x, y: 700 });
+  await delay(200);
+  const afterLeave = await evaluate(`
+    const text = document.querySelector('#sidebar .thumb-item .thumb-name-text');
+    return { animation: getComputedStyle(text).animationName,
+             transform: getComputedStyle(text).transform };
+  `);
+  console.log('after leave: ' + JSON.stringify(afterLeave));
+  assert.equal(afterLeave.animation, 'none', 'leaving the card stops the marquee');
+  assert.ok(afterLeave.transform === 'none' || /^matrix\(1, 0, 0, 1, 0, 0\)$/.test(afterLeave.transform),
+    'the caption returns to its resting position: ' + afterLeave.transform);
 
   // ── Compact cards: shorter cards, captions hidden until hover ──
   const before = await evaluate(`
@@ -236,8 +265,12 @@ app.whenReady().then(async () => {
   `);
   win.webContents.sendInputEvent({ type: 'mouseMove', x: compactPoint.x, y: compactPoint.y });
   win.webContents.sendInputEvent({ type: 'mouseMove', x: compactPoint.x + 1, y: compactPoint.y + 1 });
-  // The index offset animates with the card's 200ms transition.
-  await delay(320);
+  // The card, the revealed strip and the index all animate for 200ms, so wait
+  // for the index to actually land instead of guessing a delay.
+  await waitFor(() => evaluate(`
+    const idx = document.querySelector('#sidebar .thumb-item .thumb-idx');
+    return Math.abs(parseFloat(getComputedStyle(idx).bottom) - 23) < 1;
+  `), 'index steps above the revealed caption');
   const revealed = await evaluate(`
     const item = document.querySelector('#sidebar .thumb-item');
     const strip = item.querySelector('.thumb-name');
@@ -245,6 +278,7 @@ app.whenReady().then(async () => {
              display: getComputedStyle(strip).display,
              text: strip.textContent,
              marquee: strip.classList.contains('is-marquee'),
+             animation: getComputedStyle(strip.querySelector('.thumb-name-text')).animationName,
              distance: strip.querySelector('.thumb-name-text').style.getPropertyValue('--marquee-distance'),
              idxBottom: getComputedStyle(item.querySelector('.thumb-idx')).bottom,
              height: item.offsetHeight };
@@ -254,6 +288,7 @@ app.whenReady().then(async () => {
   assert.equal(revealed.display, 'flex', 'hovering a compact card reveals its caption');
   assert.ok(revealed.text.length > 0, 'the revealed caption carries the file name');
   assert.equal(revealed.marquee, true, 'the revealed caption scrolls when it does not fit: ' + revealed.distance);
+  assert.equal(revealed.animation, 'thumb-marquee', 'the revealed caption animates while hovered');
   assert.ok(Math.abs(parseFloat(revealed.idxBottom) - 23) < 1, 'the index steps above the revealed caption: ' + revealed.idxBottom);
   assert.equal(revealed.height, 64, 'revealing the caption does not resize the card');
   win.webContents.sendInputEvent({ type: 'mouseMove', x: compactPoint.x, y: 760 });
@@ -292,6 +327,59 @@ app.whenReady().then(async () => {
   assert.equal(menuOff.compact, false, 'the menu entry turns compact mode off');
   assert.equal(menuOff.saved, false, 'the setting is persisted from the menu');
   assert.equal(menuOff.box, false, 'the Settings switch stays in sync');
+
+  // ── The header filename must not react to the pointer ──
+  const headerPoint = await evaluate(`
+    const item = document.querySelector('#sidebar .thumb-item');
+    const rect = item.getBoundingClientRect();
+    item.dispatchEvent(new MouseEvent('contextmenu', {
+      bubbles: true, cancelable: true, clientX: rect.left + 20, clientY: rect.top + 20
+    }));
+    await new Promise(r => setTimeout(r, 60));
+    const sub = document.querySelector('#custom-ctx-menu .menu-header-sub');
+    if (!sub) return null;
+    const box = sub.getBoundingClientRect();
+    return { x: Math.round(box.left + box.width / 2), y: Math.round(box.top + box.height / 2),
+             color: getComputedStyle(sub).color, cursor: getComputedStyle(sub).cursor };
+  `);
+  assert.ok(headerPoint, 'the thumbnail menu header shows the file name');
+  assert.equal(headerPoint.cursor, 'default', 'the header keeps the default cursor');
+  win.webContents.sendInputEvent({ type: 'mouseMove', x: headerPoint.x, y: headerPoint.y });
+  win.webContents.sendInputEvent({ type: 'mouseMove', x: headerPoint.x + 1, y: headerPoint.y + 1 });
+  await delay(250);
+  const headerHover = await evaluate(`
+    const sub = document.querySelector('#custom-ctx-menu .menu-header-sub');
+    return { hovering: sub.matches(':hover'), color: getComputedStyle(sub).color };
+  `);
+  console.log('header: ' + JSON.stringify({ ...headerPoint, ...headerHover }));
+  assert.equal(headerHover.hovering, true, 'the cursor is over the header text');
+  assert.equal(headerHover.color, headerPoint.color,
+    'the header keeps its colour on hover, so it never reads as clickable');
+
+  // ── Audio cards get the same toggle and a file-path label ──
+  await evaluate('hideCustomContextMenu();');
+  const audioCard = await evaluate(`
+    const card = [...document.querySelectorAll('#sidebar .thumb-item')]
+      .find(item => (item.querySelector('.thumb-name')?.textContent || '') === 'Track');
+    if (!card) return null;
+    const rect = card.getBoundingClientRect();
+    card.dispatchEvent(new MouseEvent('contextmenu', {
+      bubbles: true, cancelable: true, clientX: rect.left + 20, clientY: rect.top + 20
+    }));
+    await new Promise(r => setTimeout(r, 80));
+    const buttons = [...document.querySelectorAll('#custom-ctx-menu .menu-item')];
+    const labels = buttons.map(b => (b.textContent || '').trim()).filter(Boolean);
+    return { labels,
+             compact: labels.some(l => l.includes('Compact cards')),
+             hasFileLabel: labels.some(l => l.includes('Copy File Path')),
+             hasImageLabel: labels.some(l => l.includes('Copy Image Path')) };
+  `);
+  console.log('audio menu: ' + JSON.stringify(audioCard));
+  assert.ok(audioCard, 'the audio card is in the sidebar');
+  assert.equal(audioCard.compact, true, 'an audio card menu lists the compact toggle');
+  assert.equal(audioCard.hasFileLabel, true, 'the audio card copies a file path');
+  assert.equal(audioCard.hasImageLabel, false, 'the audio card no longer mentions an image path');
+  await evaluate('hideCustomContextMenu();');
 
   // ── Every theme keeps the compact card and its revealed caption readable ──
   const themes = ['cyberviewer', 'gray', 'light'];
@@ -375,6 +463,26 @@ app.whenReady().then(async () => {
   await capture('sidebar-normal.png');
   await evaluate('document.body.classList.add("compact-thumbs"); scheduleMarqueeMeasure();');
   await capture('sidebar-compact.png');
+
+  // A capture of the audio card menu itself, so the label, the size toggle and
+  // the header styling can be checked by eye, not only through assertions.
+  const menuShot = await evaluate(`
+    const card = [...document.querySelectorAll('#sidebar .thumb-item')]
+      .find(item => (item.querySelector('.thumb-name')?.textContent || '') === 'Track');
+    const rect = card.getBoundingClientRect();
+    card.dispatchEvent(new MouseEvent('contextmenu', {
+      bubbles: true, cancelable: true, clientX: rect.left + 20, clientY: rect.top + 20
+    }));
+    await new Promise(r => setTimeout(r, 120));
+    const menu = document.getElementById('custom-ctx-menu').getBoundingClientRect();
+    return { x: Math.round(menu.left), y: Math.round(menu.top),
+             width: Math.round(menu.width), height: Math.round(menu.height) };
+  `);
+  await delay(200);
+  fs.writeFileSync(path.join(dataDir, 'audio-card-menu.png'),
+    (await win.webContents.capturePage(menuShot)).toPNG());
+  console.log('Screenshot: ' + path.join(dataDir, 'audio-card-menu.png'));
+  await evaluate('hideCustomContextMenu();');
 
   console.log('PASS sidebar captions, marquee, compact mode, menu and themes');
   app.quit();
