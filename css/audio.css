@@ -10,6 +10,40 @@
 #audio-stage[hidden], #audio-canvas[hidden], #audio-visualizer-row[hidden] { display: none !important; }
 #props-duration-row[hidden] { display: none; }
 #audio-canvas { display: block; width: 100%; height: 100%; }
+/* Style-name flash shown after stepping the visualizations. It sits above the
+   canvas but never takes pointer input, and fades through a CSS animation so
+   the canvas itself keeps its "paused means frozen" guarantee. */
+#audio-visual-flash {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 7px 16px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, .58);
+  color: #f2f8ff;
+  font: 600 14px var(--font-ui);
+  letter-spacing: .2px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+}
+#audio-visual-flash.is-visible {
+  visibility: visible;
+  animation: audio-flash 1150ms ease forwards;
+}
+@keyframes audio-flash {
+  0% { opacity: 0; }
+  12% { opacity: .95; }
+  70% { opacity: .95; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Reduced motion keeps the message but skips the fade; the timer still
+     hides it, so it never lingers. */
+  #audio-visual-flash.is-visible { animation: none; opacity: .95; }
+}
 .audio-caption {
   position: absolute;
   left: 6%; right: 6%; bottom: 112px;
@@ -67,15 +101,20 @@ body.audio-active.image-error #audio-stage { display: none; }
 }
 #audio-visualizer:focus-visible { outline: 2px solid var(--cyber-accent); outline-offset: 2px; }
 /* Arrows flanking the styled picker: one click steps a style instead of
-   opening the full list. The styled shell keeps the remaining width. */
+   opening the full list. The styled shell keeps the remaining width.
+   Scoped under the player menu so these small square buttons outrank the
+   menu's generic button rule (#video-menu button), which would otherwise
+   force its height, padding and left-aligned icon onto them. */
 .visualizer-picker { display: flex; align-items: center; gap: 6px; }
-.visualizer-arrow {
-  display: flex;
+#video-menu .visualizer-arrow {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 30px;
+  flex: 0 0 auto;
   width: 30px;
+  min-width: 30px;
   height: 34px;
+  min-height: 0;
   padding: 0;
   border: 1px solid var(--cyber-border);
   border-radius: 6px;
@@ -84,13 +123,13 @@ body.audio-active.image-error #audio-stage { display: none; }
   cursor: pointer;
   transition: background .15s, border-color .15s;
 }
-.visualizer-arrow:hover { border-color: rgba(var(--cyber-accent-rgb), .55); background: rgba(var(--cyber-accent-rgb), .1); }
-.visualizer-arrow:focus-visible { outline: 2px solid var(--cyber-accent); outline-offset: 2px; }
-.visualizer-arrow:active { background: rgba(var(--cyber-accent-rgb), .18); }
-.visualizer-arrow svg { width: 15px; height: 15px; color: var(--cyber-accent); }
+#video-menu .visualizer-arrow:hover { border-color: rgba(var(--cyber-accent-rgb), .55); background: rgba(var(--cyber-accent-rgb), .1); }
+#video-menu .visualizer-arrow:focus-visible { outline: 2px solid var(--cyber-accent); outline-offset: 2px; }
+#video-menu .visualizer-arrow:active { background: rgba(var(--cyber-accent-rgb), .18); }
+#video-menu .visualizer-arrow svg { width: 15px; height: 15px; flex: 0 0 15px; color: var(--cyber-accent); }
 /* The styled trigger takes the row width in the player menu. */
 #audio-visualizer-row .cfg-select-shell { display: block; flex: 1 1 auto; min-width: 0; }
-#audio-visualizer-row .cfg-select-trigger { width: 100%; }
+#audio-visualizer-row .cfg-select-trigger { width: 100%; padding-left: 9px; padding-right: 8px; }
 @media (max-height: 450px) {
   .audio-caption { bottom: 90px; }
   #audio-name { margin: 0 0 4px; font-size: 14px; }

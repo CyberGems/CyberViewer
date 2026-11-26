@@ -35,6 +35,11 @@ window.CVAudioVisuals = (() => {
   let frame = 0, lastPaint = 0, elapsed = 0, level = 0;
   let energy = 0, bass = 0, highs = 0, waveGain = 1, spin = 0, flow = 0;
   let envelopeClock = 0;
+  // Style-name flash shown after stepping with the arrows or the keyboard. It
+  // is a DOM layer over the canvas, so painting stays free of UI state.
+  const flash = document.getElementById('audio-visual-flash');
+  let flashTimer = 0;
+  const flashMs = 1150;
   // One envelope column every 1/24 s keeps the scroll time-accurate even when
   // frames are dropped; 64 columns hold roughly the last 2.7 seconds.
   const envelopeStep = 1 / 24;
@@ -607,6 +612,24 @@ window.CVAudioVisuals = (() => {
     ctx.globalAlpha = 1;
   }
 
+  // A brief style name over the composition, so stepping with the arrows or V
+  // confirms itself without looking at the menu. It lives in its own DOM layer
+  // instead of the canvas: the canvas stays a pure function of the audio state,
+  // so the "paused means a frozen frame" invariant is untouched, and the label
+  // can still fade while paused.
+  function flashName(next) {
+    flash.textContent = text(next === 'off' ? 'audio_effects_off' : 'audio_' + next);
+    flash.classList.remove('is-visible');
+    // Restart the CSS animation on every step, even when it is already showing.
+    void flash.offsetWidth;
+    flash.classList.add('is-visible');
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => {
+      flashTimer = 0;
+      flash.classList.remove('is-visible');
+    }, flashMs);
+  }
+
   function stopFrames() { cancelAnimationFrame(frame); frame = 0; }
   function tick(now) {
     frame = 0;
@@ -657,6 +680,7 @@ window.CVAudioVisuals = (() => {
   function attach(next) {
     stopFrames(); level = 0; elapsed = 0; energy = 0; bass = 0; highs = 0;
     waveGain = 1; spin = 0; flow = 0; envelopeClock = 0;
+    clearTimeout(flashTimer); flashTimer = 0; flash?.classList.remove('is-visible');
     bands.fill(0); peaks.fill(0); waveform?.fill(128);
     slices.fill(0); slicePeaks.fill(0);
     image = next && window.CVFormats.isAudio(next) ? next : null;
@@ -691,6 +715,8 @@ window.CVAudioVisuals = (() => {
     if (next === mode) return;
     select.value = next;
     select.dispatchEvent(new Event('change', { bubbles: true }));
+    // Name the style that was just selected, so stepping is self-evident.
+    flashName(next);
   }
 
   // Arrows flanking the styled picker, so one click steps a style instead of
@@ -714,12 +740,18 @@ window.CVAudioVisuals = (() => {
     const wrap = document.createElement('div');
     wrap.className = 'visualizer-picker';
     shell.before(wrap);
-    wrap.append(arrow(-1, 'audio_visual_prev'), shell, arrow(1, 'audio_visual_next'));
-    // The shortcut is not visible anywhere else, so the picker advertises it.
-    const trigger = shell.querySelector('.cfg-select-trigger');
-    if (trigger && typeof window.setCyberTooltip === 'function') {
-      window.setCyberTooltip(trigger, text('audio_visualizer_hint'));
-      trigger.dataset.tooltipKbd = 'V';
+    const prev = arrow(-1, 'audio_visual_prev');
+    const next = arrow(1, 'audio_visual_next');
+    wrap.append(prev, shell, next);
+    // The arrows are the discoverable route; the shortcut is the fast one, so
+    // both arrows advertise it rather than leaving it buried in a menu.
+    if (typeof window.setCyberTooltip === 'function') {
+      const hint = text('audio_visualizer_hint');
+      for (const button of [prev, next]) {
+        window.setCyberTooltip(button, hint);
+        button.dataset.tooltipKbd = 'V';
+        button.classList.add('tooltip-bottom');
+      }
     }
   }
 

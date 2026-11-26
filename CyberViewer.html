@@ -91,8 +91,14 @@
           <div><dt><kbd>←</kbd><kbd>→</kbd></dt><dd data-i18n="video_seek_keys">SALTAR 5 S</dd></div>
           <div><dt><kbd>M</kbd></dt><dd data-i18n="video_mute_keys">SILENCIAR / ACTIVAR SONIDO</dd></div>
           <div><dt><kbd>&gt;</kbd><kbd>&lt;</kbd></dt><dd data-i18n="video_speed_keys">VELOCIDAD</dd></div>
-          <div class="audio-visual-keys"><dt><kbd>V</kbd><kbd>Shift</kbd><kbd>V</kbd></dt><dd data-i18n="shortcuts_visualizer">VISUALIZACIÓN</dd></div>
           <div><dt><kbd>Ctrl</kbd><kbd>F</kbd></dt><dd data-i18n="menu_fullscreen">PANTALLA COMPLETA</dd></div>
+        </dl>
+      </div>
+      <div class="shortcuts-col audio-visual-keys">
+        <div class="shortcuts-col-heading" data-i18n="shortcuts_sec_audio">AUDIO</div>
+        <dl class="shortcuts-list">
+          <div><dt><kbd>V</kbd></dt><dd data-i18n="shortcuts_visualizer_next">VISUALIZACIÓN SIGUIENTE</dd></div>
+          <div><dt><kbd>Shift</kbd><kbd>V</kbd></dt><dd data-i18n="shortcuts_visualizer_prev">VISUALIZACIÓN ANTERIOR</dd></div>
         </dl>
       </div>
       <div class="shortcuts-col">
@@ -370,6 +376,7 @@
 
       <section id="audio-stage" hidden aria-labelledby="audio-name">
         <canvas id="audio-canvas" aria-hidden="true"></canvas>
+        <div id="audio-visual-flash" aria-hidden="true"></div>
         <div class="audio-caption">
           <h2 id="audio-name"></h2>
           <p class="audio-meta">

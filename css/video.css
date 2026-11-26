@@ -186,9 +186,9 @@ body.video-idle #viewer-wrap, body.video-idle #canvas-layer { cursor: none; }
 body.image-error #video-controls { display: none; }
 .video-shortcuts { display: none; }
 body.video-active .video-shortcuts { display: block; }
-/* The visualization shortcut only exists for audio. */
-.audio-visual-keys { display: none; }
-body.audio-active .audio-visual-keys { display: block; }
+/* Audio-only column in the shortcuts panel. */
+.shortcuts-col.audio-visual-keys { display: none; }
+body.audio-active .shortcuts-col.audio-visual-keys { display: block; }
 @media (max-width: 600px) {
   .video-transport { padding: 40px 12px 10px; }
   .video-actions { gap: 1px; }

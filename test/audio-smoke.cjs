@@ -12,9 +12,12 @@ if (!process.versions.electron) {
   for (const name of formatSamples) fs.copyFileSync(path.join(__dirname, 'fixtures', 'audio', name), path.join(dataDir, sampleName(name)));
   const env = { ...process.env, CV_AUDIO_TEST_DIR: dataDir };
   delete env.ELECTRON_RUN_AS_NODE;
+  // Each phase decodes seven formats, animates eleven styles and samples the
+  // full-track waveform, so a software-rendered machine needs well over a
+  // minute. The timeout protects against a hang, not against honest work.
   for (const phase of ['initial', 'restore']) {
     const result = require('node:child_process').spawnSync(require('electron'), [__filename], {
-      env: { ...env, CV_AUDIO_TEST_PHASE: phase }, windowsHide: true, encoding: 'utf8', timeout: 60000
+      env: { ...env, CV_AUDIO_TEST_PHASE: phase }, windowsHide: true, encoding: 'utf8', timeout: 180000
     });
     console.log(result.stdout || '');
     if (result.stderr) console.error(result.stderr);
@@ -221,7 +224,14 @@ app.whenReady().then(async () => {
       const first = await evaluate("return $('audio-canvas').toDataURL();");
       await delay(150);
       const second = await evaluate("return $('audio-canvas').toDataURL();");
-      assert.ok(first !== second, mode + ' reacts/animates during actual audio playback');
+      // Sparse particle styles (fireworks) can look identical across two nearby
+      // frames; retry with a wider gap before calling it static.
+      let changed = first !== second;
+      for (let attempt = 0; !changed && attempt < 3; attempt++) {
+        await delay(220);
+        changed = await evaluate(`return $('audio-canvas').toDataURL()!==${JSON.stringify(first)};`);
+      }
+      assert.ok(changed, mode + ' reacts/animates during actual audio playback');
       fs.writeFileSync(path.join(dataDir, mode + '.png'), (await win.webContents.capturePage()).toPNG());
       assert.equal(await evaluate("return $('audio-canvas').width<=1440 && $('audio-canvas').height<=810;"), true);
       renderStats[mode] = await evaluate('return window.__paintTimes.reduce((a,b)=>a+b,0)/Math.max(1,window.__paintTimes.length);');
@@ -264,11 +274,14 @@ app.whenReady().then(async () => {
     win.webContents.debugger.detach();
     await delay(100);
     // Dialogs must never interrupt playback (openModal used to pause the media).
-    // The 12 s fixture can run out during the checks above (a completed track is
-    // paused with ended=true), so rewind and restart before measuring playback.
+    // The 12 s fixture runs out during the checks above, and a completed track
+    // reports paused+ended. Always rewind to the start and play from there, so
+    // the assertion cannot race the end of the fixture.
     await evaluate(`const e=window.CVVideo.element;
-      if(e.ended || e.paused){ e.currentTime=1; await window.CVVideo.toggle(); }`);
-    await waitFor(() => evaluate('return !window.CVVideo.element.paused && !window.CVVideo.element.ended;'), 'playback restarted for the dialog check');
+      e.pause(); e.currentTime=0.2;
+      await new Promise(r => { if(!e.seeking) return r(); e.addEventListener('seeked', r, {once:true}); });
+      await window.CVVideo.toggle();`);
+    await waitFor(() => evaluate('return !window.CVVideo.element.paused && !window.CVVideo.element.ended && window.CVVideo.element.currentTime < 5;'), 'playback restarted for the dialog check');
     await evaluate('$("btn-config").click();');
     assert.equal(await evaluate("return $('modal-config').classList.contains('active');"), true, 'Config dialog opens during playback');
     assert.equal(await evaluate('return !window.CVVideo.element.paused;'), true, 'Playback continues while the config dialog is open');
@@ -286,11 +299,25 @@ app.whenReady().then(async () => {
     assert.equal(menuCheck.opened, true, 'More menu opens during playback');
     assert.equal(menuCheck.menuAfter, false, 'A stage click closes the More menu');
     assert.equal(menuCheck.paused, false, 'Dismissing the More menu with a stage click keeps playback running');
-    // A plain stage click still toggles play/pause.
+    // A plain stage click still toggles play/pause. Rewind first: the fixture is
+    // short and a track that reaches its end is already paused, which would make
+    // this pause assertion pass for the wrong reason.
+    await evaluate(`const e=window.CVVideo.element;
+      if(e.ended || e.currentTime > 8){ e.pause(); e.currentTime=0.2;
+        await new Promise(r => { if(!e.seeking) return r(); e.addEventListener('seeked', r, {once:true}); }); }
+      if(e.paused) await window.CVVideo.toggle();`);
+    await waitFor(() => evaluate('return !window.CVVideo.element.paused && !window.CVVideo.element.ended;'), 'playing before the stage-click check');
     await evaluate(`const t=$('canvas-layer'); t.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true})); t.dispatchEvent(new MouseEvent('click',{bubbles:true}));`);
     await waitFor(() => evaluate('return window.CVVideo.element.paused;'), 'plain stage click pauses');
-    await evaluate('await window.CVVideo.toggle();');
+    // Resume from a rewound position so the release measurement below starts
+    // with the visualizer actually running.
+    await evaluate(`const e=window.CVVideo.element; e.currentTime=0.2;
+      await new Promise(r => { if(!e.seeking) return r(); e.addEventListener('seeked', r, {once:true}); });
+      await window.CVVideo.toggle();`);
     await waitFor(() => evaluate('return !window.CVVideo.element.paused;'), 'resume after stage click check');
+    // Give the visualizer time to reach full level: the pause-release measurement
+    // compares frames, and a just-started visual has nothing to release yet.
+    await delay(450);
     const pauseFrames = await evaluate(`
       const before=window.__visualSignature(), e=window.CVVideo.element;
       const paused=new Promise(resolve=>e.addEventListener('pause',resolve,{once:true}));
