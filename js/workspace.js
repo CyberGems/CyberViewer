@@ -642,7 +642,10 @@ window.CVWorkspace = (() => {
         const label = document.createElement('span'); label.className = 'image-tab-name';
         const duplicateIcon = document.createElement('span'); duplicateIcon.className = 'image-tab-duplicate'; duplicateIcon.setAttribute('aria-hidden', 'true');
         duplicateIcon.append(iconSvg('copy'));
-        button.append(dot, mediaIcon, label, duplicateIcon);
+        // Per-tab sidebar state: a small dot marks the tabs whose sidebar is
+        // collapsed, so the state is discoverable without switching to one.
+        const sidebarDot = document.createElement('span'); sidebarDot.className = 'image-tab-sidebar-closed'; sidebarDot.setAttribute('aria-hidden', 'true');
+        button.append(dot, mediaIcon, label, duplicateIcon, sidebarDot);
         button.addEventListener('focus', () => prepareTooltip(button));
         ttBind(button);
         button.addEventListener('click', () => void activate(tab.id));
@@ -659,6 +662,9 @@ window.CVWorkspace = (() => {
       shell.classList.toggle('dirty', edited(tab));
       const duplicate = (pathCounts.get(pathKey(tab.image.file.path)) || 0) > 1;
       shell.classList.toggle('duplicate', duplicate);
+      // Only meaningful while the feature is on and the tab recorded an answer.
+      const sidebarClosed = sidebarStatePerTab() && tab.sidebarOpen === false;
+      shell.classList.toggle('sidebar-closed', sidebarClosed);
       const button = shell.querySelector('.image-tab');
       button.setAttribute('aria-selected', String(active));
       button.tabIndex = active ? 0 : -1;
@@ -671,7 +677,8 @@ window.CVWorkspace = (() => {
       }
       mediaIcon.hidden = state.settings.app.showTabMediaIcons === false;
       button.setAttribute('aria-label', name + (edited(tab) ? ` (${text('tabs_unsaved')})` : '') +
-        (duplicate ? ` (${text('tabs_also_open')})` : ''));
+        (duplicate ? ` (${text('tabs_also_open')})` : '') +
+        (sidebarClosed ? ` (${text('tabs_sidebar_closed')})` : ''));
       button.querySelector('.image-tab-name').textContent = name;
       shell.querySelector('.image-tab-close').setAttribute('aria-label', text('tabs_close_named').replace('{name}', name));
       shell.querySelector('.image-tab-close').tabIndex = active ? 0 : -1;
@@ -693,10 +700,17 @@ window.CVWorkspace = (() => {
   function prepareTooltip(button) {
     const label = button.querySelector('.image-tab-name');
     const tab = model.tabs.find(item => item.id === button.id);
-    const duplicate = button.closest('.image-tab-shell')?.classList.contains('duplicate');
-    if (tab && (duplicate || label.scrollWidth > label.clientWidth)) {
+    const shell = button.closest('.image-tab-shell');
+    const duplicate = shell?.classList.contains('duplicate');
+    const sidebarClosed = shell?.classList.contains('sidebar-closed');
+    const truncated = label.scrollWidth > label.clientWidth;
+    if (tab && (duplicate || sidebarClosed || truncated)) {
       const fullName = tab.image.file.path || tab.image.file.name;
-      setCyberTooltip(button, duplicate ? `${fullName} · ${text('tabs_also_open')}` : fullName);
+      // Both states can apply at once, so each note is appended on its own
+      // instead of one replacing the other.
+      const notes = [duplicate ? text('tabs_also_open') : '', sidebarClosed ? text('tabs_sidebar_closed') : '']
+        .filter(Boolean);
+      setCyberTooltip(button, notes.length ? `${fullName} · ${notes.join(' · ')}` : fullName);
     } else { button.classList.remove('cyber-tooltip'); delete button.dataset.tooltip; }
   }
   function mediaTypeForTab(tab) {
