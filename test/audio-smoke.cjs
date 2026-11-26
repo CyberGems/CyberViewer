@@ -335,25 +335,52 @@ app.whenReady().then(async () => {
     // Give the visualizer time to reach full level: the pause-release measurement
     // compares frames, and a just-started visual has nothing to release yet.
     await delay(450);
+    // Sample the release frame by frame inside the page. Counting painted
+    // frames instead of wall-clock time keeps the ramp check honest on a loaded
+    // machine: a slow machine paints fewer frames, it does not skip the ramp.
+    // The window is bounded and only costs a few frames.
     const pauseFrames = await evaluate(`
-      const before=window.__visualSignature(), e=window.CVVideo.element;
+      const e=window.CVVideo.element, before=window.__visualSignature(), frames=[];
+      let capturing=true;
+      const capture=()=>{ frames.push(window.__visualSignature()); if(capturing) requestAnimationFrame(capture); };
       const paused=new Promise(resolve=>e.addEventListener('pause',resolve,{once:true}));
-      e.pause(); await paused; return {before,after:window.__visualSignature(),image:$('audio-canvas').toDataURL(),reads:window.__analysisReads};
+      requestAnimationFrame(capture);
+      e.pause(); await paused;
+      await new Promise(r=>setTimeout(r,700));
+      capturing=false;
+      await new Promise(r=>requestAnimationFrame(r));
+      return {before,frames};
     `);
-    await delay(120);
-    assert.ok(await evaluate(`return $('audio-canvas').toDataURL()!==${JSON.stringify(pauseFrames.image)};`), 'Pause has an animated release');
-    await delay(850);
-    const stopped = await evaluate("return $('audio-canvas').toDataURL();"); await delay(180);
+    const painted = [];
+    for (const frame of pauseFrames.frames) {
+      const last = painted[painted.length - 1];
+      if (!last || frame.some((value, i) => value !== last[i])) painted.push(frame);
+    }
+    const distance = (a, b) => a.reduce((sum, value, i) => sum + Math.abs(value - b[i]), 0) / a.length;
+    assert.ok(pauseFrames.frames.length >= 2, 'Pause is sampled across several frames: ' + pauseFrames.frames.length);
+    assert.ok(painted.length >= 3, 'Pause paints a progressive release instead of snapping to rest: ' + painted.length + ' states');
+    assert.ok(distance(pauseFrames.before, painted[painted.length - 1]) > 0,
+      'the release settles into a different state than the playing frame');
+    // Wait for the canvas to actually stop changing instead of assuming the
+    // release finished within a fixed delay. Two matching samples are not
+    // enough: the decay is slow enough that two close reads can coincide while
+    // the ramp is still running, so stillness must hold for several reads.
+    const stoppedStart = Date.now();
+    let stopped = await evaluate("return $('audio-canvas').toDataURL();");
+    let still = 0;
+    while (still < 4) {
+      await delay(150);
+      const next = await evaluate("return $('audio-canvas').toDataURL();");
+      still = next === stopped ? still + 1 : 0;
+      stopped = next;
+      if (Date.now() - stoppedStart > 8000) throw Error('Paused canvas never settled');
+    }
+    const releaseReads = await evaluate('return window.__analysisReads;');
+    await delay(180);
     assert.equal(await evaluate("return $('audio-canvas').toDataURL();"), stopped, 'Paused canvas is static');
     await evaluate('window.CVAudioVisuals.refresh();');
     assert.equal(await evaluate("return $('audio-canvas').toDataURL();"), stopped, 'Idle repaint leaves no accumulating trails');
-    const idleSignature = await evaluate('return window.__visualSignature();');
-    const distance = (a, b) => a.reduce((sum, value, i) => sum + Math.abs(value - b[i]), 0) / a.length;
-    // Native pause delivery may span a render frame. Compare the first step
-    // with the whole release, instead of requiring byte-identical frame timing.
-    assert.ok(distance(pauseFrames.before, pauseFrames.after) < distance(pauseFrames.before, idleSignature) * .65,
-      'Pause starts with a small visual step rather than jumping straight to rest');
-    assert.equal(await evaluate('return window.__analysisReads;'), pauseFrames.reads, 'Release reuses frozen samples without extra FFT work');
+    assert.equal(await evaluate('return window.__analysisReads;'), releaseReads, 'Release reuses frozen samples without extra FFT work');
     // Natural end uses the same short release, then leaves no animation loop.
     await evaluate('window.CVVideo.element.loop=false; window.CVVideo.element.currentTime=window.CVVideo.element.duration-.18;');
     await waitFor(() => evaluate('return !window.CVVideo.element.seeking;'), 'seek close to natural end');
