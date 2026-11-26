@@ -74,6 +74,9 @@ describe('sidebar startup preference (manual vs external open)', () => {
   it('applySettings applies the sidebar state from settings at startup', () => {
     const code = extractFunction(appJs, 'applySettings');
     assert.match(code, /state\.sidebarOpen = !!s\.sidebarOpen;/);
-    assert.match(code, /sidebar\.style\.display = state\.sidebarOpen \? '' : 'none';/);
+    // The panel is hidden through the body class, not an inline display, so
+    // the width/opacity transition can run when it opens or closes.
+    assert.match(code, /document\.body\.classList\.toggle\('sidebar-open', state\.sidebarOpen\);/);
+    assert.doesNotMatch(code, /sidebar\.style\.display/);
   });
 });

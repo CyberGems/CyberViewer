@@ -1456,6 +1456,38 @@
     position: relative;
     z-index: 30;
     overflow: visible;
+    /* The panel slides instead of snapping: width and opacity carry the
+       movement, and `display` transitions discretely so the collapsed panel
+       stays rendered (and animated) until the slide ends. */
+    transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+      min-width 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 0.18s ease,
+      display 0.22s allow-discrete;
+  }
+
+  /* Collapsed: the column keeps no width and fades, and the thumbnails are
+     clipped rather than spilling over the viewer during the slide. */
+  body:not(.sidebar-open) #sidebar {
+    width: 0;
+    min-width: 0;
+    opacity: 0;
+    overflow: hidden;
+  }
+
+  /* Opening needs a starting point: without this the panel would jump to its
+     final width on the first frame and skip the transition. */
+  @starting-style {
+    body.sidebar-open #sidebar {
+      width: 0;
+      min-width: 0;
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #sidebar {
+      transition: none;
+    }
   }
 
   .sidebar-folder {

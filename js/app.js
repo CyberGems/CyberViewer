@@ -7062,7 +7062,9 @@ function setSidebarOpen(open, opts = {}) {
   document.body.classList.remove('sidebar-handle-hover');
 
   state.sidebarOpen = !!open;
-  sidebar.style.display = state.sidebarOpen ? '' : 'none';
+  // No inline `display`: the panel is hidden through the body class so the
+  // width/opacity transition can actually run. CSS still removes it from the
+  // layout once collapsed, via zero width.
   document.body.classList.toggle('sidebar-open', state.sidebarOpen);
   // The strip width changes with the panel, so overflow must be re-measured.
   scheduleMarqueeMeasure();
@@ -9109,7 +9111,6 @@ function applySettings() {
   // Visibility
   state.sidebarOpen = !!s.sidebarOpen;
   if (s.preferredDisplayId) $('cfg-monitor').value = s.preferredDisplayId;
-  sidebar.style.display = state.sidebarOpen ? '' : 'none';
   document.body.classList.toggle('sidebar-open', state.sidebarOpen);
   const handle = $('sidebar-handle');
   if (handle) handle.style.left = '';
