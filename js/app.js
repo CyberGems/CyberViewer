@@ -1509,13 +1509,19 @@ async function startBackgroundScan() {
 
       try {
         const isCurrent = idx === state.currentIdx || idx === state.current;
+        // Audio asks for embedded cover art here too: this background scan is
+        // the path most sidebar cards take, so leaving it out showed the note
+        // icon even on tracks that carry a picture.
+        const wantsCover = window.CVFormats.isAudio(im);
         const thumbUrl = await window.electronAPI.getThumbnail(im.file.path, {
-          priority: isCurrent
+          priority: isCurrent,
+          coverArt: wantsCover
         });
         if (thumbUrl) {
           im.thumbUrl = thumbUrl;
           recordCachedThumb(im.file.path, thumbUrl);
-        } else {
+        } else if (!wantsCover) {
+          // A missing cover is normal for audio, not a failed thumbnail.
           im.thumbFailed = true;
         }
       } catch (_) {
