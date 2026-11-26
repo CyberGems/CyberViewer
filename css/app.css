@@ -4360,25 +4360,33 @@
     box-shadow: 0 0 25px rgba(var(--cyber-accent2-rgb), 0.25);
   }
   
+  /* The icon is a plain glyph centered against the message block: no tile,
+     no border and no glow. The tinted box read as a button and pulled the eye
+     away from the text, so the status colour now lives only in the glyph. */
   .confirm-content-layout {
     display: flex;
-    gap: 20px;
-    align-items: flex-start;
+    gap: 16px;
+    align-items: center;
   }
-  
+
   .confirm-icon-container {
-    width: 48px;
-    height: 48px;
-    border-radius: 6px;
-    background: rgba(var(--cyber-accent2-rgb), 0.1);
-    border: 1px solid rgba(var(--cyber-accent2-rgb), 0.3);
-    color: var(--cyber-accent2-ink);
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    color: var(--cyber-text-soft-3);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
     flex-shrink: 0;
-    box-shadow: 0 0 10px rgba(var(--cyber-accent2-rgb), 0.15);
+    box-shadow: none;
+  }
+
+  .confirm-icon-container svg {
+    width: 100%;
+    height: 100%;
+    display: block;
   }
   
   .confirm-text-container {

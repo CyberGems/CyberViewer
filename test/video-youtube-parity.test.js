@@ -153,7 +153,10 @@ describe('video player youtube parity (phase 1)', () => {
     assert.match(read('css/app.css'), /\.titlebar-filename\s*\{[^}]*font: 600 12px\/1\.3 var\(--font-ui\);/);
     // The confirm overlay keeps the paused frame recognizable in video mode
     assert.match(read('css/app.css'), /body\.video-active #modal-cyber-confirm\s*\{[^}]*backdrop-filter: blur\(3px\);/);
-    // The confirm dialog uses the same trash glyph as the context menu
-    assert.match(appJs, /const trashGlyph = '<svg viewBox="0 0 24 24" width="22" height="22"[^]*?M14 11v6/);
+    // The confirm dialog reuses the context menu's trash glyph from the shared
+    // catalog instead of duplicating the SVG inside showCyberConfirm().
+    assert.match(appJs, /const glyph = icon \|\| \(danger \? 'trash' : 'alert'\);/);
+    assert.match(appJs, /const glyphSvg = iconHtml\(glyph\);/);
+    assert.match(appJs, /'trash': '<path d="M3 6h18"\/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"\/>[\s\S]*?<path d="M14 11v6"\/>'/);
   });
 });

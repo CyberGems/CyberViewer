@@ -10865,7 +10865,7 @@ $('btn-confirm-ok').addEventListener('click', () => {
   if (confirmCallback) confirmCallback();
 });
 
-function showCyberConfirm({ title, message, detail, danger = true, onConfirm }) {
+function showCyberConfirm({ title, message, detail, danger = true, icon, onConfirm }) {
   $('confirm-title-text').textContent = title;
   $('confirm-message').textContent = message;
   $('confirm-detail').textContent = detail || '';
@@ -10877,24 +10877,20 @@ function showCyberConfirm({ title, message, detail, danger = true, onConfirm }) 
 
   if (danger) {
     box.style.borderColor = 'var(--cyber-accent2)';
-    box.style.boxShadow = '0 0 25px rgba(255, 45, 120, 0.25)';
-    iconBox.style.color = 'var(--cyber-accent2-ink)';
-    iconBox.style.borderColor = 'rgba(255, 45, 120, 0.3)';
-    iconBox.style.background = 'rgba(255, 45, 120, 0.1)';
-    // Same trash glyph as the context menu (menu_trash), not the unicode one.
-    const trashGlyph = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
-    iconBox.innerHTML = trashGlyph;
-
+    box.style.boxShadow = '0 0 25px rgba(var(--cyber-accent2-rgb), 0.25)';
   } else {
     box.style.borderColor = 'var(--cyber-accent)';
     box.style.boxShadow = '0 0 25px rgba(var(--cyber-accent-rgb), 0.25)';
-    iconBox.style.color = 'var(--cyber-accent-ink)';
-    iconBox.style.borderColor = 'rgba(var(--cyber-accent-rgb), 0.3)';
-    iconBox.style.background = 'rgba(var(--cyber-accent-rgb), 0.1)';
-    iconBox.innerHTML = '&#9888;&#xFE0E;'; // Warning sign
-
   }
-  
+
+  // The glyph carries the status colour and nothing else: the shared confirm
+  // box uses the neutral text tone, and only a danger action inherits the
+  // alert tint. Callers may pass their own icon name from MENU_ICONS.
+  const glyph = icon || (danger ? 'trash' : 'alert');
+  const glyphSvg = iconHtml(glyph);
+  if (glyphSvg) iconBox.innerHTML = glyphSvg;
+  iconBox.style.color = danger ? 'var(--cyber-accent2-ink)' : 'var(--cyber-text-soft-3)';
+
   const lang = state.settings.app.language || 'en';
   $('btn-confirm-cancel').querySelector('.btn-label').textContent = (I18N[lang] || I18N.en).config_cancel;
   okBtn.querySelector('.btn-label').textContent = (I18N[lang] || I18N.en).confirm_action;
