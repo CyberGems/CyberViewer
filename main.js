@@ -214,7 +214,7 @@ function loadSettings() {
       accentColor: '#00d4ff',
       appearanceTheme: 'cyberviewer',
       sidebarOpen: false,
-      sidebarStatePerTab: false,
+      sidebarStatePerTab: true,
       statusbarVisible: true,
       preferredDisplayId: 'auto',
       language: 'en',
@@ -1742,6 +1742,7 @@ ipcMain.handle('win-pointer-position', (event) => {
     y: pointer.y - content.y,
     screenX: pointer.x,
     screenY: pointer.y,
+    visible: target.isVisible() && !target.isMinimized(),
     focused: target.isFocused() && target.isVisible() && !target.isMinimized()
   };
 });
@@ -3094,17 +3095,28 @@ ipcMain.handle('get-audio-tags', async (event, filePath) => {
     const metadataModule = await (audioMetadataModulePromise ||= import('music-metadata'));
     const metadata = await metadataModule.parseFile(absPath, {
       duration: false,
-      skipCovers: true,
       skipPostHeaders: true,
-      maxMemoryAllocation: 16 * 1024 * 1024
+      maxMemoryAllocation: 24 * 1024 * 1024
     });
     const common = metadata.common || {};
     const clean = (value) => (typeof value === 'string' ? value.trim().slice(0, 300) : '');
+    // Cover art travels with the tags in one read instead of a second parse:
+    // the canvas shows it beside the title, and the sidebar reuses the already
+    // cached thumbnail when its own request runs.
+    let cover = '';
+    try {
+      const picture = metadataModule.selectCover(common.picture);
+      if (picture?.data?.length && picture.data.length <= 8 * 1024 * 1024) {
+        const mime = /^image\//.test(picture.format || '') ? picture.format : 'image/jpeg';
+        cover = `data:${mime};base64,${Buffer.from(picture.data).toString('base64')}`;
+      }
+    } catch (_) { /* a broken picture block must not hide the text tags */ }
     return {
       ok: true,
       title: clean(common.title),
       artist: clean(common.artist) || clean(common.albumartist),
-      album: clean(common.album)
+      album: clean(common.album),
+      cover
     };
   } catch (_) {
     return { ok: false };

@@ -765,11 +765,16 @@ function updateLanguage(lang = 'en') {
 let titlebarTooltipPoll = null;
 let titlebarTooltipHoverSince = 0;
 let titlebarTooltipPending = false;
+let titlebarTooltipLastProbe = 0;
 
 function updateTitlebarTooltipFromPointer(pointer) {
   const title = $('titlebar-filename');
   const rect = title?.getBoundingClientRect();
-  const inside = title?.dataset.tooltip && pointer && pointer.focused && rect && !document.hidden &&
+  // The title bar is a native drag region, so the cursor can hover it while the
+  // window is not focused (clicking a background window to focus it also drags
+  // it). Requiring focus left the card unreachable whenever the pointer arrived
+  // before the focus did, so only the pointer position and visibility matter.
+  const inside = title?.dataset.tooltip && pointer && pointer.visible !== false && rect && !document.hidden &&
     !document.body.classList.contains('no-tooltips') && !document.body.classList.contains('ghost-mode') &&
     pointer.x >= rect.left && pointer.x < rect.right &&
     pointer.y >= rect.top && pointer.y < rect.bottom;
@@ -810,8 +815,12 @@ function syncTitlebarFilenameTooltip() {
   setCyberTooltip(title, label);
   if (!titlebarTooltipPoll && isElectron && window.electronAPI.getPointerInWindow) {
     titlebarTooltipPoll = setInterval(async () => {
-      if (titlebarTooltipPending) return;
+      // A pending probe skips this tick, but a probe that never settles (a
+      // dropped IPC reply) must not retire the poll for good: after a grace
+      // period the next tick runs anyway.
+      if (titlebarTooltipPending && Date.now() - titlebarTooltipLastProbe < 1000) return;
       titlebarTooltipPending = true;
+      titlebarTooltipLastProbe = Date.now();
       try {
         const pointer = document.hidden ? null : await window.electronAPI.getPointerInWindow();
         updateTitlebarTooltipFromPointer(pointer);
@@ -9195,25 +9204,35 @@ function releaseTooltipsOnNextPointer() {
 let restorePointerPoll = null;
 let restorePointerAnchor = null;
 let restorePointerGeneration = 0;
+// The guard exists to ignore the phantom hover Chromium leaves behind after a
+// restore. A pointer that never moves must not keep every tooltip dead for the
+// rest of the session, so it expires on its own.
+let restorePointerDeadline = 0;
+const RESTORE_POINTER_MAX_MS = 5000;
 
 function updateRestorePointerGuard(pointer) {
   if (!restorePointerPending || !restorePointerAnchor || !pointer) return;
   if (Math.abs(pointer.screenX - restorePointerAnchor.screenX) < 2 &&
-      Math.abs(pointer.screenY - restorePointerAnchor.screenY) < 2) return;
+      Math.abs(pointer.screenY - restorePointerAnchor.screenY) < 2) {
+    if (Date.now() >= restorePointerDeadline) endRestorePointerGuard();
+    return;
+  }
+  endRestorePointerGuard();
+}
+
+function endRestorePointerGuard() {
   restorePointerPending = false;
   clearInterval(restorePointerPoll);
   restorePointerPoll = null;
   restorePointerAnchor = null;
+  restorePointerDeadline = 0;
   document.body.classList.remove('restore-pointer-pending', 'suppress-tooltips');
 }
 
 function failRestorePointerGuard(error) {
   console.error('Restore pointer check failed:', error);
-  clearInterval(restorePointerPoll);
-  restorePointerPoll = null;
   restorePointerAnchor = null;
-  restorePointerPending = false;
-  document.body.classList.remove('restore-pointer-pending');
+  endRestorePointerGuard();
   releaseTooltipsOnNextPointer();
 }
 
@@ -9223,6 +9242,7 @@ async function beginRestorePointerGuard() {
   restorePointerPoll = null;
   restorePointerAnchor = null;
   restorePointerPending = true;
+  restorePointerDeadline = Date.now() + RESTORE_POINTER_MAX_MS;
   ttHide();
   suppressTooltips();
   document.body.classList.add('restore-pointer-pending');
