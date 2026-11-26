@@ -302,6 +302,7 @@ const state = {
       language: 'en',
       favorites: [],
       animateGifs: true,
+      compactSidebarCards: false,
       showShortcutGuide: true,
       checkUpdatesOnStartup: true,
       // Toast once per version; badge stays until update is applied
@@ -1681,10 +1682,15 @@ function buildSidebar() {
     // Every card carries its file name: audio artwork is otherwise identical
     // from track to track, and images with similar previews are hard to tell
     // apart. The extension is dropped, since the icon and badge already say it.
+    // The text lives in its own span so a long name can scroll inside the
+    // caption without moving the strip itself.
     const name = document.createElement('span');
     name.className = 'thumb-name';
-    name.textContent = im.file.name.replace(/\.[^.]+$/, '');
     name.title = im.file.name;
+    const nameText = document.createElement('span');
+    nameText.className = 'thumb-name-text';
+    nameText.textContent = im.file.name.replace(/\.[^.]+$/, '');
+    name.appendChild(nameText);
     item.appendChild(name);
     item.appendChild(idx);
 
@@ -1706,7 +1712,15 @@ function buildSidebar() {
       if (event.button === 1) { event.preventDefault(); openImagePath(im.file.path); }
     });
 
-    item.addEventListener('mouseenter', () => refreshSidebarGifAnimation(i));
+    item.addEventListener('mouseenter', () => {
+      refreshSidebarGifAnimation(i);
+      // Compact mode hides the caption; the strip only has a width once it is
+      // shown, so its scroll distance is measured on the first reveal. Only
+      // this card is measured: the rest are still hidden and have no width.
+      if (document.body.classList.contains('compact-thumbs')) {
+        requestAnimationFrame(() => measureMarqueeNames(item));
+      }
+    });
     item.addEventListener('mouseleave', () => refreshSidebarGifAnimation(i));
 
     fragment.appendChild(item);
@@ -1720,9 +1734,63 @@ function buildSidebar() {
   }
 
   container.appendChild(fragment);
+  // Names are measured after insertion, when the strip has its final width.
+  scheduleMarqueeMeasure();
   updateNavVisibility();
   updateSidebarFolderHeader();
   updateCenterBtnVisibility();
+}
+
+// Long captions scroll instead of staying cut with an ellipsis. Measuring costs
+// a layout pass per card, so it runs once per rebuild on the next frame, not on
+// every scroll or selection change.
+let marqueeFrame = 0;
+function scheduleMarqueeMeasure() {
+  cancelAnimationFrame(marqueeFrame);
+  marqueeFrame = requestAnimationFrame(() => {
+    marqueeFrame = 0;
+    measureMarqueeNames();
+  });
+}
+
+function measureMarqueeNames(scope) {
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  for (const strip of (scope || document).querySelectorAll('.thumb-name')) {
+    const text = strip.querySelector('.thumb-name-text');
+    if (!text) continue;
+    // Reset before measuring: a running transform would skew scrollWidth.
+    strip.classList.remove('is-marquee');
+    text.style.removeProperty('--marquee-distance');
+    text.style.removeProperty('--marquee-duration');
+    if (reduced) continue;
+    // A hidden caption (compact cards) has no width: nothing to scroll.
+    if (!strip.clientWidth) continue;
+    const overflow = text.scrollWidth - strip.clientWidth + 12;
+    if (overflow <= 0) continue;
+    // Scroll exactly the hidden amount, at a steady reading pace (~26 px/s).
+    text.style.setProperty('--marquee-distance', `-${Math.ceil(overflow)}px`);
+    text.style.setProperty('--marquee-duration', `${Math.max(3, Math.round(overflow / 26 + 2))}s`);
+    strip.classList.add('is-marquee');
+  }
+}
+
+/** Compact sidebar cards: hide the caption strip and shorten each preview. */
+function applyCompactThumbs(enabled) {
+  const active = enabled === true;
+  if (document.body.classList.contains('compact-thumbs') === active) return;
+  document.body.classList.toggle('compact-thumbs', active);
+  // Captions are hidden in compact mode, so marquee state is stale either way.
+  scheduleMarqueeMeasure();
+}
+
+/** Toggle compact cards from the context menu, keeping Settings in sync. */
+function setCompactSidebarCards(enabled) {
+  const active = enabled === true;
+  state.settings.app.compactSidebarCards = active;
+  const toggle = $('cfg-compact-cards');
+  if (toggle) toggle.checked = active;
+  applyCompactThumbs(active);
+  if (isElectron) window.electronAPI.saveSettings(state.settings.app);
 }
 
 // ── CONTEXT MENU ──
@@ -2178,6 +2246,12 @@ function buildMenuTemplate(type, data) {
             action: () => toggleFavoritePath(data.path)
           }
         ]
+      },
+      {
+        label: getTxt('menu_compact_cards'),
+        type: 'checkbox',
+        checked: state.settings.app.compactSidebarCards === true,
+        action: () => setCompactSidebarCards(state.settings.app.compactSidebarCards !== true)
       },
       { type: 'separator' },
       {
@@ -6914,6 +6988,8 @@ function setSidebarOpen(open, opts = {}) {
   state.sidebarOpen = !!open;
   sidebar.style.display = state.sidebarOpen ? '' : 'none';
   document.body.classList.toggle('sidebar-open', state.sidebarOpen);
+  // The strip width changes with the panel, so overflow must be re-measured.
+  scheduleMarqueeMeasure();
 
   const handle = $('sidebar-handle');
   if (handle) {
@@ -7883,6 +7959,7 @@ const CONFIG_CONTROL_ICON_BY_ID = {
   'cfg-sidebar': 'panel-left',
   'cfg-statusbar': 'panel-bottom',
   'cfg-animated-gifs': 'image',
+  'cfg-compact-cards': 'panel-bottom',
   'cfg-show-filename': 'tag',
   'cfg-banner-autohide': 'eye-off',
   'cfg-nav-autohide': 'eye-off',
@@ -7989,6 +8066,7 @@ function openConfig() {
   $('cfg-tabs-cancel-edits').checked = s.tabsCancelPendingEdits !== false;
   $('cfg-drop-center-action').value = s.centerDropAction === 'replace' ? 'replace' : 'new-tab';
   if ($('cfg-animated-gifs')) $('cfg-animated-gifs').checked = s.animateGifs !== false;
+  if ($('cfg-compact-cards')) $('cfg-compact-cards').checked = s.compactSidebarCards === true;
   $('cfg-show-filename').checked = s.showFileName !== false;
   $('cfg-lang').value = s.language || 'en';
   $('cfg-hotkey').value = (!s.toggleHotkey || s.toggleHotkey === 'disabled') ? '' : s.toggleHotkey;
@@ -8126,6 +8204,7 @@ function collectConfigSettings() {
     tabsCancelPendingEdits: $('cfg-tabs-cancel-edits').checked,
     centerDropAction: $('cfg-drop-center-action').value === 'replace' ? 'replace' : 'new-tab',
     animateGifs: !!($('cfg-animated-gifs') && $('cfg-animated-gifs').checked),
+    compactSidebarCards: !!($('cfg-compact-cards') && $('cfg-compact-cards').checked),
     showFileName: $('cfg-show-filename').checked,
     toggleHotkey: $('cfg-hotkey') ? ($('cfg-hotkey').value.trim() || 'disabled') : 'disabled',
     bannerAutoHide: $('cfg-banner-autohide').checked,
@@ -8975,6 +9054,9 @@ function applySettings() {
 
   // Animated GIF playback
   syncGifAnimationSetting();
+
+  // Compact sidebar cards (captions hidden, shorter previews)
+  applyCompactThumbs(s.compactSidebarCards === true);
 
   // Language
   const lang = s.language || 'en';

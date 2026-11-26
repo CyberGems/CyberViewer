@@ -103,7 +103,7 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 - **Restauración opcional de sesión:** activa **Configuración → General → Restaurar sesión anterior** para recuperar el orden, la pestaña activa, las vistas, las rotaciones pendientes y las imágenes pegadas al reiniciar. Los archivos ausentes conservan su pestaña y se pueden localizar de nuevo. La sesión se almacena localmente, separada de los respaldos de configuración; desactivar la opción elimina la sesión guardada.
 - **Apertura ultrarrápida:** protocolo de streaming propio que carga imágenes sin agotar la RAM
 - **Formatos admitidos:** JPG, JPEG, PNG, GIF, WebP, BMP, TIFF, TIF, ICO y AVIF
-- **Navegación de carpetas:** barra lateral de miniaturas con carga diferida, cola de prioridad e indicador de progreso de escaneo
+- **Navegación de carpetas:** barra lateral de miniaturas con carga diferida, cola de prioridad e indicador de progreso de escaneo. Cada tarjeta lleva el nombre del archivo bajo la vista previa, y un nombre que no cabe se desplaza mientras se pasa el cursor en lugar de quedar cortado. Activa **Tarjetas compactas en la barra lateral** en **Configuración → Interfaz**, o desde el menú contextual de una miniatura, para ocultar la franja del nombre y que quepan más archivos a la vez; al pasar el cursor sobre una tarjeta, el nombre reaparece.
 - **Zoom y desplazamiento:** del 5 % al 2000 %, ajuste a la ventana, tamaño original (1:1), rueda del ratón y arrastre
 - **Soporte de GIF animado:** activa o desactiva la reproducción
 - **Modo de pantalla completa inmersivo:** la interfaz fantasma se oculta sola para una visualización sin distracciones

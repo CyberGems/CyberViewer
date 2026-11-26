@@ -180,6 +180,7 @@ function loadSettings() {
         if (data.app.restoreSession === undefined) data.app.restoreSession = false;
         if (data.app.showFileName === undefined) data.app.showFileName = true;
         if (data.app.animateGifs === undefined) data.app.animateGifs = true;
+        if (data.app.compactSidebarCards === undefined) data.app.compactSidebarCards = false;
         if (typeof data.app.videoAutoplay !== 'boolean') data.app.videoAutoplay = true;
         if (typeof data.app.keepMediaPausedOnTabReturn !== 'boolean') data.app.keepMediaPausedOnTabReturn = true;
         if (typeof data.app.showTabMediaIcons !== 'boolean') data.app.showTabMediaIcons = true;
@@ -243,6 +244,7 @@ function loadSettings() {
       mediaSiblingsNewTab: false,
       showFileName: true,
       animateGifs: true,
+      compactSidebarCards: false,
       dblClickAction: 'fullscreen',
       navZoomMode: 'reset'
     }

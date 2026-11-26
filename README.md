@@ -103,7 +103,7 @@ Most image viewers are either bloated with features you never use or so barebone
 - **Optional session restore:** enable **Configuration → General → Restore previous session** to recover tab order, the active image, views, pending rotations, and pasted images after restarting. Missing files stay in their tabs and can be located again. Session data stays local and separate from settings backups; disabling the option removes the saved session.
 - **Lightning-fast open:** custom streaming protocol loads images without hogging RAM
 - **Supported formats:** JPG, JPEG, PNG, GIF, WebP, BMP, TIFF, TIF, ICO, and AVIF
-- **Folder browsing:** thumbnail sidebar with lazy loading, priority queue, and scan progress indicator
+- **Folder browsing:** thumbnail sidebar with lazy loading, priority queue, and scan progress indicator. Every card carries its file name under the preview, and a name that does not fit scrolls while it is hovered instead of staying cut. Enable **Compact Sidebar Cards** in **Configuration → Interface**, or from the thumbnail context menu, to hide the name strip so more files fit at once; hovering a card then reveals the name.
 - **Zoom and pan:** 5% to 2000%, fit-to-window, original size (1:1), mouse wheel, and drag
 - **Animated GIF support:** toggle playback on or off
 - **Fullscreen immersive mode:** ghost UI auto-hides for distraction-free viewing
