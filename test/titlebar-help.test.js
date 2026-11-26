@@ -80,8 +80,11 @@ describe('title bar Help menu', () => {
     assert.match(appJs, /function syncFilenameDisplays\(image = state\.images\[state\.current\]\)/);
     assert.match(appJs, /splitFilenameExtension\(name\)/);
     assert.match(css, /\.titlebar-filename\s*\{[^}]*-webkit-app-region:\s*drag !important;/);
-    assert.match(appJs, /base\.scrollWidth > base\.clientWidth \+ 1/);
-    assert.match(appJs, /setCyberTooltip\(title, title\.textContent\)/);
+    // The card always carries the full path of the active file: a name that
+    // does not fit reads complete without opening Properties.
+    assert.match(appJs, /titlebarFilename\.dataset\.fullPath = filePath \|\| name \|\| ''/);
+    assert.match(appJs, /const label = title\.dataset\.fullPath \|\| title\.dataset\.fullName \|\| ''/);
+    assert.match(appJs, /setCyberTooltip\(title, label\)/);
     assert.match(appJs, /getPointerInWindow\(\)/);
     assert.match(css, /\.titlebar-filename\.cyber-tooltip::after\s*\{\s*content:\s*none;/);
     assert.doesNotMatch(appJs, /filename\.addEventListener\('pointerdown'|electronAPI\.dragTitle/);

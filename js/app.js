@@ -788,35 +788,39 @@ function stopTitlebarTooltipMonitor() {
   if (ttAnchor === $('titlebar-filename')) ttHide();
 }
 
+// The title bar is a native drag region, so hover events never reach the
+// renderer; a cheap pointer poll keeps this tooltip working there. Shown for
+// any named file: the card carries the full path, and a name that does not fit
+// reads complete without opening Properties.
 function syncTitlebarFilenameTooltip() {
   const title = $('titlebar-filename');
-  const base = title && title.querySelector('.titlebar-filename-base');
-  const truncated = base && base.clientWidth > 0 && base.scrollWidth > base.clientWidth + 1;
-  if (truncated) {
-    if (title.dataset.tooltip !== title.textContent) {
-      titlebarTooltipHoverSince = 0;
-      if (ttAnchor === title) ttHide();
-    }
-    setCyberTooltip(title, title.textContent);
-    if (!titlebarTooltipPoll && isElectron && window.electronAPI.getPointerInWindow) {
-      titlebarTooltipPoll = setInterval(async () => {
-        if (titlebarTooltipPending) return;
-        titlebarTooltipPending = true;
-        try {
-          const pointer = document.hidden ? null : await window.electronAPI.getPointerInWindow();
-          updateTitlebarTooltipFromPointer(pointer);
-        } catch (error) {
-          stopTitlebarTooltipMonitor();
-          console.error('Title tooltip pointer check failed:', error);
-        } finally {
-          titlebarTooltipPending = false;
-        }
-      }, 100);
-    }
-  } else if (title) {
+  if (!title) return;
+  const label = title.dataset.fullPath || title.dataset.fullName || '';
+  if (!label) {
     stopTitlebarTooltipMonitor();
     title.removeAttribute('data-tooltip');
     title.classList.remove('cyber-tooltip');
+    return;
+  }
+  if (title.dataset.tooltip !== label) {
+    titlebarTooltipHoverSince = 0;
+    if (ttAnchor === title) ttHide();
+  }
+  setCyberTooltip(title, label);
+  if (!titlebarTooltipPoll && isElectron && window.electronAPI.getPointerInWindow) {
+    titlebarTooltipPoll = setInterval(async () => {
+      if (titlebarTooltipPending) return;
+      titlebarTooltipPending = true;
+      try {
+        const pointer = document.hidden ? null : await window.electronAPI.getPointerInWindow();
+        updateTitlebarTooltipFromPointer(pointer);
+      } catch (error) {
+        stopTitlebarTooltipMonitor();
+        console.error('Title tooltip pointer check failed:', error);
+      } finally {
+        titlebarTooltipPending = false;
+      }
+    }, 100);
   }
 }
 
@@ -849,6 +853,8 @@ function syncFilenameDisplays(image = state.images[state.current]) {
       titlebarFilename.textContent = name || '';
     }
     titlebarFilename.dataset.empty = name ? 'false' : 'true';
+    titlebarFilename.dataset.fullName = name || '';
+    titlebarFilename.dataset.fullPath = filePath || name || '';
     syncTitlebarFilenameTooltip();
   }
   if (!filePath) return;
