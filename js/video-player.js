@@ -212,6 +212,9 @@ window.CVVideo = (() => {
       if (document.querySelector('.modal-overlay.active, #main-menu.open') || !$('shortcuts-popover').hidden) return;
       if (document.querySelector('.video-transport:hover, #ghost-close:hover')) return;
       if (keyboardFocus && (controls.contains(document.activeElement) || document.activeElement === $('ghost-close'))) return;
+      // Audio has no frame to reveal and its waveform is the content, so the bar
+      // is useful at all times; only fullscreen keeps the auto-hide behaviour.
+      if (window.CVFormats.isAudio(owner) && !state.isGhost) return;
       document.body.classList.add('video-idle');
       controls.inert = true;
       $('ghost-close').inert = true;
