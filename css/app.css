@@ -2008,7 +2008,7 @@
 
   .thumb-item {
     width: 100%;
-    height: 64px;
+    height: 88px;
     margin-bottom: 8px;
     position: relative;
     cursor: pointer;
@@ -2021,6 +2021,54 @@
     flex-shrink: 0;
     opacity: 0.88;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  }
+
+  /* The preview fills the card above a fixed name strip, so the caption never
+     overlaps the image and every card ends up the same height. The height is
+     derived from the card and strip sizes rather than hardcoded per box, since
+     an absolutely positioned image with height:auto plus object-fit would fall
+     back to its intrinsic size instead of filling the inset area. */
+  #sidebar .thumb-item .thumb-static,
+  #sidebar .thumb-item .thumb-animated {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: calc(88px - 20px - 2px);
+    object-fit: cover;
+    display: block;
+  }
+
+  .thumb-item .thumb-name {
+    position: absolute;
+    inset: auto 0 0;
+    z-index: 2;
+    height: 20px;
+    padding: 0 6px;
+    display: flex;
+    align-items: center;
+    background: rgba(var(--cyber-shell-void-rgb), 0.92);
+    border-top: 1px solid rgba(var(--cyber-accent-rgb), 0.14);
+    color: var(--cyber-text);
+    font: 500 10px var(--font-ui);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+  }
+
+  .thumb-item.active .thumb-name {
+    /* accent-ink is the vivid accent, which is unreadable on the light theme's
+       pale surface, so the active caption uses the text token there instead. */
+    color: var(--cyber-accent-ink);
+    font-weight: 700;
+    border-top-color: rgba(var(--cyber-accent-rgb), 0.4);
+    background: rgba(var(--cyber-shell-void-rgb), 1);
+  }
+
+  html[data-theme='light'] .thumb-item.active .thumb-name {
+    color: var(--cyber-text);
   }
 
   .thumb-item:hover {
@@ -2073,12 +2121,6 @@
   }
 
   .thumb-item .thumb-animated {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
     opacity: 0;
     pointer-events: none;
     transition: opacity 120ms ease;
@@ -2092,8 +2134,10 @@
   .thumb-item .thumb-idx,
   .thumb-item .idx {
     position: absolute;
-    bottom: 3px;
+    /* Sits on the preview, just above the name strip. */
+    bottom: 23px;
     right: 4px;
+    z-index: 3;
     font-size: 8.5px;
     font-family: var(--font-ui);
     font-weight: 700;
@@ -2122,6 +2166,7 @@
     position: absolute;
     top: 3px;
     left: 4px;
+    z-index: 3;
     font-size: 7.5px;
     font-family: var(--font-ui);
     font-weight: 800;

@@ -1678,6 +1678,14 @@ function buildSidebar() {
     item.appendChild(img);
     if (animatedImg) item.appendChild(animatedImg);
     if (gifBadge) item.appendChild(gifBadge);
+    // Every card carries its file name: audio artwork is otherwise identical
+    // from track to track, and images with similar previews are hard to tell
+    // apart. The extension is dropped, since the icon and badge already say it.
+    const name = document.createElement('span');
+    name.className = 'thumb-name';
+    name.textContent = im.file.name.replace(/\.[^.]+$/, '');
+    name.title = im.file.name;
+    item.appendChild(name);
     item.appendChild(idx);
 
     thumbObserver.observe(item);
