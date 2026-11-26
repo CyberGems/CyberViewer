@@ -65,6 +65,17 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Artist and album from the file's tags. Hidden until they arrive, so a
+   track without tags keeps the caption it always had. */
+#audio-tags {
+  margin: 0 0 4px;
+  font: 500 12px var(--font-ui);
+  color: #a9b8c8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#audio-tags[hidden] { display: none; }
 .audio-meta {
   display: flex;
   justify-content: center;

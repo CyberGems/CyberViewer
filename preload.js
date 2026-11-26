@@ -91,6 +91,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openNativeProperties: (path) => ipcRenderer.send('open-native-properties', path),
   getFileInfo: (path) => ipcRenderer.invoke('get-file-info', path),
   getVideoAudioCodec: (path) => ipcRenderer.invoke('get-video-audio-codec', path),
+  getAudioTags: (path) => ipcRenderer.invoke('get-audio-tags', path),
   validatePaths: (paths) => ipcRenderer.invoke('validate-paths', paths),
   showSaveDialog: (options) => ipcRenderer.invoke('show-save-dialog', options),
   registerContextMenu: (enable, lang) => ipcRenderer.invoke('register-context-menu', enable, lang),

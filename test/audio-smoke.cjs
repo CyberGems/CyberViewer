@@ -61,6 +61,23 @@ if (!restoring) {
   // coefficients. These valid silent frames exercise the actual MP3 decoder.
   const mp3Frame = Buffer.alloc(417); mp3Frame.set([0xff, 0xfb, 0x90, 0x00]);
   fs.writeFileSync(path.join(dataDir, 'Silence.mp3'), Buffer.concat(Array(230).fill(mp3Frame)));
+  // ID3v2.3 text frames: TIT2 (title), TPE1 (artist), TALB (album). Each frame
+  // is a 10-byte header, an encoding byte (3 = UTF-8) and the text.
+  const textFrame = (id, value) => {
+    const body = Buffer.concat([Buffer.from([3]), Buffer.from(value, 'utf8')]);
+    const head = Buffer.alloc(10);
+    head.write(id, 0, 'ascii');
+    head.writeUInt32BE(body.length, 4);
+    return Buffer.concat([head, body]);
+  };
+  const tagBody = Buffer.concat([
+    textFrame('TIT2', 'Tagged Track'),
+    textFrame('TPE1', 'Tagged Artist'),
+    textFrame('TALB', 'Tagged Album')
+  ]);
+  const tagHeader = Buffer.from([0x49, 0x44, 0x33, 3, 0, 0, (tagBody.length >> 21) & 0x7f,
+    (tagBody.length >> 14) & 0x7f, (tagBody.length >> 7) & 0x7f, tagBody.length & 0x7f]);
+  fs.writeFileSync(path.join(dataDir, 'Tagged.mp3'), Buffer.concat([tagHeader, tagBody, ...Array(230).fill(mp3Frame)]));
   const artwork = fs.readFileSync(path.join(__dirname, '..', 'assets', 'icon.png'));
   const picture = Buffer.concat([Buffer.from([0]), Buffer.from('image/png\0', 'ascii'), Buffer.from([3, 0]), artwork]);
   const pictureFrameHead = Buffer.alloc(10); pictureFrameHead.write('APIC'); pictureFrameHead.writeUInt32BE(picture.length, 4);
@@ -385,6 +402,39 @@ app.whenReady().then(async () => {
     await waitFor(() => evaluate('return window.CVVideo.element.currentTime > .15 && window.CVVideo.element.webkitAudioDecodedByteCount > 0;'), 'MP3 decoder');
     await evaluate('window.CVVideo.element.pause();');
     console.log('PASS direct MP3 decoding without conversion');
+    // Tags must enrich the caption without delaying playback or replacing the
+    // name before the answer arrives.
+    await open('Tagged.mp3'); await ready();
+    // attach() must paint the file name synchronously, before any await, so
+    // playback never waits on the tag lookup.
+    const synchronousCaption = await evaluate(`const el=$('audio-name');
+      let seen=null;
+      const observer=new MutationObserver(() => { if (seen===null) seen=el.textContent; });
+      observer.observe(el, { childList: true, characterData: true, subtree: true });
+      window.CVAudioVisuals.attach(state.images[state.current]);
+      const painted=el.textContent;
+      observer.disconnect();
+      return { painted, firstMutation: seen, tagsHidden: $('audio-tags').hidden };`);
+    console.log('caption at attach: ' + JSON.stringify(synchronousCaption));
+    assert.equal(synchronousCaption.painted, 'Tagged.mp3', 'attach paints the file name synchronously');
+    assert.equal(synchronousCaption.tagsHidden, true, 'the tag line stays hidden until tags arrive');
+    await waitFor(() => evaluate(`return $('audio-name').textContent === 'Tagged Track'
+      && $('audio-tags').textContent === 'Tagged Artist · Tagged Album' && !$('audio-tags').hidden;`), 'ID3 tags reach the caption');
+    await evaluate('await window.CVVideo.toggle();');
+    await waitFor(() => evaluate('return window.CVVideo.element.currentTime > .15 && window.CVVideo.element.audioTracks !== undefined || window.CVVideo.element.webkitAudioDecodedByteCount > 0;'), 'tagged MP3 still plays');
+    await evaluate('window.CVVideo.element.pause();');
+    const captionRect = await evaluate(`
+      const caption = document.querySelector('.audio-caption').getBoundingClientRect();
+      return { x: Math.round(caption.left - 20), y: Math.round(caption.top - 12),
+               width: Math.round(caption.width + 40), height: Math.round(caption.height + 24) };
+    `);
+    fs.writeFileSync(path.join(dataDir, 'tagged-caption.png'), (await win.webContents.capturePage(captionRect)).toPNG());
+    // A track without tags keeps the plain name and hides the extra line.
+    await open('Silence.mp3'); await ready();
+    await delay(300);
+    assert.equal(await evaluate(`return $('audio-name').textContent === 'Silence.mp3' && $('audio-tags').hidden
+      && $('audio-tags').textContent === '';`), true, 'an untagged track keeps the plain file name');
+    console.log('PASS ID3 title, artist and album enrich the caption after playback is already live');
     await open('Cover.mp3'); await ready();
     await evaluate('openPropertiesForCurrent();');
     await waitFor(() => evaluate(`const stageElement=$('props-preview-stage'); const stage=stageElement.getBoundingClientRect();

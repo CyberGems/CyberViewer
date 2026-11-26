@@ -3081,6 +3081,36 @@ ipcMain.handle('get-video-audio-codec', async (event, filePath) => {
 });
 
 /**
+ * Read-only tag lookup for the audio caption. Playback never waits for this:
+ * the renderer keeps showing the file name until the tags arrive, and a failure
+ * simply leaves the name in place. Covers are skipped and the parse is capped,
+ * so a huge or malformed file cannot stall the main process on our behalf.
+ */
+ipcMain.handle('get-audio-tags', async (event, filePath) => {
+  try {
+    const absPath = resolveAllowedPath(filePath);
+    if (!isAudioPath(absPath)) return { ok: false };
+    const metadataModule = await (audioMetadataModulePromise ||= import('music-metadata'));
+    const metadata = await metadataModule.parseFile(absPath, {
+      duration: false,
+      skipCovers: true,
+      skipPostHeaders: true,
+      maxMemoryAllocation: 16 * 1024 * 1024
+    });
+    const common = metadata.common || {};
+    const clean = (value) => (typeof value === 'string' ? value.trim().slice(0, 300) : '');
+    return {
+      ok: true,
+      title: clean(common.title),
+      artist: clean(common.artist) || clean(common.albumartist),
+      album: clean(common.album)
+    };
+  } catch (_) {
+    return { ok: false };
+  }
+});
+
+/**
  * Check which paths still exist as image files.
  * Does NOT expand the allowlist — call register-paths after for paths you will open.
  */

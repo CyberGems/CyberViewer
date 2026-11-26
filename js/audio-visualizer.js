@@ -677,6 +677,33 @@ window.CVAudioVisuals = (() => {
     document.getElementById('audio-visual-status').textContent = text(key);
   }
 
+  // Tags enrich the caption but never gate playback: the file name paints
+  // first, and a late answer for a track that is no longer on screen is dropped.
+  let tagToken = 0;
+  async function showTags(track) {
+    const token = ++tagToken;
+    const nameEl = document.getElementById('audio-name');
+    const tagsEl = document.getElementById('audio-tags');
+    if (!track || !window.electronAPI?.getAudioTags) return;
+    let tags;
+    try {
+      tags = await window.electronAPI.getAudioTags(track.file.path);
+    } catch (_) {
+      return;
+    }
+    // The user may have moved on while the tags were being read.
+    if (token !== tagToken || image !== track || !tags || !tags.ok) return;
+    if (!tags.title && !tags.artist && !tags.album) return;
+    nameEl.textContent = tags.title || track.file.name;
+    // Artist and album are shown next to the format, never as a hidden tooltip:
+    // the same line every track already has, so nothing new has to be learned.
+    const detail = [tags.artist, tags.album].filter(Boolean).join(' · ');
+    if (tagsEl) {
+      tagsEl.textContent = detail;
+      tagsEl.hidden = !detail;
+    }
+  }
+
   function attach(next) {
     stopFrames(); level = 0; elapsed = 0; energy = 0; bass = 0; highs = 0;
     waveGain = 1; spin = 0; flow = 0; envelopeClock = 0;
@@ -686,9 +713,17 @@ window.CVAudioVisuals = (() => {
     image = next && window.CVFormats.isAudio(next) ? next : null;
     stage.hidden = !image;
     document.getElementById('audio-visualizer-row').hidden = !image;
+    const tagsEl = document.getElementById('audio-tags');
     if (image) {
-      document.getElementById('audio-name').textContent = image.file.name;
+      const nameEl = document.getElementById('audio-name');
+      nameEl.textContent = image.file.name;
+      if (tagsEl) { tagsEl.textContent = ''; tagsEl.hidden = true; }
       document.getElementById('audio-format').textContent = image.file.name.split('.').pop().toUpperCase();
+      // Deliberately not awaited: tags arrive after playback is already live.
+      void showTags(image);
+    } else {
+      tagToken++;
+      if (tagsEl) { tagsEl.textContent = ''; tagsEl.hidden = true; }
     }
     wire(); resize(); refresh();
   }
