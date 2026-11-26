@@ -6992,9 +6992,12 @@ $('btn-next').addEventListener('click', (e) => {
   window.addEventListener('pointerup', release);
 }());
 
-/** True when each tab keeps its own sidebar open/closed state. */
+/** True when each tab keeps its own sidebar open/closed state (default on). */
 function sidebarStatePerTab() {
-  return !!(state.settings && state.settings.app && state.settings.app.sidebarStatePerTab === true);
+  const app = state.settings && state.settings.app;
+  // Absent means on: settings saved before the option existed must get the
+  // default, not the old global behavior.
+  return !app || app.sidebarStatePerTab !== false;
 }
 
 function sidebarHandleTooltipText(open) {
@@ -8106,7 +8109,7 @@ function openConfig() {
   if (!state.settings) return;
   const s = state.settings.app;
   $('cfg-sidebar').checked = s.sidebarOpen;
-  if ($('cfg-sidebar-per-tab')) $('cfg-sidebar-per-tab').checked = s.sidebarStatePerTab === true;
+  if ($('cfg-sidebar-per-tab')) $('cfg-sidebar-per-tab').checked = s.sidebarStatePerTab !== false;
   $('cfg-statusbar').checked = s.statusbarVisible;
   $('cfg-tray').checked = s.closeToTray;
   if ($('cfg-close-image-tray')) $('cfg-close-image-tray').checked = s.closeImageOnTray !== false;
