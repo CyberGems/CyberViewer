@@ -383,7 +383,7 @@ const MENU_ICON_BY_I18N = {
   menu_open: 'image', menu_open_folder: 'folder', menu_recent: 'clock', youtube_open: 'play',
   menu_recent_folders: 'folder', menu_paste: 'clipboard', menu_close_image: 'close',
   menu_show: 'folder-open', menu_open_containing_folder: 'folder-open', menu_save: 'save', menu_copy: 'copy',
-  menu_copy_path: 'link', menu_copy_file_path: 'copy', menu_save_as: 'save',
+  menu_copy_path: 'link', menu_copy_file_path: 'copy', menu_copy_file_name: 'file', menu_save_as: 'save',
   video_play: 'play', video_pause: 'pause', tabs_open_new: 'tab-new',
   menu_print: 'printer', menu_export_pdf: 'download',
   menu_props: 'info', menu_trash: 'trash', menu_quit: 'quit',
@@ -1197,6 +1197,17 @@ function fileNameFromPath(filePath) {
   if (!filePath) return '';
   const parts = String(filePath).replace(/[\\/]+$/, '').split(/[\\/]/);
   return parts[parts.length - 1] || filePath;
+}
+
+/** Copy just the name (with extension) and confirm it through the same toast
+ *  the path action uses, so both copy entries behave alike. */
+function copyFileName(filePath) {
+  const name = fileNameFromPath(filePath);
+  if (!name) return;
+  navigator.clipboard.writeText(name).then(() => {
+    const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+    showToast(lang === 'es' ? 'NOMBRE COPIADO' : 'NAME COPIED', 'success');
+  }).catch(error => console.error('Unable to copy file name:', error));
 }
 
 function ensureAppSettings() {
@@ -2161,6 +2172,7 @@ function buildMenuTemplate(type, data) {
       { label: getTxt('menu_show'), action: () => window.electronAPI.showItemInFolder(filePath) },
       // Media cards copy the file path, not an image path.
       { label: getTxt('menu_copy_file_path'), action: () => navigator.clipboard.writeText(filePath) },
+      { label: getTxt('menu_copy_file_name'), action: () => copyFileName(filePath) },
       { label: getTxt('menu_props'), action: async () => { await openImagePath(filePath); await state.mainImageReady; showPropertiesPanel(filePath); } },
       { label: getTxt((state.settings.app.favorites || []).includes(filePath) ? 'favorite_remove' : 'favorite_add'), action: () => toggleFavoritePath(filePath) },
       // The playable branch returns before the shared thumbnail block, so the
@@ -2221,6 +2233,12 @@ function buildMenuTemplate(type, data) {
                 showToast(_lang === 'es' ? 'RUTA COPIADA' : 'PATH COPIED', 'success');
               }
             }
+          },
+          {
+            label: getTxt('menu_copy_file_name'),
+            enabled: !!data.path,
+            visible: !!data.path,
+            action: () => copyFileName(data.path)
           },
           {
             label: getTxt('menu_props'),
@@ -2441,6 +2459,12 @@ function buildMenuTemplate(type, data) {
             showToast(lang === 'es' ? 'RUTA COPIADA' : 'PATH COPIED', 'success');
           }
         }
+      },
+      {
+        label: getTxt('menu_copy_file_name'),
+        enabled: !!data.path,
+        visible: !!data.path,
+        action: () => copyFileName(data.path)
       },
       {
         label: getTxt('menu_paste'),
