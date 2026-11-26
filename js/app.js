@@ -303,6 +303,7 @@ const state = {
       favorites: [],
       animateGifs: true,
       compactSidebarCards: false,
+      sidebarStatePerTab: false,
       showShortcutGuide: true,
       checkUpdatesOnStartup: true,
       // Toast once per version; badge stays until update is applied
@@ -6978,6 +6979,11 @@ $('btn-next').addEventListener('click', (e) => {
   window.addEventListener('pointerup', release);
 }());
 
+/** True when each tab keeps its own sidebar open/closed state. */
+function sidebarStatePerTab() {
+  return !!(state.settings && state.settings.app && state.settings.app.sidebarStatePerTab === true);
+}
+
 function sidebarHandleTooltipText(open) {
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
   const t = I18N[lang] || I18N.en || {};
@@ -6996,13 +7002,17 @@ function syncSidebarHandleTooltip() {
 
 /**
  * @param {boolean} open
- * @param {{ persist?: boolean }} [opts] When `persist` is false the change is
- *   session-only and does not overwrite the user's persisted startup preference.
- *   Automatic flows (e.g. opening a folder) use it so expanding the sidebar for
- *   the current session never counts as the user's own choice for next launches.
+ * @param {{ persist?: boolean, scan?: boolean }} [opts] When `persist` is false
+ *   the change is session-only and does not overwrite the user's persisted
+ *   startup preference. Automatic flows (e.g. opening a folder) use it so
+ *   expanding the sidebar for the current session never counts as the user's
+ *   own choice for next launches. `scan: false` skips the folder thumbnail
+ *   scan, which is what a tab switch wants: the incoming tab still holds the
+ *   previous tab's images, so scanning there would index the wrong folder.
  */
 function setSidebarOpen(open, opts = {}) {
   const persist = opts.persist !== false;
+  const scan = opts.scan !== false;
   document.body.classList.remove('sidebar-handle-hover');
 
   state.sidebarOpen = !!open;
@@ -7024,11 +7034,22 @@ function setSidebarOpen(open, opts = {}) {
   syncSidebarHandleTooltip();
 
   if (persist && state.settings && state.settings.app) {
-    state.settings.app.sidebarOpen = state.sidebarOpen;
-    if (isElectron) {
-      window.electronAPI.saveSettings(state.settings.app);
+    // With per-tab sidebar state the toggle belongs to the active tab, so the
+    // startup preference is left alone and every tab keeps its own answer.
+    // Without it, the toggle is the single global preference, as before.
+    if (sidebarStatePerTab()) {
+      const tab = window.CVWorkspace && window.CVWorkspace.model.active;
+      if (tab) tab.sidebarOpen = state.sidebarOpen;
+      window.CVWorkspace?.changed?.();
+    } else {
+      state.settings.app.sidebarOpen = state.sidebarOpen;
+      if (isElectron) {
+        window.electronAPI.saveSettings(state.settings.app);
+      }
     }
   }
+
+  if (!scan) return;
 
   if (state.sidebarOpen) {
     const { done, total } = getFolderThumbStats();
@@ -7977,6 +7998,7 @@ const CONFIG_CONTROL_ICON_BY_ID = {
   'cfg-alpha-bg': 'grid',
   'cfg-image-outline': 'eye',
   'cfg-sidebar': 'panel-left',
+  'cfg-sidebar-per-tab': 'panel-left',
   'cfg-statusbar': 'panel-bottom',
   'cfg-animated-gifs': 'image',
   'cfg-compact-cards': 'panel-bottom',
@@ -8071,6 +8093,7 @@ function openConfig() {
   if (!state.settings) return;
   const s = state.settings.app;
   $('cfg-sidebar').checked = s.sidebarOpen;
+  if ($('cfg-sidebar-per-tab')) $('cfg-sidebar-per-tab').checked = s.sidebarStatePerTab === true;
   $('cfg-statusbar').checked = s.statusbarVisible;
   $('cfg-tray').checked = s.closeToTray;
   if ($('cfg-close-image-tray')) $('cfg-close-image-tray').checked = s.closeImageOnTray !== false;
@@ -8205,6 +8228,7 @@ function collectConfigSettings() {
   const activeTheme = document.querySelector('#cfg-theme-group .theme-card.active');
   return {
     sidebarOpen: $('cfg-sidebar').checked,
+    sidebarStatePerTab: !!($('cfg-sidebar-per-tab') && $('cfg-sidebar-per-tab').checked),
     statusbarVisible: $('cfg-statusbar').checked,
     closeToTray: $('cfg-tray').checked,
     closeImageOnTray: !!($('cfg-close-image-tray') && $('cfg-close-image-tray').checked),

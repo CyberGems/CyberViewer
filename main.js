@@ -214,6 +214,7 @@ function loadSettings() {
       accentColor: '#00d4ff',
       appearanceTheme: 'cyberviewer',
       sidebarOpen: false,
+      sidebarStatePerTab: false,
       statusbarVisible: true,
       preferredDisplayId: 'auto',
       language: 'en',

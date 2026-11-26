@@ -52,7 +52,7 @@
       if (!tab) {
         if (this.tabs.length >= MAX_TABS) throw new Error('TAB_LIMIT');
         tab = { id: `tab-${this.nextId++}`, image, view: cleanView(view), source,
-          hiddenPaths: [], scrollTop: 0 };
+          hiddenPaths: [], scrollTop: 0, sidebarOpen: null };
         this.tabs.push(tab);
       }
       if (activate) this.activeId = tab.id;
@@ -107,7 +107,8 @@
       return { version: 1, activeId: this.activeId, tabs: this.tabs.map(tab => ({
         id: tab.id, path: tab.image.file.path || null, draftId: tab.image.draftId || null,
         name: tab.image.file.name, view: cleanView(tab.view), source: tab.source,
-        hiddenPaths: tab.hiddenPaths, scrollTop: tab.scrollTop
+        hiddenPaths: tab.hiddenPaths, scrollTop: tab.scrollTop,
+        sidebarOpen: typeof tab.sidebarOpen === 'boolean' ? tab.sidebarOpen : null
       })) };
     }
   }
