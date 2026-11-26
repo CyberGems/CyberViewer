@@ -607,7 +607,13 @@ window.CVVideo = (() => {
       // dismissal of the player menu.
       const overSelect = !!event.target.closest('.cfg-select-shell, .cfg-select-menu');
       const overPopup = !!event.target.closest('#video-menu, #video-more, #video-speed, #video-speed-panel') || overSelect;
-      menuDismissClick = (!$('video-menu').hidden || !$('video-speed-panel').hidden) && !overPopup;
+      // The shared context menu belongs to the same family: a press that
+      // dismisses it is not a play/pause press either.
+      const overContext = !!event.target.closest('#custom-ctx-menu, .submenu-portal');
+      if (overContext) menuDismissClick = false;
+      else menuDismissClick = (($('video-menu') && !$('video-menu').hidden) ||
+        ($('video-speed-panel') && !$('video-speed-panel').hidden) ||
+        !!document.querySelector('#custom-ctx-menu.open')) && !overPopup;
       if (!overPopup) closeMenu();
     }, true);
     $('video-play').addEventListener('click', () => void toggle());
