@@ -3182,13 +3182,17 @@ async function loadThumb(i, imgEl, opts) {
 
   const work = (async () => {
     if (isElectron && im.file && im.file.path && window.electronAPI.getThumbnail) {
-      const thumbUrl = await window.electronAPI.getThumbnail(im.file.path, { priority });
+      // Audio asks for embedded cover art: the handler falls back to null when
+      // the tags carry no picture, and the generic note icon is used instead.
+      const wantsCover = window.CVFormats.isAudio(im);
+      const thumbUrl = await window.electronAPI.getThumbnail(im.file.path, { priority, coverArt: wantsCover });
       if (thumbUrl) {
         im.thumbUrl = thumbUrl;
         recordCachedThumb(im.file.path, thumbUrl);
         return;
       } else {
-        im.thumbFailed = true;
+        // No cover in the tags is normal, not a failure: keep the note icon.
+        if (!wantsCover) im.thumbFailed = true;
       }
     }
   })();

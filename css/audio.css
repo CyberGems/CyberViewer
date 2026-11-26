@@ -51,6 +51,28 @@
   color: #e5edf5;
   font-family: var(--font-ui);
 }
+/* Cover art sits beside the title block, not above it, so the caption keeps
+   the same height with or without a picture and the stage never shifts. */
+.audio-caption-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-width: 0;
+}
+.audio-caption-text {
+  min-width: 0;
+  text-align: center;
+}
+#audio-cover {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border-radius: 4px;
+  object-fit: cover;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+}
+#audio-cover[hidden] { display: none; }
 #audio-format {
   display: inline-block;
   font: 600 10px var(--font-mono, monospace);

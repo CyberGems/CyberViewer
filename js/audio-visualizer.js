@@ -684,6 +684,7 @@ window.CVAudioVisuals = (() => {
     const token = ++tagToken;
     const nameEl = document.getElementById('audio-name');
     const tagsEl = document.getElementById('audio-tags');
+    const coverEl = document.getElementById('audio-cover');
     if (!track || !window.electronAPI?.getAudioTags) return;
     let tags;
     try {
@@ -693,6 +694,17 @@ window.CVAudioVisuals = (() => {
     }
     // The user may have moved on while the tags were being read.
     if (token !== tagToken || image !== track || !tags || !tags.ok) return;
+    // Cover art is independent of the text tags: a track with a picture but no
+    // title still gets its art, and a track with neither keeps the plain caption.
+    if (coverEl) {
+      if (tags.cover) {
+        coverEl.src = tags.cover;
+        coverEl.hidden = false;
+      } else {
+        coverEl.removeAttribute('src');
+        coverEl.hidden = true;
+      }
+    }
     if (!tags.title && !tags.artist && !tags.album) return;
     nameEl.textContent = tags.title || track.file.name;
     // Artist and album are shown next to the format, never as a hidden tooltip:
@@ -714,16 +726,21 @@ window.CVAudioVisuals = (() => {
     stage.hidden = !image;
     document.getElementById('audio-visualizer-row').hidden = !image;
     const tagsEl = document.getElementById('audio-tags');
+    const coverEl = document.getElementById('audio-cover');
     if (image) {
       const nameEl = document.getElementById('audio-name');
       nameEl.textContent = image.file.name;
       if (tagsEl) { tagsEl.textContent = ''; tagsEl.hidden = true; }
+      // Reset the art with the rest of the caption so a previous track's cover
+      // never flashes over the new one while its tags load.
+      if (coverEl) { coverEl.removeAttribute('src'); coverEl.hidden = true; }
       document.getElementById('audio-format').textContent = image.file.name.split('.').pop().toUpperCase();
       // Deliberately not awaited: tags arrive after playback is already live.
       void showTags(image);
     } else {
       tagToken++;
       if (tagsEl) { tagsEl.textContent = ''; tagsEl.hidden = true; }
+      if (coverEl) { coverEl.removeAttribute('src'); coverEl.hidden = true; }
     }
     wire(); resize(); refresh();
   }
