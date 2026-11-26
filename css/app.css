@@ -2105,11 +2105,11 @@
      20px, restoring the original density for large libraries. Hovering a card
      brings the strip back over the preview, so a name is still one gesture
      away without a tooltip and without giving up the extra rows. */
-  body.compact-thumbs .thumb-item { height: 64px; }
+  body.compact-thumbs .thumb-item { height: 56px; margin-bottom: 6px; }
   body.compact-thumbs .thumb-item .thumb-name { display: none; }
   body.compact-thumbs .thumb-item:hover .thumb-name { display: flex; }
   body.compact-thumbs #sidebar .thumb-item .thumb-static,
-  body.compact-thumbs #sidebar .thumb-item .thumb-animated { height: calc(64px - 2px); }
+  body.compact-thumbs #sidebar .thumb-item .thumb-animated { height: calc(56px - 2px); }
   body.compact-thumbs .thumb-item .thumb-idx,
   body.compact-thumbs .thumb-item .idx { bottom: 3px; }
   /* The revealed strip occupies the bottom 20px, so the index steps back up. */
