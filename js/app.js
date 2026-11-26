@@ -1767,9 +1767,12 @@ function measureMarqueeNames(scope) {
     if (!strip.clientWidth) continue;
     const overflow = text.scrollWidth - strip.clientWidth + 12;
     if (overflow <= 0) continue;
-    // Scroll exactly the hidden amount, at a steady reading pace (~26 px/s).
+    // Scroll exactly the hidden amount at a steady reading pace (~26 px/s). The
+    // dwell at each end is short and fixed, so a caption that barely overflows
+    // gets a brief nudge instead of the long, near-static crawl a proportional
+    // buffer produced when the distance was only a few pixels.
     text.style.setProperty('--marquee-distance', `-${Math.ceil(overflow)}px`);
-    text.style.setProperty('--marquee-duration', `${Math.max(3, Math.round(overflow / 26 + 2))}s`);
+    text.style.setProperty('--marquee-duration', `${Math.max(1.4, 0.8 + overflow / 26).toFixed(2)}s`);
     strip.classList.add('is-marquee');
   }
 }
