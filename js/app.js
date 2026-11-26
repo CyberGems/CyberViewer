@@ -303,7 +303,7 @@ const state = {
       favorites: [],
       animateGifs: true,
       compactSidebarCards: false,
-      sidebarStatePerTab: false,
+      sidebarStatePerTab: true,
       showShortcutGuide: true,
       checkUpdatesOnStartup: true,
       // Toast once per version; badge stays until update is applied

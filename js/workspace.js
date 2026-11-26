@@ -4,7 +4,7 @@
    stopSlideshow, getOriginalZoom, viewerFitSize, updateSaveButton,
    updateHUDStates, syncFavoritesToggleButtonState,
    showCustomContextMenu, syncCurrentIndex, setCyberTooltip, ttBind, ttHide, iconSvg,
-   setSidebarOpen */
+   setSidebarOpen, sidebarStatePerTab */
 'use strict';
 
 // Tabs retain document metadata and compressed clipboard blobs, never a hidden
@@ -71,7 +71,7 @@ window.CVWorkspace = (() => {
     tab.scrollTop = $('sidebar-scroll')?.scrollTop || 0;
     // Recorded only while the feature is on: turning it off must not overwrite
     // the answers already stored for the other tabs.
-    if (state.settings.app.sidebarStatePerTab === true) tab.sidebarOpen = !!state.sidebarOpen;
+    if (sidebarStatePerTab()) tab.sidebarOpen = !!state.sidebarOpen;
   }
   function isEditing() {
     return busy || dialogDepth > 0 || state.isCropping || !!document.querySelector('.modal-overlay.active');
@@ -151,7 +151,7 @@ window.CVWorkspace = (() => {
     // Per-tab sidebar state: a tab that was collapsed comes back collapsed, so
     // switching to it never starts a folder scan the user did not ask for.
     // A tab that never recorded a state follows the global startup preference.
-    if (state.settings.app.sidebarStatePerTab === true && typeof tab.sidebarOpen === 'boolean' &&
+    if (sidebarStatePerTab() && typeof tab.sidebarOpen === 'boolean' &&
       tab.sidebarOpen !== state.sidebarOpen && typeof setSidebarOpen === 'function') {
       setSidebarOpen(tab.sidebarOpen, { persist: false, scan: false });
     }

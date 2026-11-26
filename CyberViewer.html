@@ -378,13 +378,20 @@
         <canvas id="audio-canvas" aria-hidden="true"></canvas>
         <div id="audio-visual-flash" aria-hidden="true"></div>
         <div class="audio-caption">
-          <h2 id="audio-name"></h2>
-          <p id="audio-tags" hidden></p>
-          <p class="audio-meta">
-            <span id="audio-format"></span>
-            <span class="audio-meta-sep" aria-hidden="true">&middot;</span>
-            <span id="audio-visual-status"></span>
-          </p>
+          <div class="audio-caption-row">
+            <!-- Cover art from the file tags. Hidden unless the track carries an
+                 embedded picture, so tagless tracks keep the plain caption. -->
+            <img id="audio-cover" alt="" hidden draggable="false">
+            <div class="audio-caption-text">
+              <h2 id="audio-name"></h2>
+              <p id="audio-tags" hidden></p>
+              <p class="audio-meta">
+                <span id="audio-format"></span>
+                <span class="audio-meta-sep" aria-hidden="true">&middot;</span>
+                <span id="audio-visual-status"></span>
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1172,7 +1179,7 @@
                   <div class="config-desc" data-i18n="cfg_sidebar_per_tab_desc">Cada pestaña recuerda si el panel lateral estaba abierto o cerrado, de modo que cambiar de pestaña no inicia el escaneo de su carpeta sin querer.</div>
                 </div>
                 <label class="switch">
-                  <input type="checkbox" id="cfg-sidebar-per-tab" data-i18n-aria="cfg_sidebar_per_tab" aria-label="Mantener el estado del panel por pestaña">
+                  <input type="checkbox" id="cfg-sidebar-per-tab" data-i18n-aria="cfg_sidebar_per_tab" aria-label="Mantener el estado del panel por pestaña" checked>
                   <span class="slider"></span>
                 </label>
               </div>
