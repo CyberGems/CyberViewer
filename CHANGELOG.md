@@ -2,6 +2,38 @@
 
 All notable changes to CyberViewer are documented here.
 
+## [1.25.0] - 2026-11-26
+
+### 🇺🇸 English
+
+- The audio seek bar now renders a cached whole-track waveform with played progress and a playhead. Tracks over 160 MB keep the plain bar, and seek previews no longer show an empty video frame.
+- Audio visualizations gain a scrolling Waveform style, wider compositions and a neutral dark stage. The themed Configuration dropdown, arrow buttons and `V` / `Shift+V` shortcuts cycle styles with shortcut hints and a brief style-name confirmation.
+- Windowed audio keeps its transport controls visible; only fullscreen hides them automatically after inactivity.
+- Audio captions prefer tagged titles and list artist and album when available. Embedded cover art appears beside the caption and on sidebar cards, including background-scan results, while metadata and artwork load without delaying playback.
+- Sidebar cards show file names. Long captions scroll only on hover and respect reduced-motion preferences.
+- Compact Sidebar Cards reduces cards to 56 px with 6 px gaps and reveals names on hover. It can be toggled from Settings or thumbnail context menus.
+- Each tab remembers whether its sidebar is open, with the feature enabled by default to prevent unwanted folder scans. The panel slides open and closed, and tabs with a collapsed sidebar show a discreet marker with a localized tooltip.
+- Context menus add Copy File Name, use Copy File Path for media, and give clipboard and new-tab actions clearer icons.
+- Unchecked menu rows retain a dimmed check glyph, and dismissing a context menu no longer pauses media playback.
+- Hovering the title-bar filename shows the full path even when the window is unfocused. Tooltip suppression now expires after window restoration.
+- Confirmation dialogs use a cleaner 40 px status icon. Cancel stays neutral and Confirm carries the danger accent.
+- Both READMEs describe the current update flow and use taglines aligned with the website. Release tooling adds a deterministic smoke workflow and documents release-note coverage requirements.
+
+### 🇪🇸 Español
+
+- La barra de progreso de audio muestra ahora una forma de onda completa memorizada con el progreso reproducido y un cursor. Las pistas de más de 160 MB conservan la barra simple y las vistas previas de búsqueda ya no muestran un fotograma de video vacío.
+- Las visualizaciones de audio suman un estilo Forma de onda desplazable, composiciones más amplias y un escenario oscuro neutro. El desplegable temático de Configuración, las flechas y los atajos `V` / `Shift+V` recorren los estilos con pistas de atajo y una breve confirmación del nombre.
+- El audio en ventana mantiene visibles los controles de reproducción; solo la pantalla completa los oculta automáticamente tras la inactividad.
+- Los rótulos de audio prefieren el título etiquetado y muestran el artista y el álbum cuando están disponibles. La carátula integrada aparece junto al rótulo y en las tarjetas de la barra lateral, incluidas las del escaneo en segundo plano, sin retrasar la reproducción.
+- Las tarjetas de la barra lateral muestran el nombre del archivo. Los nombres largos se desplazan solo al pasar el cursor y respetan la preferencia de movimiento reducido.
+- Tarjetas compactas reduce las tarjetas a 56 px con 6 px de separación y muestra el nombre al pasar el cursor. Se puede activar desde Configuración o desde los menús contextuales de miniaturas.
+- Cada pestaña recuerda si su barra lateral está abierta, con la función activada por defecto para evitar escaneos innecesarios. El panel se abre y se cierra con una animación, y las pestañas con el panel contraído muestran un indicador discreto con un tooltip traducido.
+- Los menús contextuales añaden Copiar nombre de archivo, usan Copiar ruta de archivo para medios y muestran iconos más claros para el portapapeles y las pestañas nuevas.
+- Las filas desmarcadas conservan una marca tenue y cerrar un menú contextual ya no pausa la reproducción.
+- Al pasar el cursor sobre el nombre de la barra de título se muestra la ruta completa incluso si la ventana no está enfocada. La supresión de tooltips caduca al restaurar la ventana.
+- Los diálogos de confirmación usan un icono de estado más limpio de 40 px. Cancelar permanece neutral y Confirmar conserva el acento de peligro.
+- Ambos README describen el flujo de actualización actual y usan lemas alineados con el sitio web. Las herramientas de release añaden un smoke determinista y documentan los requisitos de cobertura de las notas.
+
 ## [1.24.0] - 2026-11-25
 
 ### 🇺🇸 English
