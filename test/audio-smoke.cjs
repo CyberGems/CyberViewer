@@ -370,7 +370,8 @@ app.whenReady().then(async () => {
     const hover = await evaluate(`return [...document.querySelectorAll('.visualizer-arrow')].map(button=>{
       const style=getComputedStyle(button),tip=getComputedStyle(button,'::after');
       return {direction:button.classList.contains('visualizer-arrow-next')?'next':'prev',active:button.classList.contains('is-hovered'),
-        background:style.backgroundColor,border:style.borderColor,tooltipOpacity:Number(tip.opacity),tooltipRight:tip.right};
+        background:style.backgroundColor,border:style.borderColor,tooltipOpacity:Number(tip.opacity),tooltipRight:tip.right,
+        tooltipTop:tip.top,buttonHeight:button.getBoundingClientRect().height};
     });`);
     assert.equal(hover.filter(item => item.active).length, 1, 'Only the hovered visualization arrow is active');
     assert.equal(hover.find(item => item.active).direction, 'next');
@@ -378,6 +379,8 @@ app.whenReady().then(async () => {
     assert.equal(hover.find(item => item.direction === 'prev').tooltipOpacity, 0, 'The left tooltip clears immediately');
     assert.equal(hover[0].background, 'rgba(255, 255, 255, 0.04)', 'The previous arrow does not keep its hover tint');
     assert.equal(hover.find(item => item.direction === 'next').tooltipRight, '0px', 'The right tooltip is aligned inside the window edge');
+    assert.equal(hover.find(item => item.active).tooltipTop, '42px', 'The tooltip uses the compact arrow offset');
+    assert.equal(42 - hover.find(item => item.active).buttonHeight, 8, 'The tooltip keeps the standard 8px gap');
     fs.writeFileSync(path.join(dataDir, 'visualizer-arrow-tooltip.png'), (await win.webContents.capturePage()).toPNG());
     const triggerPoint = await point('#audio-visualizer-row .cfg-select-trigger');
     await win.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mousePressed', ...triggerPoint, button: 'left', clickCount: 1 });

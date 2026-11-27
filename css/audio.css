@@ -177,6 +177,10 @@ body.audio-active.image-error #audio-stage { display: none; }
 #video-menu .visualizer-arrow:focus-visible { outline: 2px solid var(--cyber-accent); outline-offset: 2px; }
 #video-menu .visualizer-arrow:active { background: rgba(var(--cyber-accent-rgb), .18); }
 #video-menu .visualizer-arrow svg { width: 15px; height: 15px; flex: 0 0 15px; color: var(--cyber-accent); }
+/* Match the standard 8px tooltip gap instead of the 64px offset used by
+   taller toolbar buttons. */
+#video-menu .visualizer-arrow.tooltip-bottom::after { top: 42px; }
+#video-menu .visualizer-arrow.tooltip-bottom::before { top: 36px; }
 /* The styled trigger takes the row width in the player menu. */
 #audio-visualizer-row .cfg-select-shell { display: block; flex: 1 1 auto; min-width: 0; }
 #audio-visualizer-row .cfg-select-trigger { width: 100%; padding-left: 9px; padding-right: 8px; }
