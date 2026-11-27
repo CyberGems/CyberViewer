@@ -119,7 +119,8 @@ describe('tab bar ui', () => {
     assert.match(html, /class="tab-switcher-actions"/);
     assert.match(tabsCss, /\.tab-switcher-actions \{ display: flex; gap: 4px; margin-top: 8px; \}/);
     assert.match(workspace, /function duplicateTabsToClose\(\) \{/);
-    assert.match(workspace, /const keep = tabs\.includes\(model\.active\) \? model\.active : tabs\[0\];/);
+    assert.match(workspace, /if \(tabs\.length < 2\) continue;\s*ids\.push\(tabs\[0\]\.id\);/);
+    assert.doesNotMatch(workspace, /const keep = tabs\.includes\(model\.active\)/);
     assert.match(workspace, /\{ label: text\('tabs_close_duplicates'\), icon: 'copy', enabled: duplicates\.length > 0,/);
     assert.match(workspace, /\$\('tab-switcher-close-duplicates'\)\.disabled = duplicateTabsToClose\(\)\.length === 0;/);
     assert.match(workspace, /\$\('tab-switcher-close-duplicates'\)\.addEventListener\('click', \(\) => \{[\s\S]*?closeTabs\(duplicateTabsToClose\(\)\);/);

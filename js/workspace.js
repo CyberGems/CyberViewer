@@ -408,8 +408,7 @@ window.CVWorkspace = (() => {
     const ids = [];
     for (const tabs of groups.values()) {
       if (tabs.length < 2) continue;
-      const keep = tabs.includes(model.active) ? model.active : tabs[0];
-      for (const tab of tabs) if (tab !== keep) ids.push(tab.id);
+      ids.push(tabs[0].id);
     }
     return ids;
   }
