@@ -321,6 +321,37 @@ app.whenReady().then(async () => {
       'active tab should be visible after the strip is laid out again: ' + JSON.stringify(afterResize));
     console.log('PASS overflow: active tab remains visible after restoring 40 tabs and resizing');
 
+    const wheelMotion = await evaluate(`return new Promise(resolve => {
+      const list = $('image-tab-list');
+      list.scrollLeft = 0;
+      const samples = [list.scrollLeft];
+      const event = new WheelEvent('wheel', { deltaY: 120, deltaMode: 0, cancelable: true, bubbles: true });
+      list.dispatchEvent(event);
+      const started = performance.now();
+      const sample = () => {
+        samples.push(list.scrollLeft);
+        if (performance.now() - started < 220) requestAnimationFrame(sample);
+        else resolve({ prevented: event.defaultPrevented, samples, final: list.scrollLeft });
+      };
+      requestAnimationFrame(sample);
+    });`);
+    assert.equal(wheelMotion.prevented, true, 'horizontal tab scrolling owns the wheel gesture');
+    assert.ok(wheelMotion.final > 50, 'pixel wheel delta moves the strip toward its target: ' + wheelMotion.final);
+    assert.ok(new Set(wheelMotion.samples.map(value => Math.round(value))).size >= 3,
+      'wheel scrolling advances through intermediate positions: ' + JSON.stringify(wheelMotion.samples));
+    await waitFor(() => evaluate("return $('image-tab-list').scrollLeft === 120;"), 'pixel wheel scroll settles');
+    assert.equal(await evaluate(`const list = $('image-tab-list'); list.scrollLeft = 0;
+      const event = new WheelEvent('wheel', { deltaY: 1, deltaMode: 1, cancelable: true, bubbles: true });
+      list.dispatchEvent(event); return event.defaultPrevented;`), true, 'line wheel delta is normalized');
+    await waitFor(() => evaluate("return $('image-tab-list').scrollLeft === 40;"), 'line wheel scroll settles');
+    const ctrlWheel = await evaluate(`const list = $('image-tab-list'); const before = list.scrollLeft;
+      const event = new WheelEvent('wheel', { deltaY: 120, deltaMode: 0, ctrlKey: true, cancelable: true, bubbles: true });
+      list.dispatchEvent(event); return { prevented: event.defaultPrevented, before, after: list.scrollLeft };`);
+    assert.equal(ctrlWheel.prevented, false, 'Ctrl+wheel remains available to the browser');
+    assert.equal(ctrlWheel.after, ctrlWheel.before, 'Ctrl+wheel does not move the tab strip');
+    await evaluate("window.dispatchEvent(new Event('resize'));");
+    console.log('PASS tab strip wheel scrolling is smooth, normalized, and preserves Ctrl+wheel');
+
     await waitFor(() => evaluate("return $('titlebar-filename').textContent === 'overflow-40.png';"),
       'title bar reflects the restored active file');
     const overflowPath = path.join(dataDir, 'overflow-40.png');

@@ -105,6 +105,14 @@ describe('tab bar ui', () => {
     assert.match(tabsCss, /\.tab-bar-nav-btn\[hidden\] \{ display: none; \}/);
   });
 
+  it('scrolls the tab strip smoothly with normalized wheel deltas', () => {
+    assert.doesNotMatch(workspace, /list\.scrollLeft \+= event\.deltaY \|\| event\.deltaX/);
+    assert.match(workspace, /if \(event\.ctrlKey \|\| list\.scrollWidth <= list\.clientWidth\) \{ stopTabWheelScroll\(\); return; \}/);
+    assert.match(workspace, /const delta = Math\.abs\(event\.deltaX\) > Math\.abs\(event\.deltaY\) \? event\.deltaX : event\.deltaY;/);
+    assert.match(workspace, /const scale = event\.deltaMode === 1 \? 40 : event\.deltaMode === 2 \? list\.clientWidth : 1;/);
+    assert.match(workspace, /if \(!tabWheelRaf\) tabWheelRaf = requestAnimationFrame\(stepTabWheelScroll\);/);
+    assert.match(workspace, /stopTabWheelScroll\(\);\s*tabList\.scrollBy\(\{ left: direction \* tabList\.clientWidth \* 0\.75, behavior: 'smooth' \}\);/);
+  });
   it('closes duplicate local tabs from the switcher and each tab menu', () => {
     for (const lang of ['en', 'es']) assert.ok(ui[lang].tabs_close_duplicates);
     assert.match(html, /id="tab-switcher-close-duplicates"/);

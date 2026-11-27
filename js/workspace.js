@@ -1030,9 +1030,41 @@ window.CVWorkspace = (() => {
   }
   function initialize() {
     const list = $('image-tab-list');
+    let tabWheelRaf = null;
+    let tabWheelTarget = 0;
+    const stopTabWheelScroll = () => {
+      if (tabWheelRaf) cancelAnimationFrame(tabWheelRaf);
+      tabWheelRaf = null;
+    };
+    const stepTabWheelScroll = () => {
+      const current = list.scrollLeft;
+      const distance = tabWheelTarget - current;
+      if (Math.abs(distance) < .5) {
+        list.scrollLeft = tabWheelTarget;
+        tabWheelRaf = null;
+        return;
+      }
+      list.scrollLeft = current + distance * .22;
+      // Chromium can round subpixel scrolls to physical pixels and stop making progress.
+      if (list.scrollLeft === current) {
+        list.scrollLeft = tabWheelTarget;
+        tabWheelRaf = null;
+        return;
+      }
+      tabWheelRaf = requestAnimationFrame(stepTabWheelScroll);
+    };
     list.addEventListener('wheel', event => {
-      if (!event.ctrlKey && list.scrollWidth > list.clientWidth) { event.preventDefault(); list.scrollLeft += event.deltaY || event.deltaX; }
+      if (event.ctrlKey || list.scrollWidth <= list.clientWidth) { stopTabWheelScroll(); return; }
+      const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+      if (!delta) return;
+      const scale = event.deltaMode === 1 ? 40 : event.deltaMode === 2 ? list.clientWidth : 1;
+      const maxScroll = list.scrollWidth - list.clientWidth;
+      event.preventDefault();
+      tabWheelTarget = Math.max(0, Math.min(maxScroll,
+        (tabWheelRaf ? tabWheelTarget : list.scrollLeft) + delta * scale));
+      if (!tabWheelRaf) tabWheelRaf = requestAnimationFrame(stepTabWheelScroll);
     }, { passive: false });
+    window.addEventListener('blur', stopTabWheelScroll);
     list.addEventListener('pointerover', event => {
       const button = event.target.closest('.image-tab');
       if (button) prepareTooltip(button);
@@ -1084,6 +1116,7 @@ window.CVWorkspace = (() => {
     };
     const startTabScroll = (direction) => {
       stopTabScroll();
+      stopTabWheelScroll();
       tabScrollHeld = true;
       const step = () => {
         tabList.scrollLeft += direction * 8;
@@ -1099,6 +1132,7 @@ window.CVWorkspace = (() => {
       ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => btn.addEventListener(ev, stopTabScroll));
       btn.addEventListener('click', () => {
         if (tabScrollHeld) { tabScrollHeld = false; return; }
+        stopTabWheelScroll();
         tabList.scrollBy({ left: direction * tabList.clientWidth * 0.75, behavior: 'smooth' });
       });
     };
