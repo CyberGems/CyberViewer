@@ -1,6 +1,6 @@
 'use strict';
 // Run through scripts/test-workspace.cjs, never against the user's app data.
-const { app, BrowserWindow, nativeImage } = require('electron');
+const { app, BrowserWindow, dialog, nativeImage } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const assert = require('node:assert/strict');
@@ -53,6 +53,45 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 3);
     assert.equal(await evaluate('return mainImg.naturalWidth;'), 120);
     await waitFor(() => evaluate('return state.images.length === 3;'), 'folder scan');
+
+    const originalOpenDialog = dialog.showOpenDialog;
+    const dialogCalls = [];
+    let dialogResult = { canceled: false, filePaths: [files[0]] };
+    dialog.showOpenDialog = async (_window, options) => {
+      dialogCalls.push(options);
+      return dialogResult;
+    };
+    try {
+      assert.deepEqual(await evaluate('return window.electronAPI.openFile();'), [files[0]]);
+      assert.equal(dialogCalls[0].defaultPath, undefined, 'the first file dialog uses the system default');
+      assert.equal(JSON.parse(fs.readFileSync(path.join(dataDir, 'settings.json'), 'utf8')).app.lastOpenDir,
+        dataDir, 'a selected file persists its directory');
+      await evaluate('return window.electronAPI.openFile();');
+      assert.equal(dialogCalls[1].defaultPath, dataDir, 'the next file dialog starts in the last directory');
+
+      const dialogFolder = path.join(dataDir, 'dialog-folder');
+      fs.mkdirSync(dialogFolder);
+      fs.copyFileSync(files[0], path.join(dialogFolder, 'folder-image.png'));
+      dialogResult = { canceled: false, filePaths: [dialogFolder] };
+      const folderResult = await evaluate('return window.electronAPI.openFolder();');
+      assert.equal(folderResult.ok, true, 'the folder dialog opens the selected directory');
+      assert.equal(dialogCalls[2].defaultPath, dataDir, 'the folder dialog shares the remembered directory');
+      assert.equal(JSON.parse(fs.readFileSync(path.join(dataDir, 'settings.json'), 'utf8')).app.lastOpenDir,
+        dialogFolder, 'a selected folder becomes the remembered directory');
+
+      dialogResult = { canceled: true, filePaths: [] };
+      assert.equal(await evaluate('return window.electronAPI.openFile();'), null);
+      assert.equal(JSON.parse(fs.readFileSync(path.join(dataDir, 'settings.json'), 'utf8')).app.lastOpenDir,
+        dialogFolder, 'canceling a dialog preserves the last directory');
+
+      fs.renameSync(dialogFolder, dialogFolder + '-moved');
+      dialogResult = { canceled: false, filePaths: [files[0]] };
+      await evaluate('return window.electronAPI.openFile();');
+      assert.equal(dialogCalls[4].defaultPath, undefined, 'a missing remembered directory falls back to the system default');
+    } finally {
+      dialog.showOpenDialog = originalOpenDialog;
+    }
+
     await evaluate("$('btn-next').click();");
     await loaded();
     assert.equal(await evaluate('return window.CVWorkspace.model.activeId;'), 'tab-1',

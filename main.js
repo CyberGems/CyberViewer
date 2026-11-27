@@ -1756,11 +1756,32 @@ ipcMain.handle('win-pointer-position', (event) => {
   };
 });
 
+function getLastOpenDirectory() {
+  const settings = loadSettings();
+  const dir = settings.app && settings.app.lastOpenDir;
+  if (typeof dir !== 'string' || !dir) return '';
+  try {
+    return fs.statSync(dir).isDirectory() ? dir : '';
+  } catch (_) {
+    return '';
+  }
+}
+
+function rememberOpenDirectory(dirPath) {
+  if (typeof dirPath !== 'string' || !dirPath) return;
+  try {
+    if (!fs.statSync(dirPath).isDirectory()) return;
+  } catch (_) {
+    return;
+  }
+  saveSettings({ app: { lastOpenDir: dirPath } });
+}
+
 // Shared by the renderer's open dialog IPC and the tray "Open file..." item.
 // Returns the selected media paths, or null when the dialog was canceled.
 async function openMediaFileDialog() {
   const lang = getUiLang();
-  const result = await dialog.showOpenDialog(win, {
+  const options = {
     title: tMenu('dialog_open_title', lang),
     filters: [
       {
@@ -1770,9 +1791,13 @@ async function openMediaFileDialog() {
       { name: tMenu('dialog_open_filter_all', lang), extensions: ['*'] }
     ],
     properties: ['openFile', 'multiSelections']
-  });
+  };
+  const lastDir = getLastOpenDirectory();
+  if (lastDir) options.defaultPath = lastDir;
+  const result = await dialog.showOpenDialog(win, options);
   if (result.canceled || !result.filePaths.length) return null;
   for (const filePath of result.filePaths) pathAllowlist.allowMediaFile(filePath);
+  rememberOpenDirectory(path.dirname(result.filePaths[0]));
   return result.filePaths;
 }
 
@@ -1829,13 +1854,17 @@ async function resolveFirstImageInDir(dirPath) {
  */
 ipcMain.handle('open-folder-dialog', async () => {
   const lang = getUiLang();
-  const result = await dialog.showOpenDialog(win, {
+  const options = {
     title: tMenu('dialog_open_folder_title', lang),
     properties: ['openDirectory']
-  });
+  };
+  const lastDir = getLastOpenDirectory();
+  if (lastDir) options.defaultPath = lastDir;
+  const result = await dialog.showOpenDialog(win, options);
   if (result.canceled || !result.filePaths.length) {
     return { ok: false, canceled: true };
   }
+  rememberOpenDirectory(result.filePaths[0]);
   return resolveFirstImageInDir(result.filePaths[0]);
 });
 
