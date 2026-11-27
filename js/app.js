@@ -1542,7 +1542,7 @@ async function startBackgroundScan() {
       }
 
       const imgEl = sidebar.querySelector(`.thumb-item[data-index="${idx}"] .thumb-static`);
-      if (imgEl && im.thumbUrl && imgEl.style.opacity === '0') {
+      if (imgEl && im.thumbUrl) {
         setSidebarThumbSrc(idx, imgEl);
       }
 

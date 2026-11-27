@@ -79,13 +79,22 @@ if (!restoring) {
     (tagBody.length >> 14) & 0x7f, (tagBody.length >> 7) & 0x7f, tagBody.length & 0x7f]);
   fs.writeFileSync(path.join(dataDir, 'Tagged.mp3'), Buffer.concat([tagHeader, tagBody, ...Array(230).fill(mp3Frame)]));
   const artwork = fs.readFileSync(path.join(__dirname, '..', 'assets', 'icon.png'));
-  const picture = Buffer.concat([Buffer.from([0]), Buffer.from('image/png\0', 'ascii'), Buffer.from([3, 0]), artwork]);
-  const pictureFrameHead = Buffer.alloc(10); pictureFrameHead.write('APIC'); pictureFrameHead.writeUInt32BE(picture.length, 4);
-  const pictureFrame = Buffer.concat([pictureFrameHead, picture]);
-  const tagSize = pictureFrame.length;
-  const id3Header = Buffer.from([0x49, 0x44, 0x33, 3, 0, 0, (tagSize >> 21) & 0x7f,
-    (tagSize >> 14) & 0x7f, (tagSize >> 7) & 0x7f, tagSize & 0x7f]);
-  fs.writeFileSync(path.join(dataDir, 'Cover.mp3'), Buffer.concat([id3Header, pictureFrame, ...Array(230).fill(mp3Frame)]));
+  const writeCoverMp3 = (filePath, cover) => {
+    const picture = Buffer.concat([Buffer.from([0]), Buffer.from('image/png\0', 'ascii'), Buffer.from([3, 0]), cover]);
+    const pictureFrameHead = Buffer.alloc(10); pictureFrameHead.write('APIC'); pictureFrameHead.writeUInt32BE(picture.length, 4);
+    const pictureFrame = Buffer.concat([pictureFrameHead, picture]);
+    const tagSize = pictureFrame.length;
+    const id3Header = Buffer.from([0x49, 0x44, 0x33, 3, 0, 0, (tagSize >> 21) & 0x7f,
+      (tagSize >> 14) & 0x7f, (tagSize >> 7) & 0x7f, tagSize & 0x7f]);
+    fs.writeFileSync(filePath, Buffer.concat([id3Header, pictureFrame, ...Array(230).fill(mp3Frame)]));
+  };
+  writeCoverMp3(path.join(dataDir, 'Cover.mp3'), artwork);
+  const artworkDir = path.join(dataDir, 'cover-artwork'); fs.mkdirSync(artworkDir);
+  const coverA = nativeImage.createFromBitmap(Buffer.from([220, 70, 70, 255]), { width: 1, height: 1 }).resize({ width: 96, height: 96 }).toPNG();
+  const coverB = nativeImage.createFromBitmap(Buffer.from([60, 180, 110, 255]), { width: 1, height: 1 }).resize({ width: 96, height: 96 }).toPNG();
+  writeCoverMp3(path.join(artworkDir, 'Cover A.mp3'), coverA);
+  writeCoverMp3(path.join(artworkDir, 'Cover B.mp3'), coverB);
+  fs.copyFileSync(path.join(dataDir, 'Silence.mp3'), path.join(artworkDir, 'No Cover.mp3'));
   fs.writeFileSync(path.join(dataDir, 'Broken.wav'), 'not a wav');
   fs.writeFileSync(path.join(dataDir, 'Picture.png'), nativeImage.createFromBitmap(Buffer.from([50, 100, 170, 255]), { width: 1, height: 1 }).resize({ width: 120, height: 80 }).toPNG());
 }
@@ -721,6 +730,33 @@ app.whenReady().then(async () => {
     fs.writeFileSync(path.join(dataDir, 'audio-cover-properties.png'), (await win.webContents.capturePage()).toPNG());
     await evaluate("closeModal('modal-properties');");
     console.log('PASS embedded MP3 artwork is extracted and fills the preview without the image checker');
+    await evaluate('ensureSidebarOpen();');
+    await evaluate('await openImagePath(' + JSON.stringify(path.join(dataDir, 'cover-artwork', 'Cover A.mp3')) + ');'); await ready();
+    await waitFor(() => evaluate('return state.images.length === 3;'), 'MP3 artwork folder scan');
+    await waitFor(() => evaluate(`const names=['Cover A.mp3','Cover B.mp3'];
+      return !state.scanInProgress && names.every(name=>{
+        const index=state.images.findIndex(item=>item.file.name===name), image=state.images[index];
+        const element=document.querySelector('.thumb-item[data-index="'+index+'"] .thumb-static');
+        return image?.thumbUrl && element?.complete && element.naturalWidth>0 && getComputedStyle(element).opacity==='1' &&
+          !element.src.endsWith('/assets/audio-thumbnail.svg');
+      });`), 'all sidebar MP3 covers load before changing tracks');
+    assert.equal(await evaluate(`const index=state.images.findIndex(item=>item.file.name==='No Cover.mp3');
+      const image=document.querySelector('.thumb-item[data-index="'+index+'"] .thumb-static');
+      return state.images[index].thumbUrl===null && image.complete && image.naturalWidth>0 &&
+        getComputedStyle(image).opacity==='1' && image.src.endsWith('/assets/audio-thumbnail.svg');`), true,
+    'an MP3 without artwork keeps the generic sidebar icon');
+    assert.equal(await evaluate('return state.images[state.current].file.name;'), 'Cover A.mp3');
+    const sidebarRect = await evaluate("return $('sidebar').getBoundingClientRect().toJSON();");
+    fs.writeFileSync(path.join(dataDir,'mp3-sidebar-covers.png'), (await win.webContents.capturePage(sidebarRect)).toPNG());
+    await evaluate(`const index=state.images.findIndex(item=>item.file.name==='Cover B.mp3');
+      document.querySelector('.thumb-item[data-index="'+index+'"]').click();`);
+    await ready();
+    assert.equal(await evaluate(`return state.images[state.current].file.name==='Cover B.mp3' && ['Cover A.mp3','Cover B.mp3'].every(name=>{
+      const index=state.images.findIndex(item=>item.file.name===name), image=state.images[index];
+      const element=document.querySelector('.thumb-item[data-index="'+index+'"] .thumb-static');
+      return element.src===new URL(image.thumbUrl,location.href).href && getComputedStyle(element).opacity==='1';
+    });`), true, 'selecting another track preserves each embedded sidebar cover');
+    console.log('PASS sidebar hydrates every MP3 cover before selection and keeps untagged tracks generic');
     const videoBytes = await evaluate(`
       const c=document.createElement('canvas'); c.width=1280; c.height=720;
       const draw=c.getContext('2d'), stream=c.captureStream(10), ac=new AudioContext();
