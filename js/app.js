@@ -987,7 +987,7 @@ function loadFiles(files, initialIdx = 0, internal = false) {
       const filePath = file.path || (isElectron && window.electronAPI.pathForFile ? window.electronAPI.pathForFile(file) : '');
       return filePath ? { name: file.name, path: filePath, size: file.size, type: file.type } : file;
     });
-    return window.CVWorkspace.openFiles(entries, initialIdx);
+    return window.CVWorkspace.openFiles(entries, initialIdx, { repositionReused: true });
   }
   const loadSeq = state.openSeq;
   // Cancelar cualquier scan previo antes de reemplazar datos
@@ -1329,7 +1329,7 @@ async function openImageDialog() {
   const result = await window.electronAPI.openFile();
   const paths = Array.isArray(result) ? result : result ? [result] : [];
   for (const filePath of paths) pushRecentFile(filePath);
-  if (paths.length) await window.CVWorkspace.openFiles(paths.map(filePath => ({ name: fileNameFromPath(filePath), path: filePath, size: 0 })));
+  if (paths.length) await window.CVWorkspace.openFiles(paths.map(filePath => ({ name: fileNameFromPath(filePath), path: filePath, size: 0 })), 0, { repositionReused: true });
 }
 
 async function openFolderDialog() {

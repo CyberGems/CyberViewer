@@ -32,11 +32,12 @@ describe('tab bar ui', () => {
   });
   it('opens new tabs next to the current one by default, with an end-of-list setting', () => {
     // Default placement: right after the active tab. Drops with an explicit
-    // position (insertAt) and reused tabs keep their placement; restore
-    // rebuilds its saved order through model.open directly.
+    // position (insertAt) keep it; explicit Open also repositions reused tabs.
     assert.match(html, /id="cfg-tabs-open-next"[^>]*checked/);
     assert.match(workspace, /state\.settings\.app\.tabsOpenNextToCurrent !== false/);
-    assert.match(workspace, /else if \(nextToCurrent && !known\.has\(tab\)\) model\.moveTo\(tab\.id, base \+ placed\+\+\);/);
+    assert.match(workspace, /const repositionReused = options\.repositionReused === true;/);
+    assert.match(workspace, /else if \(nextToCurrent && \(!known\.has\(tab\) \|\| repositionReused\)\) model\.moveTo\(tab\.id, base \+ placed\+\+\);/);
+    assert.match(appJs, /\{ repositionReused: true \}/);
     assert.match(appJs, /\$\('cfg-tabs-open-next'\)\.checked = s\.tabsOpenNextToCurrent !== false;/);
     assert.match(appJs, /tabsOpenNextToCurrent: \$\('cfg-tabs-open-next'\)\.checked,/);
     for (const lang of ['en', 'es']) {

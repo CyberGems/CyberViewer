@@ -209,8 +209,9 @@ window.CVWorkspace = (() => {
     let insertion = Number.isInteger(options.insertAt) ? Math.max(0, options.insertAt) : null;
     // "Open next to current" (default): new tabs land right after the active
     // one instead of at the end. Drops with an explicit position keep it, and
-    // already-open files reuse their tab without being repositioned.
+    // an explicit Open dialog can also bring a reused tab next to the active one.
     const nextToCurrent = insertion === null && state.settings.app.tabsOpenNextToCurrent !== false;
+    const repositionReused = options.repositionReused === true;
     const known = new Set(model.tabs);
     const anchor = model.tabs.indexOf(model.active);
     const base = anchor < 0 ? model.tabs.length : anchor + 1;
@@ -222,7 +223,7 @@ window.CVWorkspace = (() => {
           activate: false, source: options.source, view: options.view, reusePath: options.reusePath !== false
         });
         if (insertion !== null) model.moveTo(tab.id, insertion++);
-        else if (nextToCurrent && !known.has(tab)) model.moveTo(tab.id, base + placed++);
+        else if (nextToCurrent && (!known.has(tab) || repositionReused)) model.moveTo(tab.id, base + placed++);
         if (index === initialIdx) target = tab;
       }
     } catch (error) {

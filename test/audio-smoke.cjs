@@ -29,7 +29,7 @@ if (!process.versions.electron) {
   console.log('Audio test data and screenshots: ' + dataDir); process.exit(0);
 }
 
-const { app, BrowserWindow, clipboard, nativeImage } = require('electron');
+const { app, BrowserWindow, clipboard, dialog, nativeImage } = require('electron');
 app.disableHardwareAcceleration();
 const dataDir = process.env.CV_AUDIO_TEST_DIR;
 if (!dataDir || !path.basename(dataDir).startsWith('cyberviewer-audio-test-')) throw Error('Isolated profile required');
@@ -182,6 +182,60 @@ app.whenReady().then(async () => {
       'A disabled custom equalizer restores without reconnecting audio');
     for (const name of formatSamples) await checkFormat(name, true);
     console.log('PASS audio session restores position, paused playback and effects preference');
+
+    const audioTabId = await evaluate(`return window.CVWorkspace.model.tabs.find(tab =>
+      window.CVTabs.pathKey(tab.image.file.path) === window.CVTabs.pathKey(${JSON.stringify(wav)}))?.id;`);
+    assert.ok(audioTabId, 'restored session keeps the WAV tab');
+    const placementDir = path.join(dataDir, 'more-placement');
+    fs.mkdirSync(placementDir, { recursive: true });
+    const placementFiles = ['before-1.png', 'before-2.png', 'from-more.png', 'reused-from-more.png']
+      .map(name => path.join(placementDir, name));
+    const placementPng = fs.readFileSync(path.join(dataDir, 'Picture.png'));
+    for (const file of placementFiles) fs.writeFileSync(file, placementPng);
+    const placementImageReady = () => waitFor(() => evaluate('return !state.transitioning && mainImg.complete && mainImg.naturalWidth === 120;'), 'placement image loaded');
+    const openPlacementImage = async name => {
+      await evaluate('await openImagePath(' + JSON.stringify(path.join(placementDir, name)) + ');');
+      await placementImageReady();
+    };
+    await openPlacementImage('before-1.png');
+    await openPlacementImage('before-2.png');
+    await openPlacementImage('reused-from-more.png');
+    const playAudio = async () => {
+      await evaluate(`await window.CVWorkspace.activate(${JSON.stringify(audioTabId)}); window.CVVideo.reveal();`);
+      await ready();
+      await evaluate(`const element=window.CVVideo.element; element.currentTime=0; element.muted=false; element.volume=.1; await element.play();`);
+      await waitFor(() => evaluate('return !window.CVVideo.element.paused && window.CVVideo.element.currentTime > .1;'), 'audio playing before More open');
+    };
+    const originalOpenDialog = dialog.showOpenDialog;
+    try {
+      await playAudio();
+      const newAnchor = await evaluate('return window.CVWorkspace.model.tabs.indexOf(window.CVWorkspace.model.active);');
+      const beforeNewCount = await evaluate('return window.CVWorkspace.model.tabs.length;');
+      dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [placementFiles[2]] });
+      await evaluate("$('video-more').click(); $('video-open').click();");
+      await waitFor(() => evaluate(`return window.CVWorkspace.model.tabs.length === ${beforeNewCount + 1} &&
+        window.CVWorkspace.model.active.image.file.path === ${JSON.stringify(placementFiles[2])};`), 'new image opened from More');
+      await placementImageReady();
+      const newIndex = await evaluate('return window.CVWorkspace.model.tabs.indexOf(window.CVWorkspace.model.active);');
+      assert.equal(newIndex, newAnchor + 1, 'More opens a new image immediately after the active audio tab');
+
+      await playAudio();
+      const reusedAnchor = await evaluate('return window.CVWorkspace.model.tabs.indexOf(window.CVWorkspace.model.active);');
+      const reusedBefore = await evaluate(`return window.CVWorkspace.model.tabs.findIndex(tab => tab.image.file.path === ${JSON.stringify(placementFiles[3])});`);
+      assert.ok(reusedBefore > reusedAnchor + 1, 'the reused image starts far behind the active audio tab');
+      dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [placementFiles[3]] });
+      await evaluate("$('video-more').click(); $('video-open').click();");
+      await waitFor(() => evaluate(`return window.CVWorkspace.model.active.image.file.path === ${JSON.stringify(placementFiles[3])};`), 'reused image opened from More');
+      await placementImageReady();
+      const reusedAfter = await evaluate('return window.CVWorkspace.model.tabs.indexOf(window.CVWorkspace.model.active);');
+      assert.equal(reusedAfter, reusedAnchor + 1, 'More brings an already-open image next to the active audio tab');
+    } finally {
+      dialog.showOpenDialog = originalOpenDialog;
+    }
+    await evaluate(`await window.CVWorkspace.activate(${JSON.stringify(audioTabId)}); window.CVVideo.element.pause();
+      window.CVWorkspace.closeTabs(window.CVWorkspace.model.tabs.filter(tab => tab.image.file.path?.startsWith(${JSON.stringify(placementDir)})).map(tab => tab.id));`);
+    await ready();
+    console.log('PASS More opens new and reused images next to the active audio tab');
   } else {
     await open('Tone #ñ %.wav'); await ready();
     const originalId = await evaluate('return window.CVWorkspace.model.activeId;');
