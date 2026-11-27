@@ -315,13 +315,14 @@ app.whenReady().then(async () => {
 
     await waitFor(() => evaluate("return $('titlebar-filename').textContent === 'overflow-40.png';"),
       'title bar reflects the restored active file');
+    const overflowPath = path.join(dataDir, 'overflow-40.png');
     const titleRegion = await evaluate("const el = $('titlebar-filename'); return {" +
       "tag: el.tagName, region: getComputedStyle(el).getPropertyValue('-webkit-app-region')," +
       "name: el.textContent, tooltip: el.dataset.tooltip, cursor: getComputedStyle(el).cursor };");
     assert.equal(titleRegion.tag, 'DIV');
     assert.equal(titleRegion.region, 'drag');
     assert.equal(titleRegion.name, 'overflow-40.png');
-    assert.equal(titleRegion.tooltip, undefined, 'full title should not have a redundant tooltip');
+    assert.equal(titleRegion.tooltip, overflowPath, 'title tooltip carries the full path');
     assert.equal(titleRegion.cursor, 'default');
     const clippedTitle = await evaluate(`const el = $('titlebar-filename');
       el.style.maxWidth = '60px';
@@ -329,8 +330,9 @@ app.whenReady().then(async () => {
       return { clipped: base.scrollWidth > base.clientWidth + 1,
         title: el.getBoundingClientRect().toJSON() };`);
     assert.equal(clippedTitle.clipped, true);
-    await waitFor(() => evaluate("return $('titlebar-filename').dataset.tooltip === 'overflow-40.png';"),
-      'clipped filename tooltip appears after layout');
+    await evaluate('await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));');
+    await waitFor(() => evaluate("return $('titlebar-filename').dataset.tooltip === " + JSON.stringify(overflowPath) + ";"),
+      'full path tooltip remains available after layout');
     const pointer = await evaluate('return window.electronAPI.getPointerInWindow();');
     assert.ok(Number.isFinite(pointer.x) && Number.isFinite(pointer.y),
       'native cursor coordinates should be available independently of title hover events');
@@ -341,6 +343,8 @@ app.whenReady().then(async () => {
     }`);
     assert.equal(await evaluate('return !!titlebarTooltipPoll;'), true);
     await evaluate('clearInterval(titlebarTooltipPoll); titlebarTooltipPoll = null;');
+    await waitFor(() => evaluate('return !titlebarTooltipPending;'), 'title tooltip pointer probe settled');
+    await delay(150);
     await waitFor(() => evaluate('return Date.now() >= ttRestoreSuppressUntil;'),
       'restore tooltip suppression elapsed');
     const inside = { x: clippedTitle.title.x + clippedTitle.title.width / 2,
@@ -350,15 +354,15 @@ app.whenReady().then(async () => {
     await evaluate('updateTitlebarTooltipFromPointer(' + JSON.stringify(inside) + ');');
     const shown = await evaluate(`return { text: $('titlebar-tooltip')?.querySelector('.tt-label')?.textContent,
       visible: !$('titlebar-tooltip')?.hidden, anchor: ttAnchor?.id };`);
-    assert.deepEqual(shown, { text: 'overflow-40.png', visible: true, anchor: 'titlebar-filename' });
+    assert.deepEqual(shown, { text: overflowPath, visible: true, anchor: 'titlebar-filename' });
     await waitFor(() => evaluate("return $('titlebar-tooltip').classList.contains('is-visible') && getComputedStyle($('titlebar-tooltip')).opacity === '1';"),
       'full filename card is painted');
     fs.writeFileSync(path.join(dataDir, 'title-tooltip.png'), (await win.webContents.capturePage()).toPNG());
     await evaluate('updateTitlebarTooltipFromPointer({ x: -1, y: -1, focused: true });');
     assert.equal(await evaluate("return $('titlebar-tooltip').hidden;"), true);
     await evaluate(`$('titlebar-filename').style.maxWidth = '';`);
-    await waitFor(() => evaluate("return $('titlebar-filename').dataset.tooltip === undefined;"),
-      'tooltip disappears when filename fits again');
+    await waitFor(() => evaluate("return $('titlebar-filename').dataset.tooltip === " + JSON.stringify(overflowPath) + ";"),
+      'full path tooltip remains when the filename fits again');
     await evaluate("$('footer-size').click();");
     await waitFor(() => evaluate("return $('modal-properties').classList.contains('active');"),
       'footer still opens Properties');
@@ -637,6 +641,54 @@ app.whenReady().then(async () => {
     if (await evaluate("return $('modal-cyber-confirm').classList.contains('active');")) await evaluate("$('btn-confirm-ok').click();");
     await waitFor(() => evaluate('return window.CVWorkspace.model.tabs.length === 0;'), 'all tabs closed');
     console.log('PASS modal headings, stable settings layout, themed selectors, and inline close-all confirmation');
+
+    assert.equal(await evaluate('return state.settings.app.restoreSession;'), true);
+    const png = fs.readFileSync(path.join(dataDir, 'one.png'));
+    await evaluate("const bytes = Uint8Array.from(atob('" + png.toString('base64') + "'), value => value.charCodeAt(0)); await insertPastedImage(new Blob([bytes], { type: 'image/png' }));");
+    await loaded();
+    assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 1);
+    assert.equal(await evaluate('return window.CVWorkspace.model.active.image.fromClipboard;'), true);
+    assert.equal(await evaluate('return await window.CVWorkspace.flush();'), true);
+    const clipboardSession = JSON.parse(fs.readFileSync(path.join(dataDir, 'session.json'), 'utf8'));
+    assert.equal(clipboardSession.tabs.length, 1);
+    assert.ok(clipboardSession.tabs[0].draftId);
+    console.log('PASS clipboard close setup: one pasted image is saved in the session');
+  } else if (phase === 'session-close') {
+    await loaded();
+    assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 1);
+    assert.equal(await evaluate('return window.CVWorkspace.model.active.image.fromClipboard;'), true);
+    await evaluate('window.CVWorkspace.closeTabs([window.CVWorkspace.model.activeId]);');
+    assert.equal(await evaluate("return $('modal-cyber-confirm').classList.contains('active');"), true,
+      'closing the pasted tab itself must still warn about lost data');
+    await evaluate("$('btn-confirm-cancel').click();");
+    assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 1);
+    win.close();
+    await delay(300);
+    if (!win.isDestroyed()) {
+      assert.equal(await evaluate("return $('modal-cyber-confirm').classList.contains('active');"), false,
+        'a session-preserved pasted image must not block app close');
+    }
+    await waitFor(() => win.isDestroyed(), 'app closes with only a pasted image', 10000);
+    const saved = JSON.parse(fs.readFileSync(path.join(dataDir, 'session.json'), 'utf8'));
+    assert.equal(saved.tabs.length, 1);
+    assert.ok(saved.tabs[0].draftId);
+    console.log('PASS session close: pasted image stays saved and app closes without an unsaved modal');
+  } else if (phase === 'no-restore-setup') {
+    await loaded();
+    assert.equal(await evaluate('return window.CVWorkspace.model.active.image.fromClipboard;'), true);
+    await evaluate("openConfig(); $('cfg-restore-session').click();");
+    await waitFor(() => evaluate('return state.settings.app.restoreSession === false;'), 'disable session before restart');
+    await evaluate("closeModal('modal-config'); await window.CVWorkspace.flush();");
+    assert.equal(fs.existsSync(path.join(dataDir, 'session.json')), false);
+    assert.equal(await evaluate('return mainImg.naturalWidth;'), 120,
+      'disabling session restore keeps the pasted image in the current process');
+    console.log('PASS no-restore setup: pasted image remains visible until restart');
+  } else if (phase === 'no-restore') {
+    assert.equal(await evaluate('return state.settings.app.restoreSession;'), false);
+    assert.equal(fs.existsSync(path.join(dataDir, 'session.json')), false);
+    assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 0);
+    assert.equal(await evaluate('return window.CVWorkspace.model.tabs.some(tab => tab.image.fromClipboard);'), false);
+    console.log('PASS no-restore: pasted image does not return after restarting with session saving disabled');
   }
   app.exit(0);
 }).catch(error => { console.error(error.stack || error); app.exit(1); });

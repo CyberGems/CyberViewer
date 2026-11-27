@@ -274,6 +274,13 @@ describe('welcome paste affordance', () => {
     assert.match(workspace, /pending\.some\(tab => !tab\.image\.file\.path\)/);
     assert.doesNotMatch(workspace, /tabs_unsaved_message/);
   });
+
+  it('only treats pasted images as preserved during app shutdown', () => {
+    assert.match(workspace, /return state\.settings\.app\.restoreSession && image\.fromClipboard && !image\.file\.path && !image\.missingDraft;/);
+    assert.match(workspace, /function confirmDiscard\(tabs, callback, \{ sessionPreserved = false \} = \{\}\)/);
+    assert.equal((workspace.match(/confirmDiscard\(model\.tabs, \(\) => void (?:finish|proceed)\(\), \{ sessionPreserved: true \}\);/g) || []).length, 2);
+    assert.match(workspace, /if \(discard\) finish\(\); else confirmDiscard\(tabs, finish\);/);
+  });
 });
 
 describe('helper text legibility and clipboard copy', () => {

@@ -340,9 +340,15 @@ window.CVWorkspace = (() => {
         : (many ? 'tabs_unsaved_file_many' : 'tabs_unsaved_file_one');
     return `${text(key)} ${text('tabs_unsaved_close_question')}`;
   }
-  function confirmDiscard(tabs, callback) {
+  function clipboardSavedInSession(tab) {
+    const image = tab.image;
+    return state.settings.app.restoreSession && image.fromClipboard && !image.file.path && !image.missingDraft;
+  }
+  // Tab closes still warn: only quitting or updating can preserve pathless
+  // clipboard bytes in the session instead of removing them with the tab.
+  function confirmDiscard(tabs, callback, { sessionPreserved = false } = {}) {
     capture();
-    const pending = tabs.filter(edited);
+    const pending = tabs.filter(tab => edited(tab) && !(sessionPreserved && clipboardSavedInSession(tab)));
     if (!pending.length) { callback(); return; }
     showCyberConfirm({ title: text('tabs_unsaved_title'), message: tabsUnsavedMessage(pending),
       detail: pending.map(tab => tab.image.file.name).join('\n'), danger: false, onConfirm: callback });
@@ -368,7 +374,7 @@ window.CVWorkspace = (() => {
       const ok = await onProceed();
       if (ok === false) allowUnload = false;
     };
-    confirmDiscard(model.tabs, () => void proceed());
+    confirmDiscard(model.tabs, () => void proceed(), { sessionPreserved: true });
   }
   function closeTabs(ids, { discard = false, remember = true } = {}) {
     if (!canSwitch()) return;
@@ -1142,7 +1148,7 @@ window.CVWorkspace = (() => {
         allowUnload = true;
         window.electronAPI.finishWorkspaceClose();
       };
-      confirmDiscard(model.tabs, () => void finish());
+      confirmDiscard(model.tabs, () => void finish(), { sessionPreserved: true });
     });
     if (isElectron) window.electronAPI.onSuspendWorkspace(suspend);
     render();

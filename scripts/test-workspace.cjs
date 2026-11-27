@@ -6,7 +6,7 @@ const { spawnSync } = require('child_process');
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cyberviewer-workspace-test-'));
 const electron = require('electron');
 const runner = path.join(__dirname, '..', 'test', 'workspace-smoke.cjs');
-for (const phase of ['initial', 'restore', 'overflow']) {
+for (const phase of ['initial', 'restore', 'overflow', 'session-close', 'no-restore-setup', 'no-restore']) {
   if (phase === 'restore') fs.renameSync(path.join(dataDir, 'three #ñ %.png'), path.join(dataDir, 'three-moved.png'));
   if (phase === 'overflow') {
     const settingsFile = path.join(dataDir, 'settings.json');
