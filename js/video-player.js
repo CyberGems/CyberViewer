@@ -159,9 +159,23 @@ window.CVVideo = (() => {
     $('video-more').setAttribute('aria-expanded', String(open));
     // The styled select floats in the body, so it must close with its menu.
     if (!open) window.CVConfigSelects.close();
-    else { sync(); window.CVAudioEqualizer.setOpen(false); }
+    else { sync(); positionVideoMenu(); window.CVAudioEqualizer.setOpen(false); }
     setSpeedPanel(false);
     reveal();
+  }
+  function positionVideoMenu() {
+    const menu = $('video-menu');
+    const hostRect = (menu.offsetParent || document.body).getBoundingClientRect();
+    const tabs = $('image-tabs');
+    const tabsVisible = tabs && !tabs.hidden && getComputedStyle(tabs).display !== 'none';
+    const topLimit = (tabsVisible ? tabs.getBoundingClientRect().bottom : hostRect.top) + 8;
+    const bottomLimit = hostRect.bottom - 12;
+    menu.style.maxHeight = `${Math.max(0, Math.floor(bottomLimit - topLimit))}px`;
+    const height = menu.getBoundingClientRect().height;
+    const preferredTop = $('video-more').getBoundingClientRect().top - height - 10;
+    const top = Math.max(topLimit, Math.min(preferredTop, bottomLimit - height));
+    menu.style.top = `${Math.round(top - hostRect.top)}px`;
+    menu.style.bottom = 'auto';
   }
   function setSpeedPanel(on) {
     if (!on) stopSpeedRepeat();
@@ -741,6 +755,9 @@ window.CVVideo = (() => {
       reveal();
     });
     $('video-more').addEventListener('click', () => setMenu($('video-menu').hidden));
+    window.addEventListener('resize', () => {
+      if (!$('video-menu').hidden) positionVideoMenu();
+    });
     $('video-open').addEventListener('click', () => { closeMenu(); void openImageDialog(); });
     $('video-properties').addEventListener('click', () => { closeMenu(); openPropertiesForCurrent(); });
     $('video-seek').addEventListener('input', event => {

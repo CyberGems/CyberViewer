@@ -138,6 +138,7 @@ body.video-active.ghost-mode #video-fullscreen:hover { background: rgba(var(--cy
 #video-menu {
   position: absolute; top: auto; right: 26px; bottom: 91px;
   width: 260px; max-width: calc(100% - 32px);
+  overflow-y: auto; overscroll-behavior: contain;
 }
 #video-menu:not([hidden]) { display: block; }
 #video-menu button { width: 100%; height: auto; min-height: 36px; padding: 8px 10px; justify-content: flex-start; text-align: left; }

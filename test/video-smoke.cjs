@@ -53,6 +53,36 @@ app.whenReady().then(async () => {
     await evaluate("window.CVVideo.element.pause(); $('video-more').click();");
     assert.equal(await evaluate("return getComputedStyle($('video-more'),'::after').display === 'none' && getComputedStyle($('video-more'),'::before').display === 'none';"), true, 'More tooltip is suppressed while its menu is open');
     assert.equal(await evaluate("const m=getComputedStyle($('video-menu')), c=getComputedStyle($('main-menu')); return m.backdropFilter === c.backdropFilter && m.backgroundImage === c.backgroundImage;"), true, 'Playback menu shares existing glass surfaces');
+    win.setSize(1100, 520);
+    await waitFor(() => evaluate('return innerHeight < 550;'), 'short playback window');
+    for (const theme of ['cyberviewer', 'gray', 'light']) {
+      await evaluate('applyAppearanceTheme(' + JSON.stringify(theme) + ", '#00d4ff');");
+      await delay(250);
+      const geometry = await evaluate(`const menu=$('video-menu'), rect=menu.getBoundingClientRect();
+        return {top:rect.top,bottom:rect.bottom,tabsBottom:$('image-tabs').getBoundingClientRect().bottom,
+          innerHeight,scrollHeight:menu.scrollHeight,clientHeight:menu.clientHeight,overflow:getComputedStyle(menu).overflowY,
+          hidden:menu.hidden,idle:document.body.classList.contains('video-idle'),opacity:getComputedStyle($('video-controls')).opacity};`);
+      assert.ok(geometry.top >= geometry.tabsBottom && geometry.bottom <= geometry.innerHeight - 11, JSON.stringify(geometry));
+      assert.equal(geometry.hidden, false, 'More menu remains open in a short ' + theme + ' window');
+      assert.equal(geometry.idle, false, 'More menu remains visible in a short ' + theme + ' window');
+      assert.equal(geometry.opacity, '1', 'More controls remain visible in a short ' + theme + ' window');
+      assert.equal(geometry.overflow, 'auto', 'More menu can scroll when constrained');
+      fs.writeFileSync(path.join(dataDir, 'video-menu-short-' + theme + '.png'), (await win.webContents.capturePage()).toPNG());
+    }
+    await evaluate(`const wrap=$('viewer-wrap'); wrap.style.flex='none'; wrap.style.height='260px';
+      window.dispatchEvent(new Event('resize'));`);
+    await delay(50);
+    const constrained = await evaluate(`const menu=$('video-menu');
+      return {scrollHeight:menu.scrollHeight,clientHeight:menu.clientHeight};`);
+    assert.ok(constrained.scrollHeight > constrained.clientHeight, JSON.stringify(constrained));
+    await evaluate("applyAppearanceTheme('cyberviewer', '#00d4ff'); $('video-menu').scrollTop=$('video-menu').scrollHeight;");
+    await delay(150);
+    assert.equal(await evaluate(`const menu=$('video-menu'), rect=menu.getBoundingClientRect();
+      const last=menu.querySelector('#video-sibling-tabs').getBoundingClientRect();
+      return last.bottom <= rect.bottom && last.top >= rect.top;`), true, 'The last More action is reachable by scrolling');
+    await evaluate("$('viewer-wrap').style.removeProperty('flex'); $('viewer-wrap').style.removeProperty('height');");
+    win.setSize(1100, 800);
+    await waitFor(() => evaluate('return innerHeight > 700;'), 'restored playback window');
     await evaluate("$('video-autoplay').click(); window.CVVideo.closeMenu();");
     await waitFor(() => JSON.parse(fs.readFileSync(path.join(dataDir,'settings.json'),'utf8')).app.videoAutoplay === false, 'autoplay preference saved');
     assert.equal(await evaluate('return window.CVVideo.element.paused;'), true);
