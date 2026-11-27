@@ -663,6 +663,16 @@ app.whenReady().then(async () => {
     let closeAllCount = await evaluate('return window.CVWorkspace.model.tabs.length;');
     await evaluate("await window.CVWorkspace.activate('tab-39');");
     await loaded();
+    await evaluate("setSidebarOpen(false, { scan: false });");
+    assert.equal(await evaluate(`const tab=window.CVWorkspace.model.active;
+      return !state.sidebarOpen && tab.sidebarOpen === false &&
+        !document.querySelector('.image-tab-shell[data-tab-id="tab-39"]').classList.contains('sidebar-open');`), true,
+      'closing the sidebar immediately clears the active tab marker');
+    await evaluate("setSidebarOpen(true, { scan: false });");
+    assert.equal(await evaluate(`const tab=window.CVWorkspace.model.active;
+      return state.sidebarOpen && tab.sidebarOpen === true &&
+        document.querySelector('.image-tab-shell[data-tab-id="tab-39"]').classList.contains('sidebar-open');`), true,
+      'opening the sidebar immediately sets the active tab marker');
     await evaluate("$('tab-39').dispatchEvent(new FocusEvent('focus'));");
     await waitFor(() => evaluate("return !!$('titlebar-tooltip') && !$('titlebar-tooltip').hidden;"),
       'tab tooltip visible before context menu');
@@ -703,6 +713,10 @@ app.whenReady().then(async () => {
     for (const theme of ['cyberviewer', 'gray', 'light']) {
       await evaluate(`applyAppearanceTheme('${theme}','#00d4ff');`);
       await delay(80);
+      assert.equal(await evaluate(`const dot = document.querySelector('.image-tab-shell[data-tab-id="tab-39"] .image-tab-sidebar-open');
+        const style = getComputedStyle(dot);
+        return style.display !== 'none' && style.backgroundColor !== 'transparent' &&
+          dot.getBoundingClientRect().width > 0;`), true, `open-sidebar marker remains visible in ${theme}`);
       fs.writeFileSync(path.join(dataDir, `tab-duplicates-${theme}.png`), (await win.webContents.capturePage()).toPNG());
     }
     await evaluate("applyAppearanceTheme('cyberviewer','#00d4ff'); $('tab-switcher').hidden = true;");

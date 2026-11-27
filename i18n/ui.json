@@ -2,7 +2,7 @@
   "en": {
     "tabs_label": "Open file tabs",
     "tabs_also_open": "Also open in another tab",
-    "tabs_sidebar_closed": "Sidebar closed",
+    "tabs_sidebar_open": "Sidebar open",
     "tabs_media_icons": "Media type icons in tabs",
     "tabs_media_icons_desc": "Identify images, videos, audio, and YouTube in the tab bar.",
     "tabs_open_next": "Open new tabs next to the current tab",
@@ -823,7 +823,7 @@
   "es": {
     "tabs_label": "Pestañas de archivos abiertos",
     "tabs_also_open": "También abierto en otra pestaña",
-    "tabs_sidebar_closed": "Panel cerrado",
+    "tabs_sidebar_open": "Panel lateral abierto",
     "tabs_media_icons": "Iconos de tipo en las pestañas",
     "tabs_media_icons_desc": "Identifica imágenes, videos, audio y YouTube en la barra de pestañas.",
     "tabs_open_next": "Abrir pestañas nuevas junto a la actual",

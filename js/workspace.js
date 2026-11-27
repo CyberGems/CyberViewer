@@ -150,10 +150,12 @@ window.CVWorkspace = (() => {
     if (model.active) { delete model.active.image.staticUrl; model.active.image.loaded = false; }
     // Per-tab sidebar state: a tab that was collapsed comes back collapsed, so
     // switching to it never starts a folder scan the user did not ask for.
-    // A tab that never recorded a state follows the global startup preference.
-    if (sidebarStatePerTab() && typeof tab.sidebarOpen === 'boolean' &&
-      tab.sidebarOpen !== state.sidebarOpen && typeof setSidebarOpen === 'function') {
-      setSidebarOpen(tab.sidebarOpen, { persist: false, scan: false });
+    // A tab that never recorded a state follows the active tab's current state.
+    if (sidebarStatePerTab()) {
+      if (typeof tab.sidebarOpen !== 'boolean') tab.sidebarOpen = !!state.sidebarOpen;
+      else if (tab.sidebarOpen !== state.sidebarOpen && typeof setSidebarOpen === 'function') {
+        setSidebarOpen(tab.sidebarOpen, { persist: false, scan: false });
+      }
     }
     // Loading mode: straight to the spinner, never the welcome banner.
     clearViewer({ loading: true });
@@ -222,6 +224,7 @@ window.CVWorkspace = (() => {
         const tab = model.open(imageForFile(file, options), {
           activate: false, source: options.source, view: options.view, reusePath: options.reusePath !== false
         });
+        if (!known.has(tab) && sidebarStatePerTab()) tab.sidebarOpen = !!state.sidebarOpen;
         if (insertion !== null) model.moveTo(tab.id, insertion++);
         else if (nextToCurrent && (!known.has(tab) || repositionReused)) model.moveTo(tab.id, base + placed++);
         if (index === initialIdx) target = tab;
@@ -673,9 +676,8 @@ window.CVWorkspace = (() => {
         const label = document.createElement('span'); label.className = 'image-tab-name';
         const duplicateIcon = document.createElement('span'); duplicateIcon.className = 'image-tab-duplicate'; duplicateIcon.setAttribute('aria-hidden', 'true');
         duplicateIcon.append(iconSvg('copy'));
-        // Per-tab sidebar state: a small dot marks the tabs whose sidebar is
-        // collapsed, so the state is discoverable without switching to one.
-        const sidebarDot = document.createElement('span'); sidebarDot.className = 'image-tab-sidebar-closed'; sidebarDot.setAttribute('aria-hidden', 'true');
+        // Per-tab sidebar state: a small dot marks tabs whose sidebar is open.
+        const sidebarDot = document.createElement('span'); sidebarDot.className = 'image-tab-sidebar-open'; sidebarDot.setAttribute('aria-hidden', 'true');
         button.append(dot, mediaIcon, label, duplicateIcon, sidebarDot);
         button.addEventListener('focus', () => prepareTooltip(button));
         ttBind(button);
@@ -693,9 +695,8 @@ window.CVWorkspace = (() => {
       shell.classList.toggle('dirty', edited(tab));
       const duplicate = (pathCounts.get(pathKey(tab.image.file.path)) || 0) > 1;
       shell.classList.toggle('duplicate', duplicate);
-      // Only meaningful while the feature is on and the tab recorded an answer.
-      const sidebarClosed = sidebarStatePerTab() && tab.sidebarOpen === false;
-      shell.classList.toggle('sidebar-closed', sidebarClosed);
+      const sidebarOpen = sidebarStatePerTab() && tab.sidebarOpen === true;
+      shell.classList.toggle('sidebar-open', sidebarOpen);
       const button = shell.querySelector('.image-tab');
       button.setAttribute('aria-selected', String(active));
       button.tabIndex = active ? 0 : -1;
@@ -709,7 +710,7 @@ window.CVWorkspace = (() => {
       mediaIcon.hidden = state.settings.app.showTabMediaIcons === false;
       button.setAttribute('aria-label', name + (edited(tab) ? ` (${text('tabs_unsaved')})` : '') +
         (duplicate ? ` (${text('tabs_also_open')})` : '') +
-        (sidebarClosed ? ` (${text('tabs_sidebar_closed')})` : ''));
+        (sidebarOpen ? ` (${text('tabs_sidebar_open')})` : ''));
       button.querySelector('.image-tab-name').textContent = name;
       shell.querySelector('.image-tab-close').setAttribute('aria-label', text('tabs_close_named').replace('{name}', name));
       shell.querySelector('.image-tab-close').tabIndex = active ? 0 : -1;
@@ -733,13 +734,13 @@ window.CVWorkspace = (() => {
     const tab = model.tabs.find(item => item.id === button.id);
     const shell = button.closest('.image-tab-shell');
     const duplicate = shell?.classList.contains('duplicate');
-    const sidebarClosed = shell?.classList.contains('sidebar-closed');
+    const sidebarOpen = shell?.classList.contains('sidebar-open');
     const truncated = label.scrollWidth > label.clientWidth;
-    if (tab && (duplicate || sidebarClosed || truncated)) {
+    if (tab && (duplicate || sidebarOpen || truncated)) {
       const fullName = tab.image.file.path || tab.image.file.name;
       // Both states can apply at once, so each note is appended on its own
       // instead of one replacing the other.
-      const notes = [duplicate ? text('tabs_also_open') : '', sidebarClosed ? text('tabs_sidebar_closed') : '']
+      const notes = [duplicate ? text('tabs_also_open') : '', sidebarOpen ? text('tabs_sidebar_open') : '']
         .filter(Boolean);
       setCyberTooltip(button, notes.length ? `${fullName} · ${notes.join(' · ')}` : fullName);
     } else { button.classList.remove('cyber-tooltip'); delete button.dataset.tooltip; }

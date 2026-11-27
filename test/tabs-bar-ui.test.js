@@ -30,6 +30,13 @@ describe('tab bar ui', () => {
     assert.match(workspace, /icon\.append\(iconSvg\(mediaTypeForTab\(tab\)\)\)/);
     assert.match(tabsCss, /\.tab-switcher-item-icon\[hidden\] \{ display: none; \}/);
   });
+  it('marks only tabs whose sidebar is open and updates the marker immediately', () => {
+    for (const lang of ['en', 'es']) assert.ok(ui[lang].tabs_sidebar_open);
+    assert.match(tabsCss, /\.image-tab-shell\.sidebar-open \.image-tab-sidebar-open \{ display: block; \}/);
+    assert.match(workspace, /const sidebarOpen = sidebarStatePerTab\(\) && tab\.sidebarOpen === true;/);
+    assert.match(workspace, /shell\.classList\.toggle\('sidebar-open', sidebarOpen\);/);
+    assert.match(appJs, /if \(tab\) tab\.sidebarOpen = state\.sidebarOpen;\s*window\.CVWorkspace\?\.render\?\.\(\);/);
+  });
   it('opens new tabs next to the current one by default, with an end-of-list setting', () => {
     // Default placement: right after the active tab. Drops with an explicit
     // position (insertAt) keep it; explicit Open also repositions reused tabs.

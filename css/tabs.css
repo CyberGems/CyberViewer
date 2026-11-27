@@ -105,8 +105,8 @@ body.tab-drag-active #image-tab-list .image-tab { cursor: grabbing; }
 .image-tab-duplicate .menu-ico { width: 12px; height: 12px; }
 /* Per-tab sidebar state: a quiet dot, distinct from the duplicate copy icon so
    the two states never read as the same thing. */
-.image-tab-sidebar-closed { display: none; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; background: currentColor; opacity: .45; }
-.image-tab-shell.sidebar-closed .image-tab-sidebar-closed { display: block; }
+.image-tab-sidebar-open { display: none; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; background: currentColor; opacity: .45; }
+.image-tab-shell.sidebar-open .image-tab-sidebar-open { display: block; }
 /* The shared tooltip card is portaled outside the scrolling strip. */
 .image-tab.cyber-tooltip::before, .image-tab.cyber-tooltip::after { display: none !important; }
 .image-tab-dirty { display: none; width: 6px; height: 6px; border-radius: 50%; background: var(--cyber-accent); flex-shrink: 0; }

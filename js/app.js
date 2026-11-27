@@ -7252,6 +7252,7 @@ function setSidebarOpen(open, opts = {}) {
     if (sidebarStatePerTab()) {
       const tab = window.CVWorkspace && window.CVWorkspace.model.active;
       if (tab) tab.sidebarOpen = state.sidebarOpen;
+      window.CVWorkspace?.render?.();
       window.CVWorkspace?.changed?.();
     } else {
       state.settings.app.sidebarOpen = state.sidebarOpen;
