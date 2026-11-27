@@ -454,7 +454,7 @@ window.CVWorkspace = (() => {
   function barMenu() {
     return [
       { label: text('menu_open'), shortcut: 'Ctrl+O', icon: 'image', action: () => window.openImageDialog && window.openImageDialog() },
-      { label: text('menu_open_folder'), shortcut: 'Ctrl+Shift+F', icon: 'folder', action: () => window.openFolderDialog && window.openFolderDialog() },
+      { label: text('menu_open_folder'), shortcut: 'Alt+O', icon: 'folder', action: () => window.openFolderDialog && window.openFolderDialog() },
       { type: 'separator' },
       { label: text('tabs_reopen'), shortcut: 'Ctrl+Shift+T', icon: 'restore', enabled: model.closed.length > 0, action: reopen },
       { label: text('tabs_close_all'), icon: 'x', enabled: model.tabs.length > 0, action: () => closeTabs(model.tabs.map(tab => tab.id)) }

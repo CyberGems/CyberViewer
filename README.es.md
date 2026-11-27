@@ -395,7 +395,7 @@ Las builds portables no pueden actualizarse dentro de la app; usa **Abrir págin
 | `Ctrl+W` | Cerrar pestaña |
 | `Ctrl+Mayús+T` | Reabrir pestaña cerrada |
 | `W` | Abrir la carpeta que la contiene |
-| `Ctrl+Mayús+F` | Abrir carpeta |
+| `Alt+O` | Abrir carpeta |
 | `Ctrl+S` | Guardar como |
 | `Ctrl+P` | Imprimir / Exportar a PDF |
 | `Ctrl+C` | Copiar imagen al portapapeles |

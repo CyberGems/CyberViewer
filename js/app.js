@@ -3061,7 +3061,7 @@ function buildOpenFileContextItems(t) {
     },
     {
       label: t.menu_open_folder || 'Open folder',
-      shortcut: 'Ctrl+Shift+F',
+      shortcut: 'Alt+O',
       action: () => openFolderDialog()
     },
     { type: 'separator' },
@@ -6605,9 +6605,7 @@ document.addEventListener('keydown', e => {
         break;
       case 'f':
         e.preventDefault();
-        // Ctrl+Shift+F = open folder; Ctrl+F = fullscreen
-        if (e.shiftKey) openFolderDialog();
-        else if (checkImageLoaded()) toggleFullscreen();
+        if (checkImageLoaded()) toggleFullscreen();
         break;
       case 's': e.preventDefault(); if (checkImageLoaded()) showSaveAsDialog(); break;
       case 'p': e.preventDefault(); if (checkImageLoaded()) openPrintExportModal(); break;
@@ -6621,6 +6619,14 @@ document.addEventListener('keydown', e => {
         }
         break;
     }
+  }
+
+  // Alt+O opens a folder: Ctrl+O already opens a single file, so the folder
+  // dialog only needs one modifier and stays out of the two-modifier chords.
+  if (e.altKey && !isCtrl && !e.shiftKey && e.key.toLowerCase() === 'o') {
+    e.preventDefault();
+    openFolderDialog();
+    return;
   }
 
   switch (e.key.toLowerCase()) {

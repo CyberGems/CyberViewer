@@ -1704,7 +1704,7 @@ ipcMain.handle('tabs:native-context-menu', (event, items) => {
     if (!item) return false;
     if (item.type === 'separator') return true;
     if (item.type !== 'normal' || typeof item.label !== 'string' || !item.label || item.label.length > 160) return false;
-    if (item.shortcut !== undefined && !['Ctrl+W', 'Ctrl+Shift+T', 'Ctrl+O', 'Ctrl+Shift+F'].includes(item.shortcut)) return false;
+    if (item.shortcut !== undefined && !['Ctrl+W', 'Ctrl+Shift+T', 'Ctrl+O', 'Alt+O'].includes(item.shortcut)) return false;
     return item.icon == null || (typeof item.icon === 'string' && item.icon.length <= 12000 &&
       /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(item.icon));
   };

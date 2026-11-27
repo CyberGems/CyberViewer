@@ -395,7 +395,7 @@ Portable builds cannot self-update in-app; use **Open releases page**.
 | `Ctrl+W` | Close tab |
 | `Ctrl+Shift+T` | Reopen closed tab |
 | `W` | Open containing folder |
-| `Ctrl+Shift+F` | Open folder |
+| `Alt+O` | Open folder |
 | `Ctrl+S` | Save As |
 | `Ctrl+P` | Print / Export PDF |
 | `Ctrl+C` | Copy image to clipboard |
