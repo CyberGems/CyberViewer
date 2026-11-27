@@ -11,6 +11,7 @@ const crypto = require('crypto');
 const { pathToFileURL } = require('url');
 const { execFile, spawn } = require('child_process');
 const { formatTrayTooltip } = require('./lib/tray-tooltip');
+const { isPortableDataBuild, portableExecutableFile, portableUserDataPath } = require('./lib/portable-data');
 
 // Dev isolation: automated verification runs must never touch the user's saved
 // session/settings. Launching with --cv-dev-session redirects userData into a
@@ -18,6 +19,14 @@ const { formatTrayTooltip } = require('./lib/tray-tooltip');
 // there and vanish when the folder is wiped.
 if (process.argv.includes('--cv-dev-session')) {
   app.setPath('userData', path.join(app.getPath('userData'), 'dev'));
+} else if (isPortableDataBuild()) {
+  const portableData = portableUserDataPath();
+  try {
+    fs.mkdirSync(portableData, { recursive: true });
+  } catch (error) {
+    console.error('[PORTABLE] Failed to create portable data directory:', error);
+  }
+  app.setPath('userData', portableData);
 }
 
 const {
@@ -3191,6 +3200,7 @@ const CONTEXT_MENU_PROGIDS = [
 const CONTEXT_MENU_MARKER_KEY = 'HKCU\\Software\\CyberViewer\\ContextMenu';
 
 function getContextMenuExePath() {
+  if (isPortableDataBuild()) return portableExecutableFile() || process.execPath;
   if (app.isPackaged) return process.execPath;
   return path.join(app.getAppPath(), 'dist', 'win-unpacked', 'CyberViewer.exe');
 }
@@ -3306,7 +3316,7 @@ ipcMain.on('save-settings', (event, newSettings) => {
   if (newSettings.autoStart !== undefined) {
     app.setLoginItemSettings({
       openAtLogin: newSettings.autoStart,
-      path: app.getPath('exe'),
+      path: portableExecutableFile() || app.getPath('exe'),
       args: ['--startup']
     });
   }

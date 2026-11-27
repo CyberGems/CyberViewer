@@ -215,6 +215,10 @@ La reproducción también puede variar según el perfil del códec, la tasa de b
 2. Ejecuta el instalador `CyberViewer-Setup` o el ejecutable portable
 3. Inicia CyberViewer y pulsa `Alt+Shift+V` para mostrar u ocultar desde cualquier lugar. No necesitas ningún otro requisito: **no** necesitas Node.js
 
+### 💼 Edición portable
+
+El ejecutable portable no necesita instalador. Los ajustes, la sesión y las copias de seguridad viven en una carpeta `data` junto al ejecutable, así que todo el conjunto puede viajar en un USB. No aplica automáticamente las asociaciones de archivos del instalador; usa Aplicaciones predeterminadas de Windows. Las builds portables no pueden actualizarse dentro de la app; la página de releases enlaza el archivo nuevo.
+
 ### 🛡️ Windows SmartScreen
 
 Windows puede mostrar un aviso de SmartScreen la primera vez que ejecutas el instalador de CyberViewer: esta es una app de hobby sin firmar, así que Windows aún no ha construido reputación para el archivo. Esto es esperado; el código fuente es público para que puedas inspeccionar exactamente qué hace. Lo mismo puede ocurrir al lanzar la versión portable.

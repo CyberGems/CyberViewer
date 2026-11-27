@@ -215,6 +215,10 @@ Playback can still vary with codec profile, bitrate, sample rate, channel layout
 2. Run the `CyberViewer-Setup` installer or the portable executable
 3. Launch CyberViewer and press `Alt+Shift+V` to show or hide it from anywhere. No other requirements needed: you do **not** need Node.js
 
+### 💼 Portable Edition
+
+The portable executable needs no installer. Settings, session and backups live in a `data` folder beside the executable, so the whole setup can travel on a USB stick. It does not apply the installer's file associations automatically; use Windows Default apps for that. Portable builds cannot install updates in-app; the release page links to the new portable file.
+
 ### 🛡️ Windows SmartScreen
 
 Windows may show a SmartScreen warning the first time you run the CyberViewer installer: this is an unsigned hobby app, so Windows hasn't built reputation for the file yet. This is expected; the source is public so you can inspect exactly what it does. The same can appear when launching the portable build.
