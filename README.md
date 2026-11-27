@@ -76,6 +76,21 @@ Open a photo, a video or an audio track and it appears in the same window, at fu
 </p>
 <p align="center"><em>Multi-tab image viewer with folder thumbnail strip, lossless zoom canvas, quick editing toolbar, and metadata footer.</em></p>
 
+<p align="center">
+  <img src="./docs/screenshots/audio-en.png" alt="CyberViewer audio playback view with real-time spectrum bars, track waveform seek bar, and floating 10-band equalizer" />
+</p>
+<p align="center"><em>Built-in audio player with real-time spectrum visualizer, full-track waveform seek bar, and 10-band graphic equalizer.</em></p>
+
+<p align="center">
+  <img src="./docs/screenshots/video-en.png" alt="CyberViewer frameless video playback view with crisp playback HUD, speed control, and audio track equalizer toggle" />
+</p>
+<p align="center"><em>Frameless HD video player with auto-hiding playback controls, skip intervals, speed menu, and audio equalizer toggle.</em></p>
+
+<p align="center">
+  <img src="./docs/screenshots/adjust-en.png" alt="CyberViewer live image adjustments drawer showing brightness, contrast, saturation, blur sliders, and instant canvas preview" />
+</p>
+<p align="center"><em>Non-destructive image adjustments drawer with live tone sliders, A/B comparison, and apply-to-copy workflow.</em></p>
+
 ---
 
 ## 🎯 Why CyberViewer?

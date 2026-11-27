@@ -76,6 +76,21 @@ Abre una foto, un video o una pista de audio y aparece en la misma ventana, a ta
 </p>
 <p align="center"><em>Visor de imágenes multipestaña con tira lateral de miniaturas, lienzo sin pérdida, barra rápida de edición y pie de metadatos.</em></p>
 
+<p align="center">
+  <img src="./docs/screenshots/audio-es.png" alt="Reproductor de audio de CyberViewer con analizador espectral en vivo, forma de onda en la barra de progreso y ecualizador de 10 bandas" />
+</p>
+<p align="center"><em>Reproductor de audio integrado con espectro en tiempo real, forma de onda completa y ecualizador gráfico de 10 bandas.</em></p>
+
+<p align="center">
+  <img src="./docs/screenshots/video-es.png" alt="Reproductor de vídeo de CyberViewer con controles flotantes, control de velocidad y ecualizador para pistas de audio" />
+</p>
+<p align="center"><em>Reproductor de vídeo sin bordes con controles flotantes, salto de tiempo, selector de velocidad y ecualizador de audio.</em></p>
+
+<p align="center">
+  <img src="./docs/screenshots/adjust-es.png" alt="Panel de ajustes en vivo de CyberViewer con deslizadores de brillo, contraste, saturación y desenfoque sobre la imagen" />
+</p>
+<p align="center"><em>Panel de ajustes en tiempo real con deslizadores de tono, comparativa A/B y opción para guardar una copia editada.</em></p>
+
 ---
 
 ## 🎯 ¿Por qué CyberViewer?
