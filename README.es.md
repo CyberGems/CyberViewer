@@ -69,11 +69,11 @@ Abre una foto, un video o una pista de audio y aparece en la misma ventana, a ta
 
 ---
 
-<!-- Capturas: pendiente de la galería bilingüe ES/EN del plan en https://github.com/CyberGems/CyberGems.github.io/blob/main/docs/screenshots.md — sustituir la cita, conservar este título y su entrada en el índice. -->
-
 ## 🖼️ Capturas
 
-> Próximamente...
+![Visor oscuro de CyberViewer con pestañas de imágenes, barra lateral de miniaturas, lienzo nítido y barra inferior de edición](docs/screenshots/main-es.png)
+
+*Visor de imágenes multipestaña con tira lateral de miniaturas, lienzo sin pérdida, barra rápida de edición y pie de metadatos.*
 
 ---
 
