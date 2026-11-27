@@ -10,6 +10,40 @@ window.CVConfigSelects = (() => {
   const rowLabel = select => select.closest('.config-row')?.querySelector('.config-name')?.textContent?.trim()
     || select.getAttribute('aria-label') || '';
 
+  function scrollOpened(direction) {
+    if (!opened) return;
+    const distance = Math.max(48, opened.viewport.clientHeight * .8);
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    opened.viewport.scrollBy({ top: direction * distance, behavior: reduced ? 'auto' : 'smooth' });
+  }
+
+  function scrollButton(direction) {
+    const key = direction < 0 ? 'cfg_select_scroll_up' : 'cfg_select_scroll_down';
+    const tables = window.CV_I18N || {};
+    const language = document.documentElement.lang || (navigator.language.startsWith('es') ? 'es' : 'en');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'cfg-select-scroll';
+    button.dataset.i18nAria = key;
+    button.setAttribute('aria-label', (tables[language] || tables.en || {})[key] || key);
+    button.hidden = true;
+    button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="'
+      + (direction < 0 ? 'm6 15 6-6 6 6' : 'm6 9 6 6 6-6') + '"/></svg>';
+    button.addEventListener('pointerdown', event => event.preventDefault());
+    button.addEventListener('click', () => scrollOpened(direction));
+    return button;
+  }
+
+  function updateScrollButtons() {
+    if (!opened) return;
+    const { viewport, scrollUp, scrollDown } = opened;
+    const overflow = viewport.scrollHeight > viewport.clientHeight + 1;
+    scrollUp.hidden = !overflow;
+    scrollDown.hidden = !overflow;
+    scrollUp.disabled = viewport.scrollTop <= 1;
+    scrollDown.disabled = viewport.scrollTop + viewport.clientHeight >= viewport.scrollHeight - 1;
+  }
+
   function close(restoreFocus = false) {
     if (!opened) return;
     const { trigger, menu } = opened;
@@ -57,6 +91,10 @@ window.CVConfigSelects = (() => {
     menu.id = 'cfg-select-listbox';
     menu.setAttribute('role', 'listbox');
     menu.setAttribute('aria-label', rowLabel(select));
+    const viewport = document.createElement('div');
+    viewport.className = 'cfg-select-options';
+    const scrollUp = scrollButton(-1), scrollDown = scrollButton(1);
+    menu.append(scrollUp, viewport, scrollDown);
     const items = options.map((option, index) => {
       const item = document.createElement('div');
       item.className = 'cfg-select-option';
@@ -74,17 +112,21 @@ window.CVConfigSelects = (() => {
         close(true);
         if (changed) select.dispatchEvent(new Event('change', { bubbles: true }));
       });
-      menu.appendChild(item);
+      viewport.appendChild(item);
       return item;
     });
+    opened = { select, trigger, menu, viewport, scrollUp, scrollDown, items, options,
+      activeIndex: Math.max(0, options.findIndex(option => option.selected)) };
+    viewport.addEventListener('scroll', updateScrollButtons, { passive: true });
     // Anchored to the body so the menu escapes overflow-clipped containers
     // such as the player menu panel.
     document.body.appendChild(menu);
     trigger.setAttribute('aria-controls', menu.id);
     trigger.setAttribute('aria-expanded', 'true');
     position(trigger, menu);
-    opened = { select, trigger, menu, items, options, activeIndex: Math.max(0, options.findIndex(option => option.selected)) };
     highlight(opened.activeIndex);
+    updateScrollButtons();
+    position(trigger, menu);
   }
 
   function highlight(index) {
@@ -95,6 +137,7 @@ window.CVConfigSelects = (() => {
     items.forEach((item, i) => item.classList.toggle('is-active', i === next));
     trigger.setAttribute('aria-activedescendant', items[next].id);
     items[next].scrollIntoView({ block: 'nearest' });
+    updateScrollButtons();
   }
 
   function onKeydown(event, select, trigger) {
@@ -115,6 +158,9 @@ window.CVConfigSelects = (() => {
     } else if (event.key === 'Home' || event.key === 'End') {
       event.preventDefault();
       highlight(event.key === 'Home' ? 0 : opened.items.length - 1);
+    } else if (event.key === 'PageDown' || event.key === 'PageUp') {
+      event.preventDefault();
+      scrollOpened(event.key === 'PageDown' ? 1 : -1);
     } else if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       opened.items[opened.activeIndex].click();
@@ -157,8 +203,10 @@ window.CVConfigSelects = (() => {
     if (opened && !opened.menu.contains(event.target) && !opened.trigger.contains(event.target)) close();
   });
   modal?.querySelector('.config-content')?.addEventListener('scroll', () => {
-    if (opened) position(opened.trigger, opened.menu);
+    if (opened) { updateScrollButtons(); position(opened.trigger, opened.menu); }
   }, { passive: true });
-  window.addEventListener('resize', () => { if (opened) position(opened.trigger, opened.menu); });
+  window.addEventListener('resize', () => {
+    if (opened) { updateScrollButtons(); position(opened.trigger, opened.menu); }
+  });
   return { close, sync: syncAll, enhance };
 })();

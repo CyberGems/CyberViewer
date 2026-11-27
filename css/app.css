@@ -5282,25 +5282,49 @@
   .cfg-select-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .cfg-select-trigger svg { width: 15px; height: 15px; flex: 0 0 15px; color: var(--preview-accent, var(--cyber-accent)); transition: transform .15s; }
   .cfg-select-trigger[aria-expanded='true'] svg { transform: rotate(180deg); }
+  .cfg-select-trigger[aria-expanded='true']::after,
+  .cfg-select-trigger[aria-expanded='true']::before { opacity: 0 !important; transition: none !important; }
   .cfg-select-menu {
     position: fixed;
     /* Above every host surface that uses it: the config modal, the player
        transport (12) and the player menu panel (999999). */
     z-index: 1000001;
+    display: flex;
+    flex-direction: column;
     width: max-content;
     max-width: min(320px, calc(100vw - 16px));
     max-height: min(260px, calc(100vh - 16px));
-    overflow-y: auto;
+    overflow: hidden;
     padding: 4px;
     border: 1px solid rgba(var(--preview-accent-rgb, var(--cyber-accent-rgb)), .42);
     border-radius: 7px;
     background: var(--cyber-panel);
     box-shadow: 0 14px 30px rgba(0, 0, 0, .42);
   }
-  .cfg-select-menu::-webkit-scrollbar { width: 6px; }
-  .cfg-select-menu::-webkit-scrollbar-track { background: transparent; }
-  .cfg-select-menu::-webkit-scrollbar-thumb { background: var(--cyber-dim); border-radius: 6px; }
-  .cfg-select-menu::-webkit-scrollbar-button { display: none; }
+  .cfg-select-options { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  .cfg-select-options::-webkit-scrollbar { width: 6px; }
+  .cfg-select-options::-webkit-scrollbar-track { background: transparent; }
+  .cfg-select-options::-webkit-scrollbar-thumb { background: var(--cyber-dim); border-radius: 6px; }
+  .cfg-select-options::-webkit-scrollbar-button { display: none; }
+  .cfg-select-scroll {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 18px;
+    width: 100%;
+    height: 18px;
+    padding: 0;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--cyber-muted);
+    cursor: pointer;
+  }
+  .cfg-select-scroll[hidden] { display: none; }
+  .cfg-select-scroll:hover:not(:disabled) { background: rgba(var(--preview-accent-rgb, var(--cyber-accent-rgb)), .1); color: var(--preview-accent-ink, var(--cyber-accent-ink)); }
+  .cfg-select-scroll:focus-visible { outline: 2px solid var(--preview-accent, var(--cyber-accent)); outline-offset: -2px; }
+  .cfg-select-scroll:disabled { opacity: .25; cursor: default; }
+  .cfg-select-scroll svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .cfg-select-option {
     padding: 8px 10px;
     border-radius: 4px;

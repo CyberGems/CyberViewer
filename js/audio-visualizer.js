@@ -10,7 +10,7 @@ window.CVAudioVisuals = (() => {
   const select = document.getElementById('audio-visualizer');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const styles = new Set(['spectrum', 'waveform', 'envelope', 'radial', 'particles', 'aurora',
-    'tunnel', 'terrain', 'helix', 'grid', 'flares', 'off']);
+    'tunnel', 'terrain', 'helix', 'grid', 'prism', 'off']);
   const bands = new Float32Array(64);
   const peaks = new Float32Array(64);
   // RMS per slice plus its held peak; both accumulate only while playing, so a
@@ -18,6 +18,14 @@ window.CVAudioVisuals = (() => {
   const slices = new Float32Array(64);
   const slicePeaks = new Float32Array(64);
   const wavePoints = new Float32Array(192);
+  const prismTipsX = new Float32Array(48);
+  const prismTipsY = new Float32Array(48);
+  const tunnelRings = 18, tunnelSegments = 64;
+  const tunnelX = new Float32Array(tunnelRings * tunnelSegments);
+  const tunnelY = new Float32Array(tunnelRings * tunnelSegments);
+  const tunnelRingValues = new Float32Array(tunnelRings);
+  const tunnelProgress = new Float32Array(tunnelRings);
+  const tunnelOrder = Array.from({ length: tunnelRings }, (_, i) => i);
   const stars = Array.from({ length: 64 }, (_, i) => ({
     angle: i * 2.399963, radius: 0.16 + (i % 17) / 21,
     depth: 0.35 + (i % 5) * 0.16, size: 1 + i % 3
@@ -28,7 +36,10 @@ window.CVAudioVisuals = (() => {
   let mode = reducedMotion.matches ? 'off' : 'spectrum';
   try {
     const saved = localStorage.getItem('cv_audio_visualizer');
-    if (styles.has(saved)) mode = saved;
+    if (saved === 'flares') {
+      mode = 'prism';
+      localStorage.setItem('cv_audio_visualizer', mode);
+    } else if (styles.has(saved)) mode = saved;
   } catch (_) { /* optional preferences */ }
   let media = null, image = null, context = null, source = null, analyser = null;
   let frequencies = null, waveform = null;
@@ -44,23 +55,13 @@ window.CVAudioVisuals = (() => {
   // frames are dropped; 64 columns hold roughly the last 2.7 seconds.
   const envelopeStep = 1 / 24;
   let palette = null, backdrop = null, barGradient = null, ribbonGradient = null;
-  let envelopeGradient = null;
+  let envelopeGradient = null, prismGradient = null;
   let auroraGradients = [];
   const tau = Math.PI * 2;
   // Horizontal inset of every composition. The canvas spans the whole viewer;
   // this keeps the drawn shapes off the very edge without shrinking them into
   // the caption's narrow column, which the earlier 10% inset did by accident.
   const inset = .04;
-  // Fireworks launch sites: fixed positions, periods and particle angles keep
-  // every burst a pure function of elapsed, so pauses stay perfectly static.
-  // Sites span the inset edges so the whole width carries bursts, not a
-  // centred cluster.
-  const bursts = Array.from({ length: 6 }, (_, i) => ({
-    x: .1 + (i % 3) * .4, y: .2 + Math.floor(i / 3) * .23,
-    period: 2.4 + (i % 3) * .55, offset: i * .19, bin: 5 + i * 9,
-    angles: Array.from({ length: 22 }, (_, j) => j / 22 * tau + (i % 3 - 1) * .17 + (j % 4) * .05),
-    reach: Array.from({ length: 22 }, (_, j) => .65 + ((j * 7 + i * 3) % 5) * .1)
-  }));
   const frameMs = 1000 / 30;
   const text = key => (I18N[state.settings.app.language || 'en'] || I18N.en)[key];
   const enabled = () => !!image && mode !== 'off' && !reducedMotion.matches;
@@ -140,6 +141,10 @@ window.CVAudioVisuals = (() => {
     envelopeGradient.addColorStop(.5, color(hue + 20, .28, 88));
     envelopeGradient.addColorStop(.58, color(hue, .78));
     envelopeGradient.addColorStop(1, color(hue, .9, 72));
+    prismGradient = ctx.createLinearGradient(w * .4, h * .25, w * .5, h * .52);
+    prismGradient.addColorStop(0, color(hue + 65, .22, 78));
+    prismGradient.addColorStop(.45, color(hue, .12, 42));
+    prismGradient.addColorStop(1, color(hue, .03, 16));
     auroraGradients = [0, 1, 2].map(i => {
       const gradient = ctx.createLinearGradient(0, h * .15, 0, h * .64);
       gradient.addColorStop(0, color(hue + i * 50, 0));
@@ -163,7 +168,7 @@ window.CVAudioVisuals = (() => {
 
   function sample(delta) {
     analyser.getByteFrequencyData(frequencies);
-    if (mode === 'waveform' || mode === 'helix' || mode === 'envelope') {
+    if (mode === 'waveform' || mode === 'helix' || mode === 'envelope' || mode === 'prism') {
       analyser.getByteTimeDomainData(waveform);
       if (mode !== 'helix') {
         let amplitude = .015;
@@ -445,23 +450,78 @@ window.CVAudioVisuals = (() => {
     ctx.globalAlpha = 1;
   }
 
-  // Concentric rings stream outward; the stream speed rides the energy.
+  // A spectral wireframe tunnel: every ring is deformed by its own frequency
+  // band, while bass drives the forward rush and highs light the outer sparks.
   function tunnel(w, h, unit) {
-    const cx = w * .5, cy = h * .4, count = 14;
-    ctx.fillStyle = palette.ink; ctx.globalAlpha = .1 + bass * level * .5;
-    ctx.beginPath(); ctx.arc(cx, cy, unit * (.005 + bass * level * .014), 0, tau); ctx.fill();
-    ctx.globalAlpha = 1;
-    for (let i = 0; i < count; i++) {
-      const progress = (i / count + flow * .45) % 1;
-      const value = bands[(i * 4) % bands.length] * level;
-      const alpha = Math.sin(progress * Math.PI) * (.08 + value * .8) * level;
-      if (alpha < .01) continue;
-      const radius = unit * (.02 + Math.pow(progress, .85) * .5);
-      ctx.strokeStyle = i % 2 ? palette.ink : palette.secondary;
-      ctx.globalAlpha = alpha;
-      ctx.lineWidth = Math.max(1, unit * (.0015 + progress * .004 + value * .003));
-      ctx.beginPath(); ctx.arc(cx, cy, radius, 0, tau); ctx.stroke();
+    const cx = w * .5 + Math.sin(elapsed * .21) * unit * .012 * level;
+    const cy = h * .4 + Math.cos(elapsed * .17) * unit * .01 * level;
+    const travel = flow * (.24 + bass * .32) + spin * .035;
+    for (let i = 0; i < tunnelRings; i++) {
+      const progress = (i / tunnelRings + travel) % 1;
+      tunnelProgress[i] = progress;
+      tunnelOrder[i] = i;
+      const depth = Math.pow(progress, 1.6);
+      const baseRadius = unit * (.018 + depth * .63);
+      const ringBand = (i * 3) % bands.length;
+      let total = 0, peak = 0;
+      for (let s = 0; s < tunnelSegments; s++) {
+        const mirrored = s <= tunnelSegments / 2 ? s : tunnelSegments - s;
+        const band = (ringBand + Math.floor(mirrored * .55)) % bands.length;
+        const value = bands[band] * level;
+        const transient = Math.max(0, peaks[band] - bands[band]) * level;
+        const angle = s / tunnelSegments * tau + spin * (.45 + progress * .8);
+        const flutter = Math.sin(angle * 3 + progress * 9 - spin * 1.7) * energy * level * .035;
+        const deformation = (Math.pow(value, .85) * .16 + transient * .09 + flutter) * (.25 + progress * .75);
+        const radius = baseRadius * (1 + deformation);
+        const offset = i * tunnelSegments + s;
+        tunnelX[offset] = cx + Math.cos(angle) * radius;
+        tunnelY[offset] = cy + Math.sin(angle) * radius;
+        total += value; peak = Math.max(peak, value);
+      }
+      tunnelRingValues[i] = total / tunnelSegments;
+      const fade = Math.sin(progress * Math.PI);
+      const value = tunnelRingValues[i];
+      ctx.strokeStyle = i % 3 === 1 ? palette.secondary : i % 3 === 2 ? palette.white : palette.ink;
+      ctx.globalAlpha = fade * (.045 + value * .82 + peak * .22) * (.3 + level * .7);
+      ctx.lineWidth = Math.max(1, unit * (.0011 + progress * .0032 + value * .0035));
+      ctx.beginPath();
+      for (let s = 0; s < tunnelSegments; s++) {
+        const offset = i * tunnelSegments + s;
+        if (!s) ctx.moveTo(tunnelX[offset], tunnelY[offset]); else ctx.lineTo(tunnelX[offset], tunnelY[offset]);
+      }
+      ctx.closePath(); ctx.stroke();
     }
+
+    tunnelOrder.sort((a, b) => tunnelProgress[a] - tunnelProgress[b]);
+    for (let s = 0; s < tunnelSegments; s += 4) {
+      const band = Math.floor((s % (tunnelSegments / 2)) / (tunnelSegments / 2) * 63);
+      const value = bands[band] * level;
+      ctx.strokeStyle = color(palette.hue + band / 63 * 80);
+      ctx.globalAlpha = .012 + value * .24 * level;
+      ctx.lineWidth = Math.max(1, unit * (.0009 + value * .0014));
+      ctx.beginPath();
+      for (let r = 0; r < tunnelRings; r++) {
+        const offset = tunnelOrder[r] * tunnelSegments + s;
+        if (!r) ctx.moveTo(tunnelX[offset], tunnelY[offset]); else ctx.lineTo(tunnelX[offset], tunnelY[offset]);
+      }
+      ctx.stroke();
+    }
+
+    const outer = tunnelOrder[tunnelRings - 1];
+    if (highs * level > .04) {
+      ctx.fillStyle = palette.white;
+      for (let s = 0; s < tunnelSegments; s += 4) {
+        const band = Math.floor((s % (tunnelSegments / 2)) / (tunnelSegments / 2) * 63);
+        const value = bands[band] * level;
+        if (value < .28) continue;
+        const offset = outer * tunnelSegments + s;
+        ctx.globalAlpha = (.12 + highs * .58) * value * level;
+        ctx.beginPath(); ctx.arc(tunnelX[offset], tunnelY[offset], unit * (.0014 + value * .0022), 0, tau); ctx.fill();
+      }
+    }
+    ctx.fillStyle = palette.ink;
+    ctx.globalAlpha = .1 + bass * level * .58;
+    ctx.beginPath(); ctx.arc(cx, cy, unit * (.01 + bass * level * .042 + energy * level * .012), 0, tau); ctx.fill();
     ctx.globalAlpha = 1;
   }
 
@@ -558,38 +618,69 @@ window.CVAudioVisuals = (() => {
     ctx.globalAlpha = 1;
   }
 
-  // Fixed launch sites cycle through a rocket climb and a fading burst.
-  function flares(w, h, unit) {
-    for (let i = 0; i < bursts.length; i++) {
-      const site = bursts[i], x = w * site.x;
-      const value = bands[site.bin] * level;
-      const phase = (elapsed / site.period + site.offset) % 1;
-      if (phase < .18) {
-        const rise = phase / .18, startY = h * .64;
-        const y = startY - (startY - h * site.y) * rise;
-        ctx.strokeStyle = color(palette.hue + i * 30, (.2 + value * .6) * (1 - rise * .3));
-        ctx.lineWidth = Math.max(1, unit * .0022);
-        ctx.beginPath(); ctx.moveTo(x, y + unit * .02); ctx.lineTo(x, y); ctx.stroke();
-        continue;
-      }
-      const q = (phase - .18) / .82, fade = 1 - q;
-      const alpha = fade * fade * (.12 + value * .88) * level;
-      if (alpha < .012) continue;
-      const reach = unit * (.09 + value * .16), droop = q * q * unit * .07;
-      ctx.strokeStyle = color(palette.hue + i * 30, alpha);
-      ctx.lineWidth = Math.max(1, unit * .002);
-      ctx.beginPath();
-      for (let j = 0; j < site.angles.length; j++) {
-        const angle = site.angles[j], cos = Math.cos(angle), sin = Math.sin(angle);
-        const r1 = reach * site.reach[j] * Math.pow(q, .8);
-        const r2 = r1 + unit * (.004 + fade * .008);
-        ctx.moveTo(x + cos * r1, h * site.y + sin * r1 * .85 + droop);
-        ctx.lineTo(x + cos * r2, h * site.y + sin * r2 * .85 + droop);
-      }
-      ctx.stroke();
-      ctx.fillStyle = color(palette.hue + i * 30, alpha * .9);
-      ctx.beginPath(); ctx.arc(x, h * site.y, unit * .0025 * fade, 0, tau); ctx.fill();
+  function prism(w, h, unit) {
+    const cx = w * .43, cy = h * .4, radius = unit * (.052 + bass * level * .024);
+    const apexX = cx - radius, faceX = cx + radius * .72;
+    const faceTop = cy - radius * .9, faceBottom = cy + radius * .9;
+    const count = prismTipsX.length, spread = .62 + energy * level * .22;
+    const maxReach = Math.min(w * .54, unit * .78);
+    const beamLeft = w * .055, beamPoints = 96;
+
+    ctx.beginPath();
+    for (let i = 0; i < beamPoints; i++) {
+      const t = i / (beamPoints - 1);
+      const actual = waveform ? (waveform[Math.floor(t * (waveform.length - 1))] - 128) / 128 : 0;
+      const ripple = actual * waveGain * .8 + Math.sin(t * tau * 2 + elapsed * 1.2) * energy * .18;
+      const x = beamLeft + (apexX - beamLeft) * t;
+      const y = cy + ripple * unit * .028 * level;
+      if (!i) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
+    ctx.strokeStyle = palette.ink; ctx.globalAlpha = .035 + level * .14;
+    ctx.lineWidth = unit * .012; ctx.stroke();
+    ctx.strokeStyle = palette.white; ctx.globalAlpha = .14 + level * .52;
+    ctx.lineWidth = Math.max(1, unit * .0022); ctx.stroke();
+
+    for (let i = 0; i < count; i++) {
+      const t = i / (count - 1), value = bands[Math.floor(t * 63)] * level;
+      const angle = (t - .5) * spread * 2 + Math.sin(elapsed * .45) * .018 * level
+        + Math.sin(elapsed * .6 + t * 5) * energy * level * .012;
+      const originY = faceTop + (faceBottom - faceTop) * t;
+      const reach = maxReach * (.34 + Math.pow(value, .8) * .66 + bass * level * .04);
+      const x = faceX + Math.cos(angle) * reach;
+      const y = originY + Math.sin(angle) * reach * .62;
+      prismTipsX[i] = x; prismTipsY[i] = y;
+      ctx.strokeStyle = color(palette.hue + t * 110);
+      ctx.globalAlpha = .025 + value * .11;
+      ctx.lineWidth = unit * (.007 + value * .009);
+      ctx.beginPath(); ctx.moveTo(faceX, originY); ctx.lineTo(x, y); ctx.stroke();
+      ctx.globalAlpha = .08 + value * .78;
+      ctx.lineWidth = Math.max(1, unit * (.0012 + value * .0018));
+      ctx.beginPath(); ctx.moveTo(faceX, originY); ctx.lineTo(x, y); ctx.stroke();
+      if (t > .55 && value > .32) {
+        const shimmer = .5 + .5 * Math.sin(elapsed * 4 + i * 1.9);
+        ctx.fillStyle = palette.white;
+        ctx.globalAlpha = (.2 + value * .6) * shimmer;
+        ctx.beginPath(); ctx.arc(x, y, unit * (.0015 + value * .003), 0, tau); ctx.fill();
+      }
+    }
+
+    ctx.beginPath(); ctx.moveTo(prismTipsX[0], prismTipsY[0]);
+    for (let i = 1; i < count; i++) ctx.lineTo(prismTipsX[i], prismTipsY[i]);
+    ctx.strokeStyle = color(palette.hue + 55, .1 + highs * level * .35, 82);
+    ctx.lineWidth = Math.max(1, unit * .002); ctx.stroke();
+
+    ctx.fillStyle = palette.ink; ctx.globalAlpha = .06 + bass * level * .32;
+    ctx.beginPath(); ctx.arc(cx, cy, radius * (1.3 + bass * level * .35), 0, tau); ctx.fill();
+    ctx.fillStyle = prismGradient; ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.moveTo(apexX, cy); ctx.lineTo(faceX, faceTop); ctx.lineTo(faceX, faceBottom); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = palette.white; ctx.globalAlpha = .24 + level * .5;
+    ctx.lineWidth = Math.max(1, unit * .0025); ctx.stroke();
+    ctx.strokeStyle = palette.ink; ctx.globalAlpha = .2 + level * .45;
+    ctx.lineWidth = 1; ctx.beginPath();
+    ctx.moveTo(apexX, cy); ctx.lineTo(faceX, cy);
+    ctx.moveTo(faceX, faceTop); ctx.lineTo(cx + radius * .1, cy); ctx.lineTo(faceX, faceBottom);
+    ctx.stroke(); ctx.globalAlpha = 1;
   }
 
   function paint() {
@@ -608,7 +699,7 @@ window.CVAudioVisuals = (() => {
     else if (mode === 'terrain') terrain(w, h, unit);
     else if (mode === 'helix') helix(w, h, unit);
     else if (mode === 'grid') ledGrid(w, h, unit);
-    else if (mode === 'flares') flares(w, h, unit);
+    else if (mode === 'prism') prism(w, h, unit);
     ctx.globalAlpha = 1;
   }
 
@@ -754,7 +845,7 @@ window.CVAudioVisuals = (() => {
   // Every style the picker can reach, in menu order. 'off' stays last so the
   // cycle can step through the visual styles and land on it predictably.
   const order = ['spectrum', 'waveform', 'envelope', 'radial', 'particles', 'aurora',
-    'tunnel', 'terrain', 'helix', 'grid', 'flares', 'off'];
+    'tunnel', 'terrain', 'helix', 'grid', 'prism', 'off'];
 
   // Single entry point for arrows and keyboard: they all drive the real select,
   // so the value, the styled label, persistence and the change handler stay in
@@ -780,7 +871,7 @@ window.CVAudioVisuals = (() => {
     const arrow = (direction, key) => {
       const button = document.createElement('button');
       button.type = 'button';
-      button.className = 'visualizer-arrow';
+      button.className = `visualizer-arrow visualizer-arrow-${direction < 0 ? 'prev' : 'next'}`;
       button.dataset.i18nAria = key;
       button.setAttribute('aria-label', text(key));
       button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
@@ -795,6 +886,19 @@ window.CVAudioVisuals = (() => {
     const prev = arrow(-1, 'audio_visual_prev');
     const next = arrow(1, 'audio_visual_next');
     wrap.append(prev, shell, next);
+    for (const button of [prev, next]) {
+      button.addEventListener('pointerenter', () => {
+        prev.classList.remove('is-hovered');
+        next.classList.remove('is-hovered');
+        button.classList.add('is-hovered');
+      });
+      button.addEventListener('pointerleave', () => button.classList.remove('is-hovered'));
+    }
+    const styledTrigger = shell.querySelector('.cfg-select-trigger');
+    if (styledTrigger) {
+      const syncOpenState = () => wrap.classList.toggle('select-open', styledTrigger.getAttribute('aria-expanded') === 'true');
+      new MutationObserver(syncOpenState).observe(styledTrigger, { attributes: true, attributeFilter: ['aria-expanded'] });
+    }
     // The arrows are the discoverable route; the shortcut is the fast one, so
     // both arrows advertise it rather than leaving it buried in a menu.
     if (typeof window.setCyberTooltip === 'function') {
@@ -803,6 +907,7 @@ window.CVAudioVisuals = (() => {
         window.setCyberTooltip(button, hint);
         button.dataset.tooltipKbd = 'V';
         button.classList.add('tooltip-bottom');
+        if (button === next) button.classList.add('tooltip-align-right');
       }
     }
   }

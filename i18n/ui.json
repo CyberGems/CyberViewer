@@ -87,6 +87,8 @@
     "ghost_close_slideshow_title": "Exit fullscreen (slideshow continues)",
     "config_title": "Configuration",
     "config_intro": "Customize CyberViewer's appearance and behavior.",
+    "cfg_select_scroll_up": "Scroll up",
+    "cfg_select_scroll_down": "Scroll down",
     "personalization": "Personalization",
     "cfg_theme_section": "Theme",
     "cfg_theme_cyberviewer_name": "CyberViewer",
@@ -781,7 +783,7 @@
     "audio_terrain": "Terrain",
     "audio_helix": "Helix",
     "audio_grid": "Matrix",
-    "audio_flares": "Fireworks",
+    "audio_prism": "Prism",
     "crop_size_aria": "Original size and crop result"
   },
   "es": {
@@ -872,6 +874,8 @@
     "ghost_close_slideshow_title": "Salir de pantalla completa (la presentación continúa)",
     "config_title": "Configuración",
     "config_intro": "Personaliza el aspecto y el comportamiento de CyberViewer.",
+    "cfg_select_scroll_up": "Desplazar arriba",
+    "cfg_select_scroll_down": "Desplazar abajo",
     "personalization": "Personalización",
     "cfg_theme_section": "Tema",
     "cfg_theme_cyberviewer_name": "CyberViewer",
@@ -1566,7 +1570,7 @@
     "audio_terrain": "Relieve",
     "audio_helix": "Hélice",
     "audio_grid": "Matriz",
-    "audio_flares": "Fuegos artificiales",
+    "audio_prism": "Prisma",
     "crop_size_aria": "Tamaño original y resultado"
   }
 }

@@ -209,6 +209,7 @@ app.whenReady().then(async () => {
     await evaluate('window.__audioHidden=false; Object.defineProperty(document,"hidden",{configurable:true,get:()=>window.__audioHidden});');
     await evaluate(`
       const read = AnalyserNode.prototype.getByteFrequencyData;
+      const readWaveform = AnalyserNode.prototype.getByteTimeDomainData;
       const connect = AudioContext.prototype.createMediaElementSource;
       window.__sourceCount=0;
       AudioContext.prototype.createMediaElementSource=function(element){
@@ -216,7 +217,11 @@ app.whenReady().then(async () => {
       };
       window.__audioPeak=0; window.__analysisReads=0;
       AnalyserNode.prototype.getByteFrequencyData=function(bytes){
-        read.call(this,bytes); window.__analysisReads++; window.__audioPeak=Math.max(...bytes);
+        if(window.__silenceVisualizer) bytes.fill(0); else read.call(this,bytes);
+        window.__analysisReads++; window.__audioPeak=Math.max(...bytes);
+      };
+      AnalyserNode.prototype.getByteTimeDomainData=function(bytes){
+        if(window.__silenceVisualizer) bytes.fill(128); else readWaveform.call(this,bytes);
       };
       const raf=window.requestAnimationFrame;
       window.__paintTimes=[];
@@ -230,19 +235,39 @@ app.whenReady().then(async () => {
         signatureContext.drawImage($('audio-canvas'),0,0,64,36);
         return Array.from(signatureContext.getImageData(0,0,64,36).data);
       };
+      window.__visualEnergy=async()=>{
+        const samples=[];
+        for(let i=0;i<3;i++){
+          await new Promise(resolve=>setTimeout(resolve,70));
+          signatureContext.drawImage($('audio-canvas'),0,0,64,36);
+          const data=signatureContext.getImageData(0,0,64,36).data;
+          let sum=0,lit=0;
+          for(let p=0;p<data.length;p+=4){
+            const value=(data[p]+data[p+1]+data[p+2])/3;
+            sum+=value; if(value>45) lit++;
+          }
+          samples.push({mean:sum/(data.length/4),lit:lit/(data.length/4)});
+        }
+        return {
+          mean:samples.reduce((total,item)=>total+item.mean,0)/samples.length,
+          lit:samples.reduce((total,item)=>total+item.lit,0)/samples.length
+        };
+      };
     `);
     await evaluate('await window.CVVideo.toggle();');
     await waitFor(() => evaluate('return window.CVVideo.element.currentTime > .15 && window.CVVideo.element.webkitAudioDecodedByteCount > 0;'), 'WAV audio decoded');
+    await evaluate('window.CVVideo.element.currentTime=.5;');
+    await waitFor(() => evaluate('return !window.CVVideo.element.seeking;'), 'visualizer playback rewind');
     const renderStats = {};
-    for (const mode of ['spectrum', 'waveform', 'envelope', 'radial', 'particles', 'aurora', 'tunnel', 'terrain', 'helix', 'grid', 'flares']) {
+    for (const mode of ['spectrum', 'waveform', 'envelope', 'radial', 'particles', 'aurora', 'tunnel', 'terrain', 'helix', 'grid', 'prism']) {
       await evaluate(`$('audio-visualizer').value='${mode}'; $('audio-visualizer').dispatchEvent(new Event('change'));`);
       await evaluate('window.__paintTimes=[];');
       await delay(180);
       const first = await evaluate("return $('audio-canvas').toDataURL();");
       await delay(150);
       const second = await evaluate("return $('audio-canvas').toDataURL();");
-      // Sparse particle styles (fireworks) can look identical across two nearby
-      // frames; retry with a wider gap before calling it static.
+      // Some compositions can look identical across two nearby frames; retry
+      // with a wider gap before calling it static.
       let changed = first !== second;
       for (let attempt = 0; !changed && attempt < 3; attempt++) {
         await delay(220);
@@ -252,8 +277,30 @@ app.whenReady().then(async () => {
       fs.writeFileSync(path.join(dataDir, mode + '.png'), (await win.webContents.capturePage()).toPNG());
       assert.equal(await evaluate("return $('audio-canvas').width<=1440 && $('audio-canvas').height<=810;"), true);
       renderStats[mode] = await evaluate('return window.__paintTimes.reduce((a,b)=>a+b,0)/Math.max(1,window.__paintTimes.length);');
+      if (mode === 'prism' || mode === 'tunnel') {
+        const label = mode === 'prism' ? 'Prism' : 'Tunnel';
+        const audible = await evaluate('return window.__visualEnergy();');
+        await evaluate('window.__silenceVisualizer=true;');
+        await delay(650);
+        const silent = await evaluate('return window.__visualEnergy();');
+        await evaluate('window.__silenceVisualizer=false;');
+        await delay(250);
+        assert.ok(audible.lit > silent.lit * 1.5 && audible.mean > silent.mean * 1.1,
+          label + ' responds to analysed audio rather than only elapsed time: ' + JSON.stringify({ audible, silent }));
+        for (const theme of ['cyberviewer', 'gray', 'light']) {
+          await evaluate(`applyAppearanceTheme('${theme}','#00d4ff');`);
+          await delay(100);
+          fs.writeFileSync(path.join(dataDir, `${mode}-${theme}.png`), (await win.webContents.capturePage()).toPNG());
+        }
+        await evaluate("applyAppearanceTheme('cyberviewer','#00d4ff');");
+        console.log(`PASS ${label} reacts to audio and renders in all appearance themes`);
+      }
     }
     console.log('Mean drawing time (ms, software-rendered test): ' + JSON.stringify(renderStats));
+    await evaluate(`const e=window.CVVideo.element;
+      if(e.ended || e.currentTime>10){ e.currentTime=.5;
+        await new Promise(resolve=>{ if(!e.seeking) return resolve(); e.addEventListener('seeked',resolve,{once:true}); });
+        if(e.paused) await window.CVVideo.toggle(); }`);
     const counter = await evaluate('return {reads:window.__analysisReads,time:performance.now()};'); await delay(1000);
     const fps = await evaluate(`return (window.__analysisReads-${counter.reads})*1000/(performance.now()-${counter.time});`);
     assert.ok(fps > 10 && fps <= 32, 'Live analysis/drawing remains capped near 30 fps: ' + fps);
@@ -302,8 +349,80 @@ app.whenReady().then(async () => {
     await evaluate('$("btn-config").click();');
     assert.equal(await evaluate("return $('modal-config').classList.contains('active');"), true, 'Config dialog opens during playback');
     assert.equal(await evaluate('return !window.CVVideo.element.paused;'), true, 'Playback continues while the config dialog is open');
+    await evaluate("$('cfg-lang').closest('.cfg-select-shell').querySelector('.cfg-select-trigger').click();");
+    await waitFor(() => evaluate("return !!document.querySelector('.cfg-select-menu');"), 'configuration dropdown opens');
+    assert.equal(await evaluate("return document.querySelectorAll('.cfg-select-menu .cfg-select-scroll[hidden]').length;"), 2,
+      'Short configuration lists do not show scroll chevrons');
+    await evaluate('window.CVConfigSelects.close();');
     await evaluate('window.closeModal("modal-config");');
     assert.equal(await evaluate("return !$('modal-config').classList.contains('active') && !window.CVVideo.element.paused;"), true, 'Playback continues after closing the config dialog');
+    await evaluate("$('video-more').click();");
+    await waitFor(() => evaluate("return !$('video-menu').hidden;"), 'visualization picker menu');
+    win.webContents.debugger.attach('1.3');
+    const point = selector => evaluate(`const r=document.querySelector('${selector}').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};`);
+    const move = async selector => {
+      const pos = await point(selector);
+      await win.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseMoved', ...pos });
+      return pos;
+    };
+    await move('.visualizer-arrow-next');
+    await waitFor(() => evaluate("const b=document.querySelector('.visualizer-arrow-next');return b.classList.contains('is-hovered') && Number(getComputedStyle(b,'::after').opacity)>.9;"), 'right visualization tooltip');
+    const hover = await evaluate(`return [...document.querySelectorAll('.visualizer-arrow')].map(button=>{
+      const style=getComputedStyle(button),tip=getComputedStyle(button,'::after');
+      return {direction:button.classList.contains('visualizer-arrow-next')?'next':'prev',active:button.classList.contains('is-hovered'),
+        background:style.backgroundColor,border:style.borderColor,tooltipOpacity:Number(tip.opacity),tooltipRight:tip.right};
+    });`);
+    assert.equal(hover.filter(item => item.active).length, 1, 'Only the hovered visualization arrow is active');
+    assert.equal(hover.find(item => item.active).direction, 'next');
+    assert.ok(hover.find(item => item.direction === 'next').tooltipOpacity > .9, 'The right arrow tooltip is visible: ' + JSON.stringify(hover));
+    assert.equal(hover.find(item => item.direction === 'prev').tooltipOpacity, 0, 'The left tooltip clears immediately');
+    assert.equal(hover[0].background, 'rgba(255, 255, 255, 0.04)', 'The previous arrow does not keep its hover tint');
+    assert.equal(hover.find(item => item.direction === 'next').tooltipRight, '0px', 'The right tooltip is aligned inside the window edge');
+    fs.writeFileSync(path.join(dataDir, 'visualizer-arrow-tooltip.png'), (await win.webContents.capturePage()).toPNG());
+    const triggerPoint = await point('#audio-visualizer-row .cfg-select-trigger');
+    await win.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mousePressed', ...triggerPoint, button: 'left', clickCount: 1 });
+    await win.webContents.debugger.sendCommand('Input.dispatchMouseEvent', { type: 'mouseReleased', ...triggerPoint, button: 'left', clickCount: 1 });
+    await waitFor(() => evaluate("return !!document.querySelector('.cfg-select-menu');"), 'visualization list opens');
+    const dropdown = await evaluate(`const menu=document.querySelector('.cfg-select-menu'),viewport=menu.querySelector('.cfg-select-options'),
+      up=menu.querySelector('.cfg-select-scroll:first-child'),down=menu.querySelector('.cfg-select-scroll:last-child'),r=menu.getBoundingClientRect();
+      return {expanded:$('audio-visualizer-row').querySelector('.cfg-select-trigger').getAttribute('aria-expanded'),options:viewport.children.length,
+        overflow:viewport.scrollHeight>viewport.clientHeight+1,scrollTop:viewport.scrollTop,upHidden:up.hidden,downHidden:down.hidden,
+        upDisabled:up.disabled,downDisabled:down.disabled,upLabel:up.getAttribute('aria-label'),downLabel:down.getAttribute('aria-label'),
+        bounds:{left:r.left,top:r.top,right:r.right,bottom:r.bottom},width:innerWidth,height:innerHeight,
+        tooltips:[...document.querySelectorAll('.visualizer-arrow')].map(button=>Number(getComputedStyle(button,'::after').opacity))};`);
+    assert.equal(dropdown.expanded, 'true');
+    assert.ok(dropdown.options >= 12 && dropdown.overflow, 'The effects list exposes its overflow');
+    assert.equal(dropdown.upHidden, false);
+    assert.equal(dropdown.downHidden, false);
+    assert.ok(dropdown.upLabel && dropdown.downLabel, 'Scroll chevrons have accessible names');
+    assert.ok(dropdown.bounds.left >= 0 && dropdown.bounds.top >= 0 && dropdown.bounds.right <= dropdown.width && dropdown.bounds.bottom <= dropdown.height,
+      'The dropdown stays inside the viewport: ' + JSON.stringify(dropdown.bounds));
+    assert.deepEqual(dropdown.tooltips, [0, 0], 'Visualization tooltips stay hidden while the list is open');
+    for (const theme of ['cyberviewer', 'gray', 'light']) {
+      await evaluate(`applyAppearanceTheme('${theme}','#00d4ff');`);
+      await delay(100);
+      fs.writeFileSync(path.join(dataDir, `visualizer-picker-${theme}.png`), (await win.webContents.capturePage()).toPNG());
+    }
+    await evaluate("applyAppearanceTheme('cyberviewer','#00d4ff');");
+    await evaluate("document.querySelector('.cfg-select-scroll:first-child').click();");
+    await delay(450);
+    assert.equal(await evaluate("return document.querySelector('.cfg-select-options').scrollTop;"), 0, 'The up chevron returns to the first option');
+    assert.equal(await evaluate("return document.querySelector('.cfg-select-scroll:first-child').disabled;"), true, 'The up chevron disables at the top');
+    await evaluate("document.querySelector('.cfg-select-scroll:last-child').click();");
+    await delay(450);
+    assert.ok(await evaluate("return document.querySelector('.cfg-select-options').scrollTop>0;"), 'The down chevron scrolls the list');
+    assert.equal(await evaluate("return document.querySelector('.cfg-select-scroll:first-child').disabled;"), false, 'The up chevron enables after scrolling');
+    await evaluate("document.querySelector('.cfg-select-options').scrollTop=0;");
+    await delay(100);
+    await evaluate("$('audio-visualizer-row').querySelector('.cfg-select-trigger').dispatchEvent(new KeyboardEvent('keydown',{key:'PageDown',bubbles:true,cancelable:true}));");
+    await delay(450);
+    assert.ok(await evaluate("return document.querySelector('.cfg-select-options').scrollTop>0;"), 'PageDown provides keyboard scrolling');
+    await evaluate("document.querySelector('.cfg-select-option[aria-selected=\"true\"]').click();");
+    assert.equal(await evaluate("return !!document.querySelector('.cfg-select-menu');"), false, 'Choosing an option closes the list');
+    await evaluate("$('video-more').click();");
+    assert.equal(await evaluate("return $('video-menu').hidden;"), true, 'The visualization menu closes after the picker check');
+    win.webContents.debugger.detach();
+    console.log('PASS visualization arrows, edge-safe tooltips and dropdown scroll navigation');
     // Clicking the stage to dismiss the More menu must not toggle playback.
     const menuCheck = await evaluate(`
       const target = $('canvas-layer');
