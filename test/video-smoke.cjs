@@ -288,6 +288,28 @@ app.whenReady().then(async () => {
     await waitFor(() => evaluate("return $('video-mute').disabled && $('video-volume').disabled && $('video-sound').classList.contains('audio-unavailable');"), 'silent.mp4 reports unavailable audio on load');
     assert.equal(await evaluate("return $('audio-equalizer-toggle').disabled;"),true,'Silent video cannot open the audio equalizer');
     assert.equal(await evaluate("return getComputedStyle($('video-volume')).display === 'none' && getComputedStyle($('video-mute')).display !== 'none';"), true, 'Unavailable audio shows only the speaker, with no dead slider');
+    await evaluate('window.CVVideo.reveal();');
+    const originalTheme = await evaluate("return document.documentElement.dataset.theme;");
+    for (const theme of ['cyberviewer','gray','light']) {
+      const disabledStyle = await evaluate(`applyAppearanceTheme(${JSON.stringify(theme)}, state.settings.app.accentColor);
+        const equalizer=getComputedStyle($('audio-equalizer-toggle')), fit=getComputedStyle($('video-fit'));
+        return {color:equalizer.color,fitColor:fit.color,opacity:getComputedStyle($('audio-equalizer-toggle').querySelector('svg')).opacity,
+          volumeOpacity:getComputedStyle($('video-mute').querySelector('svg')).opacity};`);
+      assert.equal(disabledStyle.color, disabledStyle.fitColor, theme + ' disabled equalizer matches Fit to window');
+      assert.equal(Number(disabledStyle.opacity), .38, theme + ' disabled equalizer glyph is dimmed');
+      assert.equal(Number(disabledStyle.volumeOpacity), .38, theme + ' unavailable volume glyph is dimmed');
+      win.webContents.sendInputEvent({type:'mouseMove',x:1,y:1});
+      await delay(150);
+      fs.writeFileSync(path.join(dataDir,'silent-controls-'+theme+'.png'),(await win.webContents.capturePage()).toPNG());
+    }
+    await evaluate('applyAppearanceTheme(' + JSON.stringify(originalTheme) + ', state.settings.app.accentColor);');
+    const volumePoint = await evaluate("const r=$('video-sound').getBoundingClientRect(); return {x:Math.floor(r.left+r.width/2),y:Math.floor(r.top+r.height/2)};");
+    win.webContents.sendInputEvent({type:'mouseMove', ...volumePoint});
+    await waitFor(() => evaluate("const card=$('titlebar-tooltip'); return card && !card.hidden && card.classList.contains('is-visible') && card.querySelector('.tt-label').textContent === 'Video sin audio';"), 'unavailable volume tooltip opens');
+    const equalizerPoint = await evaluate("const r=$('audio-equalizer-toggle').getBoundingClientRect(); return {x:Math.floor(r.left+r.width/2),y:Math.floor(r.top+r.height/2)};");
+    win.webContents.sendInputEvent({type:'mouseMove', ...equalizerPoint});
+    await waitFor(() => evaluate("const card=$('titlebar-tooltip'); return card && !card.hidden && card.classList.contains('is-visible') && card.querySelector('.tt-label').textContent === 'Ecualizador de 10 bandas con preamplificador y limitador';"), 'disabled equalizer tooltip opens');
+    win.webContents.sendInputEvent({type:'mouseMove',x:1,y:1});
     await evaluate('window.CVVideo.element.muted=true; await window.CVVideo.toggle();');
     await waitFor(() => evaluate('return window.CVVideo.element.currentTime > .8;'), 'silent.mp4 playback');
     await evaluate("document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'m',bubbles:true}));");
@@ -297,6 +319,7 @@ app.whenReady().then(async () => {
     fs.writeFileSync(path.join(dataDir,'silent.mp4-controls.png'), (await win.webContents.capturePage()).toPNG());
     await evaluate("state.settings.app.language='en'; updateLanguage('en');");
     assert.equal(await evaluate("return $('video-mute').dataset.tooltip === 'Video without audio';"), true, 'The unavailable-audio hint is localized');
+    assert.equal(await evaluate("return $('audio-equalizer-toggle').dataset.tooltip === '10-band equalizer with preamp and limiter';"), true, 'The equalizer hint is localized');
     await evaluate("state.settings.app.language='es'; updateLanguage('es');");
 
     await open('unsupported-audio.mkv'); await loaded();

@@ -46,6 +46,9 @@ describe('audio equalizer interface', () => {
     }
     assert.match(styles, /#audio-equalizer-panel:not\(\[hidden\]\)/);
     assert.match(styles, /html\[data-theme='light'\] #audio-equalizer-power/);
+    assert.match(styles, /#audio-equalizer-toggle:disabled:hover \{ background: transparent; color: inherit; \}/);
+    assert.match(styles, /\.video-sound\.audio-unavailable #video-mute svg \{ opacity: \.38; \}/);
+    assert.match(app, /'video-next', 'audio-equalizer-toggle'/);
     assert.match(player, /window\.CVAudioEqualizer\.isOpen\(\)/);
     assert.match(player, /#audio-equalizer-toggle, #audio-equalizer-panel/);
     assert.match(player, /window\.CVAudioEqualizer\.setOpen\(false\)/);

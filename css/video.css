@@ -108,6 +108,8 @@ body.audio-active #video-seek:focus-visible { outline: 2px solid var(--cyber-acc
 /* No audio track or an undecodable one: the speaker alone reports the state,
    with no dead slider and no empty gap where it used to be. */
 .video-sound.audio-unavailable #video-volume { display: none; }
+.video-sound.audio-unavailable #video-mute { pointer-events: none; }
+.video-sound.audio-unavailable #video-mute svg { opacity: .38; }
 .video-sound.audio-unavailable .video-icon-sound { display: none; }
 .video-sound.audio-unavailable .video-icon-muted { display: initial; }
 .video-sound.audio-unavailable #video-mute::after, .video-sound.audio-unavailable #video-mute::before { display: none; }
@@ -155,6 +157,8 @@ body.video-active.ghost-mode #video-fullscreen:hover { background: rgba(var(--cy
 #video-speed[aria-expanded="true"], #video-speed[aria-expanded="true"]:hover { background: rgba(var(--cyber-tint-rgb), 0.12); }
 #audio-equalizer-toggle[aria-expanded="true"], #audio-equalizer-toggle[aria-expanded="true"]:hover,
 #audio-equalizer-toggle.is-processing { background: rgba(var(--cyber-accent-rgb), 0.14); color: var(--cyber-accent-ink); }
+#audio-equalizer-toggle:disabled,
+#audio-equalizer-toggle:disabled:hover { background: transparent; color: inherit; }
 #audio-equalizer-toggle:disabled svg { opacity: .38; }
 #audio-equalizer-panel {
   top: auto; right: auto; bottom: 91px; left: 50%; transform: translateX(-50%);
