@@ -71,9 +71,10 @@ Abre una foto, un video o una pista de audio y aparece en la misma ventana, a ta
 
 ## 🖼️ Capturas
 
-![Visor oscuro de CyberViewer con pestañas de imágenes, barra lateral de miniaturas, lienzo nítido y barra inferior de edición](docs/screenshots/main-es.png)
-
-*Visor de imágenes multipestaña con tira lateral de miniaturas, lienzo sin pérdida, barra rápida de edición y pie de metadatos.*
+<p align="center">
+  <img src="./docs/screenshots/main-es.png" alt="Visor oscuro de CyberViewer con pestañas de imágenes, barra lateral de miniaturas, lienzo nítido y barra inferior de edición" />
+</p>
+<p align="center"><em>Visor de imágenes multipestaña con tira lateral de miniaturas, lienzo sin pérdida, barra rápida de edición y pie de metadatos.</em></p>
 
 ---
 

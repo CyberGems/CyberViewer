@@ -71,9 +71,10 @@ Open a photo, a video or an audio track and it appears in the same window, at fu
 
 ## 🖼️ Screenshots
 
-![CyberViewer dark gallery workspace showing image tabs, thumbnail sidebar, crisp artwork canvas, and bottom editing HUD](docs/screenshots/main-en.png)
-
-*Multi-tab image viewer with folder thumbnail strip, lossless zoom canvas, quick editing toolbar, and metadata footer.*
+<p align="center">
+  <img src="./docs/screenshots/main-en.png" alt="CyberViewer dark gallery workspace showing image tabs, thumbnail sidebar, crisp artwork canvas, and bottom editing HUD" />
+</p>
+<p align="center"><em>Multi-tab image viewer with folder thumbnail strip, lossless zoom canvas, quick editing toolbar, and metadata footer.</em></p>
 
 ---
 
