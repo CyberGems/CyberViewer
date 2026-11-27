@@ -399,7 +399,12 @@ window.CVWorkspace = (() => {
     if (!canSwitch()) return;
     capture();
     try {
+      const known = new Set(model.tabs);
+      const anchor = model.active;
       const tab = model.reopen();
+      if (tab && !known.has(tab) && anchor && state.settings.app.tabsOpenNextToCurrent !== false) {
+        model.moveTo(tab.id, model.tabs.indexOf(anchor) + 1);
+      }
       if (tab) void activate(tab.id, { force: true });
     } catch (_) { showToast(text('tabs_limit'), 'warning'); }
   }

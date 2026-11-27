@@ -109,9 +109,17 @@ app.whenReady().then(async () => {
     assert.equal(result.view.currentRotation, 90); assert.equal(result.rotation, 0);
     await evaluate("window.CVWorkspace.closeTabs(['tab-2']);");
     await loaded();
+    await evaluate("await window.CVWorkspace.activate('tab-1');"); await loaded();
     await evaluate('window.CVWorkspace.reopen();');
     await loaded();
     assert.equal(await evaluate('return window.CVWorkspace.model.activeId;'), 'tab-2');
+    assert.deepEqual(await evaluate('return window.CVWorkspace.model.tabs.map(tab=>tab.image.file.name);'),
+      ['one.png','two.png','three #ñ %.png'], 'Reopening places the tab immediately after the active tab');
+    await evaluate("await window.CVWorkspace.activate('tab-1'); window.CVWorkspace.closeTabs(['tab-2']);"); await loaded();
+    await evaluate("state.settings.app.tabsOpenNextToCurrent=false; window.CVWorkspace.reopen();"); await loaded();
+    assert.deepEqual(await evaluate('return window.CVWorkspace.model.tabs.map(tab=>tab.image.file.name);'),
+      ['one.png','three #ñ %.png','two.png'], 'Disabling next-to-current appends reopened tabs');
+    await evaluate("state.settings.app.tabsOpenNextToCurrent=true;");
     await evaluate("window.CVWorkspace.model.move('tab-2', 'tab-1'); window.CVWorkspace.render();");
     await evaluate('await openImagePath(' + JSON.stringify(files[0].toUpperCase()) + ');');
     await loaded();
