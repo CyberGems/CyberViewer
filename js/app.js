@@ -343,6 +343,7 @@ const state = {
       videoAutoplay: true,
       keepMediaPausedOnTabReturn: true,
       showTabMediaIcons: true,
+      reuseOpenPath: false,
       videoLoop: false,
       videoVolume: 1,
       videoMuted: false,
@@ -8352,6 +8353,7 @@ function openConfig() {
   $('cfg-keep-media-paused').checked = s.keepMediaPausedOnTabReturn !== false;
   $('cfg-tab-media-icons').checked = s.showTabMediaIcons !== false;
   $('cfg-tabs-open-next').checked = s.tabsOpenNextToCurrent !== false;
+  $('cfg-tabs-reuse-open').checked = s.reuseOpenPath === true;
   $('cfg-tabs-cancel-edits').checked = s.tabsCancelPendingEdits !== false;
   $('cfg-drop-center-action').value = s.centerDropAction === 'replace' ? 'replace' : 'new-tab';
   if ($('cfg-animated-gifs')) $('cfg-animated-gifs').checked = s.animateGifs !== false;
@@ -8491,6 +8493,7 @@ function collectConfigSettings() {
     keepMediaPausedOnTabReturn: $('cfg-keep-media-paused').checked,
     showTabMediaIcons: $('cfg-tab-media-icons').checked,
     tabsOpenNextToCurrent: $('cfg-tabs-open-next').checked,
+    reuseOpenPath: $('cfg-tabs-reuse-open').checked,
     tabsCancelPendingEdits: $('cfg-tabs-cancel-edits').checked,
     centerDropAction: $('cfg-drop-center-action').value === 'replace' ? 'replace' : 'new-tab',
     animateGifs: !!($('cfg-animated-gifs') && $('cfg-animated-gifs').checked),
@@ -8552,6 +8555,7 @@ function getFactoryAppSettings() {
     videoAutoplay: true,
     keepMediaPausedOnTabReturn: true,
     showTabMediaIcons: true,
+    reuseOpenPath: false,
     centerDropAction: 'new-tab',
     mediaSiblingsNewTab: false,
     videoLoop: false,

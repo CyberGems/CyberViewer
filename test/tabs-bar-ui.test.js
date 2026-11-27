@@ -52,6 +52,19 @@ describe('tab bar ui', () => {
       assert.ok(typeof ui[lang].tabs_open_next_desc === 'string' && ui[lang].tabs_open_next_desc.length > 0);
     }
   });
+  it('creates another tab for repeated opens by default, with an optional reuse setting', () => {
+    for (const lang of ['en', 'es']) {
+      assert.ok(ui[lang].tabs_reuse_open);
+      assert.ok(ui[lang].tabs_reuse_open_desc);
+    }
+    const control = html.match(/<input[^>]*id="cfg-tabs-reuse-open"[^>]*>/)?.[0];
+    assert.ok(control, 'the reuse setting is present');
+    assert.doesNotMatch(control, /\bchecked\b/, 'reusing an existing tab is off by default');
+    assert.match(workspace, /const reusePath = options\.reusePath \?\? \(state\.settings\.app\.reuseOpenPath === true\);/);
+    assert.match(workspace, /model\.open\(imageForFile\(file, \{ reusePath \}\), \{[\s\S]*?reusePath\s*\}/);
+    assert.match(appJs, /\$\('cfg-tabs-reuse-open'\)\.checked = s\.reuseOpenPath === true;/);
+    assert.match(appJs, /reuseOpenPath: \$\('cfg-tabs-reuse-open'\)\.checked,/);
+  });
   it('reveals a close button per switcher row on hover', () => {
     // Row is a shell (open button + close button) so the X never nests inside
     // an interactive element; closing reuses the same closeTabs confirm flow

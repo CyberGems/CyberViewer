@@ -214,6 +214,7 @@ window.CVWorkspace = (() => {
     // an explicit Open dialog can also bring a reused tab next to the active one.
     const nextToCurrent = insertion === null && state.settings.app.tabsOpenNextToCurrent !== false;
     const repositionReused = options.repositionReused === true;
+    const reusePath = options.reusePath ?? (state.settings.app.reuseOpenPath === true);
     const known = new Set(model.tabs);
     const anchor = model.tabs.indexOf(model.active);
     const base = anchor < 0 ? model.tabs.length : anchor + 1;
@@ -221,8 +222,8 @@ window.CVWorkspace = (() => {
     try {
       for (let index = 0; index < accepted.length; index++) {
         const file = accepted[index];
-        const tab = model.open(imageForFile(file, options), {
-          activate: false, source: options.source, view: options.view, reusePath: options.reusePath !== false
+        const tab = model.open(imageForFile(file, { reusePath }), {
+          activate: false, source: options.source, view: options.view, reusePath
         });
         if (!known.has(tab) && sidebarStatePerTab()) tab.sidebarOpen = !!state.sidebarOpen;
         if (insertion !== null) model.moveTo(tab.id, insertion++);

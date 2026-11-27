@@ -162,7 +162,12 @@ app.whenReady().then(async () => {
     await evaluate("window.CVWorkspace.model.move('tab-2', 'tab-1'); window.CVWorkspace.render();");
     await evaluate('await openImagePath(' + JSON.stringify(files[0].toUpperCase()) + ');');
     await loaded();
-    assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 3);
+    assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 4);
+    assert.equal(await evaluate("return window.CVWorkspace.model.activeId !== 'tab-1' && state.currentRotation === 0;"), true,
+      'reopening the same path creates an independent tab with its own view');
+    await evaluate('window.CVWorkspace.closeTabs([window.CVWorkspace.model.activeId], { discard: true });');
+    await waitFor(() => evaluate('return window.CVWorkspace.model.tabs.length === 3 && !window.CVWorkspace.busy;'), 'uppercase duplicate cleanup');
+    await evaluate("await window.CVWorkspace.activate('tab-1');"); await loaded();
     assert.equal(await evaluate('return state.currentRotation;'), 90);
     assert.equal(await evaluate('return state.panX;'), 31);
 
@@ -184,7 +189,12 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate('return window.CVWorkspace.model.activeId;'), 'tab-1');
     await evaluate('window._releaseEdit(); await window._editPromise;');
     await loaded();
-    assert.equal(await evaluate('return window.CVWorkspace.model.activeId;'), 'tab-3');
+    assert.equal(await evaluate(`return window.CVWorkspace.model.tabs.length === 4 &&
+      window.CVWorkspace.model.active.image.file.path === ${JSON.stringify(files[2])};`), true,
+      'a queued repeated open activates its independent tab');
+    await evaluate('window.CVWorkspace.closeTabs([window.CVWorkspace.model.activeId], { discard: true });');
+    await waitFor(() => evaluate('return window.CVWorkspace.model.tabs.length === 3 && !window.CVWorkspace.busy;'), 'queued duplicate cleanup');
+    await evaluate("await window.CVWorkspace.activate('tab-3');"); await loaded();
     await evaluate("await window.CVWorkspace.activate('tab-2');"); await loaded();
     await evaluate('rotate(90); await saveCurrent();'); await loaded();
     assert.deepEqual(nativeImage.createFromPath(files[1]).getSize(), { width: 80, height: 120 });
@@ -202,9 +212,13 @@ app.whenReady().then(async () => {
       child.on('error', reject);
       child.on('exit', status => status === 0 ? resolve() : reject(new Error('Forwarding launch failed: ' + status)));
     });
-    await waitFor(() => evaluate("return window.CVWorkspace.model.activeId === 'tab-3';"), 'second-instance forwarding');
+    await waitFor(() => evaluate(`return window.CVWorkspace.model.tabs.length === 4 &&
+      window.CVWorkspace.model.activeId !== 'tab-3' &&
+      window.CVWorkspace.model.active.image.file.path === ${JSON.stringify(files[2])};`), 'second-instance forwarding');
     await loaded();
     assert.equal(BrowserWindow.getAllWindows().filter(window => window.webContents.getURL().includes('CyberViewer.html')).length, 1);
+    await evaluate('window.CVWorkspace.closeTabs([window.CVWorkspace.model.activeId], { discard: true });');
+    await waitFor(() => evaluate('return window.CVWorkspace.model.tabs.length === 3 && !window.CVWorkspace.busy;'), 'forwarded duplicate cleanup');
     await evaluate("await Promise.all(['tab-1', 'tab-2', 'tab-3', 'tab-1', 'tab-2'].map(id => window.CVWorkspace.activate(id)));");
     await loaded();
     assert.equal(await evaluate('return window.CVWorkspace.model.activeId;'), 'tab-2');
@@ -216,19 +230,56 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate('return window.CVWorkspace.model.activeId;'), 'tab-2');
     await evaluate('window._releaseDialog(); await window._dialogPromise;');
     await loaded();
-    assert.equal(await evaluate('return window.CVWorkspace.model.activeId;'), 'tab-3');
+    assert.equal(await evaluate(`return window.CVWorkspace.model.tabs.length === 4 &&
+      window.CVWorkspace.model.activeId !== 'tab-2' &&
+      window.CVWorkspace.model.active.image.file.path === ${JSON.stringify(files[2])};`), true,
+      'a dialog-blocked repeated open activates its independent tab afterward');
+    await evaluate('window.CVWorkspace.closeTabs([window.CVWorkspace.model.activeId], { discard: true });');
+    await waitFor(() => evaluate('return window.CVWorkspace.model.tabs.length === 3 && !window.CVWorkspace.busy;'), 'dialog duplicate cleanup');
     await evaluate("await window.CVWorkspace.activate('tab-2');"); await loaded();
     const originalBytes = fs.readFileSync(files[0]);
     await evaluate('await saveAsPath(' + JSON.stringify(files[0]) + ');');
     assert.deepEqual(fs.readFileSync(files[0]), originalBytes);
     assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 3);
 
+    await evaluate("await window.CVWorkspace.activate('tab-1');"); await loaded();
+    const repeatedOpen = await evaluate(`const original = window.CVWorkspace.model.tabs.find(tab => tab.id === 'tab-1');
+      await window.CVWorkspace.openPath(${JSON.stringify(files[0])});
+      const active = window.CVWorkspace.model.active;
+      return { count: window.CVWorkspace.model.tabs.length, activeId: active.id,
+        independent: active.image !== original.image,
+        besideOriginal: window.CVWorkspace.model.tabs[window.CVWorkspace.model.tabs.indexOf(original) + 1] === active };`);
+    assert.equal(repeatedOpen.count, 4, 'opening the same file again creates another tab by default');
+    assert.equal(repeatedOpen.independent, true, 'the repeated open has an independent image document');
+    assert.equal(repeatedOpen.besideOriginal, true, 'the repeated open lands beside the active tab');
+    await evaluate('window.CVWorkspace.closeTabs([window.CVWorkspace.model.activeId], { discard: true });');
+    await waitFor(() => evaluate('return window.CVWorkspace.model.tabs.length === 3 && !window.CVWorkspace.busy;'), 'repeated tab cleanup');
+
+    await evaluate("await window.CVWorkspace.activate('tab-1');"); await loaded();
+    await evaluate(`window.CVWorkspace.dropFiles([{ path: ${JSON.stringify(files[1])},
+      name: 'two.png', size: 0, type: '' }]);`);
+    await waitFor(() => evaluate('return window.CVWorkspace.model.tabs.length === 4 && !window.CVWorkspace.busy;'), 'dropped duplicate tab');
+    assert.equal(await evaluate(`const active = window.CVWorkspace.model.active;
+      const original = window.CVWorkspace.model.tabs.find(tab => tab.id === 'tab-2');
+      return active.image.file.path === original.image.file.path && active.image !== original.image;`), true,
+      'dropping an open file creates an independent tab by default');
+    await evaluate('window.CVWorkspace.closeTabs([window.CVWorkspace.model.activeId], { discard: true });');
+    await waitFor(() => evaluate('return window.CVWorkspace.model.tabs.length === 3 && !window.CVWorkspace.busy;'), 'dropped tab cleanup');
+
+    await evaluate("state.settings.app.reuseOpenPath = true; await window.CVWorkspace.activate('tab-1');" +
+      `await window.CVWorkspace.openPath(${JSON.stringify(files[0])}); state.settings.app.reuseOpenPath = false;`);
+    assert.equal(await evaluate("return window.CVWorkspace.model.tabs.length === 3 && window.CVWorkspace.model.activeId === 'tab-1';"),
+      true, 'the optional reuse setting returns to the existing tab');
+    await evaluate("await window.CVWorkspace.activate('tab-2');"); await loaded();
+
     const finishCopy = async expectedSize => {
       await waitFor(() => evaluate('return !window.CVWorkspace.busy && window.CVWorkspace.model.tabs.length === 4;'), 'copy tab');
       await loaded();
       const copy = await evaluate('return window.CVWorkspace.model.active.image.file.path;');
+      assert.notEqual(copy, files[1], 'the edit copy is active before cleanup');
       assert.deepEqual(nativeImage.createFromPath(copy).getSize(), expectedSize);
       await evaluate('closeImage();');
+      await waitFor(() => evaluate('return window.CVWorkspace.model.tabs.length === 3 && !window.CVWorkspace.busy;'), 'copy tab cleanup');
       await evaluate("await window.CVWorkspace.activate('tab-2');"); await loaded();
     };
     await evaluate('await flipImage("h");');
@@ -249,8 +300,13 @@ app.whenReady().then(async () => {
     await loaded();
     assert.equal(await evaluate('return state.showingFavs;'), true);
     assert.equal(await evaluate('return state.images.length;'), 2);
+    assert.equal(await evaluate(`return window.CVWorkspace.model.tabs.length === 4 &&
+      window.CVWorkspace.model.active.image !== window.CVWorkspace.model.tabs.find(tab => tab.id === 'tab-2').image;`), true,
+      'opening the first favorite creates an independent tab when that file is already open');
     await evaluate('await toggleFavoritesView();'); await loaded();
     assert.equal(await evaluate('return state.showingFavs;'), false);
+    await evaluate('window.CVWorkspace.closeTabs([window.CVWorkspace.model.activeId], { discard: true });');
+    await waitFor(() => evaluate('return window.CVWorkspace.model.tabs.length === 3 && !window.CVWorkspace.busy;'), 'favorite duplicate cleanup');
 
     await evaluate("openConfig(); $('cfg-restore-session').click();");
     await waitFor(() => evaluate('return state.settings.app.restoreSession === true;'), 'session preference autosave');
@@ -414,22 +470,17 @@ app.whenReady().then(async () => {
     const pointer = await evaluate('return window.electronAPI.getPointerInWindow();');
     assert.ok(Number.isFinite(pointer.x) && Number.isFinite(pointer.y),
       'native cursor coordinates should be available independently of title hover events');
-    await waitFor(() => evaluate('return !restorePointerPending || !!restorePointerAnchor;'),
-      'restore pointer guard settled');
-    await evaluate(`if (restorePointerPending && restorePointerAnchor) {
-      updateRestorePointerGuard({ screenX: restorePointerAnchor.screenX + 3, screenY: restorePointerAnchor.screenY });
-    }`);
+    await waitFor(() => evaluate('return !restorePointerPending && Date.now() >= ttRestoreSuppressUntil;'),
+      'restore pointer guard and tooltip suppression finished');
     assert.equal(await evaluate('return !!titlebarTooltipPoll;'), true);
     await evaluate('clearInterval(titlebarTooltipPoll); titlebarTooltipPoll = null;');
     await waitFor(() => evaluate('return !titlebarTooltipPending;'), 'title tooltip pointer probe settled');
-    await delay(150);
-    await waitFor(() => evaluate('return Date.now() >= ttRestoreSuppressUntil;'),
-      'restore tooltip suppression elapsed');
-    const inside = { x: clippedTitle.title.x + clippedTitle.title.width / 2,
-      y: clippedTitle.title.y + clippedTitle.title.height / 2, focused: true };
-    await evaluate('updateTitlebarTooltipFromPointer(' + JSON.stringify(inside) + ');');
-    await delay(300);
-    await evaluate('updateTitlebarTooltipFromPointer(' + JSON.stringify(inside) + ');');
+    await waitFor(() => evaluate(`updateTitlebarTooltipFromPointer(${JSON.stringify({
+      x: clippedTitle.title.x + clippedTitle.title.width / 2,
+      y: clippedTitle.title.y + clippedTitle.title.height / 2, focused: true
+    })});
+      return ttAnchor === $('titlebar-filename') && !$('titlebar-tooltip')?.hidden;`),
+      'full path tooltip is shown over the clipped title');
     const shown = await evaluate(`return { text: $('titlebar-tooltip')?.querySelector('.tt-label')?.textContent,
       visible: !$('titlebar-tooltip')?.hidden, anchor: ttAnchor?.id };`);
     assert.deepEqual(shown, { text: overflowPath, visible: true, anchor: 'titlebar-filename' });
@@ -529,8 +580,11 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 41);
     assert.equal(await evaluate('return window.CVWorkspace.model.active.image.file.name;'), 'center-drop.png');
     await evaluate('await window.CVWorkspace.dropFiles([{ path: ' + JSON.stringify(centerFile) + ', name: "center-drop.png", size: 0 }], { insertAt: 1 });');
-    assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 41);
+    assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 42);
     assert.equal(await evaluate('return window.CVWorkspace.model.tabs[1].image.file.name;'), 'center-drop.png');
+    await evaluate('window.CVWorkspace.closeTabs([window.CVWorkspace.model.activeId], { discard: true });');
+    await waitFor(() => evaluate('return window.CVWorkspace.model.tabs.length === 41 && !window.CVWorkspace.busy;'),
+      'repeated center drop cleanup');
     const stripZone = await evaluate(`const bar = $('image-tabs').getBoundingClientRect();
       const shell = $('image-tab-list').children[2].getBoundingClientRect();
       const index = tabFileDropIndex(shell.left + 2);
