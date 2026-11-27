@@ -103,7 +103,8 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 - **Restauración opcional de sesión:** activa **Configuración → General → Restaurar sesión anterior** para recuperar el orden, la pestaña activa, las vistas, las rotaciones pendientes y las imágenes pegadas al reiniciar. Los archivos ausentes conservan su pestaña y se pueden localizar de nuevo. La sesión se almacena localmente, separada de los respaldos de configuración; desactivar la opción elimina la sesión guardada.
 - **Apertura ultrarrápida:** protocolo de streaming propio que carga imágenes sin agotar la RAM
 - **Formatos admitidos:** JPG, JPEG, PNG, GIF, WebP, BMP, TIFF, TIF, ICO y AVIF
-- **Navegación de carpetas:** barra lateral de miniaturas con carga diferida, cola de prioridad e indicador de progreso de escaneo. Cada tarjeta lleva el nombre del archivo bajo la vista previa, y un nombre que no cabe se desplaza mientras se pasa el cursor en lugar de quedar cortado. Activa **Tarjetas compactas en la barra lateral** en **Configuración → Interfaz**, o desde el menú contextual de una miniatura, para ocultar la franja del nombre y que quepan más archivos a la vez; al pasar el cursor sobre una tarjeta, el nombre reaparece.
+- **Navegación de carpetas:** barra lateral de miniaturas con carga diferida, cola de prioridad e indicador de progreso de escaneo. Cada tarjeta lleva el nombre del archivo bajo la vista previa, y un nombre que no cabe se desplaza mientras se pasa el cursor en lugar de quedar cortado, salvo que el movimiento reducido esté activado. Activa **Tarjetas compactas en la barra lateral** en **Configuración → Interfaz**, o desde el menú contextual de una miniatura, para ocultar la franja del nombre y que quepan más archivos a la vez; al pasar el cursor sobre una tarjeta, el nombre reaparece.
+- **Estado de la barra lateral:** **Mantener el estado del panel por pestaña** viene activado, así que cada pestaña conserva el panel abierto o cerrado sin iniciar escaneos innecesarios. El panel se desliza entre ambos estados, y una pestaña con la barra lateral cerrada lleva un marcador cuyo tooltip lo explica.
 - **Zoom y desplazamiento:** del 5 % al 2000 %, ajuste a la ventana, tamaño original (1:1), rueda del ratón y arrastre
 - **Soporte de GIF animado:** activa o desactiva la reproducción
 - **Modo de pantalla completa inmersivo:** la interfaz fantasma se oculta sola para una visualización sin distracciones
@@ -122,10 +123,10 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 
 ### Audio y visualizaciones
 - Abre MP3, WAV PCM, FLAC, Ogg Vorbis/Opus (.ogg, .oga, .opus) y AAC (.aac ADTS, .m4a MP4) directamente, sin conversión ni otro motor de reproducción. Los códecs o perfiles poco habituales dentro de estos contenedores pueden no ser compatibles.
-- La barra de progreso muestra la forma de onda de toda la pista, decodificada una vez desde el archivo, con la parte reproducida resaltada y un cursor que marca la posición. La búsqueda, los atajos y el control por teclado siguen funcionando igual.
+- La barra de progreso muestra la forma de onda de toda la pista, decodificada una vez desde el archivo, con la parte reproducida resaltada y un cursor que marca la posición. Al pasar el cursor por la barra aparece la marca de tiempo de esa posición. La búsqueda, los atajos y el control por teclado siguen funcionando igual.
 - Las pistas de más de 160 MB omiten la onda y conservan la barra simple. La forma decodificada se guarda por archivo, así que volver a una pista la redibuja al instante.
-- El audio comparte los controles, atajos, volumen, repetición, velocidad y restauración opcional de posición del video. Anterior/siguiente recorre solo archivos de audio y abre la pista vecina en la misma pestaña; activa "Abrir anterior/siguiente en pestaña nueva" en el menú del reproductor para conservar el comportamiento anterior de una pestaña por pista.
-- Cuando el archivo trae etiquetas de título, artista o álbum, el rótulo reemplaza el nombre del archivo por el título y lista el artista y el álbum debajo. Las etiquetas se leen en segundo plano cuando la reproducción ya está en marcha, así que un archivo lento o dañado nunca la retrasa; una pista sin etiquetas conserva su nombre de archivo.
+- El audio comparte los controles, atajos, volumen, repetición, velocidad y restauración opcional de posición del video. Los controles permanecen visibles en modo ventana; solo se ocultan automáticamente en pantalla completa. Anterior/siguiente recorre solo archivos de audio y abre la pista vecina en la misma pestaña; activa "Abrir anterior/siguiente en pestaña nueva" en el menú del reproductor para conservar el comportamiento anterior de una pestaña por pista.
+- Cuando el archivo trae etiquetas de título, artista o álbum, el rótulo reemplaza el nombre del archivo por el título y lista el artista y el álbum debajo. La carátula integrada aparece junto al rótulo y en las tarjetas de la barra lateral, incluida la encontrada durante los escaneos en segundo plano. Las etiquetas se leen en segundo plano cuando la reproducción ya está en marcha, así que un archivo lento o dañado nunca la retrasa; una pista sin etiquetas conserva su nombre de archivo.
 - Elige Espectro, Osciloscopio, Forma de onda, Radial, Partículas, Aurora, Túnel, Relieve, Hélice, Matriz, Fuegos artificiales o Efectos desactivados en el menú del reproductor, que usa el mismo desplegable estilizado que la Configuración. Las flechas junto al selector, o `V` y `Shift+V`, recorren los estilos sin abrirlo. Se recuerda el estilo elegido. Cada estilo dibuja su propia composición en colores de acento sobre un fondo casi negro y neutro, y todos reaccionan a los bajos, los agudos y la energía general de la pista. Forma de onda desplaza una envolvente estilo editor con cuerpo RMS y topes de pico alrededor de un eje central. Los efectos aparecen suavemente al reproducir y reposan gradualmente al pausar o finalizar, tras lo cual dejan de dibujar. Funcionan hasta a 30 fps en un canvas limitado a 1440 × 810 píxeles y se detienen de inmediato al ocultar la ventana. La preferencia de movimiento reducido los mantiene estáticos. El audio en reproducción continúa al ocultar en la bandeja.
 
 ### Compatibilidad de códecs
@@ -170,7 +171,7 @@ La reproducción también puede variar según el perfil del códec, la tasa de b
 
 ### 📁 Operaciones de archivos
 - **Guardar** (sobrescribir) o **Guardar como**
-- **Copiar** la imagen al portapapeles (`Ctrl+C`) o copiar su ruta de archivo
+- **Copiar** la imagen al portapapeles (`Ctrl+C`), copiar su nombre con **Copiar nombre del archivo**, o copiar la ruta de origen con **Copiar ruta de la imagen** para imágenes y **Copiar ruta del archivo** para video/audio
 - **Mover a la papelera** (`Supr`)
 - **Mostrar en la carpeta** o abrir la carpeta que la contiene
 - **Exportar a PDF** e **Imprimir** con controles de tamaño de página, orientación y márgenes
@@ -372,10 +373,12 @@ Las builds portables no pueden actualizarse dentro de la app; usa **Abrir págin
 | `F` | Alternar favorito |
 | `Ctrl+,` | Abrir la configuración |
 | `P` | Propiedades |
-| `←` `↑` / `Retroceso` | Archivo anterior; en video, `←` salta 5 segundos |
-| `→` `↓` | Archivo siguiente; en video, `→` salta 5 segundos |
-| `Espacio` | Siguiente imagen, reproducir/pausar video o iniciar/pausar presentación |
-| `M` | Silenciar/activar sonido del video |
+| `←` `↑` / `Retroceso` | Archivo anterior; en video/audio, `←` salta 5 segundos |
+| `→` `↓` | Archivo siguiente; en video/audio, `→` salta 5 segundos |
+| `Espacio` | Siguiente imagen, reproducir/pausar video o audio, o iniciar/pausar presentación |
+| `M` | Silenciar/activar sonido del video o audio |
+| `V` | Visualización de audio siguiente |
+| `Shift+V` | Visualización de audio anterior |
 | `Q` / `E` | Rotar 90° a la izquierda / derecha |
 | `C` | Recortar |
 | `R` | Redimensionar |

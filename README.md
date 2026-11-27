@@ -103,7 +103,8 @@ Most image viewers are either bloated with features you never use or so barebone
 - **Optional session restore:** enable **Configuration → General → Restore previous session** to recover tab order, the active image, views, pending rotations, and pasted images after restarting. Missing files stay in their tabs and can be located again. Session data stays local and separate from settings backups; disabling the option removes the saved session.
 - **Lightning-fast open:** custom streaming protocol loads images without hogging RAM
 - **Supported formats:** JPG, JPEG, PNG, GIF, WebP, BMP, TIFF, TIF, ICO, and AVIF
-- **Folder browsing:** thumbnail sidebar with lazy loading, priority queue, and scan progress indicator. Every card carries its file name under the preview, and a name that does not fit scrolls while it is hovered instead of staying cut. Enable **Compact Sidebar Cards** in **Configuration → Interface**, or from the thumbnail context menu, to hide the name strip so more files fit at once; hovering a card then reveals the name.
+- **Folder browsing:** thumbnail sidebar with lazy loading, priority queue, and scan progress indicator. Every card carries its file name under the preview, and a name that does not fit scrolls while it is hovered instead of staying cut, unless reduced motion is enabled. Enable **Compact Sidebar Cards** in **Configuration → Interface**, or from the thumbnail context menu, to hide the name strip so more files fit at once; hovering a card then reveals the name.
+- **Sidebar state:** **Remember the sidebar state per tab** is enabled by default, so each tab keeps the panel open or closed without starting unnecessary folder scans. The panel slides between states, and a tab with a collapsed sidebar carries a marker whose tooltip explains it.
 - **Zoom and pan:** 5% to 2000%, fit-to-window, original size (1:1), mouse wheel, and drag
 - **Animated GIF support:** toggle playback on or off
 - **Fullscreen immersive mode:** ghost UI auto-hides for distraction-free viewing
@@ -122,10 +123,10 @@ Most image viewers are either bloated with features you never use or so barebone
 
 ### Audio playback and visualizations
 - Open MP3, PCM WAV, FLAC, Ogg Vorbis/Opus (.ogg, .oga, .opus), and AAC (.aac ADTS, .m4a MP4) directly, without conversion or an additional playback engine. Unusual codecs or profiles inside these containers may not be supported.
-- The seek bar shows the waveform of the whole track, decoded once from the file, with the played part highlighted and a playhead marking the position. Seeking, shortcuts and keyboard control keep working as before.
+- The seek bar shows the waveform of the whole track, decoded once from the file, with the played part highlighted and a playhead marking the position. Hovering the bar shows the timestamp at that position. Seeking, shortcuts and keyboard control keep working as before.
 - Tracks over 160 MB skip the waveform and keep the plain bar. The decoded shape is cached per file, so returning to a track redraws it instantly.
-- Audio shares the video playback controls, shortcuts, volume, loop, speed and optional session position restoration. Previous/next stays within audio files and opens the neighboring track in the same tab; enable "Open previous/next in a new tab" in the player menu to keep one tab per track.
-- When the file carries title, artist or album tags, the caption replaces the file name with the title and lists the artist and album below it. Tags are read in the background after playback is already running, so a slow or damaged file never delays it; a track without tags keeps its plain file name.
+- Audio shares the video playback controls, shortcuts, volume, loop, speed and optional session position restoration. The transport stays visible in windowed mode; only fullscreen auto-hides it. Previous/next stays within audio files and opens the neighboring track in the same tab; enable "Open previous/next in a new tab" in the player menu to keep one tab per track.
+- When the file carries title, artist or album tags, the caption replaces the file name with the title and lists the artist and album below it. Embedded cover art appears beside the caption and on sidebar cards, including art found during background scans. Tags are read in the background after playback is already running, so a slow or damaged file never delays it; a track without tags keeps its plain file name.
 - Choose Spectrum, Oscilloscope, Waveform, Radial, Particles, Aurora, Tunnel, Terrain, Helix, Matrix, Fireworks or Effects off from the playback menu, which uses the same styled dropdown as Configuration. The arrows beside the picker, or `V` and `Shift+V`, step through the styles without opening it. The selected style is remembered. Each style draws its own composition in accent colours against a neutral near-black ground, and they all react to the track's bass, highs and overall energy. Waveform scrolls an editor-style envelope of RMS body and peak caps around a centre axis. Visuals ease in when playback starts and settle smoothly when paused or finished, then stop drawing. They run at up to 30 fps on a canvas capped at 1440 × 810 pixels and stop immediately while hidden. Reduced-motion preferences keep them static. Playing audio continues when hidden to the tray.
 
 ### Codec compatibility
@@ -170,7 +171,7 @@ Playback can still vary with codec profile, bitrate, sample rate, channel layout
 
 ### 📁 File Operations
 - **Save** (overwrite) or **Save As**
-- **Copy** the image to the clipboard (`Ctrl+C`) or copy its file path
+- **Copy** the image to the clipboard (`Ctrl+C`), copy its name with **Copy File Name**, or copy the source path with **Copy Image Path** for images and **Copy File Path** for video/audio
 - **Move to trash** (`Delete`)
 - **Show in folder** or open the containing folder
 - **Export to PDF** and **Print** with page size, orientation, and margin controls
@@ -372,10 +373,12 @@ Portable builds cannot self-update in-app; use **Open releases page**.
 | `F` | Toggle favorite |
 | `Ctrl+,` | Open settings |
 | `P` | Properties |
-| `←` `↑` / `Backspace` | Previous file; in video, `←` seeks 5 seconds |
-| `→` `↓` | Next file; in video, `→` seeks 5 seconds |
-| `Space` | Next image, play/pause video, or play/pause slideshow |
-| `M` | Mute/unmute video |
+| `←` `↑` / `Backspace` | Previous file; in video/audio, `←` seeks 5 seconds |
+| `→` `↓` | Next file; in video/audio, `→` seeks 5 seconds |
+| `Space` | Next image, play/pause video or audio, or play/pause slideshow |
+| `M` | Mute/unmute video or audio |
+| `V` | Next audio visualization |
+| `Shift+V` | Previous audio visualization |
 | `Q` / `E` | Rotate left / right 90° |
 | `C` | Crop |
 | `R` | Resize |
