@@ -264,10 +264,16 @@
   </div>
   <input id="tab-search" type="search" autocomplete="off" spellcheck="false" aria-label="Buscar pestañas">
   <div id="tab-switcher-list"></div>
-  <button type="button" id="tab-switcher-close-all" class="tab-switcher-close-all" aria-controls="tab-switcher-close-confirm" aria-expanded="false">
-    <svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-    <span data-i18n="tabs_close_all">Cerrar todas las pestañas</span>
-  </button>
+  <div class="tab-switcher-actions">
+    <button type="button" id="tab-switcher-close-duplicates" class="tab-switcher-close-all" aria-controls="tab-switcher-list">
+      <svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 0-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      <span data-i18n="tabs_close_duplicates">Cerrar pestañas duplicadas</span>
+    </button>
+    <button type="button" id="tab-switcher-close-all" class="tab-switcher-close-all" aria-controls="tab-switcher-close-confirm" aria-expanded="false">
+      <svg class="menu-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      <span data-i18n="tabs_close_all">Cerrar todas las pestañas</span>
+    </button>
+  </div>
   <div id="tab-switcher-close-confirm" class="tab-switcher-close-confirm" role="group" aria-labelledby="tab-switcher-close-confirm-text" hidden>
     <span id="tab-switcher-close-confirm-text"></span>
     <div class="tab-switcher-close-confirm-actions">

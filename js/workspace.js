@@ -396,6 +396,23 @@ window.CVWorkspace = (() => {
     };
     if (discard) finish(); else confirmDiscard(tabs, finish);
   }
+  function duplicateTabsToClose() {
+    const groups = new Map();
+    for (const tab of model.tabs) {
+      const path = tab.image.file.path;
+      if (!path || window.CVYouTubeSource.isYouTube(tab.image)) continue;
+      const key = pathKey(path);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(tab);
+    }
+    const ids = [];
+    for (const tabs of groups.values()) {
+      if (tabs.length < 2) continue;
+      const keep = tabs.includes(model.active) ? model.active : tabs[0];
+      for (const tab of tabs) if (tab !== keep) ids.push(tab.id);
+    }
+    return ids;
+  }
   function reopen() {
     if (!canSwitch()) return;
     capture();
@@ -416,12 +433,15 @@ window.CVWorkspace = (() => {
   }
   function contextMenu(id) {
     const index = model.tabs.findIndex(tab => tab.id === id);
+    const duplicates = duplicateTabsToClose();
     return [
       { label: text('tabs_close'), shortcut: 'Ctrl+W', icon: 'x', action: () => closeTabs([id]) },
       { label: text('tabs_close_others'), icon: 'x', enabled: model.tabs.length > 1,
         action: () => closeTabs(model.tabs.filter(tab => tab.id !== id).map(tab => tab.id)) },
       { label: text('tabs_close_right'), icon: 'x', enabled: index < model.tabs.length - 1,
         action: () => closeTabs(model.tabs.slice(index + 1).map(tab => tab.id)) },
+      { label: text('tabs_close_duplicates'), icon: 'copy', enabled: duplicates.length > 0,
+        action: () => closeTabs(duplicateTabsToClose()) },
       { label: text('tabs_close_all'), icon: 'x', action: () => closeTabs(model.tabs.map(tab => tab.id)) },
       { type: 'separator' },
       { label: text('tabs_reopen'), shortcut: 'Ctrl+Shift+T', icon: 'restore', enabled: model.closed.length > 0, action: reopen }
@@ -749,6 +769,7 @@ window.CVWorkspace = (() => {
     $('tab-search').setAttribute('aria-label', text('tabs_search'));
     $('tab-switcher-count').textContent = model.tabs.length;
     $('tab-switcher-close-all').disabled = !model.tabs.length;
+    $('tab-switcher-close-duplicates').disabled = duplicateTabsToClose().length === 0;
     if (!model.tabs.length) setCloseAllConfirmation(false);
     else if (!$('tab-switcher-close-confirm').hidden) setCloseAllConfirmation(true);
     const list = $('tab-switcher-list');
@@ -1032,6 +1053,10 @@ window.CVWorkspace = (() => {
       if (!switcher.hidden) { $('tab-search').value = ''; renderSwitcher(); $('tab-search').focus(); }
     });
     $('image-tabs-open').addEventListener('click', () => window.openImageDialog && window.openImageDialog());
+    $('tab-switcher-close-duplicates').addEventListener('click', () => {
+      setCloseAllConfirmation(false);
+      closeTabs(duplicateTabsToClose());
+    });
     $('tab-switcher-close-all').addEventListener('click', () => {
       setCloseAllConfirmation(true, true);
     });

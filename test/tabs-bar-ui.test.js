@@ -102,6 +102,18 @@ describe('tab bar ui', () => {
     assert.match(tabsCss, /\.tab-bar-nav-btn\[hidden\] \{ display: none; \}/);
   });
 
+  it('closes duplicate local tabs from the switcher and each tab menu', () => {
+    for (const lang of ['en', 'es']) assert.ok(ui[lang].tabs_close_duplicates);
+    assert.match(html, /id="tab-switcher-close-duplicates"/);
+    assert.match(html, /class="tab-switcher-actions"/);
+    assert.match(tabsCss, /\.tab-switcher-actions \{ display: flex; gap: 4px; margin-top: 8px; \}/);
+    assert.match(workspace, /function duplicateTabsToClose\(\) \{/);
+    assert.match(workspace, /const keep = tabs\.includes\(model\.active\) \? model\.active : tabs\[0\];/);
+    assert.match(workspace, /\{ label: text\('tabs_close_duplicates'\), icon: 'copy', enabled: duplicates\.length > 0,/);
+    assert.match(workspace, /\$\('tab-switcher-close-duplicates'\)\.disabled = duplicateTabsToClose\(\)\.length === 0;/);
+    assert.match(workspace, /\$\('tab-switcher-close-duplicates'\)\.addEventListener\('click', \(\) => \{[\s\S]*?closeTabs\(duplicateTabsToClose\(\)\);/);
+  });
+
   it('gives the switcher a header with count and a close-all footer', () => {
     for (const lang of ['en', 'es']) {
       for (const key of ['tabs_close_all_confirm', 'tabs_close_all_confirm_one', 'tabs_close_all_confirm_action']) {

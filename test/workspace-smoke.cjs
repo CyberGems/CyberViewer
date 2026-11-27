@@ -629,7 +629,59 @@ app.whenReady().then(async () => {
     await new Promise(resolve => setTimeout(resolve, 220));
     fs.writeFileSync(path.join(dataDir, 'config-heading.png'), (await win.webContents.capturePage()).toPNG());
     await evaluate("closeModal('modal-config');");
-    const closeAllCount = await evaluate('return window.CVWorkspace.model.tabs.length;');
+    let closeAllCount = await evaluate('return window.CVWorkspace.model.tabs.length;');
+    await evaluate("await window.CVWorkspace.activate('tab-39');");
+    await loaded();
+    const duplicateBar = await evaluate(`$('tab-switcher').hidden = true; $('image-tabs-list-btn').click();
+      const row = document.querySelector('.tab-switcher-actions');
+      const duplicate = $('tab-switcher-close-duplicates');
+      const all = $('tab-switcher-close-all');
+      const duplicateRect = duplicate.getBoundingClientRect();
+      const allRect = all.getBoundingClientRect();
+      return { display: getComputedStyle(row).display, sameRow: Math.abs(duplicateRect.top - allRect.top) < 1,
+        enabled: !duplicate.disabled, sameColor: getComputedStyle(duplicate).color === getComputedStyle(all).color,
+        label: duplicate.textContent.trim() };`);
+    assert.equal(duplicateBar.display, 'flex');
+    assert.equal(duplicateBar.sameRow, true, 'duplicate and close-all actions share one row');
+    assert.equal(duplicateBar.enabled, true, 'duplicate closing is enabled while duplicate tabs exist');
+    assert.equal(duplicateBar.sameColor, true, 'both actions use the same themed styling');
+    assert.equal(duplicateBar.label, 'Close duplicate tabs');
+    for (const theme of ['cyberviewer', 'gray', 'light']) {
+      await evaluate(`applyAppearanceTheme('${theme}','#00d4ff');`);
+      await delay(80);
+      fs.writeFileSync(path.join(dataDir, `tab-duplicates-${theme}.png`), (await win.webContents.capturePage()).toPNG());
+    }
+    await evaluate("applyAppearanceTheme('cyberviewer','#00d4ff'); $('tab-switcher').hidden = true;");
+    const duplicateTabMenu = await evaluate(`const shell = document.querySelector('.image-tab-shell[data-tab-id="tab-39"]');
+      const rect = shell.getBoundingClientRect();
+      shell.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true,
+        clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2 }));
+      const item = [...$('custom-ctx-menu').querySelectorAll('.menu-item')]
+        .find(element => element.textContent.includes(I18N[state.settings.app.language].tabs_close_duplicates));
+      return { open: $('custom-ctx-menu').classList.contains('open'), found: !!item, enabled: !!item && !item.disabled };`);
+    assert.equal(duplicateTabMenu.open && duplicateTabMenu.found && duplicateTabMenu.enabled, true,
+      'each tab context menu offers enabled duplicate closing');
+    await evaluate(`[...$('custom-ctx-menu').querySelectorAll('.menu-item')]
+      .find(element => element.textContent.includes(I18N[state.settings.app.language].tabs_close_duplicates)).click();`);
+    await waitFor(() => evaluate('return window.CVWorkspace.model.tabs.length === ' + (closeAllCount - 1) + ';'),
+      'context menu closes duplicate tabs');
+    assert.equal(await evaluate(`return window.CVWorkspace.model.activeId === 'tab-39' &&
+      !window.CVWorkspace.model.tabs.some(tab => tab.id === 'tab-1') &&
+      !document.querySelector('.image-tab-shell.duplicate');`), true,
+    'context menu keeps the active duplicate and removes the other copy');
+    await evaluate(`const active = window.CVWorkspace.model.active;
+      window.CVWorkspace.model.open({ file: { path: active.image.file.path, name: active.image.file.name, size: 0 } },
+        { activate: false, reusePath: false }); window.CVWorkspace.render(); $('tab-switcher').hidden = true; $('image-tabs-list-btn').click();`);
+    assert.equal(await evaluate("return !$('tab-switcher-close-duplicates').disabled;"), true,
+      'switcher re-enables duplicate closing for a newly created copy');
+    await evaluate("$('tab-switcher-close-duplicates').click();");
+    await waitFor(() => evaluate('return window.CVWorkspace.model.tabs.length === ' + (closeAllCount - 1) + ';'),
+      'switcher closes duplicate tabs');
+    assert.equal(await evaluate(`return window.CVWorkspace.model.activeId === 'tab-39' &&
+      $('tab-switcher-close-duplicates').disabled && !document.querySelector('.image-tab-shell.duplicate');`), true,
+    'switcher keeps the active duplicate and disables the action when none remain');
+    console.log('PASS duplicate-tab actions share a themed row and preserve the active copy');
+    closeAllCount = await evaluate('return window.CVWorkspace.model.tabs.length;');
     await evaluate("$('tab-switcher').hidden = true; $('image-tabs-list-btn').click(); $('tab-switcher-close-all').click();");
     fs.writeFileSync(path.join(dataDir, 'tab-close-confirm.png'), (await win.webContents.capturePage()).toPNG());
     assert.equal(await evaluate(`return !$('tab-switcher-close-confirm').hidden && $('tab-switcher-close-all').hidden &&
