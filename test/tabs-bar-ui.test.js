@@ -117,7 +117,7 @@ describe('tab bar ui', () => {
     for (const lang of ['en', 'es']) assert.ok(ui[lang].tabs_close_duplicates);
     assert.match(html, /id="tab-switcher-close-duplicates"/);
     assert.match(html, /class="tab-switcher-actions"/);
-    assert.match(tabsCss, /\.tab-switcher-actions \{ display: flex; gap: 4px; margin-top: 8px; \}/);
+    assert.match(tabsCss, /\.tab-switcher-actions \{ display: flex; gap: 4px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var\(--cyber-border\); \}/);
     assert.match(workspace, /function duplicateTabsToClose\(\) \{/);
     assert.match(workspace, /if \(tabs\.length < 2\) continue;\s*ids\.push\(tabs\[0\]\.id\);/);
     assert.doesNotMatch(workspace, /const keep = tabs\.includes\(model\.active\)/);
