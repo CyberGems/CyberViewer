@@ -95,6 +95,8 @@ The `latest.yml` and `.blockmap` files support the in-app update workflow and ar
 {{PORTABLE_HASH}}
 ```
 
+The checksums are also available as a downloadable [SHA256SUMS.txt](https://github.com/CyberGems/CyberViewer/releases/download/{{VERSION}}/SHA256SUMS.txt).
+
 ---
 
 📜 **Full changelog:** browse every version in [CHANGELOG.md](https://github.com/CyberGems/CyberViewer/blob/main/CHANGELOG.md).
