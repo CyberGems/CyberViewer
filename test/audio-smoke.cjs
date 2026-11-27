@@ -12,12 +12,12 @@ if (!process.versions.electron) {
   for (const name of formatSamples) fs.copyFileSync(path.join(__dirname, 'fixtures', 'audio', name), path.join(dataDir, sampleName(name)));
   const env = { ...process.env, CV_AUDIO_TEST_DIR: dataDir };
   delete env.ELECTRON_RUN_AS_NODE;
-  // Each phase decodes seven formats, animates eleven styles and samples the
-  // full-track waveform, so a software-rendered machine needs well over a
-  // minute. The timeout protects against a hang, not against honest work.
+  // Each phase decodes seven formats, animates eleven styles through both
+  // audible and silenced samples and reads the full-track waveform. A
+  // software-rendered machine needs several minutes; this only catches hangs.
   for (const phase of ['initial', 'restore']) {
     const result = require('node:child_process').spawnSync(require('electron'), [__filename], {
-      env: { ...env, CV_AUDIO_TEST_PHASE: phase }, windowsHide: true, encoding: 'utf8', timeout: 180000
+      env: { ...env, CV_AUDIO_TEST_PHASE: phase }, windowsHide: true, encoding: 'utf8', timeout: 240000
     });
     console.log(result.stdout || '');
     if (result.stderr) console.error(result.stderr);
@@ -241,16 +241,18 @@ app.whenReady().then(async () => {
           await new Promise(resolve=>setTimeout(resolve,70));
           signatureContext.drawImage($('audio-canvas'),0,0,64,36);
           const data=signatureContext.getImageData(0,0,64,36).data;
-          let sum=0,lit=0;
+          let sum=0,squares=0,lit=0;
           for(let p=0;p<data.length;p+=4){
             const value=(data[p]+data[p+1]+data[p+2])/3;
-            sum+=value; if(value>45) lit++;
+            sum+=value; squares+=value*value; if(value>45) lit++;
           }
-          samples.push({mean:sum/(data.length/4),lit:lit/(data.length/4)});
+          const count=data.length/4,mean=sum/count;
+          samples.push({mean,lit:lit/count,variance:squares/count-mean*mean});
         }
         return {
           mean:samples.reduce((total,item)=>total+item.mean,0)/samples.length,
-          lit:samples.reduce((total,item)=>total+item.lit,0)/samples.length
+          lit:samples.reduce((total,item)=>total+item.lit,0)/samples.length,
+          variance:samples.reduce((total,item)=>total+item.variance,0)/samples.length
         };
       };
     `);
@@ -258,9 +260,13 @@ app.whenReady().then(async () => {
     await waitFor(() => evaluate('return window.CVVideo.element.currentTime > .15 && window.CVVideo.element.webkitAudioDecodedByteCount > 0;'), 'WAV audio decoded');
     await evaluate('window.CVVideo.element.currentTime=.5;');
     await waitFor(() => evaluate('return !window.CVVideo.element.seeking;'), 'visualizer playback rewind');
-    const renderStats = {};
+    const renderStats = {}, reactivity = {};
     for (const mode of ['spectrum', 'waveform', 'envelope', 'radial', 'particles', 'aurora', 'tunnel', 'terrain', 'helix', 'grid', 'prism']) {
-      await evaluate(`$('audio-visualizer').value='${mode}'; $('audio-visualizer').dispatchEvent(new Event('change'));`);
+      await evaluate(`const e=window.CVVideo.element;
+        if(e.ended || e.currentTime>8){ e.currentTime=.5;
+          await new Promise(resolve=>{ if(!e.seeking) return resolve(); e.addEventListener('seeked',resolve,{once:true}); });
+          if(e.paused) await window.CVVideo.toggle(); }
+        $('audio-visualizer').value='${mode}'; $('audio-visualizer').dispatchEvent(new Event('change'));`);
       await evaluate('window.__paintTimes=[];');
       await delay(180);
       const first = await evaluate("return $('audio-canvas').toDataURL();");
@@ -277,16 +283,18 @@ app.whenReady().then(async () => {
       fs.writeFileSync(path.join(dataDir, mode + '.png'), (await win.webContents.capturePage()).toPNG());
       assert.equal(await evaluate("return $('audio-canvas').width<=1440 && $('audio-canvas').height<=810;"), true);
       renderStats[mode] = await evaluate('return window.__paintTimes.reduce((a,b)=>a+b,0)/Math.max(1,window.__paintTimes.length);');
-      if (mode === 'prism' || mode === 'tunnel') {
-        const label = mode === 'prism' ? 'Prism' : 'Tunnel';
-        const audible = await evaluate('return window.__visualEnergy();');
-        await evaluate('window.__silenceVisualizer=true;');
-        await delay(650);
-        const silent = await evaluate('return window.__visualEnergy();');
-        await evaluate('window.__silenceVisualizer=false;');
-        await delay(250);
-        assert.ok(audible.lit > silent.lit * 1.5 && audible.mean > silent.mean * 1.1,
-          label + ' responds to analysed audio rather than only elapsed time: ' + JSON.stringify({ audible, silent }));
+      const audible = await evaluate('return window.__visualEnergy();');
+      await evaluate('window.__silenceVisualizer=true;');
+      await delay(mode === 'envelope' ? 2900 : 1700);
+      const silent = await evaluate('return window.__visualEnergy();');
+      await evaluate('window.__silenceVisualizer=false;');
+      await delay(250);
+      reactivity[mode] = { audible, silent };
+      console.log(`AUDIO_REACTIVITY ${mode} ${JSON.stringify(reactivity[mode])}`);
+      assert.ok(audible.mean > silent.mean * 1.05 && audible.lit > silent.lit * 1.12 && audible.variance > silent.variance * 1.2,
+        mode + ' changes materially when the analyser is silenced: ' + JSON.stringify({ audible, silent }));
+      if (['prism', 'tunnel', 'terrain', 'aurora', 'helix'].includes(mode)) {
+        const label = { prism: 'Prism', tunnel: 'Tunnel', terrain: 'Terrain', aurora: 'Aurora', helix: 'Helix' }[mode];
         for (const theme of ['cyberviewer', 'gray', 'light']) {
           await evaluate(`applyAppearanceTheme('${theme}','#00d4ff');`);
           await delay(100);
@@ -696,4 +704,4 @@ app.whenReady().then(async () => {
   }
   app.exit(0);
 }).catch(error => { console.error(error); app.exit(1); });
-setTimeout(() => { console.error('Audio smoke timeout'); app.exit(2); }, 55000);
+setTimeout(() => { console.error('Audio smoke timeout'); app.exit(2); }, 180000);

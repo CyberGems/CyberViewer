@@ -26,6 +26,8 @@ window.CVAudioVisuals = (() => {
   const tunnelRingValues = new Float32Array(tunnelRings);
   const tunnelProgress = new Float32Array(tunnelRings);
   const tunnelOrder = Array.from({ length: tunnelRings }, (_, i) => i);
+  const tunnelBands = new Float32Array(64);
+  const tunnelPeaks = new Float32Array(64);
   const stars = Array.from({ length: 64 }, (_, i) => ({
     angle: i * 2.399963, radius: 0.16 + (i % 17) / 21,
     depth: 0.35 + (i % 5) * 0.16, size: 1 + i % 3
@@ -45,6 +47,7 @@ window.CVAudioVisuals = (() => {
   let frequencies = null, waveform = null;
   let frame = 0, lastPaint = 0, elapsed = 0, level = 0;
   let energy = 0, bass = 0, highs = 0, waveGain = 1, spin = 0, flow = 0;
+  let tunnelBass = 0, tunnelEnergy = 0, tunnelHighs = 0;
   let envelopeClock = 0;
   // Style-name flash shown after stepping with the arrows or the keyboard. It
   // is a DOM layer over the canvas, so painting stays free of UI state.
@@ -223,6 +226,16 @@ window.CVAudioVisuals = (() => {
     energy += (sum / bands.length - energy) * (1 - Math.exp(-delta / .12));
     bass += (low / 25 - bass) * (1 - Math.exp(-delta / .1));
     highs += (top / (bands.length - 44) - highs) * (1 - Math.exp(-delta / .1));
+    // Tunnel follows a slower copy of the spectrum so beats bend the mesh
+    // instead of snapping individual rings to a new shape.
+    const tunnelSmooth = 1 - Math.exp(-delta / .16);
+    for (let i = 0; i < bands.length; i++) {
+      tunnelBands[i] += (bands[i] - tunnelBands[i]) * tunnelSmooth;
+      tunnelPeaks[i] = Math.max(tunnelBands[i], tunnelPeaks[i] - delta * .28);
+    }
+    tunnelBass += (bass - tunnelBass) * (1 - Math.exp(-delta / .22));
+    tunnelEnergy += (energy - tunnelEnergy) * (1 - Math.exp(-delta / .2));
+    tunnelHighs += (highs - tunnelHighs) * (1 - Math.exp(-delta / .2));
   }
 
   function line(points, yFor, width, stroke) {
@@ -418,33 +431,37 @@ window.CVAudioVisuals = (() => {
 
   function aurora(w, h, unit) {
     const count = 112;
+    const response = Math.min(1, energy * 3.2 + bass * .45 + highs * .7);
     for (let layer = 2; layer >= 0; layer--) {
       const cy = h * (.34 + layer * .055);
       const heightAt = i => {
         const x = i / (count - 1), edge = Math.pow(Math.sin(x * Math.PI), .7);
-        const value = bands[Math.floor(x * 63)] * .15 + bass * (1 - x) * .5 + energy * x * .8;
-        return cy + edge * (Math.sin(x * 5 + elapsed * .4 + layer * 1.2) * .06
-          + Math.sin(x * 11 - elapsed * .25 + layer) * .025
-          + value * .11) * h * level;
+        const value = bands[Math.floor(x * 63)] * .2 + bass * (1 - x) * .7 + energy * x;
+        const drift = (.018 + energy * .85 + bass * .1) * level;
+        const ripple = (.008 + highs * .16) * level;
+        return cy + edge * (Math.sin(x * 5 + elapsed * .4 + layer * 1.2) * drift
+          + Math.sin(x * 11 - elapsed * .25 + layer) * ripple
+          + value * .13) * h * level;
       };
-      ctx.fillStyle = auroraGradients[layer]; ctx.globalAlpha = .15 + level * .7;
-      ctx.beginPath(); ctx.moveTo(w * inset, cy - unit * .16 * level);
+      ctx.fillStyle = auroraGradients[layer]; ctx.globalAlpha = .035 + response * .82;
+      ctx.beginPath(); ctx.moveTo(w * inset, cy - unit * (.03 + response * .16) * level);
       for (let i = 0; i < count; i++) ctx.lineTo(w * (inset + (1 - inset * 2) * i / (count - 1)), heightAt(i));
       for (let i = count - 1; i >= 0; i--) {
         const edge = Math.sin(i / (count - 1) * Math.PI);
-        ctx.lineTo(w * (inset + (1 - inset * 2) * i / (count - 1)), heightAt(i) - unit * (.05 + energy * .2) * edge * level);
+        ctx.lineTo(w * (inset + (1 - inset * 2) * i / (count - 1)), heightAt(i) - unit * (.035 + response * .22) * edge * level);
       }
       ctx.closePath(); ctx.fill();
       // Crests glow brighter when cymbals and highs carry the track.
-      ctx.globalAlpha = .1 + level * .45 + highs * .5;
-      line(count, heightAt, Math.max(1, unit * .002), palette.stars[layer]);
+      ctx.globalAlpha = .02 + response * .48 + highs * .5;
+      line(count, heightAt, Math.max(1, unit * (.0016 + response * .002 + highs * .001)), palette.stars[layer]);
     }
     // Treble-driven speckles shimmer over the curtains.
     for (let i = 0; i < 30; i++) {
+      if (highs * level < .025) break;
       const x = w * (.12 + ((i * 61) % 76) / 100), y = h * (.16 + ((i * 37) % 28) / 100);
       const shimmer = .5 + .5 * Math.sin(elapsed * 1.4 + i * 2.4);
       ctx.fillStyle = palette.stars[i % 3];
-      ctx.globalAlpha = (.08 + .42 * shimmer * shimmer) * (.25 + highs * 1.5) * level;
+      ctx.globalAlpha = (.04 + .42 * shimmer * shimmer) * (.25 + highs * 1.5) * level;
       ctx.beginPath(); ctx.arc(x, y, unit * .0018, 0, tau); ctx.fill();
     }
     ctx.globalAlpha = 1;
@@ -453,25 +470,25 @@ window.CVAudioVisuals = (() => {
   // A spectral wireframe tunnel: every ring is deformed by its own frequency
   // band, while bass drives the forward rush and highs light the outer sparks.
   function tunnel(w, h, unit) {
-    const cx = w * .5 + Math.sin(elapsed * .21) * unit * .012 * level;
-    const cy = h * .4 + Math.cos(elapsed * .17) * unit * .01 * level;
-    const travel = flow * (.24 + bass * .32) + spin * .035;
+    const cx = w * .5 + Math.sin(elapsed * .16) * unit * .007 * tunnelEnergy * level;
+    const cy = h * .4 + Math.cos(elapsed * .13) * unit * .005 * tunnelEnergy * level;
+    const travel = flow * (.12 + tunnelBass * .14) + spin * .012;
     for (let i = 0; i < tunnelRings; i++) {
       const progress = (i / tunnelRings + travel) % 1;
       tunnelProgress[i] = progress;
       tunnelOrder[i] = i;
       const depth = Math.pow(progress, 1.6);
       const baseRadius = unit * (.018 + depth * .63);
-      const ringBand = (i * 3) % bands.length;
       let total = 0, peak = 0;
       for (let s = 0; s < tunnelSegments; s++) {
         const mirrored = s <= tunnelSegments / 2 ? s : tunnelSegments - s;
-        const band = (ringBand + Math.floor(mirrored * .55)) % bands.length;
-        const value = bands[band] * level;
-        const transient = Math.max(0, peaks[band] - bands[band]) * level;
-        const angle = s / tunnelSegments * tau + spin * (.45 + progress * .8);
-        const flutter = Math.sin(angle * 3 + progress * 9 - spin * 1.7) * energy * level * .035;
-        const deformation = (Math.pow(value, .85) * .16 + transient * .09 + flutter) * (.25 + progress * .75);
+        const spectralPhase = (progress * .32 + mirrored / tunnelSegments * .55) % 1;
+        const band = Math.floor(spectralPhase * 63);
+        const value = tunnelBands[band] * level;
+        const transient = Math.max(0, tunnelPeaks[band] - tunnelBands[band]) * level;
+        const angle = s / tunnelSegments * tau + spin * (.3 + progress * .45);
+        const flutter = Math.sin(angle * 3 + progress * 9 - spin * 1.2) * tunnelEnergy * level * .018;
+        const deformation = (Math.pow(value, .9) * .11 + transient * .045 + flutter) * (.35 + progress * .65);
         const radius = baseRadius * (1 + deformation);
         const offset = i * tunnelSegments + s;
         tunnelX[offset] = cx + Math.cos(angle) * radius;
@@ -482,8 +499,8 @@ window.CVAudioVisuals = (() => {
       const fade = Math.sin(progress * Math.PI);
       const value = tunnelRingValues[i];
       ctx.strokeStyle = i % 3 === 1 ? palette.secondary : i % 3 === 2 ? palette.white : palette.ink;
-      ctx.globalAlpha = fade * (.045 + value * .82 + peak * .22) * (.3 + level * .7);
-      ctx.lineWidth = Math.max(1, unit * (.0011 + progress * .0032 + value * .0035));
+      ctx.globalAlpha = fade * (.035 + value * .68 + peak * .16) * (.25 + level * .75);
+      ctx.lineWidth = Math.max(1, unit * (.001 + progress * .0028 + value * .0025));
       ctx.beginPath();
       for (let s = 0; s < tunnelSegments; s++) {
         const offset = i * tunnelSegments + s;
@@ -495,10 +512,10 @@ window.CVAudioVisuals = (() => {
     tunnelOrder.sort((a, b) => tunnelProgress[a] - tunnelProgress[b]);
     for (let s = 0; s < tunnelSegments; s += 4) {
       const band = Math.floor((s % (tunnelSegments / 2)) / (tunnelSegments / 2) * 63);
-      const value = bands[band] * level;
+      const value = tunnelBands[band] * level;
       ctx.strokeStyle = color(palette.hue + band / 63 * 80);
-      ctx.globalAlpha = .012 + value * .24 * level;
-      ctx.lineWidth = Math.max(1, unit * (.0009 + value * .0014));
+      ctx.globalAlpha = .01 + value * .2 * level;
+      ctx.lineWidth = Math.max(1, unit * (.0008 + value * .001));
       ctx.beginPath();
       for (let r = 0; r < tunnelRings; r++) {
         const offset = tunnelOrder[r] * tunnelSegments + s;
@@ -508,20 +525,20 @@ window.CVAudioVisuals = (() => {
     }
 
     const outer = tunnelOrder[tunnelRings - 1];
-    if (highs * level > .04) {
+    if (tunnelHighs * level > .04) {
       ctx.fillStyle = palette.white;
       for (let s = 0; s < tunnelSegments; s += 4) {
         const band = Math.floor((s % (tunnelSegments / 2)) / (tunnelSegments / 2) * 63);
-        const value = bands[band] * level;
-        if (value < .28) continue;
+        const value = tunnelBands[band] * level;
+        if (value < .24) continue;
         const offset = outer * tunnelSegments + s;
-        ctx.globalAlpha = (.12 + highs * .58) * value * level;
-        ctx.beginPath(); ctx.arc(tunnelX[offset], tunnelY[offset], unit * (.0014 + value * .0022), 0, tau); ctx.fill();
+        ctx.globalAlpha = (.1 + tunnelHighs * .48) * value * level;
+        ctx.beginPath(); ctx.arc(tunnelX[offset], tunnelY[offset], unit * (.0012 + value * .0018), 0, tau); ctx.fill();
       }
     }
     ctx.fillStyle = palette.ink;
-    ctx.globalAlpha = .1 + bass * level * .58;
-    ctx.beginPath(); ctx.arc(cx, cy, unit * (.01 + bass * level * .042 + energy * level * .012), 0, tau); ctx.fill();
+    ctx.globalAlpha = .08 + tunnelBass * level * .46;
+    ctx.beginPath(); ctx.arc(cx, cy, unit * (.009 + tunnelBass * level * .03 + tunnelEnergy * level * .008), 0, tau); ctx.fill();
     ctx.globalAlpha = 1;
   }
 
@@ -532,21 +549,21 @@ window.CVAudioVisuals = (() => {
       const depth = r / (rows - 1);
       const cy = h * (.32 + depth * .3);
       const t0 = flow * (.1 + depth * .45) + r * .41;
-      const amp = h * (.04 + depth * .12) * level;
+      const amp = h * (.025 + depth * .08) * (.12 + energy * 1.8) * level;
       ctx.beginPath(); ctx.moveTo(left, floor);
       for (let c = 0; c < cols; c++) {
         const x = left + span * c / (cols - 1);
         const t = (c / (cols - 1) * 1.6 + t0) % 1;
         const index = t * 63, base = Math.floor(index), frac = index - base;
         const value = (bands[base] * (1 - frac) + bands[(base + 1) % 64] * frac) * level;
-        ctx.lineTo(x, cy - (Math.sin(t * tau * 2 + r * 2.1) * .35 + value * .85) * amp);
+        ctx.lineTo(x, cy - (Math.sin(t * tau * 2 + r * 2.1) * .18 + value * 1.15) * amp);
       }
       ctx.lineTo(left + span, floor); ctx.closePath();
       ctx.fillStyle = color(palette.hue, 1, 11);
-      ctx.globalAlpha = .45 + depth * .5;
+      ctx.globalAlpha = .05 + depth * .08 + energy * .65;
       ctx.fill();
       ctx.strokeStyle = r % 2 ? palette.ink : palette.secondary;
-      ctx.globalAlpha = .12 + depth * (.2 + level * .5);
+      ctx.globalAlpha = .02 + depth * .05 + energy * .45;
       ctx.lineWidth = Math.max(1, unit * (.0012 + depth * .0022));
       ctx.stroke();
     }
@@ -556,7 +573,8 @@ window.CVAudioVisuals = (() => {
   // Twin strands rotate through each other, amplitude riding the waveform.
   function helix(w, h, unit) {
     const n = 96, cy = h * .4, left = w * inset, span = w * (1 - inset * 2);
-    const amp = h * .15 * level;
+    const response = Math.min(1, energy * 3.2 + bass * .45);
+    const amp = h * (.025 + response * .16) * level;
     const sway = i => {
       const x = i / (n - 1);
       return Math.sin(x * tau * 1.6 - spin * 2.4) * Math.sin(x * Math.PI);
@@ -566,21 +584,26 @@ window.CVAudioVisuals = (() => {
       const sample = waveform ? (waveform[Math.floor(x * (waveform.length - 1))] - 128) / 128 : 0;
       return sample * Math.sin(x * Math.PI);
     };
+    const spectral = i => bands[Math.floor(i / (n - 1) * 63)] * Math.sin(i / (n - 1) * tau * 3 + spin);
     const xAt = i => left + span * i / (n - 1);
-    const strandA = i => cy + (sway(i) * .6 + wave(i) * .5) * amp;
-    const strandB = i => cy + (-sway(i) * .6 + wave(i) * .5) * amp;
+    const strandA = i => cy + (sway(i) * .55 + wave(i) * .55 + spectral(i) * .16) * amp;
+    const strandB = i => cy + (-sway(i) * .55 + wave(i) * .55 - spectral(i) * .16) * amp;
+    ctx.globalAlpha = .08 + response * .92;
+    line(n, strandA, Math.max(1, unit * (.0024 + response * .0025)), palette.ink);
+    line(n, strandB, Math.max(1, unit * (.002 + response * .0025)), palette.secondary);
     for (let i = 4, j = 0; i < n - 4; i += 6, j++) {
       const value = bands[Math.floor(i * .7) % bands.length] * level;
-      ctx.strokeStyle = color(palette.hue + (j % 2 ? 65 : 0), .1 + value * .8);
-      ctx.lineWidth = Math.max(1, unit * .0018);
+      if (value < .015) continue;
+      ctx.strokeStyle = color(palette.hue + (j % 2 ? 65 : 0), .04 + value * 1.2);
+      ctx.lineWidth = Math.max(1, unit * (.0014 + value * .0016));
       ctx.beginPath(); ctx.moveTo(xAt(i), strandA(i)); ctx.lineTo(xAt(i), strandB(i)); ctx.stroke();
     }
-    line(n, strandA, Math.max(1.5, unit * .0035), palette.ink);
-    line(n, strandB, Math.max(1, unit * .0025), palette.secondary);
-    for (let i = 11; i < n; i += 24) {
-      ctx.fillStyle = palette.white; ctx.globalAlpha = .25 + level * .55;
-      ctx.beginPath(); ctx.arc(xAt(i), strandA(i), unit * .0025, 0, tau); ctx.fill();
-      ctx.beginPath(); ctx.arc(xAt(i), strandB(i), unit * .0025, 0, tau); ctx.fill();
+    if (response > .03) {
+      ctx.fillStyle = palette.white; ctx.globalAlpha = .08 + response * .65;
+      for (let i = 11; i < n; i += 24) {
+        ctx.beginPath(); ctx.arc(xAt(i), strandA(i), unit * (.0015 + response * .0015), 0, tau); ctx.fill();
+        ctx.beginPath(); ctx.arc(xAt(i), strandB(i), unit * (.0015 + response * .0015), 0, tau); ctx.fill();
+      }
     }
     ctx.globalAlpha = 1;
   }
@@ -810,8 +833,9 @@ window.CVAudioVisuals = (() => {
   function attach(next) {
     stopFrames(); level = 0; elapsed = 0; energy = 0; bass = 0; highs = 0;
     waveGain = 1; spin = 0; flow = 0; envelopeClock = 0;
+    tunnelBass = 0; tunnelEnergy = 0; tunnelHighs = 0;
     clearTimeout(flashTimer); flashTimer = 0; flash?.classList.remove('is-visible');
-    bands.fill(0); peaks.fill(0); waveform?.fill(128);
+    bands.fill(0); peaks.fill(0); tunnelBands.fill(0); tunnelPeaks.fill(0); waveform?.fill(128);
     slices.fill(0); slicePeaks.fill(0);
     image = next && window.CVFormats.isAudio(next) ? next : null;
     stage.hidden = !image;

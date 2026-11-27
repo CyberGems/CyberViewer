@@ -59,11 +59,15 @@ describe('Prism audio visualization', () => {
 });
 
 describe('Tunnel audio visualization', () => {
-  it('deforms a spectral wireframe with live frequency and peak data', () => {
+  it('deforms a smoothly tracked spectral wireframe with live frequency data', () => {
     const tunnel = visualizer.match(/function tunnel\(w, h, unit\) \{[\s\S]*?\n  \}/)[0];
-    for (const source of ['bands', 'peaks', 'bass', 'energy', 'highs', 'flow', 'spin']) {
+    for (const source of ['tunnelBands', 'tunnelPeaks', 'tunnelBass', 'tunnelEnergy', 'tunnelHighs', 'flow', 'spin']) {
       assert.ok(tunnel.includes(source), `Tunnel should react to ${source}`);
     }
+    assert.match(visualizer, /tunnelBands\[i\] \+= \(bands\[i\] - tunnelBands\[i\]\) \* tunnelSmooth/);
+    assert.match(visualizer, /delta \/ \.16/);
+    assert.match(visualizer, /tunnelBass \+= \(bass - tunnelBass\) \* \(1 - Math\.exp\(-delta \/ \.22\)\)/);
+    assert.match(visualizer, /tunnelPeaks\[i\] = Math\.max\(tunnelBands\[i\], tunnelPeaks\[i\] - delta \* \.28\)/);
     assert.match(tunnel, /tunnelOrder\.sort/);
     assert.match(tunnel, /tunnelSegments/);
   });
