@@ -80,6 +80,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   copyImage: (path) => ipcRenderer.send('copy-image', path),
   copyImageBuffer: (base64) => ipcRenderer.send('copy-image-buffer', base64),
   readClipboardImage: () => ipcRenderer.invoke('clipboard:read-image'),
+  readClipboardText: () => ipcRenderer.invoke('clipboard:read-text'),
   probeClipboard: () => ipcRenderer.invoke('clipboard:probe'),
   moveToTrash: (path) => ipcRenderer.invoke('move-to-trash', path),
   setWallpaper: (path, style) => ipcRenderer.invoke('set-wallpaper', path, style),
@@ -112,14 +113,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('update:status', handler);
   },
   checkUpdates: () => ipcRenderer.invoke('update:check')
-});
-
-window.addEventListener('contextmenu', (e) => {
-  if (e.target.closest('input, textarea, [contenteditable="true"]')) {
-    const props = {
-      isEditable: true,
-      selectionText: window.getSelection().toString()
-    };
-    ipcRenderer.send('show-context-menu', props);
-  }
 });

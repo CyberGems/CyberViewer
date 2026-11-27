@@ -52,10 +52,43 @@ describe('pickSettings', () => {
       enabled: true,
       preset: 'bass_boost',
       preamp: 12,
-      gains: [7, 6, -12, 0, 4, 5, 6, 7, 8, 9]
+      gains: [7, 6, -12, 0, 4, 5, 6, 7, 8, 9],
+      customPresets: []
     });
     assert.equal(pickSettings({ audioEqualizer: [] }).audioEqualizer, undefined);
     assert.equal(pickSettings({ audioEqualizer: { preset: 'unknown' } }).audioEqualizer.preset, 'flat');
+  });
+
+  it('keeps sanitized custom equalizer presets and their selection', () => {
+    const customPresets = [
+      { id: 'custom_saved', name: '  Saved   Mix ', preamp: 99, gains: [7, '5', -20], extra: true },
+      { id: 'custom_saved', name: 'Duplicate id', preamp: 1, gains: [] },
+      { id: 'custom_other', name: 'saved mix', preamp: 1, gains: [] },
+      { id: '../bad', name: 'Bad id', preamp: 1, gains: [] },
+      { id: 'custom_empty', name: ' ', preamp: 1, gains: [] }
+    ];
+    const out = pickSettings({
+      audioEqualizer: { enabled: true, preset: 'custom_saved', customPresets }
+    });
+    assert.equal(out.audioEqualizer.preset, 'custom_saved');
+    assert.equal(out.audioEqualizer.preamp, 12);
+    assert.deepEqual(out.audioEqualizer.gains, [7, 5, -12, 0, 0, 0, 0, 0, 0, 0]);
+    assert.deepEqual(out.audioEqualizer.customPresets, [{
+      id: 'custom_saved',
+      name: 'Saved Mix',
+      preamp: 12,
+      gains: [7, 5, -12, 0, 0, 0, 0, 0, 0, 0]
+    }]);
+    assert.equal(pickSettings({
+      audioEqualizer: { preset: 'custom_missing', customPresets: [] }
+    }).audioEqualizer.preset, 'flat');
+    assert.equal(pickSettings({
+      audioEqualizer: {
+        customPresets: Array.from({ length: 55 }, (_, index) => ({
+          id: `custom_${index}`, name: `Preset ${index}`, preamp: 0, gains: []
+        }))
+      }
+    }).audioEqualizer.customPresets.length, 50);
   });
 
   it('rejects invalid enums and colors', () => {
@@ -92,7 +125,10 @@ describe('buildBackup / parseBackup', () => {
       showTabMediaIcons: false,
       language: 'en',
       accentColor: '#00d4ff',
-      audioEqualizer: { enabled: true, preset: 'vocal', preamp: -2, gains: [-2, -1, 0, 2, 4, 5, 3, 1, 0, -1] },
+      audioEqualizer: {
+        enabled: true, preset: 'vocal', preamp: -2, gains: [-2, -1, 0, 2, 4, 5, 3, 1, 0, -1],
+        customPresets: [{ id: 'custom_roundtrip', name: 'Round trip', preamp: 4, gains: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }]
+      },
       favorites: ['C:\\pics\\one.png', 'C:\\pics\\two.jpg'],
       recentFiles: ['C:\\ignore-me.png'],
       updateNotify: { lastNotifiedAvailable: '9.9.9' }
@@ -113,6 +149,9 @@ describe('buildBackup / parseBackup', () => {
     assert.equal(parsed.settings.keepMediaPausedOnTabReturn, true);
     assert.equal(parsed.settings.audioEqualizer.preset, 'vocal');
     assert.deepEqual(parsed.settings.audioEqualizer.gains, [-2, -1, 0, 2, 4, 5, 3, 1, 0, -1]);
+    assert.deepEqual(parsed.settings.audioEqualizer.customPresets, [{
+      id: 'custom_roundtrip', name: 'Round trip', preamp: 4, gains: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    }]);
     assert.equal(parsed.favorites.length, 2);
   });
 

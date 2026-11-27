@@ -2838,6 +2838,15 @@ ipcMain.handle('clipboard:read-image', async () => {
   }
 });
 
+ipcMain.handle('clipboard:read-text', async () => {
+  try {
+    return typeof clipboard.readText === 'function' ? String(await clipboard.readText() || '') : '';
+  } catch (e) {
+    console.error('Error reading clipboard text:', e);
+    return '';
+  }
+});
+
 // Cheap clipboard probe: lets the renderer relabel the Paste affordance when the
 // clipboard holds a link rather than an image. Does not read/encode image bytes.
 ipcMain.handle('clipboard:probe', async () => {

@@ -29,7 +29,7 @@ if (!process.versions.electron) {
   console.log('Audio test data and screenshots: ' + dataDir); process.exit(0);
 }
 
-const { app, BrowserWindow, nativeImage } = require('electron');
+const { app, BrowserWindow, clipboard, nativeImage } = require('electron');
 app.disableHardwareAcceleration();
 const dataDir = process.env.CV_AUDIO_TEST_DIR;
 if (!dataDir || !path.basename(dataDir).startsWith('cyberviewer-audio-test-')) throw Error('Isolated profile required');
@@ -168,8 +168,17 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("return document.body.classList.contains('audio-active') && window.CVVideo.element.paused;"), true);
     assert.ok(await evaluate('return Math.abs(window.CVVideo.element.currentTime - 4) < .2;'));
     assert.equal(await evaluate("return $('audio-visualizer').value;"), 'off');
-    assert.deepEqual(await evaluate('return window.CVAudioEngine.snapshot();'),
-      { enabled: false, preset: 'custom', preamp: -2, gains: [3, -1, 0, 2, 4, 5, 3, 1, 0, -1] },
+    const restoredEqualizer = await evaluate('return window.CVAudioEngine.snapshot();');
+    assert.equal(restoredEqualizer.enabled, false);
+    assert.equal(restoredEqualizer.preset, 'custom');
+    assert.equal(restoredEqualizer.preamp, -2);
+    assert.deepEqual(restoredEqualizer.gains, [3, -1, 0, 2, 4, 5, 3, 1, 0, -1]);
+    assert.equal(restoredEqualizer.customPresets.length, 1);
+    assert.equal(restoredEqualizer.customPresets[0].name, 'Mezcla focal');
+    assert.equal(restoredEqualizer.customPresets[0].preamp, -2);
+    assert.equal(restoredEqualizer.customPresets[0].gains[3], 6);
+    await evaluate(`window.CVAudioEngine.applyPreset(${JSON.stringify(restoredEqualizer.customPresets[0].id)});`);
+    assert.equal(await evaluate('return window.CVAudioEngine.snapshot().preset;'), restoredEqualizer.customPresets[0].id,
       'A disabled custom equalizer restores without reconnecting audio');
     for (const name of formatSamples) await checkFormat(name, true);
     console.log('PASS audio session restores position, paused playback and effects preference');
@@ -384,6 +393,89 @@ app.whenReady().then(async () => {
     assert.ok(Math.abs(dsp.limiter.ratio-20)<.05);
     assert.equal(await evaluate('return window.CVAudioEngine.snapshot().preset;'),'custom');
     assert.equal(await evaluate('return window.__sourceCount;'),1,'EQ changes never create another media source');
+    const savedPreset = await evaluate(`
+      $('audio-equalizer-save-preset').click();
+      $('audio-equalizer-preset-name').value='Mi mezcla';
+      $('audio-equalizer-preset-confirm').click();
+      return window.CVAudioEngine.snapshot().customPresets[0];
+    `);
+    assert.equal(savedPreset.name,'Mi mezcla');
+    assert.equal(savedPreset.preamp,-2);
+    assert.equal(savedPreset.gains[3],6);
+    assert.equal(await evaluate('return window.CVAudioEngine.snapshot().preset;'),savedPreset.id);
+    await evaluate(`
+      $('audio-equalizer-rename-preset').click();
+      $('audio-equalizer-preset-name').value='Mezcla focal';
+      $('audio-equalizer-preset-confirm').click();
+    `);
+    assert.equal(await evaluate('return window.CVAudioEngine.getCustomPresets()[0].name;'),'Mezcla focal');
+    assert.equal(await evaluate("return $('audio-equalizer-preset').selectedOptions[0].textContent;"),'Mezcla focal');
+    assert.ok((await evaluate("return $('audio-equalizer-status').textContent;")).includes('Mezcla focal'));
+    const duplicate = await evaluate(`
+      $('audio-equalizer-save-preset').click();
+      $('audio-equalizer-preset-name').value='mezcla focal';
+      $('audio-equalizer-preset-confirm').click();
+      return {hidden:$('audio-equalizer-preset-error').hidden,text:$('audio-equalizer-preset-error').textContent};
+    `);
+    assert.equal(duplicate.hidden,false);
+    assert.equal(duplicate.text,'Ya existe un preajuste con este nombre.');
+    await evaluate("$('audio-equalizer-preset-cancel').click();");
+    await evaluate(`$('audio-equalizer-preset').value='flat'; $('audio-equalizer-preset').dispatchEvent(new Event('change'));
+      $('audio-equalizer-preset').value=${JSON.stringify(savedPreset.id)}; $('audio-equalizer-preset').dispatchEvent(new Event('change'));`);
+    assert.equal(await evaluate('return window.CVAudioEngine.snapshot().gains[3];'),6);
+    const temporary = await evaluate(`
+      $('audio-equalizer-save-preset').click();
+      $('audio-equalizer-preset-name').value='Temporal';
+      $('audio-equalizer-preset-confirm').click();
+      const id=window.CVAudioEngine.snapshot().preset;
+      $('audio-equalizer-delete-preset').click();
+      return {id,label:$('audio-equalizer-preset-editor-label').textContent,inputHidden:$('audio-equalizer-preset-name').hidden};
+    `);
+    assert.ok(temporary.label.includes('Temporal'));
+    assert.equal(temporary.inputHidden,true);
+    await evaluate("$('audio-equalizer-preset-confirm').click();");
+    assert.equal(await evaluate('return window.CVAudioEngine.getCustomPresets().length;'),1);
+    assert.equal(await evaluate('return window.CVAudioEngine.getCustomPresets()[0].name;'),'Mezcla focal');
+    await evaluate(`$('audio-equalizer-preset').value=${JSON.stringify(savedPreset.id)}; $('audio-equalizer-preset').dispatchEvent(new Event('change'));`);
+
+    await evaluate("$('audio-equalizer-rename-preset').click();");
+    const previousClipboard = await clipboard.readText();
+    win.webContents.debugger.attach('1.3');
+    try {
+      await clipboard.writeText('Contexto');
+      const inputPoint = await evaluate(`const r=$('audio-equalizer-preset-name').getBoundingClientRect();
+        const x=r.left+r.width/2,y=r.top+r.height/2,hit=document.elementFromPoint(x,y);
+        return {point:{x,y},target:hit?.closest('input')?.id||hit?.id||hit?.className||hit?.tagName};`);
+      const { target, point } = inputPoint;
+      fs.writeFileSync(path.join(dataDir,'equalizer-before-context-menu.png'),(await win.webContents.capturePage()).toPNG());
+      assert.equal(target, 'audio-equalizer-preset-name', 'Right-click hits the preset name field: ' + JSON.stringify(inputPoint));
+      await win.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mouseMoved',button:'none',...point});
+      await win.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mousePressed',button:'right',clickCount:1,...point});
+      await win.webContents.debugger.sendCommand('Input.dispatchMouseEvent',{type:'mouseReleased',button:'right',clickCount:1,...point});
+      await waitFor(() => evaluate("return $('custom-ctx-menu').classList.contains('open')"),'styled editable context menu');
+      const editMenu = await evaluate(`return {labels:[...$('custom-ctx-menu').querySelectorAll('.menu-item .menu-label')].map(el=>el.textContent),
+        icons:$('custom-ctx-menu').querySelectorAll('.menu-item .menu-ico').length,pasteDisabled:[...$('custom-ctx-menu').querySelectorAll('.menu-item')].find(el=>el.textContent.includes('Pegar')).disabled};`);
+      assert.deepEqual(editMenu.labels,['Deshacer','Rehacer','Cortar','Copiar','Pegar','Seleccionar todo','Eliminar']);
+      assert.equal(editMenu.icons,7);
+      assert.equal(editMenu.pasteDisabled,false);
+      await delay(180);
+      fs.writeFileSync(path.join(dataDir,'equalizer-editable-context-menu.png'),(await win.webContents.capturePage()).toPNG());
+      const beforePaste = await evaluate(`const input=$('audio-equalizer-preset-name');return {value:input.value,start:input.selectionStart,end:input.selectionEnd};`);
+      await evaluate(`[...$('custom-ctx-menu').querySelectorAll('.menu-item')].find(el=>el.textContent.includes('Pegar')).click();`);
+      assert.equal(await evaluate("return $('audio-equalizer-preset-name').value;"),
+        beforePaste.value.slice(0,beforePaste.start)+'Contexto'+beforePaste.value.slice(beforePaste.end));
+      const beforeDelete = await evaluate("return $('audio-equalizer-preset-name').value;");
+      await evaluate(`const input=$('audio-equalizer-preset-name');input.focus();input.setSelectionRange(0,1);
+        input.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:400,clientY:300}));`);
+      await waitFor(() => evaluate("return $('custom-ctx-menu').classList.contains('open')"),'editable delete menu');
+      await evaluate(`[...$('custom-ctx-menu').querySelectorAll('.menu-item')].find(el=>el.textContent.includes('Eliminar')).click();`);
+      assert.equal(await evaluate("return $('audio-equalizer-preset-name').value;"),beforeDelete.slice(1));
+    } finally {
+      await clipboard.writeText(previousClipboard);
+      if (win.webContents.debugger.isAttached()) win.webContents.debugger.detach();
+    }
+    await evaluate("$('audio-equalizer-preset-cancel').click();");
+    console.log('PASS custom EQ presets save, rename, duplicate validation, delete confirmation and styled text editing');
     for (const theme of ['cyberviewer','gray','light']) {
       await evaluate(`applyAppearanceTheme('${theme}','#00d4ff');`);
       await delay(250);
@@ -396,6 +488,18 @@ app.whenReady().then(async () => {
       assert.ok(powerStyle.offset>15,theme+' moves the active switch knob: '+powerStyle.offset);
       assert.equal(powerStyle.preamp,'-2');
       assert.ok(Math.abs(powerStyle.progress-41.6667)<.01);
+      await evaluate("$('audio-equalizer-save-preset').click();");
+      await delay(180);
+      const editorState = await evaluate(`const editor=$('audio-equalizer-preset-editor'),rect=editor.getBoundingClientRect(),
+          input=$('audio-equalizer-preset-name'),ir=input.getBoundingClientRect(),hit=document.elementFromPoint(ir.left+ir.width/2,ir.top+ir.height/2);
+        return {hidden:editor.hidden,display:getComputedStyle(editor).display,height:rect.height,top:rect.top,
+          inputHit:hit===input?'audio-equalizer-preset-name':hit?.id||hit?.className||hit?.tagName,
+          value:input.value,disabled:$('audio-equalizer-save-preset').disabled};`);
+      assert.equal(editorState.hidden,false,theme+' opens the preset editor: '+JSON.stringify(editorState));
+      assert.ok(editorState.height>0,theme+' renders the preset editor: '+JSON.stringify(editorState));
+      assert.equal(editorState.inputHit,'audio-equalizer-preset-name',theme+' exposes the preset name field: '+JSON.stringify(editorState));
+      fs.writeFileSync(path.join(dataDir,`equalizer-preset-editor-${theme}.png`),(await win.webContents.capturePage()).toPNG());
+      await evaluate("$('audio-equalizer-preset-cancel').click();");
       fs.writeFileSync(path.join(dataDir,`equalizer-${theme}.png`),(await win.webContents.capturePage()).toPNG());
     }
     await evaluate("applyAppearanceTheme('cyberviewer','#00d4ff');");
@@ -415,7 +519,8 @@ app.whenReady().then(async () => {
     await waitFor(() => {
       try {
         const saved=JSON.parse(fs.readFileSync(path.join(dataDir,'settings.json'),'utf8')).app.audioEqualizer;
-        return saved?.enabled===false && saved.preset==='custom' && saved.preamp===-2 && saved.gains[0]===3;
+        return saved?.enabled===false && saved.preset==='custom' && saved.preamp===-2 && saved.gains[0]===3 &&
+          saved.customPresets?.length===1 && saved.customPresets[0].name==='Mezcla focal' && saved.customPresets[0].gains[3]===6;
       } catch (_) { return false; }
     }, 'custom equalizer saved for restore');
     await waitFor(() => evaluate("return Math.abs(window.CVAudioEngine.inspect().preamp-1)<.0001 && Math.abs(window.CVAudioEngine.inspect().limiter.ratio-1)<.0001 && window.CVAudioEngine.inspect().bands.every(band=>Math.abs(band.gain)<.0001);"), 'audio EQ neutral bypass');

@@ -426,6 +426,11 @@ const MENU_ICONS = {
   'close': '<circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/>',
   'save': '<path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M7 3v5h8V3"/><path d="M7 15h10v6H7z"/>',
   'copy': '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 0-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  'undo': '<path d="M9 7 4 12l5 5M4 12h9a6 6 0 0 1 6 6"/>',
+  'redo': '<path d="m15 7 5 5-5 5M20 12h-9a6 6 0 0 0-6 6"/>',
+  'cut': '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="m8.6 8.4 11 11M8.6 15.6l11-11"/>',
+  'paste': '<path d="M9 5H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M8 12h8M8 16h6"/>',
+  'select-all': '<rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="3 3"/><path d="m8 12 3 3 5-6"/>',
   'tab-new': '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 8h18"/><path d="M12 11v6"/><path d="M9 14h6"/>',
   'link': '<path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/>',
   'info': '<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/>',
@@ -1835,9 +1840,160 @@ function setCompactSidebarCards(enabled) {
 }
 
 // ── CONTEXT MENU ──
+const EDITABLE_INPUT_TYPES = new Set([
+  'text', 'search', 'password', 'email', 'url', 'tel', 'number',
+  'date', 'datetime-local', 'month', 'time', 'week'
+]);
+let editableMenuRequest = 0;
+
+function editableTextTarget(target) {
+  if (!target || target.nodeType !== 1) return null;
+  const editable = target.closest('textarea, [contenteditable]:not([contenteditable="false"])');
+  if (editable) return editable;
+  const input = target.closest('input');
+  return input && EDITABLE_INPUT_TYPES.has(input.type || 'text') ? input : null;
+}
+
+function captureEditableSelection(field) {
+  if (field.isContentEditable) {
+    const selection = window.getSelection();
+    if (selection?.rangeCount && field.contains(selection.anchorNode)) {
+      return { text: selection.toString(), range: selection.getRangeAt(0).cloneRange() };
+    }
+    return { text: '', range: null };
+  }
+  try {
+    const start = field.selectionStart;
+    const end = field.selectionEnd;
+    if (start != null && end != null) {
+      return { text: String(field.value || '').slice(start, end), start, end, range: null };
+    }
+  } catch (_) { /* Selection is unavailable for this input type. */ }
+  return { text: '', start: null, end: null, range: null };
+}
+
+function restoreEditableSelection(field, selection) {
+  field.focus({ preventScroll: true });
+  if (selection.range) {
+    const current = window.getSelection();
+    current.removeAllRanges();
+    current.addRange(selection.range);
+  } else if (selection.start != null && selection.end != null) {
+    field.setSelectionRange(selection.start, selection.end);
+  }
+}
+
+function editableValue(field) {
+  return field.isContentEditable ? String(field.textContent || '') : String(field.value || '');
+}
+
+function editableCommandEnabled(command, canModify) {
+  if (!canModify) return false;
+  try { return document.queryCommandEnabled(command); } catch (_) { return false; }
+}
+
+function deleteEditableSelection(field, selection) {
+  restoreEditableSelection(field, selection);
+  if (document.execCommand('delete')) return;
+  if (field.isContentEditable) {
+    if (selection.range) {
+      selection.range.deleteContents();
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    return;
+  }
+  if (selection.start != null && selection.end != null) {
+    field.setRangeText('', selection.start, selection.end, 'end');
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+}
+
+function insertEditableText(field, selection, value) {
+  restoreEditableSelection(field, selection);
+  if (document.execCommand('insertText', false, value)) return;
+  if (!field.isContentEditable && selection.start != null && selection.end != null) {
+    field.setRangeText(value, selection.start, selection.end, 'end');
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+}
+
+function selectEditableAll(field) {
+  field.focus({ preventScroll: true });
+  if (field.isContentEditable) {
+    const range = document.createRange();
+    range.selectNodeContents(field);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+  } else field.select();
+}
+
+async function writeEditableClipboard(value) {
+  if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(value);
+}
+
+function buildEditableMenuTemplate(field, clipboardText) {
+  const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
+  const table = I18N[lang] || I18N.en;
+  const label = key => table[key] || I18N.en[key] || key;
+  const selection = captureEditableSelection(field);
+  const canModify = !field.disabled && !field.readOnly;
+  const hasSelection = selection.text.length > 0;
+  const hasValue = editableValue(field).length > 0;
+  const item = (key, icon, shortcut, enabled, action) =>
+    ({ label: label(key), icon, shortcut, enabled, action });
+  return [
+    item('edit_undo', 'undo', 'Ctrl+Z', editableCommandEnabled('undo', canModify), () => {
+      restoreEditableSelection(field, selection); document.execCommand('undo');
+    }),
+    item('edit_redo', 'redo', 'Ctrl+Y', editableCommandEnabled('redo', canModify), () => {
+      restoreEditableSelection(field, selection); document.execCommand('redo');
+    }),
+    { type: 'separator' },
+    item('edit_cut', 'cut', 'Ctrl+X', canModify && hasSelection, async () => {
+      restoreEditableSelection(field, selection);
+      if (!document.execCommand('cut')) {
+        await writeEditableClipboard(selection.text);
+        deleteEditableSelection(field, selection);
+      }
+    }),
+    item('edit_copy', 'copy', 'Ctrl+C', hasSelection, async () => {
+      restoreEditableSelection(field, selection);
+      if (!document.execCommand('copy')) await writeEditableClipboard(selection.text);
+    }),
+    item('edit_paste', 'paste', 'Ctrl+V', canModify && clipboardText.length > 0, () => {
+      insertEditableText(field, selection, clipboardText);
+    }),
+    { type: 'separator' },
+    item('edit_select_all', 'select-all', 'Ctrl+A', hasValue, () => selectEditableAll(field)),
+    item('edit_delete', 'trash', 'Del', canModify && hasSelection, () => deleteEditableSelection(field, selection))
+  ];
+}
+
+async function readEditableClipboard() {
+  if (window.electronAPI?.readClipboardText) {
+    try { return String(await window.electronAPI.readClipboardText() || ''); } catch (_) { return ''; }
+  }
+  try { return String(await navigator.clipboard.readText() || ''); } catch (_) { return ''; }
+}
+
+async function showEditableContextMenu(event, field) {
+  const request = ++editableMenuRequest;
+  field.focus({ preventScroll: true });
+  const clipboardText = await readEditableClipboard();
+  if (request !== editableMenuRequest || !field.isConnected) return;
+  showCustomContextMenu(event, 'editable', { field, clipboardText });
+}
+
 window.addEventListener('contextmenu', (e) => {
-  if (e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
-  
+  const editable = editableTextTarget(e.target);
+  if (editable) {
+    e.preventDefault();
+    e.stopPropagation();
+    void showEditableContextMenu(e, editable);
+    return;
+  }
+  if (e.target.closest('select')) return;
   e.preventDefault();
   // The YouTube player is a native view above renderer menus. Its footer
   // already exposes the link actions, so suppress menus throughout this view.
@@ -2170,6 +2326,8 @@ function buildMenuTemplate(type, data) {
   if (type === 'tab') return window.CVWorkspace.contextMenu(data.id);
 
   if (type === 'tab-bar') return window.CVWorkspace.barMenu();
+
+  if (type === 'editable') return buildEditableMenuTemplate(data.field, data.clipboardText);
 
   if ((type === 'image' || type === 'thumb') && window.CVFormats.isPlayable(data.path || state.images[data.index ?? state.current])) {
     const filePath = data.path || state.images[state.current]?.file.path;
@@ -2788,6 +2946,8 @@ function renderMenuTemplate(container, template) {
       if (item.enabled === false) {
         btn.classList.add('disabled');
         btn.classList.add('menu-recent-empty');
+        btn.disabled = true;
+        btn.setAttribute('aria-disabled', 'true');
       }
       if (item.recent) btn.classList.add('menu-recent-item');
       if (item.type === 'checkbox') {

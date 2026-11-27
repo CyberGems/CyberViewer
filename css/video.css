@@ -207,10 +207,35 @@ html[data-theme='gray'] #audio-equalizer-power[aria-checked="true"] .video-menu-
   display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;
   padding: 11px 18px; border-bottom: 1px solid rgba(var(--cyber-accent-rgb), 0.12);
 }
+.audio-equalizer-preset-group { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .audio-equalizer-preset, .audio-equalizer-preamp {
   display: flex; align-items: center; gap: 10px; color: var(--cyber-muted); font-size: 11px;
 }
 .audio-equalizer-preset .cfg-select-shell { width: 184px; }
+.audio-equalizer-preset-tools { display: flex; align-items: center; gap: 3px; }
+.audio-equalizer-save-preset { color: var(--cyber-accent-ink); }
+.audio-equalizer-rename-preset, .audio-equalizer-delete-preset { color: var(--cyber-muted); }
+.audio-equalizer-rename-preset:hover, .audio-equalizer-delete-preset:hover { color: var(--cyber-menu-text); }
+#audio-equalizer-panel button:disabled { opacity: .38; }
+.audio-equalizer-preset-editor {
+  display: flex; align-items: center; gap: 8px; padding: 10px 18px;
+  border-bottom: 1px solid rgba(var(--cyber-accent-rgb), 0.12);
+  color: var(--cyber-muted); font-size: 11px;
+}
+.audio-equalizer-preset-editor:not([hidden]) { display: flex; }
+.audio-equalizer-preset-editor[hidden] { display: none; }
+.audio-equalizer-preset-editor label { flex: 0 0 auto; }
+#audio-equalizer-preset-name {
+  flex: 1 1 180px; min-width: 100px; max-width: 280px; height: 32px; padding: 5px 8px;
+  color: var(--cyber-menu-text); background: rgba(var(--cyber-tint-rgb), 0.08);
+  border: 1px solid rgba(var(--cyber-tint-rgb), 0.2); border-radius: 6px; outline: none;
+  font: inherit;
+}
+#audio-equalizer-preset-name:focus { border-color: var(--cyber-accent); }
+#audio-equalizer-preset-name[hidden] { display: none; }
+#audio-equalizer-preset-error { color: var(--cyber-danger-ink); }
+#audio-equalizer-preset-error[hidden] { display: none; }
+.audio-equalizer-preset-cancel { color: var(--cyber-muted); }
 .audio-equalizer-preamp input { width: 132px; --video-progress: 50%; }
 #audio-equalizer-preamp-value {
   min-width: 42px; color: var(--cyber-menu-text); font: 600 11px var(--font-digits);
@@ -318,8 +343,12 @@ body.audio-active .shortcuts-col.audio-visual-keys { display: block; }
   .audio-equalizer-heading p { display: none; }
   .audio-equalizer-reset span { display: none; }
   .audio-equalizer-settings { align-items: stretch; flex-direction: column; gap: 10px; padding: 10px 12px; }
-  .audio-equalizer-preset, .audio-equalizer-preamp { justify-content: space-between; }
+  .audio-equalizer-preset-group, .audio-equalizer-preset, .audio-equalizer-preamp { justify-content: space-between; }
+  .audio-equalizer-preset-group { gap: 6px; }
   .audio-equalizer-preset .cfg-select-shell { flex: 1; max-width: 230px; }
+  .audio-equalizer-save-preset span { display: none; }
+  .audio-equalizer-preset-editor { flex-wrap: wrap; padding: 10px 12px; }
+  #audio-equalizer-preset-name { max-width: none; }
   .audio-equalizer-plot { padding-left: 12px; padding-right: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { #video-controls { transition: none; } #audio-equalizer-panel:not([hidden]) { animation: none; } }

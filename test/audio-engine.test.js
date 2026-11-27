@@ -135,7 +135,65 @@ describe('audio equalizer engine', () => {
     assert.equal(engine.snapshot().preset, 'custom');
     engine.reset();
     const resetState = engine.snapshot();
-    assert.deepEqual({ ...resetState, gains: Array.from(resetState.gains) },
-      { enabled: true, preset: 'flat', preamp: 0, gains: Array(10).fill(0) });
+    assert.deepEqual({ ...resetState, gains: Array.from(resetState.gains), customPresets: Array.from(resetState.customPresets) },
+      { enabled: true, preset: 'flat', preamp: 0, gains: Array(10).fill(0), customPresets: [] });
+  });
+
+  it('saves, applies, renames and deletes detached custom presets', () => {
+    const { engine } = harness();
+    engine.setEnabled(true);
+    engine.setPreamp(-3);
+    engine.setBand(0, 8);
+    const saved = engine.saveCustomPreset('  My   Mix  ');
+    assert.ok(saved.id.startsWith('custom_'));
+    assert.equal(saved.name, 'My Mix');
+    assert.equal(saved.preamp, -3);
+    assert.equal(saved.gains[0], 8);
+    assert.equal(engine.snapshot().preset, saved.id);
+    assert.equal(engine.saveCustomPreset('my mix'), null);
+    assert.equal(engine.saveCustomPreset('   '), null);
+
+    engine.applyPreset('flat');
+    engine.applyPreset(saved.id);
+    assert.equal(engine.snapshot().preamp, -3);
+    assert.equal(engine.snapshot().gains[0], 8);
+    const renamed = engine.renameCustomPreset(saved.id, 'Focus Mix');
+    assert.equal(renamed.name, 'Focus Mix');
+    assert.equal(engine.renameCustomPreset(saved.id, 'focus mix').name, 'focus mix');
+    assert.equal(engine.renameCustomPreset(saved.id, ' '), null);
+
+    const detached = engine.getCustomPresets();
+    detached[0].gains[0] = -12;
+    assert.equal(engine.getCustomPresets()[0].gains[0], 8);
+    engine.setBand(1, 2);
+    assert.equal(engine.snapshot().preset, 'custom');
+    engine.applyPreset(saved.id);
+    assert.equal(engine.deleteCustomPreset(saved.id), true);
+    assert.equal(engine.snapshot().preset, 'custom');
+    assert.equal(engine.getCustomPresets().length, 0);
+    assert.equal(engine.deleteCustomPreset(saved.id), false);
+    engine.reset();
+    assert.equal(engine.isEnabled(), true);
+  });
+
+  it('sanitizes persisted custom presets and restores their selected values', () => {
+    const { engine } = harness();
+    const loaded = engine.load({
+      enabled: true,
+      preset: 'custom_saved',
+      customPresets: [
+        { id: 'custom_saved', name: ' Saved ', preamp: 99, gains: [7, '5', -20] },
+        { id: 'custom_saved', name: 'Duplicate id', preamp: 1, gains: [] },
+        { id: 'custom_other', name: 'saved', preamp: 1, gains: [] },
+        { id: '../bad', name: 'Bad id', preamp: 1, gains: [] },
+        { id: 'custom_empty', name: ' ', preamp: 1, gains: [] }
+      ]
+    });
+    assert.equal(loaded.preset, 'custom_saved');
+    assert.equal(loaded.preamp, 12);
+    assert.deepEqual(Array.from(loaded.gains), [7, 5, -12, 0, 0, 0, 0, 0, 0, 0]);
+    assert.equal(loaded.customPresets.length, 1);
+    assert.equal(loaded.customPresets[0].name, 'Saved');
+    assert.equal(engine.load({ preset: 'custom_missing', customPresets: [] }).preset, 'flat');
   });
 });

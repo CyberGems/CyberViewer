@@ -12,12 +12,14 @@ window.CVAudioEngine = (() => {
     night: Object.freeze({ preamp: -1, gains: Object.freeze([4, 3, 1, 0, -1, -2, -1, 0, 1, 2]) })
   });
   const presetIds = new Set(Object.keys(presets));
+  const maxCustomPresets = 50;
+  const customPresetId = /^custom_[a-z0-9_-]{1,64}$/;
   let settings = defaults();
   let context = null, source = null, preamp = null, limiter = null, analyser = null;
   let filters = [];
 
   function defaults() {
-    return { enabled: false, preset: 'flat', preamp: 0, gains: Array(bands.length).fill(0) };
+    return { enabled: false, preset: 'flat', preamp: 0, gains: Array(bands.length).fill(0), customPresets: [] };
   }
 
   function clampGain(value) {
@@ -25,19 +27,54 @@ window.CVAudioEngine = (() => {
     return Number.isFinite(number) ? Math.max(-12, Math.min(12, Math.round(number))) : 0;
   }
 
+  function normalizePresetName(value) {
+    return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').slice(0, 48) : '';
+  }
+
+  function normalizeCustomPresets(value) {
+    if (!Array.isArray(value)) return [];
+    const ids = new Set();
+    const names = new Set();
+    const out = [];
+    for (const item of value) {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+      if (typeof item.id !== 'string' || !customPresetId.test(item.id) || ids.has(item.id)) continue;
+      const name = normalizePresetName(item.name);
+      const nameKey = name.toLocaleLowerCase();
+      if (!name || names.has(nameKey)) continue;
+      ids.add(item.id);
+      names.add(nameKey);
+      out.push({
+        id: item.id,
+        name,
+        preamp: clampGain(item.preamp),
+        gains: bands.map((_, index) => clampGain(Array.isArray(item.gains) ? item.gains[index] : 0))
+      });
+      if (out.length >= maxCustomPresets) break;
+    }
+    return out;
+  }
+
   function normalize(value) {
     const input = value && typeof value === 'object' ? value : {};
+    const customPresets = normalizeCustomPresets(input.customPresets);
+    const selected = customPresets.find(item => item.id === input.preset);
     return {
       enabled: input.enabled === true,
       preset: typeof input.preset === 'string' && presetIds.has(input.preset) ? input.preset
-        : input.preset === 'custom' ? 'custom' : 'flat',
-      preamp: clampGain(input.preamp),
-      gains: bands.map((_, index) => clampGain(Array.isArray(input.gains) ? input.gains[index] : 0))
+        : selected ? selected.id : input.preset === 'custom' ? 'custom' : 'flat',
+      preamp: clampGain(input.preamp ?? selected?.preamp),
+      gains: bands.map((_, index) => clampGain(Array.isArray(input.gains) ? input.gains[index] : selected?.gains[index])),
+      customPresets
     };
   }
 
   function snapshot() {
-    return { ...settings, gains: [...settings.gains] };
+    return {
+      ...settings,
+      gains: [...settings.gains],
+      customPresets: settings.customPresets.map(item => ({ ...item, gains: [...item.gains] }))
+    };
   }
 
   function dbToGain(db) {
@@ -134,16 +171,70 @@ window.CVAudioEngine = (() => {
   }
 
   function applyPreset(id) {
-    if (!presetIds.has(id)) return snapshot();
-    const preset = presets[id];
-    settings = { enabled: settings.enabled, preset: id, preamp: preset.preamp, gains: [...preset.gains] };
+    const custom = settings.customPresets.find(item => item.id === id);
+    const selected = presetIds.has(id) ? presets[id] : custom;
+    if (!selected) return snapshot();
+    settings = {
+      enabled: settings.enabled,
+      preset: id,
+      preamp: selected.preamp,
+      gains: [...selected.gains],
+      customPresets: settings.customPresets
+    };
     applySettings();
     return snapshot();
   }
 
+  function getCustomPresets() {
+    return settings.customPresets.map(item => ({ ...item, gains: [...item.gains] }));
+  }
+
+  function nextCustomPresetId() {
+    let id;
+    do {
+      id = `custom_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    } while (settings.customPresets.some(item => item.id === id));
+    return id;
+  }
+
+  function saveCustomPreset(name) {
+    const normalizedName = normalizePresetName(name);
+    const duplicate = settings.customPresets.some(item =>
+      item.name.toLocaleLowerCase() === normalizedName.toLocaleLowerCase());
+    if (!normalizedName || duplicate || settings.customPresets.length >= maxCustomPresets) return null;
+    const item = {
+      id: nextCustomPresetId(),
+      name: normalizedName,
+      preamp: settings.preamp,
+      gains: [...settings.gains]
+    };
+    settings.customPresets.push(item);
+    settings.preset = item.id;
+    return { ...item, gains: [...item.gains] };
+  }
+
+  function renameCustomPreset(id, name) {
+    const item = settings.customPresets.find(preset => preset.id === id);
+    const normalizedName = normalizePresetName(name);
+    if (!item || !normalizedName) return null;
+    const duplicate = settings.customPresets.some(preset =>
+      preset.id !== id && preset.name.toLocaleLowerCase() === normalizedName.toLocaleLowerCase());
+    if (duplicate) return null;
+    item.name = normalizedName;
+    return { ...item, gains: [...item.gains] };
+  }
+
+  function deleteCustomPreset(id) {
+    const index = settings.customPresets.findIndex(item => item.id === id);
+    if (index < 0) return false;
+    settings.customPresets.splice(index, 1);
+    if (settings.preset === id) settings.preset = 'custom';
+    return true;
+  }
+
   function reset() {
     const enabled = settings.enabled;
-    settings = { ...defaults(), enabled };
+    settings = { ...defaults(), enabled, customPresets: settings.customPresets };
     applySettings();
     return snapshot();
   }
@@ -161,6 +252,10 @@ window.CVAudioEngine = (() => {
   document.addEventListener('pointerdown', () => { if (settings.enabled) void prepare(); }, { capture: true, once: true });
   document.addEventListener('keydown', () => { if (settings.enabled) void prepare(); }, { capture: true, once: true });
 
-  return { bands, presets, defaults, normalize, snapshot, prepare, suspend, load, setEnabled, setBand, setPreamp, applyPreset, reset,
-    isEnabled: () => settings.enabled, isReady: () => !!context, getAnalyser: () => analyser, inspect };
+  return {
+    bands, presets, defaults, normalize, snapshot, prepare, suspend, load,
+    setEnabled, setBand, setPreamp, applyPreset, reset,
+    getCustomPresets, saveCustomPreset, renameCustomPreset, deleteCustomPreset,
+    isEnabled: () => settings.enabled, isReady: () => !!context, getAnalyser: () => analyser, inspect
+  };
 })();

@@ -31,7 +31,10 @@ describe('audio equalizer interface', () => {
       'audio_equalizer_preset', 'audio_equalizer_custom', 'audio_equalizer_flat',
       'audio_equalizer_bass_boost', 'audio_equalizer_vocal', 'audio_equalizer_electronic',
       'audio_equalizer_acoustic', 'audio_equalizer_night', 'audio_equalizer_preamp',
-      'audio_equalizer_reset', 'audio_equalizer_close', 'audio_equalizer_band', 'audio_equalizer_scope'
+      'audio_equalizer_reset', 'audio_equalizer_close', 'audio_equalizer_band', 'audio_equalizer_scope',
+      'audio_equalizer_save_preset', 'audio_equalizer_rename_preset', 'audio_equalizer_delete_preset',
+      'audio_equalizer_preset_name', 'audio_equalizer_new_preset', 'audio_equalizer_name_required',
+      'audio_equalizer_name_exists', 'audio_equalizer_preset_limit', 'audio_equalizer_delete_confirm'
     ];
     for (const key of keys) {
       assert.ok(i18n.en[key], `English missing ${key}`);
@@ -52,6 +55,21 @@ describe('audio equalizer interface', () => {
     assert.match(player, /window\.CVAudioEqualizer\.isOpen\(\)/);
     assert.match(player, /#audio-equalizer-toggle, #audio-equalizer-panel/);
     assert.match(player, /window\.CVAudioEqualizer\.setOpen\(false\)/);
+  });
+
+  it('offers saved custom presets with rename and delete controls', () => {
+    assert.match(html, /id="audio-equalizer-save-preset"/);
+    assert.match(html, /id="audio-equalizer-rename-preset"[^>]*disabled/);
+    assert.match(html, /id="audio-equalizer-delete-preset"[^>]*disabled/);
+    assert.match(html, /id="audio-equalizer-preset-name"[^>]*maxlength="48"/);
+    assert.match(html, /id="audio-equalizer-preset-editor"[^>]*hidden/);
+    assert.match(ui, /option\.dataset\.customPreset = 'true'/);
+    assert.match(ui, /window\.CVAudioEngine\.saveCustomPreset\(name\)/);
+    assert.match(ui, /window\.CVAudioEngine\.renameCustomPreset\(editing\.id, name\)/);
+    assert.match(ui, /window\.CVAudioEngine\.deleteCustomPreset\(editing\.id\)/);
+    assert.match(ui, /mode !== 'rename' \|\| item\.id !== editing\.id/);
+    assert.match(ui, /presetLabel\(settings\)/);
+    assert.match(ui, /window\.ttBind\(renamePreset\)/);
   });
 
   it('persists defaults, live changes and factory resets through app settings', () => {

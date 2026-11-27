@@ -7,6 +7,16 @@ window.CVAudioEqualizer = (() => {
   const power = document.getElementById('audio-equalizer-power');
   const powerLabel = document.getElementById('audio-equalizer-power-label');
   const preset = document.getElementById('audio-equalizer-preset');
+  const savePreset = document.getElementById('audio-equalizer-save-preset');
+  const renamePreset = document.getElementById('audio-equalizer-rename-preset');
+  const deletePreset = document.getElementById('audio-equalizer-delete-preset');
+  const presetEditor = document.getElementById('audio-equalizer-preset-editor');
+  const presetEditorLabel = document.getElementById('audio-equalizer-preset-editor-label');
+  const presetName = document.getElementById('audio-equalizer-preset-name');
+  const presetError = document.getElementById('audio-equalizer-preset-error');
+  const presetConfirm = document.getElementById('audio-equalizer-preset-confirm');
+  const presetConfirmLabel = document.getElementById('audio-equalizer-preset-confirm-label');
+  const presetCancel = document.getElementById('audio-equalizer-preset-cancel');
   const preamp = document.getElementById('audio-equalizer-preamp');
   const preampValue = document.getElementById('audio-equalizer-preamp-value');
   const reset = document.getElementById('audio-equalizer-reset');
@@ -18,7 +28,8 @@ window.CVAudioEqualizer = (() => {
   const status = document.getElementById('audio-equalizer-status');
   const svgNs = 'http://www.w3.org/2000/svg';
   const controls = [];
-  let initialized = false, opened = false, saveTimer = 0;
+  let initialized = false, opened = false, saveTimer = 0, presetSignature = '';
+  let editing = null;
 
   const language = () => document.documentElement.lang || state?.settings?.app?.language || 'en';
   const text = (key, values = {}) => {
@@ -76,8 +87,125 @@ window.CVAudioEqualizer = (() => {
     return path;
   }
 
+  function syncPresetOptions(customPresets) {
+    const signature = JSON.stringify(customPresets.map(item => [item.id, item.name]));
+    if (signature === presetSignature) return;
+    preset.querySelectorAll('option[data-custom-preset]').forEach(option => option.remove());
+    const anchor = preset.querySelector('option[value="custom"]');
+    customPresets.forEach(item => {
+      const option = document.createElement('option');
+      option.value = item.id;
+      option.textContent = item.name;
+      option.dataset.customPreset = 'true';
+      preset.insertBefore(option, anchor);
+    });
+    presetSignature = signature;
+    window.CVConfigSelects.sync();
+  }
+
+  function presetLabel(settings) {
+    if (settings.preset === 'custom') return text('audio_equalizer_custom');
+    if (window.CVAudioEngine.presets[settings.preset]) return text(`audio_equalizer_${settings.preset}`);
+    return settings.customPresets.find(item => item.id === settings.preset)?.name || text('audio_equalizer_custom');
+  }
+
+  function selectedCustomPreset(settings) {
+    return settings.customPresets.find(item => item.id === settings.preset);
+  }
+
+  function renderPresetEditor() {
+    if (!editing) {
+      presetEditor.hidden = true;
+      return;
+    }
+    const settings = window.CVAudioEngine.snapshot();
+    const selected = selectedCustomPreset(settings);
+    presetEditor.hidden = false;
+    presetName.hidden = editing.mode === 'delete';
+    presetEditorLabel.textContent = editing.mode === 'delete'
+      ? text('audio_equalizer_delete_confirm', { name: selected?.name || '' })
+      : text('audio_equalizer_preset_name');
+    presetEditorLabel.dataset.i18n = editing.mode === 'delete' ? '' : 'audio_equalizer_preset_name';
+    presetConfirmLabel.textContent = text(`audio_equalizer_${editing.mode}_preset`);
+    presetConfirmLabel.dataset.i18n = `audio_equalizer_${editing.mode}_preset`;
+  }
+
+  function beginPresetEdit(mode) {
+    const settings = window.CVAudioEngine.snapshot();
+    const selected = selectedCustomPreset(settings);
+    if (mode !== 'save' && !selected) return;
+    editing = { mode, id: selected?.id || null };
+    presetError.hidden = true;
+    presetError.removeAttribute('data-i18n');
+    if (mode === 'save') {
+      let number = settings.customPresets.length + 1;
+      let name = text('audio_equalizer_new_preset', { number });
+      while (settings.customPresets.some(item => item.name.toLocaleLowerCase() === name.toLocaleLowerCase())) {
+        name = text('audio_equalizer_new_preset', { number: ++number });
+      }
+      presetName.value = name;
+    } else presetName.value = selected.name;
+    renderPresetEditor();
+    if (mode !== 'delete') requestAnimationFrame(() => { presetName.focus(); presetName.select(); });
+  }
+
+  function cancelPresetEdit(restoreFocus = false) {
+    editing = null;
+    presetEditor.hidden = true;
+    presetName.value = '';
+    presetError.hidden = true;
+    presetError.removeAttribute('data-i18n');
+    if (restoreFocus) savePreset.focus();
+  }
+
+  function showPresetError(key) {
+    presetError.textContent = text(key);
+    presetError.dataset.i18n = key;
+    presetError.hidden = false;
+  }
+
+  function finishPresetEdit() {
+    if (!editing) return;
+    const mode = editing.mode;
+    if (mode === 'delete') {
+      window.CVAudioEngine.deleteCustomPreset(editing.id);
+      cancelPresetEdit();
+      render();
+      scheduleSave();
+      return;
+    }
+    const name = presetName.value.trim().replace(/\s+/g, ' ');
+    if (!name) {
+      showPresetError('audio_equalizer_name_required');
+      presetName.focus();
+      return;
+    }
+    const duplicate = window.CVAudioEngine.getCustomPresets().some(item =>
+      (mode !== 'rename' || item.id !== editing.id) && item.name.toLocaleLowerCase() === name.toLocaleLowerCase());
+    if (duplicate) {
+      showPresetError('audio_equalizer_name_exists');
+      presetName.focus();
+      return;
+    }
+    const saved = mode === 'save'
+      ? window.CVAudioEngine.saveCustomPreset(name)
+      : window.CVAudioEngine.renameCustomPreset(editing.id, name);
+    if (!saved) {
+      showPresetError(mode === 'save' ? 'audio_equalizer_preset_limit' : 'audio_equalizer_name_exists');
+      return;
+    }
+    cancelPresetEdit();
+    render();
+    scheduleSave();
+  }
+
   function render() {
     const settings = window.CVAudioEngine.snapshot();
+    syncPresetOptions(settings.customPresets);
+    const customSelected = selectedCustomPreset(settings);
+    savePreset.disabled = settings.customPresets.length >= 50;
+    renamePreset.disabled = !customSelected;
+    deletePreset.disabled = !customSelected;
     panel.dataset.enabled = String(settings.enabled);
     toggle.classList.toggle('is-processing', settings.enabled);
     power.setAttribute('aria-checked', String(settings.enabled));
@@ -104,7 +232,8 @@ window.CVAudioEqualizer = (() => {
     const path = curvePath(points);
     line.setAttribute('d', path);
     area.setAttribute('d', `${path} L 950 164 L 50 164 Z`);
-    status.textContent = `${text(settings.enabled ? 'audio_equalizer_on' : 'audio_equalizer_off')} · ${text(`audio_equalizer_${settings.preset}`)}`;
+    status.textContent = `${text(settings.enabled ? 'audio_equalizer_on' : 'audio_equalizer_off')} · ${presetLabel(settings)}`;
+    renderPresetEditor();
   }
 
   function scheduleSave() {
@@ -124,7 +253,10 @@ window.CVAudioEqualizer = (() => {
     if (opened) {
       window.CVVideo.closeMenu();
       render();
-    } else window.CVConfigSelects.close();
+    } else {
+      cancelPresetEdit();
+      window.CVConfigSelects.close();
+    }
     window.CVVideo.reveal();
     if (restoreFocus) (opened ? power : toggle).focus();
   }
@@ -137,9 +269,29 @@ window.CVAudioEqualizer = (() => {
   function initialize() {
     if (initialized) return;
     buildBands();
+    window.setCyberTooltip(renamePreset, text('audio_equalizer_rename_preset'));
+    window.setCyberTooltip(deletePreset, text('audio_equalizer_delete_preset'));
+    window.ttBind(renamePreset);
+    window.ttBind(deletePreset);
     toggle.addEventListener('click', () => setOpen(!opened, true));
     close.addEventListener('click', () => setOpen(false, true));
+    savePreset.addEventListener('click', () => beginPresetEdit('save'));
+    renamePreset.addEventListener('click', () => beginPresetEdit('rename'));
+    deletePreset.addEventListener('click', () => beginPresetEdit('delete'));
+    presetConfirm.addEventListener('click', finishPresetEdit);
+    presetCancel.addEventListener('click', () => cancelPresetEdit(true));
+    presetName.addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        finishPresetEdit();
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        cancelPresetEdit(true);
+      }
+    });
     reset.addEventListener('click', () => {
+      cancelPresetEdit();
       window.CVAudioEngine.reset(); render(); scheduleSave();
     });
     power.addEventListener('click', () => {
@@ -148,6 +300,7 @@ window.CVAudioEqualizer = (() => {
       if (window.CVAudioEngine.isEnabled()) void window.CVAudioEngine.prepare().then(render);
     });
     preset.addEventListener('change', () => {
+      cancelPresetEdit();
       window.CVAudioEngine.applyPreset(preset.value); render(); scheduleSave();
     });
     preamp.addEventListener('input', () => {
@@ -155,7 +308,9 @@ window.CVAudioEqualizer = (() => {
     });
     panel.addEventListener('keydown', event => {
       if (event.key !== 'Escape') return;
-      event.preventDefault(); event.stopPropagation(); setOpen(false, true);
+      event.preventDefault(); event.stopPropagation();
+      if (editing) cancelPresetEdit(true);
+      else setOpen(false, true);
     });
     initialized = true;
     render();
@@ -173,6 +328,10 @@ window.CVAudioEqualizer = (() => {
   function localize() {
     controls.forEach(control => control.input.setAttribute('aria-label',
       text('audio_equalizer_band', { frequency: control.label })));
+    window.setCyberTooltip(renamePreset, text('audio_equalizer_rename_preset'));
+    window.setCyberTooltip(deletePreset, text('audio_equalizer_delete_preset'));
+    if (presetError.dataset.i18n) presetError.textContent = text(presetError.dataset.i18n);
+    presetSignature = '';
     if (initialized) render();
     else powerLabel.textContent = text(window.CVAudioEngine.isEnabled() ? 'audio_equalizer_on' : 'audio_equalizer_off');
   }
