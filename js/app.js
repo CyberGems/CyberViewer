@@ -2202,6 +2202,7 @@ function clearContextMenuListeners() {
 function showCustomContextMenu(e, type, data) {
   e.preventDefault();
   e.stopPropagation();
+  ttHide();
 
   // A previous outside-click listener can still be waiting while a new
   // context-menu event is being handled. Remove it before measuring and

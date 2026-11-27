@@ -56,6 +56,9 @@ describe('tab bar ui', () => {
     assert.match(tabsCss, /\.tab-switcher-item:hover \.tab-switcher-item-close, \.tab-switcher-item-close:focus-visible \{ opacity: \.6; \}/);
     for (const lang of ['en', 'es']) assert.ok(ui[lang].tabs_close_named.includes('{name}'));
   });
+  it('hides the shared tooltip before opening a context menu', () => {
+    assert.match(appJs, /function showCustomContextMenu\(e, type, data\) \{\s*e\.preventDefault\(\);\s*e\.stopPropagation\(\);\s*ttHide\(\);/);
+  });
   it('omits tooltips that only restate visible modal actions', () => {
     for (const id of ['props-close-btn', 'preset-pct25', 'preset-pct50', 'preset-pct200']) {
       const tag = html.match(new RegExp(`<button[^>]*id="${id}"[^>]*>`))?.[0];

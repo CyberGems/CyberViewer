@@ -632,6 +632,25 @@ app.whenReady().then(async () => {
     let closeAllCount = await evaluate('return window.CVWorkspace.model.tabs.length;');
     await evaluate("await window.CVWorkspace.activate('tab-39');");
     await loaded();
+    await evaluate("$('tab-39').dispatchEvent(new FocusEvent('focus'));");
+    await waitFor(() => evaluate("return !!$('titlebar-tooltip') && !$('titlebar-tooltip').hidden;"),
+      'tab tooltip visible before context menu');
+    const contextTooltip = await evaluate(`const shell = document.querySelector('.image-tab-shell[data-tab-id="tab-39"]');
+      const rect = shell.getBoundingClientRect();
+      shell.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true,
+        clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2 }));
+      return { menuOpen: $('custom-ctx-menu').classList.contains('open'),
+        tooltipHidden: !!$('titlebar-tooltip') && $('titlebar-tooltip').hidden };`);
+    assert.equal(contextTooltip.menuOpen && contextTooltip.tooltipHidden, true,
+      'opening a tab context menu hides its visible tooltip');
+    await evaluate("hideCustomContextMenu(); const shell = document.querySelector('.image-tab-shell[data-tab-id=\"tab-39\"]');" +
+      "$('tab-39').dispatchEvent(new MouseEvent('mouseenter'));" +
+      "shell.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));");
+    await delay(320);
+    assert.equal(await evaluate("return !!$('titlebar-tooltip') && $('titlebar-tooltip').hidden;"), true,
+      'opening a context menu also cancels a pending tab tooltip');
+    await evaluate("hideCustomContextMenu();");
+    console.log('PASS tab context menus hide visible and pending tooltips');
     const duplicateBar = await evaluate(`$('tab-switcher').hidden = true; $('image-tabs-list-btn').click();
       const row = document.querySelector('.tab-switcher-actions');
       const duplicate = $('tab-switcher-close-duplicates');
