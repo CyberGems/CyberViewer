@@ -116,8 +116,8 @@ describe('title bar Help menu', () => {
     // Tooltip suppression when open (titlebar tooltip card guard, CyberNotes style)
     assert.match(appJs, /function ttSuppressedWhileOpen\(el\)[\s\S]*?btn-shortcuts[\s\S]*?shortcuts-popover/);
     assert.match(appJs, /function ttShow\(el\)\s*\{\s*if \(restorePointerPending\) return;\s*if \(Date\.now\(\) < ttRestoreSuppressUntil\) return;[\s\S]*?if \(ttSuppressedWhileOpen\(el\)\) return;/);
-    // Action-bar badges keep honoring the "disable all tooltips" setting.
-    assert.match(appJs, /#kbd-hint'\) && document\.body\.classList\.contains\('no-tooltips'\)/);
+    // Every portaled tooltip honors the "disable all tooltips" setting.
+    assert.match(appJs, /if \(document\.body\.classList\.contains\('no-tooltips'\)\) return;/);
     assert.match(appJs, /button\.classList\.toggle\('open',\s*next\);[\s\S]*?gridImage\.hidden = video;\s*gridVideo\.hidden = !video;\s*\}\s*button\.blur\(\);/);
 
     // 2-column grid structure in HTML & CSS

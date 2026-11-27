@@ -586,6 +586,30 @@
     transform: translateY(0);
   }
 
+  #titlebar-tooltip.is-side-right::before,
+  #titlebar-tooltip.is-side-left::before {
+    top: var(--tt-arrow-y, 50%);
+    bottom: auto;
+    transform: translateY(-50%) rotate(45deg);
+  }
+  #titlebar-tooltip.is-side-right::before {
+    left: -4px;
+  }
+  #titlebar-tooltip.is-side-left::before {
+    left: auto;
+    right: -4px;
+    border-left: none;
+    border-top: none;
+    border-right: 1px solid var(--tt-border);
+    border-bottom: 1px solid var(--tt-border);
+  }
+
+  /* Portaled cards must not also paint the legacy CSS bubble on their anchor. */
+  .tt-portaled.cyber-tooltip::after,
+  .tt-portaled.cyber-tooltip::before {
+    display: none !important;
+  }
+
   /* Arrow tracks the anchor center (clamped), like CyberNotes */
   #titlebar-tooltip::before {
     content: '';
@@ -1184,8 +1208,8 @@
     white-space: nowrap;
     text-align: right;
     /* Header text is informational, not a row: no hover colour and no pointer
-       cursor, so it never reads as clickable. pointer-events stays on so the
-       native title still reveals a truncated name. */
+       cursor, so it never reads as clickable. Its full path uses the shared
+       portaled tooltip rather than the browser's native title. */
     pointer-events: auto;
     cursor: default;
   }

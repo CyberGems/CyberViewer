@@ -116,6 +116,7 @@ app.whenReady().then(async () => {
 
   // ── Marquee: only the overflowing caption scrolls ──
   await delay(400);
+  await evaluate('scheduleMarqueeMeasure(); await new Promise(resolve => requestAnimationFrame(resolve));');
   const layoutProbe = await evaluate(`
     const sidebar = document.getElementById('sidebar');
     const item = document.querySelector('#sidebar .thumb-item');
@@ -153,7 +154,7 @@ app.whenReady().then(async () => {
   assert.ok(long.stripWidth > 0, 'caption strip has a measurable width');
   assert.equal(long.marquee, true, 'an overflowing name is marked to scroll');
   assert.match(long.distance, /^-\d+px$/, 'scroll distance is set in pixels');
-  assert.match(long.duration, /^\d+s$/, 'scroll duration is set');
+  assert.match(long.duration, /^\d+(?:\.\d+)?s$/, 'scroll duration is set');
   assert.ok(parseInt(long.distance, 10) < 0, 'distance moves the text leftwards');
   assert.equal(short.marquee, false, 'a name that fits does not scroll');
   assert.equal(short.distance, '', 'a name that fits has no scroll distance');
@@ -174,6 +175,13 @@ app.whenReady().then(async () => {
   assert.equal(resting.animation, 'none', 'a resting caption runs no animation');
   assert.equal(resting.first, resting.second, 'a resting caption does not move');
 
+  await waitFor(() => evaluate('return !restorePointerPending || !!restorePointerAnchor;'),
+    'restore pointer guard settled');
+  await evaluate(`if (restorePointerPending && restorePointerAnchor) {
+    updateRestorePointerGuard({ screenX: restorePointerAnchor.screenX + 3, screenY: restorePointerAnchor.screenY });
+  }`);
+  await waitFor(() => evaluate('return Date.now() >= ttRestoreSuppressUntil;'), 'restore tooltip suppression elapsed');
+
   // On hover the animation starts and advances. :hover only reacts to real
   // input, so this moves the OS cursor through the webContents.
   const cardPoint = await evaluate(`
@@ -184,7 +192,7 @@ app.whenReady().then(async () => {
   `);
   assert.ok(cardPoint.width > 50 && cardPoint.height > 50, 'card has a hit area: ' + JSON.stringify(cardPoint));
   win.webContents.sendInputEvent({ type: 'mouseMove', x: cardPoint.x, y: cardPoint.y });
-  win.webContents.sendInputEvent({ type: 'mouseMove', x: cardPoint.x + 1, y: cardPoint.y + 1 });
+  win.webContents.sendInputEvent({ type: 'mouseMove', x: cardPoint.x + 4, y: cardPoint.y + 4 });
   await delay(120);
   const hover = await evaluate(`
     const item = document.querySelector('#sidebar .thumb-item');
@@ -196,10 +204,14 @@ app.whenReady().then(async () => {
     const first = read();
     await new Promise(r => setTimeout(r, 1000));
     return { hovering: item.matches(':hover'), animation: getComputedStyle(text).animationName,
-             state: getComputedStyle(text).animationPlayState, first, second: read() };
+             state: getComputedStyle(text).animationPlayState, first, second: read(),
+             tooltipText: $('titlebar-tooltip')?.querySelector('.tt-label')?.textContent,
+             tooltipVisible: !!$('titlebar-tooltip') && !$('titlebar-tooltip').hidden };
   `);
   console.log('hover: ' + JSON.stringify(hover));
   assert.equal(hover.hovering, true, 'the cursor is over the card');
+  assert.equal(hover.tooltipVisible, true, 'hovering a sidebar card opens its shared tooltip');
+  assert.equal(hover.tooltipText, path.join(dataDir, names[0]), 'the card tooltip contains the complete file path');
   assert.equal(hover.animation, 'thumb-marquee', 'hovering starts the marquee');
   assert.equal(hover.state, 'running', 'the hovered marquee is running, not paused');
   assert.ok(hover.first < 0, 'the hovered caption has begun to shift: ' + hover.first);
@@ -232,6 +244,7 @@ app.whenReady().then(async () => {
     // handler autosaves every control, so the rest must be in sync first.
     openConfig();
     await new Promise(r => setTimeout(r, 120));
+    $('cfg-sidebar').checked = true;
     const box = $('cfg-compact-cards');
     box.checked = true;
     box.dispatchEvent(new Event('change', { bubbles: true }));
@@ -247,15 +260,18 @@ app.whenReady().then(async () => {
              imgHeight: item.querySelector('.thumb-static').offsetHeight };
   `);
   console.log('compact on: ' + JSON.stringify(toggled));
+  await waitFor(() => evaluate("return document.querySelector('#sidebar .thumb-item').offsetHeight === 56;"),
+    'compact card height settled');
+  toggled.height = await evaluate("return document.querySelector('#sidebar .thumb-item').offsetHeight;");
   assert.equal(toggled.compact, true, 'the switch applies compact mode');
   assert.equal(toggled.saved, true, 'the setting is persisted in state');
-  assert.ok(toggled.height <= 66 && toggled.height >= 60, 'compact cards are 64px tall: ' + toggled.height);
+  assert.equal(toggled.height, 56, 'compact cards use their fixed 56px height: ' + toggled.height);
   assert.equal(toggled.nameDisplay, 'none', 'captions are hidden in compact mode');
   assert.equal(toggled.marquee, false, 'hidden captions are not left scrolling');
-  assert.ok(toggled.imgHeight >= 60 && toggled.imgHeight <= 64, 'the preview fills the compact card: ' + toggled.imgHeight);
+  assert.equal(toggled.imgHeight, 54, 'the preview fills the compact card inside its border');
 
   // A real cursor over a compact card must reveal its caption, and the card
-  // must stay 64px so the row height does not jump while hovering.
+  // must stay 56px so the row height does not jump while hovering.
   await evaluate('closeModal("modal-config");');
   await delay(200);
   const compactPoint = await evaluate(`
@@ -290,7 +306,7 @@ app.whenReady().then(async () => {
   assert.equal(revealed.marquee, true, 'the revealed caption scrolls when it does not fit: ' + revealed.distance);
   assert.equal(revealed.animation, 'thumb-marquee', 'the revealed caption animates while hovered');
   assert.ok(Math.abs(parseFloat(revealed.idxBottom) - 23) < 1, 'the index steps above the revealed caption: ' + revealed.idxBottom);
-  assert.equal(revealed.height, 64, 'revealing the caption does not resize the card');
+  assert.equal(revealed.height, 56, 'revealing the caption does not resize the card');
   win.webContents.sendInputEvent({ type: 'mouseMove', x: compactPoint.x, y: 760 });
   await delay(120);
 
@@ -345,14 +361,19 @@ app.whenReady().then(async () => {
   assert.ok(headerPoint, 'the thumbnail menu header shows the file name');
   assert.equal(headerPoint.cursor, 'default', 'the header keeps the default cursor');
   win.webContents.sendInputEvent({ type: 'mouseMove', x: headerPoint.x, y: headerPoint.y });
-  win.webContents.sendInputEvent({ type: 'mouseMove', x: headerPoint.x + 1, y: headerPoint.y + 1 });
-  await delay(250);
+  win.webContents.sendInputEvent({ type: 'mouseMove', x: headerPoint.x + 4, y: headerPoint.y + 4 });
+  await delay(400);
   const headerHover = await evaluate(`
     const sub = document.querySelector('#custom-ctx-menu .menu-header-sub');
-    return { hovering: sub.matches(':hover'), color: getComputedStyle(sub).color };
+    const card = $('titlebar-tooltip');
+    return { hovering: sub.matches(':hover'), color: getComputedStyle(sub).color,
+             tooltipText: card?.querySelector('.tt-label')?.textContent,
+             tooltipVisible: !!card && !card.hidden && card.classList.contains('is-visible') };
   `);
   console.log('header: ' + JSON.stringify({ ...headerPoint, ...headerHover }));
   assert.equal(headerHover.hovering, true, 'the cursor is over the header text');
+  assert.equal(headerHover.tooltipVisible, true, 'hovering the context header opens the shared tooltip');
+  assert.equal(headerHover.tooltipText, path.join(dataDir, names[0]), 'the header tooltip contains the complete file path');
   assert.equal(headerHover.color, headerPoint.color,
     'the header keeps its colour on hover, so it never reads as clickable');
 
@@ -426,6 +447,40 @@ app.whenReady().then(async () => {
     console.log("HEIGHT-DEBUG");
     assert.ok(sample.color && sample.color !== 'rgba(0, 0, 0, 0)', theme + ' caption has a colour');
     assert.ok(sample.background && sample.background !== 'rgba(0, 0, 0, 0)', theme + ' caption has a backdrop');
+
+    const headerTip = await evaluate(`
+      const item = document.querySelector('#sidebar .thumb-item');
+      const rect = item.getBoundingClientRect();
+      item.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true,
+        clientX: rect.left + 20, clientY: rect.top + 20 }));
+      await new Promise(r => setTimeout(r, 80));
+      const sub = document.querySelector('#custom-ctx-menu .menu-header-sub');
+      ttShow(sub);
+      await new Promise(r => setTimeout(r, 240));
+      const card = $('titlebar-tooltip');
+      const menuRect = $('custom-ctx-menu').getBoundingClientRect();
+      const tipRect = card.getBoundingClientRect();
+      const style = getComputedStyle(card);
+      const left = Math.max(0, Math.floor(Math.min(menuRect.left, tipRect.left)) - 8);
+      const top = Math.max(0, Math.floor(Math.min(menuRect.top, tipRect.top)) - 8);
+      const right = Math.min(window.innerWidth, Math.ceil(Math.max(menuRect.right, tipRect.right)) + 8);
+      const bottom = Math.min(window.innerHeight, Math.ceil(Math.max(menuRect.bottom, tipRect.bottom)) + 8);
+      return { text: card.querySelector('.tt-label').textContent,
+        hidden: card.hidden, className: card.className, opacity: style.opacity,
+        anchored: ttAnchor === sub, restorePending: restorePointerPending,
+        visible: !card.hidden && card.classList.contains('is-visible') && parseFloat(style.opacity) > 0.95,
+        color: style.color, background: style.backgroundColor,
+        inside: tipRect.left >= 0 && tipRect.top >= 0 && tipRect.right <= window.innerWidth && tipRect.bottom <= window.innerHeight,
+        shot: { x: left, y: top, width: right - left, height: bottom - top } };
+    `);
+    console.log('header tooltip ' + theme + ': ' + JSON.stringify(headerTip));
+    assert.equal(headerTip.visible, true, theme + ' header tooltip is painted');
+    assert.equal(headerTip.text, path.join(dataDir, names[0]), theme + ' header tooltip keeps the full path');
+    assert.equal(headerTip.inside, true, theme + ' header tooltip stays inside the window');
+    assert.ok(headerTip.color && headerTip.background, theme + ' header tooltip uses themed colors');
+    fs.writeFileSync(path.join(dataDir, `header-tooltip-${theme}.png`),
+      (await win.webContents.capturePage(headerTip.shot)).toPNG());
+    await evaluate('hideCustomContextMenu();');
   }
 
   // ── Layout sanity: compact mode really fits more cards ──

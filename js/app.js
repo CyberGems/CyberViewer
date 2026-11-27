@@ -134,6 +134,24 @@ function ttPositionCard() {
   ttCard.style.left = `${TT_VIEWPORT_MARGIN}px`;
   ttCard.style.top = '0px';
   const card = ttCard.getBoundingClientRect();
+  const side = ttAnchor.dataset.tooltipSide;
+  if (side === 'right' || side === 'left') {
+    let placeRight = side === 'right';
+    if (placeRight && rect.right + TT_GAP + card.width > window.innerWidth - TT_VIEWPORT_MARGIN) placeRight = false;
+    if (!placeRight && rect.left - TT_GAP - card.width < TT_VIEWPORT_MARGIN) placeRight = true;
+    const left = placeRight ? rect.right + TT_GAP : rect.left - TT_GAP - card.width;
+    const top = Math.max(TT_VIEWPORT_MARGIN, Math.min(rect.top + rect.height / 2 - card.height / 2,
+      window.innerHeight - card.height - TT_VIEWPORT_MARGIN));
+    const arrowY = Math.max(12, Math.min(rect.top + rect.height / 2 - top, card.height - 12));
+    ttCard.classList.toggle('is-side-right', placeRight);
+    ttCard.classList.toggle('is-side-left', !placeRight);
+    ttCard.classList.remove('is-above');
+    ttCard.style.left = `${Math.round(left)}px`;
+    ttCard.style.top = `${Math.round(top)}px`;
+    ttCard.style.setProperty('--tt-arrow-y', `${Math.round(arrowY)}px`);
+    return;
+  }
+  ttCard.classList.remove('is-side-right', 'is-side-left');
   let left = rect.left + rect.width / 2 - card.width / 2;
   left = Math.max(TT_VIEWPORT_MARGIN, Math.min(left, window.innerWidth - card.width - TT_VIEWPORT_MARGIN));
   // Anchors in the lower half (action bar, status bar) open their card upward so
@@ -164,9 +182,8 @@ function ttRenderKbd(kbdText) {
 function ttShow(el) {
   if (restorePointerPending) return;
   if (Date.now() < ttRestoreSuppressUntil) return;
-  // Action-bar buttons honored the "disable all tooltips" setting through the CSS
-  // bubble; the badge card keeps that behavior.
-  if (el.closest('#kbd-hint') && document.body.classList.contains('no-tooltips')) return;
+  // Every portaled tooltip honors the global disable setting.
+  if (document.body.classList.contains('no-tooltips')) return;
   if (ttSuppressedWhileOpen(el)) return;
   const text = ttTextFor(el);
   if (!text) return;
@@ -1690,6 +1707,9 @@ function buildSidebar() {
     const item = document.createElement('div');
     item.className = 'thumb-item' + (i === state.currentIdx ? ' active' : '');
     item.dataset.index = i;
+    setCyberTooltip(item, im.file.path || im.file.name);
+    item.classList.add('tt-portaled');
+    ttBind(item);
 
     const img = document.createElement('img');
     img.className = 'thumb-static';
@@ -1729,7 +1749,6 @@ function buildSidebar() {
     // caption without moving the strip itself.
     const name = document.createElement('span');
     name.className = 'thumb-name';
-    name.title = im.file.name;
     const nameText = document.createElement('span');
     nameText.className = 'thumb-name-text';
     nameText.textContent = im.file.name.replace(/\.[^.]+$/, '');
@@ -2288,6 +2307,14 @@ function showCustomContextMenu(e, type, data) {
   menu.style.visibility = 'visible';
   menu.classList.add('open');
 
+  const pathHeader = menu.querySelector('.menu-header-sub[data-tooltip]');
+  if (pathHeader) {
+    const rect = pathHeader.getBoundingClientRect();
+    if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+      ttShow(pathHeader);
+    }
+  }
+
   contextMenuCloseListener = (evt) => {
     if (!submenuPortal.contains(menu, evt.target)) {
       hideCustomContextMenu();
@@ -2303,6 +2330,7 @@ function showCustomContextMenu(e, type, data) {
 }
 
 function hideCustomContextMenu() {
+  ttHide();
   clearContextMenuListeners();
   const menu = $('custom-ctx-menu');
   if (menu) {
@@ -2867,7 +2895,12 @@ function renderMenuTemplate(container, template) {
       if (item.subtitle) {
         const sub = document.createElement('span');
         sub.className = 'menu-header-sub';
-        if (item.subTitleAttr) sub.title = item.subTitleAttr;
+        if (item.subTitleAttr) {
+          setCyberTooltip(sub, item.subTitleAttr);
+          sub.classList.add('tt-portaled');
+          sub.dataset.tooltipSide = 'right';
+          ttBind(sub);
+        }
 
         if (item.subtitleFilename) {
           const parts = splitFilenameExtension(item.subtitleFilename);

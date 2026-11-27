@@ -87,6 +87,20 @@ test('context menu headers and canvas close-image', async (t) => {
     assert.ok(appCss.includes('.menu-header-sub-ext {'), 'CSS should define .menu-header-sub-ext');
   });
 
+  await t.test('uses the shared tooltip for full context-header paths', () => {
+    assert.ok(appJs.includes('setCyberTooltip(sub, item.subTitleAttr)'), 'header paths use the shared tooltip');
+    assert.ok(appJs.includes("sub.dataset.tooltipSide = 'right'"), 'header tooltips prefer the space beside the menu');
+    assert.ok(appJs.includes('ttShow(pathHeader)'), 'a menu opened under the pointer can show its header tooltip immediately');
+    assert.ok(!appJs.includes('sub.title = item.subTitleAttr'), 'header paths do not rely on a native title');
+    assert.ok(appCss.includes('.tt-portaled.cyber-tooltip::after'), 'portaled tooltips suppress the legacy bubble');
+  });
+
+  await t.test('sidebar cards expose their full path through the shared tooltip', () => {
+    assert.ok(appJs.includes('setCyberTooltip(item, im.file.path || im.file.name)'), 'cards use the full path or name');
+    assert.ok(appJs.includes("item.classList.add('tt-portaled')"), 'card tooltips use only the portaled card');
+    assert.ok(!appJs.includes('name.title = im.file.name'), 'card captions do not rely on a native title');
+  });
+
   await t.test('preserves filename extension when rendering menu-header-sub', () => {
     assert.ok(appJs.includes('subtitleFilename: imgName'), 'image context menu passes subtitleFilename');
     assert.ok(appJs.includes('splitFilenameExtension(item.subtitleFilename)'), 'renderMenuTemplate uses splitFilenameExtension');
