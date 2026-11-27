@@ -29,7 +29,7 @@ app.whenReady().then(async () => {
   await waitFor(() => (win = BrowserWindow.getAllWindows().find(item => item.webContents.getURL().includes('CyberViewer.html'))), 'main window');
   const errors = [];
   win.webContents.on('console-message', event => { if (event.level === 'error') errors.push(event.message); });
-  const evaluate = body => win.webContents.executeJavaScript('(async()=>{' + body + '})()');
+  const evaluate = body => win.webContents.executeJavaScript('(async()=>{' + body + '})()', true);
   const open = async name => { await evaluate('await openImagePath(' + JSON.stringify(path.join(dataDir,name)) + ');'); };
   const loaded = () => waitFor(() => evaluate('return window.CVWorkspace.ready && !state.transitioning && window.CVVideo.element.readyState >= 2 && window.CVVideo.element.videoWidth === 320;'), 'video ready');
   await waitFor(() => evaluate('return window.CVWorkspace?.ready;'), 'workspace ready');
@@ -81,6 +81,45 @@ app.whenReady().then(async () => {
     fs.writeFileSync(path.join(dataDir, 'video-properties.png'), (await win.webContents.capturePage()).toPNG());
     await evaluate("closeModal('modal-properties');");
     console.log('PASS playback, audio, seeking, exact byte range, edit guards and thumbnail');
+
+    await evaluate(`window.__videoSourceCount=0;
+      const createSource=AudioContext.prototype.createMediaElementSource;
+      AudioContext.prototype.createMediaElementSource=function(element){window.__videoSourceCount++;return createSource.call(this,element);};
+      const v=window.CVVideo.element; v.currentTime=1; v.muted=false; v.volume=.1; await window.CVVideo.toggle();`);
+    await waitFor(() => evaluate('return !window.CVVideo.element.paused && window.CVVideo.element.currentTime>1.1 && window.CVVideo.element.webkitAudioDecodedByteCount>0;'), 'video EQ playback');
+    assert.equal(await evaluate("return $('audio-equalizer-toggle').disabled;"),false,'Local video exposes the equalizer');
+    await evaluate("$('audio-equalizer-toggle').click();");
+    assert.equal(await evaluate("return !$('audio-equalizer-panel').hidden && document.querySelectorAll('.audio-equalizer-band-input').length===10;"),true,'Video equalizer opens ten bands');
+    await evaluate('await window.CVAudioEngine.prepare();');
+    await waitFor(() => evaluate("return window.CVAudioEngine.inspect().state==='running';"),'video analyser ready');
+    await evaluate(`window.__videoEqRms=async()=>{
+      const analyser=window.CVAudioEngine.getAnalyser(),bytes=new Uint8Array(analyser.fftSize);
+      let sum=0,count=0;
+      for(let sample=0;sample<6;sample++){
+        analyser.getByteTimeDomainData(bytes);
+        for(const value of bytes){const centered=(value-128)/128;sum+=centered*centered;count++;}
+        await new Promise(resolve=>setTimeout(resolve,40));
+      }
+      return Math.sqrt(sum/count);
+    };`);
+    const videoBypassRms=await evaluate('return window.__videoEqRms();');
+    await evaluate("$('audio-equalizer-preamp').value='6'; $('audio-equalizer-preamp').dispatchEvent(new Event('input')); $('audio-equalizer-power').click();");
+    await waitFor(() => evaluate("return window.CVAudioEngine.inspect().state==='running' && Math.abs(window.CVAudioEngine.inspect().preamp-Math.pow(10,6/20))<.02;"), 'video EQ preamp applied');
+    const videoBoostedRms=await evaluate('return window.__videoEqRms();');
+    assert.ok(videoBoostedRms>videoBypassRms*1.15,'Video audio is processed by the EQ: '+JSON.stringify({videoBypassRms,videoBoostedRms}));
+    assert.equal(await evaluate('return window.__videoSourceCount;'),1,'Video and EQ share one media source');
+    fs.writeFileSync(path.join(dataDir,'video-equalizer.png'),(await win.webContents.capturePage()).toPNG());
+    await evaluate('window.CVVideo.element.pause();');
+    await waitFor(() => evaluate("return window.CVAudioEngine.inspect().state==='suspended';"),'video EQ suspends with playback');
+    await evaluate('window.CVVideo.toggle();');
+    await waitFor(() => evaluate("return window.CVAudioEngine.inspect().state==='running' && !window.CVVideo.element.paused;"),'video EQ resumes with playback');
+    await evaluate("$('audio-equalizer-power').click();");
+    await waitFor(() => evaluate("return Math.abs(window.CVAudioEngine.inspect().preamp-1)<.0001 && Math.abs(window.CVAudioEngine.inspect().limiter.ratio-1)<.0001 && window.CVAudioEngine.inspect().bands.every(band=>Math.abs(band.gain)<.0001);"),'video EQ neutral bypass');
+    assert.equal(await evaluate('return window.__videoSourceCount;'),1,'Bypass never reconnects video audio');
+    await evaluate('window.CVVideo.closeMenu(); window.CVVideo.element.pause(); window.CVVideo.element.currentTime=6; window.CVVideo.element.muted=true;');
+    await waitFor(() => evaluate('return !window.CVVideo.element.seeking;'),'restore video after EQ check');
+    await evaluate('window.CVWorkspace.capture(); await window.CVWorkspace.flush();');
+    console.log('PASS local video EQ gain, single source, pause/resume suspension and neutral bypass');
 
     for (const name of ['compatible.mov','compatible.mkv','compatible.m4v','compatible.webm']) {
       await open(name); await loaded();
@@ -247,6 +286,7 @@ app.whenReady().then(async () => {
     // audio is being decoded.
     await open('silent.mp4'); await loaded();
     await waitFor(() => evaluate("return $('video-mute').disabled && $('video-volume').disabled && $('video-sound').classList.contains('audio-unavailable');"), 'silent.mp4 reports unavailable audio on load');
+    assert.equal(await evaluate("return $('audio-equalizer-toggle').disabled;"),true,'Silent video cannot open the audio equalizer');
     assert.equal(await evaluate("return getComputedStyle($('video-volume')).display === 'none' && getComputedStyle($('video-mute')).display !== 'none';"), true, 'Unavailable audio shows only the speaker, with no dead slider');
     await evaluate('window.CVVideo.element.muted=true; await window.CVVideo.toggle();');
     await waitFor(() => evaluate('return window.CVVideo.element.currentTime > .8;'), 'silent.mp4 playback');
@@ -263,6 +303,7 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("return !$('video-mute').disabled && !$('video-volume').disabled;"), true, 'A new source is checked independently');
     await evaluate('window.CVVideo.element.muted=true; await window.CVVideo.toggle();');
     await waitFor(() => evaluate("return window.CVVideo.element.currentTime > .8 && $('video-mute').disabled && $('video-volume').disabled;"), 'unsupported-audio.mkv disables the undecodable audio controls');
+    assert.equal(await evaluate("return $('audio-equalizer-toggle').disabled;"),true,'Undecodable video audio disables the equalizer');
     assert.equal(await evaluate('return window.CVVideo.element.webkitAudioDecodedByteCount === 0 && !window.CVVideo.element.paused && window.CVVideo.element.videoWidth === 320;'), true, 'The video keeps playing while its codec decodes no audio');
     fs.writeFileSync(path.join(dataDir,'unsupported-audio.mkv-controls.png'), (await win.webContents.capturePage()).toPNG());
     console.log('PASS silent and undecodable audio report icon-only controls, hints and localization');

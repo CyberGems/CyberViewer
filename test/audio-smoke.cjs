@@ -159,6 +159,9 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("return document.body.classList.contains('audio-active') && window.CVVideo.element.paused;"), true);
     assert.ok(await evaluate('return Math.abs(window.CVVideo.element.currentTime - 4) < .2;'));
     assert.equal(await evaluate("return $('audio-visualizer').value;"), 'off');
+    assert.deepEqual(await evaluate('return window.CVAudioEngine.snapshot();'),
+      { enabled: false, preset: 'custom', preamp: -2, gains: [3, -1, 0, 2, 4, 5, 3, 1, 0, -1] },
+      'A disabled custom equalizer restores without reconnecting audio');
     for (const name of formatSamples) await checkFormat(name, true);
     console.log('PASS audio session restores position, paused playback and effects preference');
   } else {
@@ -327,6 +330,91 @@ app.whenReady().then(async () => {
       }
     }
     console.log('Mean drawing time (ms, software-rendered test): ' + JSON.stringify(renderStats));
+    await evaluate(`const e=window.CVVideo.element;
+      e.pause(); e.currentTime=.4;
+      await new Promise(resolve=>{ if(!e.seeking) return resolve(); e.addEventListener('seeked',resolve,{once:true}); });
+      await window.CVVideo.toggle();`);
+    await waitFor(() => evaluate('return !window.CVVideo.element.paused && window.CVVideo.element.currentTime>.5;'), 'equalizer playback');
+    assert.equal(await evaluate("return $('audio-equalizer-toggle').disabled;"), false, 'Local audio exposes the equalizer');
+    await evaluate("$('audio-equalizer-toggle').click();");
+    const equalizerPanel = await evaluate(`const panel=$('audio-equalizer-panel'),rect=panel.getBoundingClientRect();
+      return {hidden:panel.hidden,bands:panel.querySelectorAll('.audio-equalizer-band-input').length,
+        expanded:$('audio-equalizer-toggle').getAttribute('aria-expanded'),glass:getComputedStyle(panel).backdropFilter,
+        bounds:{left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom},width:innerWidth,height:innerHeight};`);
+    assert.equal(equalizerPanel.hidden, false);
+    assert.equal(equalizerPanel.expanded, 'true');
+    assert.equal(equalizerPanel.bands, 10);
+    assert.notEqual(equalizerPanel.glass, 'none');
+    assert.ok(equalizerPanel.bounds.left>=0 && equalizerPanel.bounds.top>=0 && equalizerPanel.bounds.right<=equalizerPanel.width && equalizerPanel.bounds.bottom<=equalizerPanel.height,
+      'Equalizer stays inside the viewport: ' + JSON.stringify(equalizerPanel.bounds));
+    assert.equal(await evaluate('return window.__sourceCount;'), 1, 'Audio and visuals still share one media source');
+    await evaluate(`window.__eqRms=async()=>{
+      const analyser=window.CVAudioEngine.getAnalyser(),bytes=new Uint8Array(analyser.fftSize);
+      let sum=0,count=0;
+      for(let sample=0;sample<8;sample++){
+        analyser.getByteTimeDomainData(bytes);
+        for(const value of bytes){const centered=(value-128)/128;sum+=centered*centered;count++;}
+        await new Promise(resolve=>setTimeout(resolve,35));
+      }
+      return Math.sqrt(sum/count);
+    };`);
+    const bypassRms = await evaluate('return window.__eqRms();');
+    await evaluate("$('audio-equalizer-preamp').value='6'; $('audio-equalizer-preamp').dispatchEvent(new Event('input')); $('audio-equalizer-power').click();");
+    await waitFor(() => evaluate("return window.CVAudioEngine.inspect().state==='running' && Math.abs(window.CVAudioEngine.inspect().preamp-Math.pow(10,6/20))<.02;"), 'equalizer preamp applied');
+    const boostedRms = await evaluate('return window.__eqRms();');
+    assert.ok(boostedRms>bypassRms*1.15, 'The real post-EQ signal is louder with preamp: ' + JSON.stringify({bypassRms,boostedRms}));
+    await evaluate("$('audio-equalizer-preamp').value='0'; $('audio-equalizer-preamp').dispatchEvent(new Event('input')); $('audio-equalizer-preset').value='bass_boost'; $('audio-equalizer-preset').dispatchEvent(new Event('change'));");
+    await evaluate("document.querySelectorAll('.audio-equalizer-band-input')[3].value='6'; document.querySelectorAll('.audio-equalizer-band-input')[3].dispatchEvent(new Event('input'));");
+    await waitFor(() => evaluate('return Math.abs(window.CVAudioEngine.inspect().bands[3].gain-6)<.05;'), 'equalizer band applied');
+    const dsp = await evaluate('return window.CVAudioEngine.inspect();');
+    assert.equal(dsp.bands.length,10);
+    assert.equal(dsp.bands[0].frequency,62);
+    assert.equal(dsp.bands[9].frequency,13000);
+    assert.ok(Math.abs(dsp.bands[3].gain-6)<.05);
+    assert.ok(Math.abs(dsp.limiter.threshold+1.5)<.05);
+    assert.ok(Math.abs(dsp.limiter.ratio-20)<.05);
+    assert.equal(await evaluate('return window.CVAudioEngine.snapshot().preset;'),'custom');
+    assert.equal(await evaluate('return window.__sourceCount;'),1,'EQ changes never create another media source');
+    for (const theme of ['cyberviewer','gray','light']) {
+      await evaluate(`applyAppearanceTheme('${theme}','#00d4ff');`);
+      await delay(250);
+      const powerStyle = await evaluate(`const button=$('audio-equalizer-power'),sw=button.querySelector('.video-menu-switch');
+        const knob=getComputedStyle(sw,'::before');return {checked:button.getAttribute('aria-checked'),background:getComputedStyle(sw).backgroundColor,
+          offset:new DOMMatrixReadOnly(knob.transform).m41,preamp:$('audio-equalizer-preamp').value,
+          progress:parseFloat($('audio-equalizer-preamp').style.getPropertyValue('--video-progress'))};`);
+      assert.equal(powerStyle.checked,'true',theme+' keeps the power switch checked');
+      assert.notEqual(powerStyle.background,'rgba(0, 0, 0, 0)',theme+' paints the active switch');
+      assert.ok(powerStyle.offset>15,theme+' moves the active switch knob: '+powerStyle.offset);
+      assert.equal(powerStyle.preamp,'-2');
+      assert.ok(Math.abs(powerStyle.progress-41.6667)<.01);
+      fs.writeFileSync(path.join(dataDir,`equalizer-${theme}.png`),(await win.webContents.capturePage()).toPNG());
+    }
+    await evaluate("applyAppearanceTheme('cyberviewer','#00d4ff');");
+    await evaluate("$('video-more').click();");
+    assert.equal(await evaluate("return $('audio-equalizer-panel').hidden;"),true,'More closes the equalizer');
+    await evaluate("window.CVVideo.closeMenu(); $('audio-equalizer-toggle').click(); $('video-speed').click();");
+    assert.equal(await evaluate("return $('audio-equalizer-panel').hidden && !$('video-speed-panel').hidden;"),true,'Speed closes the equalizer');
+    await evaluate("window.CVVideo.closeMenu(); $('audio-equalizer-toggle').click(); $('audio-equalizer-panel').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));");
+    assert.equal(await evaluate("return $('audio-equalizer-panel').hidden && document.activeElement===$('audio-equalizer-toggle');"),true,'Escape closes the equalizer and restores toolbar focus');
+    await evaluate("$('audio-equalizer-preset').value='vocal'; $('audio-equalizer-preset').dispatchEvent(new Event('change')); $('audio-equalizer-preamp').value='-2'; $('audio-equalizer-preamp').dispatchEvent(new Event('input'));");
+    await evaluate("document.querySelectorAll('.audio-equalizer-band-input')[0].value='3'; document.querySelectorAll('.audio-equalizer-band-input')[0].dispatchEvent(new Event('input'));");
+    await waitFor(() => {
+      try { return JSON.parse(fs.readFileSync(path.join(dataDir,'settings.json'),'utf8')).app.audioEqualizer?.enabled===true; }
+      catch (_) { return false; }
+    }, 'enabled equalizer saved');
+    await evaluate("$('audio-equalizer-power').click();");
+    await waitFor(() => {
+      try {
+        const saved=JSON.parse(fs.readFileSync(path.join(dataDir,'settings.json'),'utf8')).app.audioEqualizer;
+        return saved?.enabled===false && saved.preset==='custom' && saved.preamp===-2 && saved.gains[0]===3;
+      } catch (_) { return false; }
+    }, 'custom equalizer saved for restore');
+    await waitFor(() => evaluate("return Math.abs(window.CVAudioEngine.inspect().preamp-1)<.0001 && Math.abs(window.CVAudioEngine.inspect().limiter.ratio-1)<.0001 && window.CVAudioEngine.inspect().bands.every(band=>Math.abs(band.gain)<.0001);"), 'audio EQ neutral bypass');
+    const bypassDsp=await evaluate('return window.CVAudioEngine.inspect();');
+    assert.ok(Math.abs(bypassDsp.preamp-1)<.0001);
+    assert.ok(bypassDsp.bands.every(band=>Math.abs(band.gain)<.0001));
+    assert.ok(Math.abs(bypassDsp.limiter.ratio-1)<.0001);
+    console.log('PASS ten-band EQ, real preamp gain, limiter, bypass, themes, panel behavior and persistence');
     await evaluate(`const e=window.CVVideo.element;
       if(e.ended || e.currentTime>10){ e.currentTime=.5;
         await new Promise(resolve=>{ if(!e.seeking) return resolve(); e.addEventListener('seeked',resolve,{once:true}); });

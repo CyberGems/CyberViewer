@@ -44,7 +44,7 @@ window.CVAudioVisuals = (() => {
       localStorage.setItem('cv_audio_visualizer', mode);
     } else if (styles.has(saved)) mode = saved;
   } catch (_) { /* optional preferences */ }
-  let media = null, image = null, context = null, source = null, analyser = null;
+  let media = null, image = null, analyser = null;
   let frequencies = null, waveform = null;
   let frame = 0, lastPaint = 0, elapsed = 0, level = 0;
   let energy = 0, bass = 0, highs = 0, waveGain = 1, spin = 0, flow = 0;
@@ -73,37 +73,14 @@ window.CVAudioVisuals = (() => {
   const visible = () => enabled() && !document.hidden;
   const playing = () => visible() && image.loaded && !media.paused && !media.ended && !!analyser;
 
-  function wire() {
-    if (!source) return;
-    source.disconnect(); analyser.disconnect();
-    if (enabled()) { source.connect(analyser); analyser.connect(context.destination); }
-    else source.connect(context.destination);
-  }
-
   async function prepare() {
-    // Autoplay policy: without a prior user gesture an AudioContext starts
-    // (and stays) suspended, and awaiting resume() hangs forever — a session
-    // restore auto-resuming playback would then never call element.play().
-    // Until any interaction has happened, play through the element natively;
-    // the graph wires up on the next play() after the first gesture.
-    if (!context) {
-      if (!enabled()) return;
-      if (!navigator.userActivation?.hasBeenActive) return;
-      context = new window.AudioContext();
-      analyser = context.createAnalyser();
-      analyser.fftSize = 1024;
-      analyser.smoothingTimeConstant = 0.65;
-      frequencies = new Uint8Array(analyser.frequencyBinCount);
-      waveform = new Uint8Array(analyser.fftSize);
-      waveform.fill(128);
-      source = context.createMediaElementSource(media);
-      wire();
-    }
-    // The shared element remains routed through this graph for ordinary video
-    // and effects-off playback too, so a suspended context must still resume
-    // even with the visualizer off. Sticky activation (any past interaction)
-    // makes resume() resolve.
-    if (context.state === 'suspended') await context.resume().catch(() => {});
+    if (!enabled()) return;
+    const ready = await window.CVAudioEngine.prepare();
+    if (!ready || analyser) return;
+    analyser = window.CVAudioEngine.getAnalyser();
+    frequencies = new Uint8Array(analyser.frequencyBinCount);
+    waveform = new Uint8Array(analyser.fftSize);
+    waveform.fill(128);
   }
 
   function color(hue, alpha = 1, lightness = 64) {
@@ -801,7 +778,7 @@ window.CVAudioVisuals = (() => {
   }
 
   function refresh() {
-    if (media?.paused && context?.state === 'running') void context.suspend().catch(console.error);
+    if (media?.paused) window.CVAudioEngine.suspend();
     if (!image) { stopFrames(); level = 0; return; }
     localize();
     if (!visible()) {
@@ -889,11 +866,10 @@ window.CVAudioVisuals = (() => {
       if (tagsEl) { tagsEl.textContent = ''; tagsEl.hidden = true; }
       if (coverEl) { coverEl.removeAttribute('src'); coverEl.hidden = true; }
     }
-    wire(); resize(); refresh();
+    resize(); refresh();
   }
 
   async function updateMode() {
-    wire();
     try { if (media && !media.paused) await prepare(); }
     catch (error) { console.error('Audio visualization failed:', error); }
     resize(); refresh();

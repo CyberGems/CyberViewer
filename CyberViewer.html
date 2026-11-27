@@ -439,6 +439,10 @@
               </button>
               <input id="video-volume" type="range" min="0" max="1" step="0.05" value="1" data-i18n-aria="video_volume">
             </div>
+            <button type="button" id="audio-equalizer-toggle" aria-controls="audio-equalizer-panel" aria-expanded="false" data-i18n-tooltip="audio_equalizer_hint" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4v16M12 4v16M18 4v16M3 9h6M9 15h6M15 7h6"/></svg>
+              <span class="video-sr-only" data-i18n="audio_equalizer">Ecualizador</span>
+            </button>
             <button type="button" id="video-fit" disabled aria-keyshortcuts="B" data-tooltip-kbd="B">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg>
             </button>
@@ -518,6 +522,84 @@
               <button type="button" class="video-menu-rate" data-rate="3">3.0</button>
             </div>
           </div>
+          <section id="audio-equalizer-panel" class="menu-panel audio-equalizer-panel" role="dialog" aria-modal="false" aria-labelledby="audio-equalizer-title" hidden>
+            <header class="audio-equalizer-header">
+              <div class="audio-equalizer-heading">
+                <span class="audio-equalizer-mark" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M4 15V9M8 18V6M12 14v-4M16 19V5M20 15V9"/></svg>
+                </span>
+                <div>
+                  <h2 id="audio-equalizer-title" data-i18n="audio_equalizer">Ecualizador</h2>
+                  <p data-i18n="audio_equalizer_scope">Se aplica al audio y video locales</p>
+                </div>
+              </div>
+              <div class="audio-equalizer-actions">
+                <button type="button" id="audio-equalizer-power" class="audio-equalizer-power" role="switch" aria-checked="false" data-i18n-aria="audio_equalizer">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v9M6.3 5.8a8 8 0 1 0 11.4 0"/></svg>
+                  <span id="audio-equalizer-power-label">Inactivo</span>
+                  <span class="video-menu-switch" aria-hidden="true"></span>
+                </button>
+                <button type="button" id="audio-equalizer-reset" class="audio-equalizer-reset">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1.8 7.1M4 4v6h6"/></svg>
+                  <span data-i18n="audio_equalizer_reset">Restablecer</span>
+                </button>
+                <button type="button" id="audio-equalizer-close" class="audio-equalizer-close" data-i18n-aria="audio_equalizer_close">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+                </button>
+              </div>
+            </header>
+            <div class="audio-equalizer-settings">
+              <label class="audio-equalizer-preset">
+                <span data-i18n="audio_equalizer_preset">Preajuste</span>
+                <select id="audio-equalizer-preset" class="cfg-select" data-i18n-aria="audio_equalizer_preset">
+                  <option value="flat" data-i18n="audio_equalizer_flat">Plano</option>
+                  <option value="bass_boost" data-i18n="audio_equalizer_bass_boost">Refuerzo de graves</option>
+                  <option value="vocal" data-i18n="audio_equalizer_vocal">Claridad vocal</option>
+                  <option value="electronic" data-i18n="audio_equalizer_electronic">Electrónico</option>
+                  <option value="acoustic" data-i18n="audio_equalizer_acoustic">Acústico</option>
+                  <option value="night" data-i18n="audio_equalizer_night">Noche</option>
+                  <option value="custom" data-i18n="audio_equalizer_custom" hidden>Personalizado</option>
+                </select>
+              </label>
+              <label class="audio-equalizer-preamp" for="audio-equalizer-preamp">
+                <span data-i18n="audio_equalizer_preamp">Preamplificador</span>
+                <input id="audio-equalizer-preamp" type="range" min="-12" max="12" step="1" value="0">
+                <output id="audio-equalizer-preamp-value" for="audio-equalizer-preamp">0 dB</output>
+              </label>
+            </div>
+            <div class="audio-equalizer-plot">
+              <div class="audio-equalizer-scale" aria-hidden="true">
+                <span>+12</span><span>+6</span><span>0</span><span>−6</span><span>−12</span>
+              </div>
+              <div class="audio-equalizer-plot-inner">
+                <svg id="audio-equalizer-curve" class="audio-equalizer-curve" viewBox="0 0 1000 172" preserveAspectRatio="none" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="audio-equalizer-stroke" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0" stop-color="var(--cyber-accent2)"/>
+                      <stop offset=".52" stop-color="var(--cyber-accent)"/>
+                      <stop offset="1" stop-color="var(--cyber-accent3)"/>
+                    </linearGradient>
+                    <linearGradient id="audio-equalizer-fill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stop-color="var(--cyber-accent)" stop-opacity=".2"/>
+                      <stop offset="1" stop-color="var(--cyber-accent)" stop-opacity="0"/>
+                    </linearGradient>
+                  </defs>
+                  <g class="audio-equalizer-grid">
+                    <path d="M50 16H950M50 51H950M50 86H950M50 121H950M50 156H950"/>
+                    <path d="M50 8V164M150 8V164M250 8V164M350 8V164M450 8V164M550 8V164M650 8V164M750 8V164M850 8V164M950 8V164"/>
+                  </g>
+                  <path id="audio-equalizer-area" fill="url(#audio-equalizer-fill)"/>
+                  <path id="audio-equalizer-line" fill="none" stroke="url(#audio-equalizer-stroke)" stroke-width="3" vector-effect="non-scaling-stroke"/>
+                  <g id="audio-equalizer-nodes"></g>
+                </svg>
+                <div id="audio-equalizer-bands" class="audio-equalizer-bands"></div>
+              </div>
+            </div>
+            <footer class="audio-equalizer-footer">
+              <span class="audio-equalizer-range">±12 dB</span>
+              <output id="audio-equalizer-status" role="status" aria-live="polite">Inactivo</output>
+            </footer>
+          </section>
         </div>
       </div>
 
@@ -1864,7 +1946,9 @@
 <script src="js/media-types.js"></script>
 <script src="js/tab-model.js"></script>
 <script src="js/workspace.js"></script>
+<script src="js/audio-engine.js"></script>
 <script src="js/video-player.js"></script>
+<script src="js/audio-equalizer.js"></script>
 <script src="js/audio-visualizer.js"></script>
 <script src="js/audio-waveform.js"></script>
 <script src="js/youtube-player.js"></script>

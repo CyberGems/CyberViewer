@@ -329,6 +329,7 @@ const state = {
       videoLoop: false,
       videoVolume: 1,
       videoMuted: false,
+      audioEqualizer: window.CVAudioEngine.defaults(),
       showFileName: true,
       navZoomMode: 'reset'
     }
@@ -348,6 +349,7 @@ const RECENT_CTX_MAX = 10;
 // UI strings: i18n/ui.js → window.CV_I18N (source: i18n/ui.json)
 const I18N = (typeof window !== 'undefined' && window.CV_I18N) ? window.CV_I18N : { en: {}, es: {} };
 window.CVVideo.initialize();
+window.CVAudioEqualizer.initialize();
 if (isElectron) window.CVYouTube.initialize();
 const TRAY_PIN_REMINDER_KEY = 'cyberviewer_tray_pin_reminder_dismissed';
 let pendingTrayPinReminder = false;
@@ -692,6 +694,7 @@ function updateLanguage(lang = 'en') {
   window.CVVideo.localize();
   window.CVYouTube.localize();
   document.documentElement.lang = lang;
+  window.CVAudioEqualizer.localize();
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.dataset.i18n;
     if (I18N[lang] && I18N[lang][key] !== undefined) {
@@ -8359,6 +8362,7 @@ function getFactoryAppSettings() {
     videoLoop: false,
     videoVolume: 1,
     videoMuted: false,
+    audioEqualizer: window.CVAudioEngine.defaults(),
     showFileName: true,
     animateGifs: true,
     dblClickAction: 'fullscreen',
@@ -9103,6 +9107,7 @@ if (clearRecentImagesBtn) {
 
 function applySettings() {
   const s = state.settings.app;
+  window.CVAudioEqualizer.applySettings(s.audioEqualizer);
 
   // Appearance theme (CyberViewer / gray / light) + accent. The gray theme owns
   // its own neutral accent, so the user accent is ignored there.

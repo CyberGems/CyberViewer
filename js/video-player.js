@@ -133,6 +133,10 @@ window.CVVideo = (() => {
     const unavailable = audioStatus === 'unavailable';
     $('video-mute').disabled = unavailable;
     $('video-volume').disabled = unavailable;
+    const equalizerAvailable = active() && !window.CVYouTubeSource.isYouTube(state.images[state.current]) && !unavailable;
+    $('audio-equalizer-toggle').disabled = !equalizerAvailable;
+    if (!equalizerAvailable) window.CVAudioEqualizer.setAvailable(false);
+    else window.CVAudioEqualizer.setAvailable(true);
     const sound = document.querySelector('.video-sound');
     sound.classList.toggle('audio-unavailable', unavailable);
     sound.setAttribute('aria-label', text(unavailable ? 'video_audio_unavailable' : 'video_volume'));
@@ -155,7 +159,7 @@ window.CVVideo = (() => {
     $('video-more').setAttribute('aria-expanded', String(open));
     // The styled select floats in the body, so it must close with its menu.
     if (!open) window.CVConfigSelects.close();
-    else sync();
+    else { sync(); window.CVAudioEqualizer.setOpen(false); }
     setSpeedPanel(false);
     reveal();
   }
@@ -163,7 +167,7 @@ window.CVVideo = (() => {
     if (!on) stopSpeedRepeat();
     $('video-speed-panel').hidden = !on;
     $('video-speed').setAttribute('aria-expanded', String(on));
-    if (on) positionSpeedPanel();
+    if (on) { positionSpeedPanel(); window.CVAudioEqualizer.setOpen(false); }
   }
   // The popover floats above its transport bar button, so the button's live
   // viewport position decides `left` at open time (offsetParent-safe).
@@ -208,7 +212,7 @@ window.CVVideo = (() => {
     idleTimer = setTimeout(() => {
       // Paused or ended playback idles too: the bar and the held pause badge
       // go away together with the rest of the chrome.
-      if (!active() || interacting || !$('video-menu').hidden || !$('video-speed-panel').hidden) return;
+      if (!active() || interacting || !$('video-menu').hidden || !$('video-speed-panel').hidden || window.CVAudioEqualizer.isOpen()) return;
       if (document.querySelector('.modal-overlay.active, #main-menu.open') || !$('shortcuts-popover').hidden) return;
       if (document.querySelector('.video-transport:hover, #ghost-close:hover')) return;
       if (keyboardFocus && (controls.contains(document.activeElement) || document.activeElement === $('ghost-close'))) return;
@@ -247,6 +251,7 @@ window.CVVideo = (() => {
     previewLast = -1;
     interacting = false;
     closeMenu();
+    window.CVAudioEqualizer.setOpen(false);
     clearFlash();
     document.body.classList.remove('video-idle');
     $('video-controls').inert = false;
@@ -376,6 +381,7 @@ window.CVVideo = (() => {
     reveal();
     if (element.ended) element.currentTime = 0;
     try {
+      if (window.CVAudioEngine.isEnabled() || window.CVAudioEngine.isReady()) await window.CVAudioEngine.prepare();
       await window.CVAudioVisuals.prepare();
       if (token !== generation || !owner?.loaded) return;
       await element.play();
@@ -606,7 +612,7 @@ window.CVVideo = (() => {
       // to the body, so a press on either belongs to the select, not to a
       // dismissal of the player menu.
       const overSelect = !!event.target.closest('.cfg-select-shell, .cfg-select-menu');
-      const overPopup = !!event.target.closest('#video-menu, #video-more, #video-speed, #video-speed-panel') || overSelect;
+      const overPopup = !!event.target.closest('#video-menu, #video-more, #video-speed, #video-speed-panel, #audio-equalizer-toggle, #audio-equalizer-panel') || overSelect;
       // The shared context menu belongs to the same family: a press that
       // dismisses it is not a play/pause press either.
       const overContext = !!event.target.closest('#custom-ctx-menu, .submenu-portal');
@@ -614,7 +620,7 @@ window.CVVideo = (() => {
       else menuDismissClick = (($('video-menu') && !$('video-menu').hidden) ||
         ($('video-speed-panel') && !$('video-speed-panel').hidden) ||
         !!document.querySelector('#custom-ctx-menu.open')) && !overPopup;
-      if (!overPopup) closeMenu();
+      if (!overPopup) { closeMenu(); window.CVAudioEqualizer.setOpen(false); }
     }, true);
     $('video-play').addEventListener('click', () => void toggle());
     // A pan on the zoomed frame also ends with a click on the wrap. That

@@ -93,6 +93,7 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("return !$('youtube-url-error').hidden && window.CVWorkspace.model.tabs.length===0;"), true);
     await evaluate("$('youtube-url').value='https://youtu.be/M7lc1UVf-VE?t=12'; $('youtube-form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));");
     await loaded();
+    assert.equal(await evaluate("return $('audio-equalizer-toggle').disabled && $('audio-equalizer-panel').hidden;"),true,'The local DSP equalizer stays unavailable inside YouTube');
     await evaluate('openPropertiesForCurrent();');
     await waitFor(() => evaluate(`const modal=$('modal-properties'), image=$('props-youtube-thumbnail');
       const stage=$('props-preview-stage').getBoundingClientRect(), rect=image.getBoundingClientRect();

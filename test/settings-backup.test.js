@@ -38,6 +38,26 @@ describe('pickSettings', () => {
     assert.equal(out.extra, undefined);
   });
 
+  it('sanitizes and keeps the audio equalizer', () => {
+    const out = pickSettings({
+      audioEqualizer: {
+        enabled: true,
+        preset: 'bass_boost',
+        preamp: 99,
+        gains: [7, '6', -30, NaN, 4, 5, 6, 7, 8, 9, 10],
+        extra: 'drop'
+      }
+    });
+    assert.deepEqual(out.audioEqualizer, {
+      enabled: true,
+      preset: 'bass_boost',
+      preamp: 12,
+      gains: [7, 6, -12, 0, 4, 5, 6, 7, 8, 9]
+    });
+    assert.equal(pickSettings({ audioEqualizer: [] }).audioEqualizer, undefined);
+    assert.equal(pickSettings({ audioEqualizer: { preset: 'unknown' } }).audioEqualizer.preset, 'flat');
+  });
+
   it('rejects invalid enums and colors', () => {
     const out = pickSettings({
       language: 'fr',
@@ -72,6 +92,7 @@ describe('buildBackup / parseBackup', () => {
       showTabMediaIcons: false,
       language: 'en',
       accentColor: '#00d4ff',
+      audioEqualizer: { enabled: true, preset: 'vocal', preamp: -2, gains: [-2, -1, 0, 2, 4, 5, 3, 1, 0, -1] },
       favorites: ['C:\\pics\\one.png', 'C:\\pics\\two.jpg'],
       recentFiles: ['C:\\ignore-me.png'],
       updateNotify: { lastNotifiedAvailable: '9.9.9' }
@@ -90,6 +111,8 @@ describe('buildBackup / parseBackup', () => {
     assert.equal(parsed.settings.closeToTray, true);
     assert.equal(parsed.settings.videoAutoplay, false);
     assert.equal(parsed.settings.keepMediaPausedOnTabReturn, true);
+    assert.equal(parsed.settings.audioEqualizer.preset, 'vocal');
+    assert.deepEqual(parsed.settings.audioEqualizer.gains, [-2, -1, 0, 2, 4, 5, 3, 1, 0, -1]);
     assert.equal(parsed.favorites.length, 2);
   });
 
