@@ -61,15 +61,57 @@ describe('Prism audio visualization', () => {
 describe('Tunnel audio visualization', () => {
   it('deforms a smoothly tracked spectral wireframe with live frequency data', () => {
     const tunnel = visualizer.match(/function tunnel\(w, h, unit\) \{[\s\S]*?\n  \}/)[0];
-    for (const source of ['tunnelBands', 'tunnelPeaks', 'tunnelBass', 'tunnelEnergy', 'tunnelHighs', 'flow', 'spin']) {
+    for (const source of ['tunnelBands', 'tunnelPeaks', 'tunnelBass', 'tunnelEnergy', 'tunnelHighs', 'tunnelTravel', 'tunnelSpin']) {
       assert.ok(tunnel.includes(source), `Tunnel should react to ${source}`);
     }
     assert.match(visualizer, /tunnelBands\[i\] \+= \(bands\[i\] - tunnelBands\[i\]\) \* tunnelSmooth/);
-    assert.match(visualizer, /delta \/ \.16/);
-    assert.match(visualizer, /tunnelBass \+= \(bass - tunnelBass\) \* \(1 - Math\.exp\(-delta \/ \.22\)\)/);
-    assert.match(visualizer, /tunnelPeaks\[i\] = Math\.max\(tunnelBands\[i\], tunnelPeaks\[i\] - delta \* \.28\)/);
+    assert.match(visualizer, /delta \/ \.22/);
+    assert.match(visualizer, /tunnelBass \+= \(bass - tunnelBass\) \* \(1 - Math\.exp\(-delta \/ \.28\)\)/);
+    assert.match(visualizer, /tunnelPeaks\[i\] = Math\.max\(tunnelBands\[i\], tunnelPeaks\[i\] - delta \* \.24\)/);
+    assert.match(visualizer, /tunnelTravel \+= delta \* level \* \(\.035 \+ tunnelBass \* \.085 \+ tunnelEnergy \* \.018\);/);
+    assert.match(visualizer, /tunnelSpin \+= delta \* level \* \(\.028 \+ tunnelEnergy \* \.06 \+ tunnelHighs \* \.018\);/);
     assert.match(tunnel, /tunnelOrder\.sort/);
-    assert.match(tunnel, /tunnelSegments/);
+    assert.match(tunnel, /quadraticCurveTo/);
+    assert.match(tunnel, /nextBand/);
+    assert.doesNotMatch(tunnel, /\bflow\b|\bspin\b/);
+  });
+});
+
+describe('Oscilloscope audio visualization', () => {
+  it('filters waveform windows and gain before drawing the ribbon', () => {
+    const sample = visualizer.match(/function sample\(delta\) \{[\s\S]*?\n  \}/)[0];
+    const ribbon = visualizer.match(/function ribbon\(w, h, unit\) \{[\s\S]*?\n  \}/)[0];
+    assert.match(sample, /if \(mode === 'waveform'\)/);
+    assert.match(sample, /scopeGain \+= \(targetGain - scopeGain\)/);
+    assert.match(sample, /const sampleWindow = waveform\.length \/ wavePoints\.length/);
+    assert.match(sample, /Math\.tanh\(/);
+    assert.match(sample, /Math\.abs\(target\) > Math\.abs\(wavePoints\[i\]\) \? \.085 : \.22/);
+    assert.match(sample, /\) \* edge;/);
+    assert.doesNotMatch(sample, /edge \* level/);
+    assert.match(ribbon, /wavePoints\[i\] \* level/);
+    assert.doesNotMatch(ribbon, /wavePoints\[i\]\s*=|waveform|waveGain/);
+  });
+});
+
+describe('caption-safe visualization layout', () => {
+  it('measures the space above the track caption', () => {
+    assert.match(visualizer, /visualTop = h \* \.075/);
+    assert.match(visualizer, /captionRect\.top - rect\.top/);
+    assert.match(visualizer, /new ResizeObserver\(resize\)\.observe\(caption\)/);
+  });
+
+  it('expands Spectrum, Matrix and Terrain through that space', () => {
+    const spectrum = visualizer.match(/function spectrum\(w, h, unit\) \{[\s\S]*?\n  \}/)[0];
+    const grid = visualizer.match(/function ledGrid\(w, h, unit\) \{[\s\S]*?\n  \}/)[0];
+    const terrain = visualizer.match(/function terrain\(w, h, unit\) \{[\s\S]*?\n  \}/)[0];
+    assert.match(spectrum, /baseline = visualBottom - h \* \.025/);
+    assert.match(spectrum, /maxBar = baseline - visualTop/);
+    assert.match(grid, /bottom = visualBottom - h \* \.02/);
+    assert.match(grid, /available = bottom - visualTop/);
+    assert.match(grid, /Math\.round\(\(available \+ gap\) \/ \(cell \+ gap\)\)/);
+    assert.match(grid, /lit = Math\.pow\(value, \.6\) \* rows/);
+    assert.match(terrain, /floor = visualBottom - h \* \.008/);
+    assert.match(terrain, /area = visualBottom - visualTop/);
   });
 });
 

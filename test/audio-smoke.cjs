@@ -255,6 +255,20 @@ app.whenReady().then(async () => {
           variance:samples.reduce((total,item)=>total+item.variance,0)/samples.length
         };
       };
+      window.__visualLayout=()=>{
+        const canvas=$('audio-canvas'),stage=$('audio-stage').getBoundingClientRect();
+        const caption=document.querySelector('.audio-caption').getBoundingClientRect();
+        const startY=Math.min(canvas.height-1,Math.ceil((caption.top-stage.top)*canvas.height/stage.height+2));
+        const context=canvas.getContext('2d');
+        const data=context.getImageData(0,0,canvas.width,canvas.height).data;
+        let top=-1,maxBelow=0,litBelow=0;
+        for(let y=0;y<canvas.height;y++) for(let x=0;x<canvas.width;x++){
+          const p=(y*canvas.width+x)*4,value=(data[p]+data[p+1]+data[p+2])/3;
+          if(value>12 && top<0) top=y;
+          if(y>=startY){maxBelow=Math.max(maxBelow,value);if(value>12)litBelow++;}
+        }
+        return {top,startY,height:canvas.height,maxBelow,litBelow};
+      };
     `);
     await evaluate('await window.CVVideo.toggle();');
     await waitFor(() => evaluate('return window.CVVideo.element.currentTime > .15 && window.CVVideo.element.webkitAudioDecodedByteCount > 0;'), 'WAV audio decoded');
@@ -283,6 +297,14 @@ app.whenReady().then(async () => {
       fs.writeFileSync(path.join(dataDir, mode + '.png'), (await win.webContents.capturePage()).toPNG());
       assert.equal(await evaluate("return $('audio-canvas').width<=1440 && $('audio-canvas').height<=810;"), true);
       renderStats[mode] = await evaluate('return window.__paintTimes.reduce((a,b)=>a+b,0)/Math.max(1,window.__paintTimes.length);');
+      if (['spectrum', 'terrain', 'grid'].includes(mode)) {
+        const layout = await evaluate('return window.__visualLayout();');
+        console.log(`VISUAL_LAYOUT ${mode} ${JSON.stringify(layout)}`);
+        const topLimit = mode === 'spectrum' ? .18 : mode === 'terrain' ? .17 : .16;
+        assert.ok(layout.top >= 0 && layout.top < layout.height * topLimit,
+          mode + ' uses the upper part of the caption-safe area: ' + JSON.stringify(layout));
+        assert.equal(layout.litBelow, 0, mode + ' does not paint over the track caption: ' + JSON.stringify(layout));
+      }
       const audible = await evaluate('return window.__visualEnergy();');
       await evaluate('window.__silenceVisualizer=true;');
       await delay(mode === 'envelope' ? 2900 : 1700);
@@ -293,8 +315,8 @@ app.whenReady().then(async () => {
       console.log(`AUDIO_REACTIVITY ${mode} ${JSON.stringify(reactivity[mode])}`);
       assert.ok(audible.mean > silent.mean * 1.05 && audible.lit > silent.lit * 1.12 && audible.variance > silent.variance * 1.2,
         mode + ' changes materially when the analyser is silenced: ' + JSON.stringify({ audible, silent }));
-      if (['prism', 'tunnel', 'terrain', 'aurora', 'helix'].includes(mode)) {
-        const label = { prism: 'Prism', tunnel: 'Tunnel', terrain: 'Terrain', aurora: 'Aurora', helix: 'Helix' }[mode];
+      if (['spectrum', 'prism', 'tunnel', 'terrain', 'grid', 'aurora', 'helix'].includes(mode)) {
+        const label = { spectrum: 'Spectrum', prism: 'Prism', tunnel: 'Tunnel', terrain: 'Terrain', grid: 'Matrix', aurora: 'Aurora', helix: 'Helix' }[mode];
         for (const theme of ['cyberviewer', 'gray', 'light']) {
           await evaluate(`applyAppearanceTheme('${theme}','#00d4ff');`);
           await delay(100);
@@ -457,7 +479,9 @@ app.whenReady().then(async () => {
     await evaluate(`const t=$('canvas-layer'); t.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true})); t.dispatchEvent(new MouseEvent('click',{bubbles:true}));`);
     await waitFor(() => evaluate('return window.CVVideo.element.paused;'), 'plain stage click pauses');
     // Resume from a rewound position so the release measurement below starts
-    // with the visualizer actually running.
+    // with the visualizer actually running. Oscilloscope is explicit because its
+    // smoothed trace must lose amplitude during release, not only move its axis.
+    await evaluate("$('audio-visualizer').value='waveform'; $('audio-visualizer').dispatchEvent(new Event('change'));");
     await evaluate(`const e=window.CVVideo.element; e.currentTime=0.2;
       await new Promise(r => { if(!e.seeking) return r(); e.addEventListener('seeked', r, {once:true}); });
       await window.CVVideo.toggle();`);
@@ -465,6 +489,7 @@ app.whenReady().then(async () => {
     // Give the visualizer time to reach full level: the pause-release measurement
     // compares frames, and a just-started visual has nothing to release yet.
     await delay(450);
+    const waveformPlaying = await evaluate('return window.__visualEnergy();');
     // Sample the release frame by frame inside the page. Counting painted
     // frames instead of wall-clock time keeps the ramp check honest on a loaded
     // machine: a slow machine paints fewer frames, it does not skip the ramp.
@@ -510,6 +535,9 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate("return $('audio-canvas').toDataURL();"), stopped, 'Paused canvas is static');
     await evaluate('window.CVAudioVisuals.refresh();');
     assert.equal(await evaluate("return $('audio-canvas').toDataURL();"), stopped, 'Idle repaint leaves no accumulating trails');
+    const waveformPaused = await evaluate('return window.__visualEnergy();');
+    assert.ok(waveformPaused.mean < waveformPlaying.mean * .85,
+      'Oscilloscope attenuates its smoothed trace while paused: ' + JSON.stringify({ waveformPlaying, waveformPaused }));
     assert.equal(await evaluate('return window.__analysisReads;'), releaseReads, 'Release reuses frozen samples without extra FFT work');
     // Natural end uses the same short release, then leaves no animation loop.
     await evaluate('window.CVVideo.element.loop=false; window.CVVideo.element.currentTime=window.CVVideo.element.duration-.18;');

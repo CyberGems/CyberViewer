@@ -5,6 +5,7 @@
 // links are reused; the 30 fps loop runs only during playback or a short release.
 window.CVAudioVisuals = (() => {
   const stage = document.getElementById('audio-stage');
+  const caption = stage.querySelector('.audio-caption');
   const canvas = document.getElementById('audio-canvas');
   const ctx = canvas.getContext('2d', { alpha: false });
   const select = document.getElementById('audio-visualizer');
@@ -47,8 +48,9 @@ window.CVAudioVisuals = (() => {
   let frequencies = null, waveform = null;
   let frame = 0, lastPaint = 0, elapsed = 0, level = 0;
   let energy = 0, bass = 0, highs = 0, waveGain = 1, spin = 0, flow = 0;
-  let tunnelBass = 0, tunnelEnergy = 0, tunnelHighs = 0;
-  let envelopeClock = 0;
+  let tunnelBass = 0, tunnelEnergy = 0, tunnelHighs = 0, tunnelTravel = 0, tunnelSpin = 0;
+  let scopeGain = 1, envelopeClock = 0;
+  let visualTop = 0, visualBottom = 0;
   // Style-name flash shown after stepping with the arrows or the keyboard. It
   // is a DOM layer over the canvas, so painting stays free of UI state.
   const flash = document.getElementById('audio-visual-flash');
@@ -130,7 +132,7 @@ window.CVAudioVisuals = (() => {
     backdrop.addColorStop(0, '#070707');
     backdrop.addColorStop(.55, '#050505');
     backdrop.addColorStop(1, '#020202');
-    barGradient = ctx.createLinearGradient(0, h * .19, 0, h * .61);
+    barGradient = ctx.createLinearGradient(0, visualTop, 0, visualBottom);
     barGradient.addColorStop(0, '#e9faff'); barGradient.addColorStop(.25, color(hue + 60));
     barGradient.addColorStop(.65, color(hue)); barGradient.addColorStop(1, color(hue, .15));
     ribbonGradient = ctx.createLinearGradient(w * inset, 0, w * (1 - inset), 0);
@@ -165,6 +167,10 @@ window.CVAudioVisuals = (() => {
     const scale = Math.min(window.devicePixelRatio || 1, 1.25, 1440 / rect.width, 810 / rect.height);
     const w = Math.max(1, Math.round(rect.width * scale)), h = Math.max(1, Math.round(rect.height * scale));
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    const captionRect = caption.getBoundingClientRect();
+    visualTop = h * .075;
+    visualBottom = Math.max(visualTop + h * .24,
+      Math.min(h * .74, (captionRect.top - rect.top) * h / rect.height - h * .018));
     rebuildPalette();
     if (!frame) paint();
   }
@@ -173,10 +179,31 @@ window.CVAudioVisuals = (() => {
     analyser.getByteFrequencyData(frequencies);
     if (mode === 'waveform' || mode === 'helix' || mode === 'envelope' || mode === 'prism') {
       analyser.getByteTimeDomainData(waveform);
-      if (mode !== 'helix') {
+      if (mode !== 'helix' && mode !== 'waveform') {
         let amplitude = .015;
         for (let i = 0; i < waveform.length; i += 4) amplitude = Math.max(amplitude, Math.abs(waveform[i] - 128) / 128);
         waveGain += (Math.min(8, .35 / amplitude) - waveGain) * (1 - Math.exp(-delta / .15));
+      }
+      if (mode === 'waveform') {
+        let sum = 0;
+        for (let i = 0; i < waveform.length; i++) {
+          const value = (waveform[i] - 128) / 128;
+          sum += value * value;
+        }
+        const rms = Math.sqrt(sum / waveform.length);
+        const targetGain = Math.min(3.2, .18 / Math.max(.012, rms));
+        scopeGain += (targetGain - scopeGain) * (1 - Math.exp(-delta / .18));
+        const sampleWindow = waveform.length / wavePoints.length;
+        for (let i = 0; i < wavePoints.length; i++) {
+          const start = Math.floor(i * sampleWindow), end = Math.min(waveform.length, Math.ceil((i + 1) * sampleWindow));
+          let total = 0;
+          for (let j = start; j < end; j++) total += (waveform[j] - 128) / 128;
+          const x = i / (wavePoints.length - 1), edge = Math.sin(x * Math.PI);
+          const target = Math.tanh(total / Math.max(1, end - start) * scopeGain * 1.3
+            + Math.sin(x * tau * 2 + elapsed * .35) * energy * .12) * edge;
+          const smooth = 1 - Math.exp(-delta / (Math.abs(target) > Math.abs(wavePoints[i]) ? .085 : .22));
+          wavePoints[i] += (target - wavePoints[i]) * smooth;
+        }
       }
     }
     if (mode === 'envelope') {
@@ -226,16 +253,18 @@ window.CVAudioVisuals = (() => {
     energy += (sum / bands.length - energy) * (1 - Math.exp(-delta / .12));
     bass += (low / 25 - bass) * (1 - Math.exp(-delta / .1));
     highs += (top / (bands.length - 44) - highs) * (1 - Math.exp(-delta / .1));
-    // Tunnel follows a slower copy of the spectrum so beats bend the mesh
-    // instead of snapping individual rings to a new shape.
-    const tunnelSmooth = 1 - Math.exp(-delta / .16);
+    // Tunnel integrates its own slow motion instead of multiplying phases whose
+    // speeds can change abruptly from one audio frame to the next.
+    const tunnelSmooth = 1 - Math.exp(-delta / .22);
     for (let i = 0; i < bands.length; i++) {
       tunnelBands[i] += (bands[i] - tunnelBands[i]) * tunnelSmooth;
-      tunnelPeaks[i] = Math.max(tunnelBands[i], tunnelPeaks[i] - delta * .28);
+      tunnelPeaks[i] = Math.max(tunnelBands[i], tunnelPeaks[i] - delta * .24);
     }
-    tunnelBass += (bass - tunnelBass) * (1 - Math.exp(-delta / .22));
-    tunnelEnergy += (energy - tunnelEnergy) * (1 - Math.exp(-delta / .2));
-    tunnelHighs += (highs - tunnelHighs) * (1 - Math.exp(-delta / .2));
+    tunnelBass += (bass - tunnelBass) * (1 - Math.exp(-delta / .28));
+    tunnelEnergy += (energy - tunnelEnergy) * (1 - Math.exp(-delta / .24));
+    tunnelHighs += (highs - tunnelHighs) * (1 - Math.exp(-delta / .24));
+    tunnelTravel += delta * level * (.035 + tunnelBass * .085 + tunnelEnergy * .018);
+    tunnelSpin += delta * level * (.028 + tunnelEnergy * .06 + tunnelHighs * .018);
   }
 
   function line(points, yFor, width, stroke) {
@@ -248,25 +277,26 @@ window.CVAudioVisuals = (() => {
   }
 
   function spectrum(w, h, unit) {
-    const span = w * (1 - inset * 2), step = span / bands.length, baseline = h * .6;
+    const span = w * (1 - inset * 2), step = span / bands.length;
+    const baseline = visualBottom - h * .025, maxBar = baseline - visualTop - unit * .012;
     // A gentle sway keeps the whole array breathing with the track's energy.
     const sway = Math.sin(elapsed * .7) * unit * .012 * (.25 + energy) * level;
     ctx.fillStyle = palette.soft; ctx.fillRect(w * inset, baseline + 1, span, 1);
     ctx.fillStyle = color(palette.hue, .08 + bass * level * .4);
     ctx.fillRect(w * inset, baseline + 3, span, unit * .005);
     for (let i = 0; i < bands.length; i++) {
-      const value = bands[i] * level, bar = unit * .006 + Math.pow(value, 1.3) * h * .38;
+      const value = bands[i] * level, bar = unit * .005 + Math.pow(value, .65) * maxBar;
       const x = (w - span) / 2 + i * step + sway, width = Math.max(2, step * .64);
       ctx.fillStyle = barGradient; ctx.fillRect(x, baseline - bar, width, bar);
       // A bounded reflection and two crisp facets give depth without blurs.
-      ctx.globalAlpha = .15; ctx.fillRect(x, baseline + 5, width, bar * .24); ctx.globalAlpha = 1;
+      ctx.globalAlpha = .15; ctx.fillRect(x, baseline + 5, width, Math.min(bar * .12, h * .02)); ctx.globalAlpha = 1;
       ctx.fillStyle = color(palette.hue, .2 + value * .45, 92);
       ctx.fillRect(x, baseline - bar, Math.max(1, width * .12), bar);
       // Caps flare up while a band is still touching its recent peak.
       const hot = 1 - Math.min(1, (peaks[i] - bands[i]) * 4);
       ctx.fillStyle = palette.white;
       ctx.globalAlpha = .2 + level * .5 + hot * .3;
-      ctx.fillRect(x, baseline - unit * .006 - peaks[i] * level * h * .38 - 5, width, 2);
+      ctx.fillRect(x, baseline - unit * .006 - peaks[i] * level * maxBar - 4, width, 2);
       ctx.globalAlpha = 1;
       // Dark crosscuts make these feel like stacked luminous cells.
       ctx.fillStyle = '#020202';
@@ -276,29 +306,23 @@ window.CVAudioVisuals = (() => {
   }
 
   function ribbon(w, h, unit) {
-    // Bass lifts the whole ribbon; the envelope math stays untouched.
-    const cy = h * .41 - (bass - .25) * unit * .08 * level, n = wavePoints.length;
-    for (let i = 0; i < n; i++) {
-      const x = i / (n - 1), edge = Math.sin(x * Math.PI);
-      const actual = waveform ? (waveform[Math.floor(i / n * (waveform.length - 1))] - 128) / 128 : 0;
-      wavePoints[i] = (actual * waveGain * 1.4 + Math.sin(x * tau * 2 + elapsed * 1.4) * energy * .7) * edge * level;
-    }
+    const cy = h * .41 - (bass - .25) * unit * .055 * level, n = wavePoints.length;
     ctx.fillStyle = ribbonGradient; ctx.beginPath();
     for (let i = 0; i < n; i++) {
       const x = w * (inset + (1 - inset * 2) * i / (n - 1));
-      const y = cy + wavePoints[i] * h * .33;
+      const y = cy + wavePoints[i] * level * h * .33;
       if (!i) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
-    for (let i = n - 1; i >= 0; i--) ctx.lineTo(w * (inset + (1 - inset * 2) * i / (n - 1)), cy - wavePoints[i] * h * .2);
+    for (let i = n - 1; i >= 0; i--) ctx.lineTo(w * (inset + (1 - inset * 2) * i / (n - 1)), cy - wavePoints[i] * level * h * .2);
     ctx.closePath(); ctx.fill();
-    const top = i => cy + wavePoints[i] * h * .33;
+    const top = i => cy + wavePoints[i] * level * h * .33;
     line(n, top, unit * .014, color(palette.hue, .08));
     line(n, top, Math.max(1.5, unit * .003 * (1 + bass * .9)), palette.ink);
-    line(n, i => cy - wavePoints[i] * h * .2, Math.max(1, unit * .002), palette.secondary);
-    line(n, i => cy + wavePoints[i] * h * .1, 1, color(palette.hue + 35, .3));
+    line(n, i => cy - wavePoints[i] * level * h * .2, Math.max(1, unit * .002), palette.secondary);
+    line(n, i => cy + wavePoints[i] * level * h * .1, 1, color(palette.hue + 35, .3));
     // Echo ghosts trail the crests so the ribbon reads as moving energy.
-    line(n, i => cy + wavePoints[i] * h * .33 * .62 + unit * .012, 1, color(palette.hue + 20, .2 + level * .16));
-    line(n, i => cy - wavePoints[i] * h * .2 * .5 - unit * .012, 1, color(palette.hue + 65, .14 + level * .12));
+    line(n, i => cy + wavePoints[i] * level * h * .33 * .62 + unit * .012, 1, color(palette.hue + 20, .2 + level * .16));
+    line(n, i => cy - wavePoints[i] * level * h * .2 * .5 - unit * .012, 1, color(palette.hue + 65, .14 + level * .12));
     for (const x of [w * inset, w * (1 - inset)]) {
       ctx.fillStyle = palette.white; ctx.beginPath(); ctx.arc(x, cy, unit * .003, 0, tau); ctx.fill();
     }
@@ -470,9 +494,9 @@ window.CVAudioVisuals = (() => {
   // A spectral wireframe tunnel: every ring is deformed by its own frequency
   // band, while bass drives the forward rush and highs light the outer sparks.
   function tunnel(w, h, unit) {
-    const cx = w * .5 + Math.sin(elapsed * .16) * unit * .007 * tunnelEnergy * level;
-    const cy = h * .4 + Math.cos(elapsed * .13) * unit * .005 * tunnelEnergy * level;
-    const travel = flow * (.12 + tunnelBass * .14) + spin * .012;
+    const cx = w * .5 + Math.sin(elapsed * .16) * unit * .004 * tunnelEnergy * level;
+    const cy = h * .4 + Math.cos(elapsed * .13) * unit * .004 * tunnelEnergy * level;
+    const travel = tunnelTravel;
     for (let i = 0; i < tunnelRings; i++) {
       const progress = (i / tunnelRings + travel) % 1;
       tunnelProgress[i] = progress;
@@ -483,12 +507,14 @@ window.CVAudioVisuals = (() => {
       for (let s = 0; s < tunnelSegments; s++) {
         const mirrored = s <= tunnelSegments / 2 ? s : tunnelSegments - s;
         const spectralPhase = (progress * .32 + mirrored / tunnelSegments * .55) % 1;
-        const band = Math.floor(spectralPhase * 63);
-        const value = tunnelBands[band] * level;
-        const transient = Math.max(0, tunnelPeaks[band] - tunnelBands[band]) * level;
-        const angle = s / tunnelSegments * tau + spin * (.3 + progress * .45);
-        const flutter = Math.sin(angle * 3 + progress * 9 - spin * 1.2) * tunnelEnergy * level * .018;
-        const deformation = (Math.pow(value, .9) * .11 + transient * .045 + flutter) * (.35 + progress * .65);
+        const spectralIndex = spectralPhase * 63, band = Math.floor(spectralIndex), frac = spectralIndex - band;
+        const nextBand = (band + 1) % tunnelBands.length;
+        const value = (tunnelBands[band] * (1 - frac) + tunnelBands[nextBand] * frac) * level;
+        const transient = Math.max(0, (tunnelPeaks[band] * (1 - frac) + tunnelPeaks[nextBand] * frac)
+          - (tunnelBands[band] * (1 - frac) + tunnelBands[nextBand] * frac)) * level;
+        const angle = s / tunnelSegments * tau + tunnelSpin * (.22 + progress * .32);
+        const flutter = Math.sin(angle * 3 + progress * 9 - tunnelSpin * 1.2) * tunnelEnergy * level * .012;
+        const deformation = (Math.pow(value, .9) * .085 + transient * .028 + flutter) * (.35 + progress * .65);
         const radius = baseRadius * (1 + deformation);
         const offset = i * tunnelSegments + s;
         tunnelX[offset] = cx + Math.cos(angle) * radius;
@@ -499,23 +525,26 @@ window.CVAudioVisuals = (() => {
       const fade = Math.sin(progress * Math.PI);
       const value = tunnelRingValues[i];
       ctx.strokeStyle = i % 3 === 1 ? palette.secondary : i % 3 === 2 ? palette.white : palette.ink;
-      ctx.globalAlpha = fade * (.035 + value * .68 + peak * .16) * (.25 + level * .75);
-      ctx.lineWidth = Math.max(1, unit * (.001 + progress * .0028 + value * .0025));
+      ctx.globalAlpha = fade * (.025 + value * .58 + peak * .12) * (.3 + level * .7);
+      ctx.lineWidth = Math.max(1, unit * (.0009 + progress * .0022 + value * .0018));
+      const offset = i * tunnelSegments, last = offset + tunnelSegments - 1;
       ctx.beginPath();
+      ctx.moveTo((tunnelX[offset] + tunnelX[last]) / 2, (tunnelY[offset] + tunnelY[last]) / 2);
       for (let s = 0; s < tunnelSegments; s++) {
-        const offset = i * tunnelSegments + s;
-        if (!s) ctx.moveTo(tunnelX[offset], tunnelY[offset]); else ctx.lineTo(tunnelX[offset], tunnelY[offset]);
+        const current = offset + s, next = offset + (s + 1) % tunnelSegments;
+        ctx.quadraticCurveTo(tunnelX[current], tunnelY[current],
+          (tunnelX[current] + tunnelX[next]) / 2, (tunnelY[current] + tunnelY[next]) / 2);
       }
       ctx.closePath(); ctx.stroke();
     }
 
     tunnelOrder.sort((a, b) => tunnelProgress[a] - tunnelProgress[b]);
-    for (let s = 0; s < tunnelSegments; s += 4) {
+    for (let s = 0; s < tunnelSegments; s += 6) {
       const band = Math.floor((s % (tunnelSegments / 2)) / (tunnelSegments / 2) * 63);
       const value = tunnelBands[band] * level;
       ctx.strokeStyle = color(palette.hue + band / 63 * 80);
-      ctx.globalAlpha = .01 + value * .2 * level;
-      ctx.lineWidth = Math.max(1, unit * (.0008 + value * .001));
+      ctx.globalAlpha = .008 + value * .14 * level;
+      ctx.lineWidth = Math.max(1, unit * (.0007 + value * .0008));
       ctx.beginPath();
       for (let r = 0; r < tunnelRings; r++) {
         const offset = tunnelOrder[r] * tunnelSegments + s;
@@ -527,29 +556,30 @@ window.CVAudioVisuals = (() => {
     const outer = tunnelOrder[tunnelRings - 1];
     if (tunnelHighs * level > .04) {
       ctx.fillStyle = palette.white;
-      for (let s = 0; s < tunnelSegments; s += 4) {
+      for (let s = 0; s < tunnelSegments; s += 6) {
         const band = Math.floor((s % (tunnelSegments / 2)) / (tunnelSegments / 2) * 63);
         const value = tunnelBands[band] * level;
-        if (value < .24) continue;
+        if (value < .28) continue;
         const offset = outer * tunnelSegments + s;
-        ctx.globalAlpha = (.1 + tunnelHighs * .48) * value * level;
-        ctx.beginPath(); ctx.arc(tunnelX[offset], tunnelY[offset], unit * (.0012 + value * .0018), 0, tau); ctx.fill();
+        ctx.globalAlpha = (.08 + tunnelHighs * .4) * value * level;
+        ctx.beginPath(); ctx.arc(tunnelX[offset], tunnelY[offset], unit * (.001 + value * .0015), 0, tau); ctx.fill();
       }
     }
     ctx.fillStyle = palette.ink;
-    ctx.globalAlpha = .08 + tunnelBass * level * .46;
-    ctx.beginPath(); ctx.arc(cx, cy, unit * (.009 + tunnelBass * level * .03 + tunnelEnergy * level * .008), 0, tau); ctx.fill();
+    ctx.globalAlpha = .06 + tunnelBass * level * .4;
+    ctx.beginPath(); ctx.arc(cx, cy, unit * (.008 + tunnelBass * level * .025 + tunnelEnergy * level * .006), 0, tau); ctx.fill();
     ctx.globalAlpha = 1;
   }
 
   // Layered ridges scroll at parallax speeds with the spectrum as skyline.
   function terrain(w, h, unit) {
-    const rows = 7, cols = 72, left = w * inset, span = w * (1 - inset * 2), floor = h * .68;
+    const rows = 7, cols = 72, left = w * inset, span = w * (1 - inset * 2);
+    const floor = visualBottom - h * .008, area = visualBottom - visualTop;
     for (let r = 0; r < rows; r++) {
       const depth = r / (rows - 1);
-      const cy = h * (.32 + depth * .3);
+      const cy = visualTop + area * (.02 + depth * .82);
       const t0 = flow * (.1 + depth * .45) + r * .41;
-      const amp = h * (.025 + depth * .08) * (.12 + energy * 1.8) * level;
+      const amp = area * (.035 + depth * .09) * (.12 + energy * 1.8) * level;
       ctx.beginPath(); ctx.moveTo(left, floor);
       for (let c = 0; c < cols; c++) {
         const x = left + span * c / (cols - 1);
@@ -610,22 +640,24 @@ window.CVAudioVisuals = (() => {
 
   // An LED wall: columns climb per frequency, caps fall, top cells blink.
   function ledGrid(w, h, unit) {
-    const rows = 8, gap = unit * .012;
-    let cell = Math.min(unit * .34 / rows - gap, unit * .045);
-    // Square cells never stretch: wider windows get more columns instead of
-    // wider cells. The cap is the spectrum resolution (64 bands), so a wide
-    // window fills its width with real data rather than leaving side margins.
+    const gap = unit * .01, bottom = visualBottom - h * .02, available = bottom - visualTop;
+    let cell = Math.min(unit * .045, available / 8 - gap);
+    // Square cells never stretch: wider windows get more columns and taller
+    // windows get more rows inside the caption-safe composition.
     let cols = Math.round((w * (1 - inset * 2) + gap) / (cell + gap));
     cols = Math.max(16, Math.min(64, cols));
     cell = Math.min(cell, (w * (1 - inset * 2) + gap) / cols - gap);
+    const rows = Math.max(8, Math.min(16, Math.round((available + gap) / (cell + gap))));
+    cell = Math.min(cell, (available + gap) / rows - gap);
+    cols = Math.max(16, Math.min(64, Math.round((w * (1 - inset * 2) + gap) / (cell + gap))));
+    cell = Math.min(cell, (w * (1 - inset * 2) + gap) / cols - gap);
     const left = (w - (cols * (cell + gap) - gap)) / 2;
-    const bottom = h * .56;
     ctx.fillStyle = palette.soft;
     ctx.fillRect(left - gap, bottom + gap * .5, cols * (cell + gap), Math.max(1, unit * .002));
     for (let c = 0; c < cols; c++) {
       const index = Math.floor(c / cols * 63), value = bands[index] * level;
-      const peak = Math.min(rows, Math.max(.5, peaks[index] * level * rows + .5));
-      const x = left + c * (cell + gap), lit = value * rows;
+      const peak = Math.min(rows, Math.max(.5, Math.pow(peaks[index] * level, .6) * rows + .5));
+      const x = left + c * (cell + gap), lit = Math.pow(value, .6) * rows;
       ctx.fillStyle = barGradient;
       for (let r = 0; r < rows; r++) {
         let alpha = Math.min(1, Math.max(0, lit - r)) * (.25 + r / rows * .65);
@@ -832,11 +864,11 @@ window.CVAudioVisuals = (() => {
 
   function attach(next) {
     stopFrames(); level = 0; elapsed = 0; energy = 0; bass = 0; highs = 0;
-    waveGain = 1; spin = 0; flow = 0; envelopeClock = 0;
-    tunnelBass = 0; tunnelEnergy = 0; tunnelHighs = 0;
+    waveGain = 1; scopeGain = 1; spin = 0; flow = 0; envelopeClock = 0;
+    tunnelBass = 0; tunnelEnergy = 0; tunnelHighs = 0; tunnelTravel = 0; tunnelSpin = 0;
     clearTimeout(flashTimer); flashTimer = 0; flash?.classList.remove('is-visible');
     bands.fill(0); peaks.fill(0); tunnelBands.fill(0); tunnelPeaks.fill(0); waveform?.fill(128);
-    slices.fill(0); slicePeaks.fill(0);
+    wavePoints.fill(0); slices.fill(0); slicePeaks.fill(0);
     image = next && window.CVFormats.isAudio(next) ? next : null;
     stage.hidden = !image;
     document.getElementById('audio-visualizer-row').hidden = !image;
@@ -948,6 +980,7 @@ window.CVAudioVisuals = (() => {
     document.addEventListener('visibilitychange', () => { resize(); refresh(); });
     reducedMotion.addEventListener('change', () => { void updateMode(); });
     new ResizeObserver(resize).observe(stage);
+    new ResizeObserver(resize).observe(caption);
     new MutationObserver(resize).observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'data-theme'] });
   }
   return { initialize, attach, prepare, refresh, localize, cycle };
