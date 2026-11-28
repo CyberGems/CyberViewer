@@ -22,10 +22,10 @@
   "dependencies": {
     "builder-util-runtime": "9.7.0",
     "electron-updater": "^6.8.11",
-    "music-metadata": "^12.4.0"
+    "music-metadata": "^12.8.3"
   },
   "devDependencies": {
-    "electron": "^45.3.0",
+    "electron": "^45.5.0",
     "electron-builder": "^24.0.0",
     "eslint": "^9.0.0"
   },
