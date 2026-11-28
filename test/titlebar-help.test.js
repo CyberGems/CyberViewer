@@ -128,6 +128,7 @@ describe('title bar Help menu', () => {
     // Key combinations present
     const expectedKeys = [
       '<kbd>B</kbd>', '<kbd>A</kbd>', '<kbd>S</kbd>', '<kbd>Ctrl</kbd><kbd>O</kbd>',
+      '<kbd>Alt</kbd><kbd>O</kbd>',
       '<kbd>F</kbd>', '<kbd>Q</kbd><kbd>E</kbd>', '<kbd>H</kbd>',
       '<kbd>C</kbd>', '<kbd>R</kbd>', '<kbd>J</kbd>', '<kbd>Ctrl</kbd><kbd>C</kbd>',
       '<kbd>Ctrl</kbd><kbd>V</kbd>', '<kbd>Del</kbd>', '<kbd>Esc</kbd>'
@@ -140,7 +141,7 @@ describe('title bar Help menu', () => {
     const i18nKeys = [
       'shortcuts_sec_view', 'shortcuts_sec_edit', 'shortcuts_1_1', 'shortcuts_slideshow',
       'shortcuts_rotate', 'shortcuts_flip', 'shortcuts_adjust', 'shortcuts_copy',
-      'shortcuts_paste', 'shortcuts_favorite', 'shortcuts_delete', 'shortcuts_close',
+      'shortcuts_paste', 'shortcuts_favorite', 'shortcuts_delete', 'shortcuts_close', 'menu_open_folder',
       'shortcuts_props', 'shortcuts_about', 'shortcuts_help', 'shortcuts_config',
       'shortcuts_menu', 'shortcuts_min', 'shortcuts_max', 'shortcuts_close_window',
       'titlebar_about'
@@ -151,6 +152,13 @@ describe('title bar Help menu', () => {
         assert.ok(ui[lang][key].trim().length > 0);
       }
     }
+  });
+
+  it('announces the folder shortcut that js/app.js handles', () => {
+    assert.match(html, /data-action="open-folder"[\s\S]*?menu-shortcut">Alt\+O<\/span>/);
+    assert.doesNotMatch(html, /Ctrl\+&#8679;F/);
+    assert.match(html, /<kbd>Alt<\/kbd><kbd>O<\/kbd>[\s\S]*?data-i18n="menu_open_folder"/);
+    assert.match(appJs, /if \(e\.altKey && !isCtrl && !e\.shiftKey && e\.key\.toLowerCase\(\) === 'o'\)/);
   });
 
   it('uses CyberViewer destinations and the existing external-link bridge', () => {

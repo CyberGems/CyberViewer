@@ -69,13 +69,23 @@ app.whenReady().then(async () => {
       await evaluate('return window.electronAPI.openFile();');
       assert.equal(dialogCalls[1].defaultPath, dataDir, 'the next file dialog starts in the last directory');
 
+      // Alt+O must reach the folder picker, not just the context menu.
+      const altKeyCalls = dialogCalls.length;
+      dialogResult = { canceled: true, filePaths: [] };
+      assert.equal(await evaluate("return document.dispatchEvent(new KeyboardEvent('keydown', { key: 'o', altKey: true, bubbles: true, cancelable: true }));"),
+        false, 'Alt+O consumes the key');
+      await waitFor(() => dialogCalls.length > altKeyCalls, 'Alt+O folder dialog');
+      assert.deepEqual(dialogCalls[altKeyCalls].properties, ['openDirectory'], 'Alt+O opens the folder picker');
+      assert.equal(dialogCalls[altKeyCalls].defaultPath, dataDir, 'Alt+O shares the remembered directory');
+
       const dialogFolder = path.join(dataDir, 'dialog-folder');
       fs.mkdirSync(dialogFolder);
       fs.copyFileSync(files[0], path.join(dialogFolder, 'folder-image.png'));
       dialogResult = { canceled: false, filePaths: [dialogFolder] };
+      const folderCall = dialogCalls.length;
       const folderResult = await evaluate('return window.electronAPI.openFolder();');
       assert.equal(folderResult.ok, true, 'the folder dialog opens the selected directory');
-      assert.equal(dialogCalls[2].defaultPath, dataDir, 'the folder dialog shares the remembered directory');
+      assert.equal(dialogCalls[folderCall].defaultPath, dataDir, 'the folder dialog shares the remembered directory');
       assert.equal(JSON.parse(fs.readFileSync(path.join(dataDir, 'settings.json'), 'utf8')).app.lastOpenDir,
         dialogFolder, 'a selected folder becomes the remembered directory');
 
@@ -87,7 +97,7 @@ app.whenReady().then(async () => {
       fs.renameSync(dialogFolder, dialogFolder + '-moved');
       dialogResult = { canceled: false, filePaths: [files[0]] };
       await evaluate('return window.electronAPI.openFile();');
-      assert.equal(dialogCalls[4].defaultPath, undefined, 'a missing remembered directory falls back to the system default');
+      assert.equal(dialogCalls[dialogCalls.length - 1].defaultPath, undefined, 'a missing remembered directory falls back to the system default');
     } finally {
       dialog.showOpenDialog = originalOpenDialog;
     }
