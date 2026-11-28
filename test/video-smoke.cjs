@@ -455,6 +455,5 @@ app.whenReady().then(async () => {
   if (!win.isDestroyed()) {
     await new Promise(resolve => { win.once('closed', resolve); win.close(); });
   }
-  app.quit();
 }).catch(error=>{console.error(error);app.exit(1)});
 setTimeout(()=>{console.error('Video smoke timeout');app.exit(2)},80000);
