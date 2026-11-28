@@ -1,6 +1,6 @@
 
 // ── Media / format helpers (from js/media-helpers.js) ──
-/* exported clearViewer, mergeNeighbors, ttBind, cropSelectionSnapshot */
+/* exported clearViewer, mergeNeighbors, ttBind, cropSelectionSnapshot, setCyberTooltipRows */
 const CVMedia = (typeof window !== 'undefined' && window.CVMedia) ? window.CVMedia : {};
 const mediaUrl = CVMedia.mediaUrl || function () { return ''; };
 const canvasExport = CVMedia.canvasExport || function (c, p) { return { buffer: '', filePath: p }; };
@@ -33,10 +33,32 @@ const $ = id => document.getElementById(id);
 function setCyberTooltip(el, text) {
   if (typeof el === 'string') el = $(el);
   if (!el) return;
+  delete el.__cyberTooltipRows;
   el.setAttribute('data-tooltip', text);
   el.removeAttribute('title');
   el.classList.add('cyber-tooltip');
   applyHudHotkeyBadge(el);
+}
+
+function setCyberTooltipRows(el, rows) {
+  if (typeof el === 'string') el = $(el);
+  if (!el) return;
+  const prepared = (Array.isArray(rows) ? rows : [])
+    .filter(row => row && String(row.text ?? '').trim())
+    .map(row => ({ icon: row.icon || '', text: String(row.text ?? '') }));
+  if (!prepared.length) {
+    delete el.__cyberTooltipRows;
+    el.removeAttribute('data-tooltip');
+    el.removeAttribute('title');
+    el.classList.remove('cyber-tooltip', 'tt-portaled');
+    if (ttAnchor === el) ttHide();
+    return;
+  }
+  el.__cyberTooltipRows = prepared;
+  el.setAttribute('data-tooltip', prepared.map(row => row.text).join('\n'));
+  el.removeAttribute('title');
+  el.classList.add('cyber-tooltip', 'tt-portaled');
+  if (ttAnchor === el) ttShow(el);
 }
 
 /**
@@ -95,7 +117,6 @@ let restorePointerPending = false;
 const TT_VIEWPORT_MARGIN = 8;
 const TT_GAP = 8;
 let ttCard = null;
-let ttLabelEl = null;
 let ttAnchor = null;
 let ttShowTimer = null;
 
@@ -168,8 +189,51 @@ function ttPositionCard() {
 /** Each whitespace- or slash-separated token in data-tooltip-kbd gets its own
  *  kbd badge ("← ↑ Backspace" renders three chips); combos like "Ctrl+Shift+O"
  *  contain no spaces, so they stay a single chip. */
+function ttRenderRows(rows) {
+  const list = document.createElement('div');
+  list.className = 'tt-rows';
+  for (const row of rows) {
+    const line = document.createElement('div');
+    line.className = 'tt-row';
+    line.dataset.tooltipIcon = row.icon;
+    const icon = document.createElement('span');
+    icon.className = 'tt-row-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    if (row.icon === 'sidebar-dot') {
+      const dot = document.createElement('span');
+      dot.className = 'tt-row-dot';
+      icon.append(dot);
+    } else {
+      const glyph = iconSvg(row.icon);
+      if (glyph) icon.append(glyph);
+      else icon.hidden = true;
+    }
+    const label = document.createElement('span');
+    label.className = 'tt-label';
+    label.textContent = row.text;
+    line.append(icon, label);
+    list.append(line);
+  }
+  return list;
+}
+
+function ttRenderContent(el, text) {
+  ttCard.replaceChildren();
+  const rows = el.__cyberTooltipRows;
+  ttCard.classList.toggle('is-rich', Array.isArray(rows) && rows.length > 0);
+  if (rows?.length) {
+    ttCard.append(ttRenderRows(rows));
+  } else {
+    const label = document.createElement('span');
+    label.className = 'tt-label';
+    label.textContent = text;
+    ttCard.append(label);
+  }
+  ttRenderKbd(el.dataset.tooltipKbd);
+}
+
 function ttRenderKbd(kbdText) {
-  while (ttCard.childNodes.length > 1) ttCard.removeChild(ttCard.lastChild);
+  ttCard.querySelectorAll('.tooltip-shortcut-key').forEach(key => key.remove());
   const tokens = (kbdText || '').split(/\s*\/\s*|\s+/).filter(Boolean);
   for (const token of tokens) {
     const kbd = document.createElement('kbd');
@@ -192,14 +256,10 @@ function ttShow(el) {
     ttCard.id = 'titlebar-tooltip';
     ttCard.setAttribute('role', 'tooltip');
     ttCard.hidden = true;
-    ttLabelEl = document.createElement('span');
-    ttLabelEl.className = 'tt-label';
-    ttCard.append(ttLabelEl);
     document.body.appendChild(ttCard);
   }
   ttAnchor = el;
-  ttLabelEl.textContent = text;
-  ttRenderKbd(el.dataset.tooltipKbd);
+  ttRenderContent(el, text);
   ttCard.hidden = false;
   ttPositionCard();
   requestAnimationFrame(() => ttCard.classList.add('is-visible'));

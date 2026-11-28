@@ -98,8 +98,8 @@ app.whenReady().then(async () => {
       'folder navigation must keep the current tab even when the target is already open');
     assert.equal(await evaluate('return window.CVWorkspace.model.tabs[1].image.file.name;'), 'two.png');
     assert.equal(await evaluate("return document.querySelectorAll('.image-tab-shell.duplicate').length;"), 2);
-    assert.equal(await evaluate("return $('tab-1').getAttribute('aria-label').includes('También abierto en otra pestaña');"), true);
-    assert.equal(await evaluate("state.settings.app.language='en'; updateLanguage('en'); const translated=$('tab-1').getAttribute('aria-label').includes('Also open in another tab'); state.settings.app.language='es'; updateLanguage('es'); return translated;"), true);
+    assert.equal(await evaluate("return $('tab-1').getAttribute('aria-label').includes('Pestaña duplicada');"), true);
+    assert.equal(await evaluate("state.settings.app.language='en'; updateLanguage('en'); const translated=$('tab-1').getAttribute('aria-label').includes('Duplicate tab'); state.settings.app.language='es'; updateLanguage('es'); return translated;"), true);
     assert.equal(await evaluate("return $('nav-container').classList.contains('nav-useless');"), false);
     assert.equal(await evaluate("return getComputedStyle(document.querySelector('.image-tab-shell.duplicate .image-tab-duplicate')).display;"), 'flex');
     fs.writeFileSync(path.join(dataDir, 'duplicate-tabs.png'), (await win.webContents.capturePage()).toPNG());
@@ -791,9 +791,25 @@ app.whenReady().then(async () => {
       return state.sidebarOpen && tab.sidebarOpen === true &&
         document.querySelector('.image-tab-shell[data-tab-id="tab-39"]').classList.contains('sidebar-open');`), true,
       'opening the sidebar immediately sets the active tab marker');
-    await evaluate("$('tab-39').dispatchEvent(new FocusEvent('focus'));");
+    await evaluate("state.settings.app.language='es'; updateLanguage('es'); $('tab-39').dispatchEvent(new FocusEvent('focus'));");
     await waitFor(() => evaluate("return !!$('titlebar-tooltip') && !$('titlebar-tooltip').hidden;"),
       'tab tooltip visible before context menu');
+    const tabTooltip = await evaluate(`const card = $('titlebar-tooltip');
+      const rows = [...card.querySelectorAll('.tt-row')].map(row => ({
+        icon: row.dataset.tooltipIcon,
+        text: row.querySelector('.tt-label').textContent,
+        glyph: !!row.querySelector('.tt-row-icon svg'),
+        dot: !!row.querySelector('.tt-row-dot')
+      }));
+      return { rich: card.classList.contains('is-rich'),
+        path: window.CVWorkspace.model.active.image.file.path, rows };`);
+    assert.equal(tabTooltip.rich, true, 'tab tooltips use the shared rich card');
+    assert.deepEqual(tabTooltip.rows, [
+      { icon: 'file', text: tabTooltip.path, glyph: true, dot: false },
+      { icon: 'copy', text: 'Pestaña duplicada', glyph: true, dot: false },
+      { icon: 'sidebar-dot', text: 'Panel lateral abierto', glyph: false, dot: true }
+    ], 'the full path and each tab state render on separate icon rows');
+    await evaluate("state.settings.app.language='en'; updateLanguage('en');");
     const contextTooltip = await evaluate(`const shell = document.querySelector('.image-tab-shell[data-tab-id="tab-39"]');
       const rect = shell.getBoundingClientRect();
       shell.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true,

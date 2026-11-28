@@ -12,6 +12,7 @@ const html = read('CyberViewer.html');
 const workspace = read('js/workspace.js');
 const appJs = read('js/app.js');
 const tabsCss = read('css/tabs.css');
+const appCss = read('css/app.css');
 const ui = JSON.parse(read('i18n/ui.json'));
 
 describe('tab bar ui', () => {
@@ -29,6 +30,22 @@ describe('tab bar ui', () => {
     assert.match(workspace, /title\.append\(icon, name\)/);
     assert.match(workspace, /icon\.append\(iconSvg\(mediaTypeForTab\(tab\)\)\)/);
     assert.match(tabsCss, /\.tab-switcher-item-icon\[hidden\] \{ display: none; \}/);
+  });
+  it('renders the full tab path and each state on its own icon row', () => {
+    assert.equal(ui.en.tabs_also_open, 'Duplicate tab');
+    assert.equal(ui.es.tabs_also_open, 'Pestaña duplicada');
+    assert.match(appJs, /function setCyberTooltipRows\(el, rows\)/);
+    assert.match(appJs, /function ttRenderRows\(rows\)/);
+    assert.match(appJs, /label\.textContent = row\.text;/);
+    assert.match(appJs, /ttCard\.classList\.toggle\('is-rich'/);
+    assert.match(workspace, /const rows = \[\{ icon: 'file', text: tab\.image\.file\.path \|\| tab\.image\.file\.name \}\];/);
+    assert.match(workspace, /if \(duplicate\) rows\.push\(\{ icon: 'copy', text: text\('tabs_also_open'\) \}\);/);
+    assert.match(workspace, /if \(sidebarOpen\) rows\.push\(\{ icon: 'sidebar-dot', text: text\('tabs_sidebar_open'\) \}\);/);
+    assert.match(workspace, /setCyberTooltipRows\(button, rows\);/);
+    assert.match(workspace, /button === document\.activeElement \|\| button\.matches\(':hover'\)\) prepareTooltip\(button\);/);
+    assert.match(appCss, /#titlebar-tooltip \.tt-rows/);
+    assert.match(appCss, /#titlebar-tooltip \.tt-row-icon \.menu-ico/);
+    assert.match(appCss, /#titlebar-tooltip \.tt-row-dot/);
   });
   it('marks only tabs whose sidebar is open and updates the marker immediately', () => {
     for (const lang of ['en', 'es']) assert.ok(ui[lang].tabs_sidebar_open);

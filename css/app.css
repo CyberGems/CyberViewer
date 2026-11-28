@@ -581,6 +581,15 @@
 
   #titlebar-tooltip .tt-label { overflow-wrap: anywhere; }
 
+  #titlebar-tooltip.is-rich { align-items: flex-start; gap: 0; }
+  #titlebar-tooltip .tt-rows { min-width: 0; display: flex; flex: 1; flex-direction: column; gap: 4px; }
+  #titlebar-tooltip .tt-row { min-width: 0; display: flex; align-items: center; gap: 7px; }
+  #titlebar-tooltip .tt-row .tt-label { min-width: 0; }
+  #titlebar-tooltip .tt-row-icon { width: 15px; height: 15px; flex: 0 0 15px; display: inline-flex; align-items: center; justify-content: center; color: var(--cyber-muted); }
+  #titlebar-tooltip .tt-row-icon[hidden] { display: none; }
+  #titlebar-tooltip .tt-row-icon .menu-ico { width: 15px; height: 15px; }
+  #titlebar-tooltip .tt-row-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .65; }
+
   #titlebar-tooltip.is-visible {
     opacity: 1;
     transform: translateY(0);

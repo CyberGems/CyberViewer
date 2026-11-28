@@ -3,7 +3,7 @@
    folderDirFromPath, buildSidebar, showToast, showCyberConfirm,
    stopSlideshow, getOriginalZoom, viewerFitSize, syncRotationState,
    updateHUDStates, syncFavoritesToggleButtonState,
-   showCustomContextMenu, syncCurrentIndex, setCyberTooltip, ttBind, ttHide, iconSvg,
+   showCustomContextMenu, syncCurrentIndex, setCyberTooltipRows, ttBind, ttHide, iconSvg,
    setSidebarOpen, sidebarStatePerTab */
 'use strict';
 
@@ -716,6 +716,7 @@ window.CVWorkspace = (() => {
       shell.querySelector('.image-tab-close').setAttribute('aria-label', text('tabs_close_named').replace('{name}', name));
       shell.querySelector('.image-tab-close').tabIndex = active ? 0 : -1;
       if (list.children[position] !== shell) list.insertBefore(shell, list.children[position] || null);
+      if (button === document.activeElement || button.matches(':hover')) prepareTooltip(button);
       position++;
     }
     nodes.forEach(node => node.remove());
@@ -731,20 +732,18 @@ window.CVWorkspace = (() => {
     syncTabOverflow();
   }
   function prepareTooltip(button) {
-    const label = button.querySelector('.image-tab-name');
     const tab = model.tabs.find(item => item.id === button.id);
+    if (!tab) {
+      setCyberTooltipRows(button, []);
+      return;
+    }
     const shell = button.closest('.image-tab-shell');
     const duplicate = shell?.classList.contains('duplicate');
     const sidebarOpen = shell?.classList.contains('sidebar-open');
-    const truncated = label.scrollWidth > label.clientWidth;
-    if (tab && (duplicate || sidebarOpen || truncated)) {
-      const fullName = tab.image.file.path || tab.image.file.name;
-      // Both states can apply at once, so each note is appended on its own
-      // instead of one replacing the other.
-      const notes = [duplicate ? text('tabs_also_open') : '', sidebarOpen ? text('tabs_sidebar_open') : '']
-        .filter(Boolean);
-      setCyberTooltip(button, notes.length ? `${fullName} · ${notes.join(' · ')}` : fullName);
-    } else { button.classList.remove('cyber-tooltip'); delete button.dataset.tooltip; }
+    const rows = [{ icon: 'file', text: tab.image.file.path || tab.image.file.name }];
+    if (duplicate) rows.push({ icon: 'copy', text: text('tabs_also_open') });
+    if (sidebarOpen) rows.push({ icon: 'sidebar-dot', text: text('tabs_sidebar_open') });
+    setCyberTooltipRows(button, rows);
   }
   function mediaTypeForTab(tab) {
     return window.CVYouTubeSource.isYouTube(tab.image) ? 'youtube'
