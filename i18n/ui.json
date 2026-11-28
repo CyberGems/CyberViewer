@@ -1,5 +1,10 @@
 {
   "en": {
+    "github_star": "Star on GitHub",
+    "github_star_busy": "Starring…",
+    "github_star_starred": "Starred, thank you",
+    "github_star_opened": "Complete your star on GitHub",
+    "github_star_error": "Could not open GitHub. Retry",
     "tabs_label": "Open file tabs",
     "tabs_also_open": "Duplicate tab",
     "tabs_sidebar_open": "Sidebar open",
@@ -823,6 +828,11 @@
     "crop_size_aria": "Original size and crop result"
   },
   "es": {
+    "github_star": "Dar una estrella en GitHub",
+    "github_star_busy": "Enviando estrella…",
+    "github_star_starred": "Estrella añadida, gracias",
+    "github_star_opened": "Completa la estrella en GitHub",
+    "github_star_error": "No se pudo abrir GitHub. Reintentar",
     "tabs_label": "Pestañas de archivos abiertos",
     "tabs_also_open": "Pestaña duplicada",
     "tabs_sidebar_open": "Panel lateral abierto",

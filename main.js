@@ -10,6 +10,9 @@ const os = require('os');
 const crypto = require('crypto');
 const { pathToFileURL } = require('url');
 const { execFile, spawn } = require('child_process');
+const { createGitHubStarAction } = require('./lib/github-star');
+const starRepository = createGitHubStarAction(() => shell.openExternal('https://github.com/CyberGems/CyberViewer'));
+ipcMain.handle('github:star', () => starRepository());
 const { formatTrayTooltip } = require('./lib/tray-tooltip');
 const { isPortableDataBuild, portableExecutableFile, portableUserDataPath } = require('./lib/portable-data');
 
@@ -1462,6 +1465,7 @@ ipcMain.on('tray-menu-action', (_event, action, payload) => {
     if (win && !win.isDestroyed()) win.webContents.send('menu-action', { action: 'show-tray-pin-reminder' });
     return;
   }
+  if (action === 'help-star') { void starRepository().catch(console.error); return; }
   if (action === 'help-docs') { openTrayHelpUrl('docs'); return; }
   if (action === 'help-faq') { openTrayHelpUrl('faq'); return; }
   if (action === 'help-changelog') { openTrayHelpUrl('changelog'); return; }

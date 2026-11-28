@@ -5,6 +5,7 @@
 // tray-preload.js and every item reports back through 'tray-menu-action'.
 
 const ICONS = {
+  star: '<svg viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z"/></svg>',
   window: '<svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="10" y1="4" x2="10" y2="8"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="6" y1="4" x2="6" y2="8"/></svg>',
   open: '<svg viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h4l2 2.5h7A1.5 1.5 0 0 1 20 8v1H7.2a2 2 0 0 0-1.94 1.51L3.5 17.4V7z"/><path d="M3.66 17.6 6.2 10.9a1 1 0 0 1 .93-.65h13.3a.75.75 0 0 1 .7 1.02l-2.4 6.5a1.5 1.5 0 0 1-1.4.98H5.06a1.5 1.5 0 0 1-1.4-2.15z"/></svg>',
   settings: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
@@ -156,6 +157,7 @@ const I18N = {
     quit: 'Exit',
     pin: 'Pin icon to taskbar...',
     docs: 'Documentation (Wiki)',
+    star: 'Star on GitHub',
     faq: 'Frequently Asked Questions',
     changelog: 'Changelog',
     website: 'Official Website',
@@ -181,6 +183,7 @@ const I18N = {
     quit: 'Salir',
     pin: 'Anclar icono en la barra de tareas...',
     docs: 'Documentación (Wiki)',
+    star: 'Dar una estrella en GitHub',
     faq: 'Preguntas frecuentes (FAQ)',
     changelog: 'Registro de cambios',
     website: 'Sitio web oficial',
@@ -514,6 +517,8 @@ function renderHelpView() {
   const group = document.createElement('div');
   group.className = 'group group-bottom';
   group.replaceChildren(
+    makeItem({ action: 'help-star', icon: 'star', label: t('star') }),
+    makeSeparator(),
     makeItem({ action: 'help-pin', icon: 'pin', label: t('pin') }),
     makeSeparator(),
     makeItem({ action: 'help-docs', icon: 'book', label: t('docs') }),

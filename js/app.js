@@ -432,6 +432,7 @@ if (isElectron) window.CVYouTube.initialize();
 const TRAY_PIN_REMINDER_KEY = 'cyberviewer_tray_pin_reminder_dismissed';
 let pendingTrayPinReminder = false;
 const TITLEBAR_HELP_URLS = Object.freeze({
+  github: 'https://github.com/CyberGems/CyberViewer',
   docs: 'https://github.com/CyberGems/CyberViewer/wiki',
   faq: 'https://github.com/CyberGems/CyberViewer/wiki/FAQ',
   changelog: 'https://github.com/CyberGems/CyberViewer/releases',
@@ -456,7 +457,7 @@ function openTitlebarHelpLink(destination) {
 // (resolved from the rendered label text via LABEL_TO_ICON below).
 const MENU_ICON_BY_I18N = {
   menu_file: 'file', menu_edit: 'edit', menu_view: 'eye', menu_go: 'compass',
-  menu_help: 'help-circle', menu_help_pin: 'pin', menu_help_docs: 'book-open',
+  github_star: 'star', menu_help: 'help-circle', menu_help_pin: 'pin', menu_help_docs: 'book-open',
   menu_help_faq: 'help-circle', menu_help_changelog: 'tag', menu_help_website: 'globe',
   menu_help_donate: 'heart', menu_prefs: 'gear', menu_about: 'info',
   menu_updates: 'download',
@@ -10260,6 +10261,8 @@ $('btn-go-end').addEventListener('click', (e) => {
               data-tooltip="${t.about_releases_tooltip}"
               aria-label="${t.about_releases_tooltip}"
             >${iconHtml('tag')}</a>
+            <button type="button" id="about-btn-star" class="about-footer-icon cyber-tooltip"
+              data-tooltip="${t.github_star}" aria-label="${t.github_star}">${iconHtml('star')}</button>
             <a
               class="about-footer-icon about-footer-heart cyber-tooltip tooltip-align-right"
               href="https://github.com/CyberGems/CyberViewer#%EF%B8%8F-donate"
@@ -10291,6 +10294,33 @@ $('btn-go-end').addEventListener('click', (e) => {
 
     // Copy diagnostic info (CyberFeeds pattern): snapshot versions + OS to
     // clipboard, then flash a check + "copied" tooltip for 1.8s
+    const starBtn = overlay.querySelector('#about-btn-star');
+    starBtn.addEventListener('click', async () => {
+      starBtn.disabled = true;
+      const setLabel = key => {
+        starBtn.dataset.tooltip = t[key];
+        starBtn.setAttribute('aria-label', t[key]);
+      };
+      setLabel('github_star_busy');
+      starBtn.setAttribute('aria-busy', 'true');
+      try {
+        if (!isElectron) {
+          window.open('https://github.com/CyberGems/CyberViewer', '_blank', 'noopener,noreferrer');
+          setLabel('github_star_opened');
+          starBtn.disabled = false;
+        } else {
+          const result = await window.electronAPI.starRepository();
+          setLabel('github_star_' + result);
+          if (result === 'starred') starBtn.querySelector('svg').style.fill = 'currentColor';
+          else starBtn.disabled = false;
+        }
+      } catch (error) {
+        console.error('GitHub star failed', error);
+        setLabel('github_star_error');
+        starBtn.disabled = false;
+      } finally { starBtn.setAttribute('aria-busy', 'false'); }
+    });
+
     const diagBtn = overlay.querySelector('#about-btn-diagnostics');
     if (diagBtn) {
       let diagCopiedTimer = null;
@@ -10686,6 +10716,7 @@ $('btn-config').addEventListener('click', openConfig);
       case 'show-tray-pin-reminder':
         if (isCloseToTrayEnabled()) openTrayPinReminder();
         break;
+      case 'help-star':       if (isElectron) void window.electronAPI.starRepository().catch(console.error); else openTitlebarHelpLink('github'); break;
       case 'help-docs':       openTitlebarHelpLink('docs'); break;
       case 'help-faq':        openTitlebarHelpLink('faq'); break;
       case 'help-changelog':  openTitlebarHelpLink('changelog'); break;
