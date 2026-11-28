@@ -306,8 +306,8 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate('return window.CVVideo.element.hasAttribute("src");'), false);
     assert.equal(await evaluate("return $('btn-rot-l').disabled;"), false);
     assert.equal(await evaluate("return getComputedStyle($('kbd-hint')).display !== 'none' && !document.body.classList.contains('video-idle') && !$('ghost-close').inert;"), true, 'Image chrome and fullscreen exit are restored after video');
-    await evaluate('await rotate(90);');
-    await waitFor(() => evaluate('return mainImg.complete && mainImg.naturalWidth === 60 && !state.hasChanges && !window.CVWorkspace.busy;'), 'rotated image saved and reloaded');
+    await evaluate('state.settings.app.autoSaveRotation=true; await rotate(90);');
+    await waitFor(() => evaluate('return mainImg.complete && mainImg.naturalWidth === 60 && !state.hasChanges && !window.CVWorkspace.busy;'), 'rotated image autosaved and reloaded');
     assert.equal(await evaluate('return state.hasChanges;'),false);
     assert.deepEqual(nativeImage.createFromPath(path.join(dataDir,'still.png')).getSize(), { width: 60, height: 80 });
     console.log('PASS image editing restored and inactive video decoder released');
@@ -452,6 +452,9 @@ app.whenReady().then(async () => {
   const unexpected=errors.filter(message=>!/(DEMUXER|FFmpegDemuxer|ERR_REQUEST_RANGE_NOT_SATISFIABLE)/i.test(message));
   assert.deepEqual(unexpected,[]);
   // Use the real close path so Chromium can release media before process teardown.
+  for (const helper of BrowserWindow.getAllWindows()) {
+    if (helper !== win && !helper.isDestroyed()) helper.destroy();
+  }
   if (!win.isDestroyed()) {
     await new Promise(resolve => { win.once('closed', resolve); win.close(); });
   }

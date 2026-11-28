@@ -151,6 +151,15 @@ app.whenReady().then(async () => {
       assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 3);
     }
     await evaluate("await window.CVWorkspace.activate('tab-1');"); await loaded();
+    await evaluate("state.settings.app.autoSaveRotation=false; state.viewMode = 'custom'; state.zoom = 1.75; state.panX = 31; state.panY = -22; applyTransform(false); await rotate(90);");
+    assert.deepEqual(nativeImage.createFromPath(files[0]).getSize(), { width: 120, height: 80 });
+    assert.equal(await evaluate("return state.currentRotation === 90 && state.hasChanges && !$('pending-actions').hidden && $('pending-actions').classList.contains('visible');"), true,
+      'default rotation waits for confirmation without writing the file');
+    await evaluate("document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));");
+    assert.equal(await evaluate("return state.currentRotation === 0 && !state.hasChanges && $('pending-actions').hidden;"), true,
+      'Escape discards the rotation preview');
+    await evaluate("openConfig(); $('cfg-auto-save-rotation').checked=true; saveConfigSettings({silent:true}); closeModal('modal-config');");
+    assert.equal(await evaluate('return state.settings.app.autoSaveRotation;'), true, 'the Configuration toggle enables autosave');
     await evaluate("state.viewMode = 'custom'; state.zoom = 1.75; state.panX = 31; state.panY = -22; applyTransform(false); await rotate(90);");
     await loaded();
     assert.deepEqual(nativeImage.createFromPath(files[0]).getSize(), { width: 80, height: 120 });
@@ -161,10 +170,10 @@ app.whenReady().then(async () => {
         rotatedBitmap.set(bitmap.subarray(sourceOffset, sourceOffset + 4), (y * 80 + x) * 4);
       }
     }
-    assert.deepEqual(nativeImage.createFromPath(files[0]).getBitmap(), rotatedBitmap,
+    assert.equal(nativeImage.createFromPath(files[0]).getBitmap().equals(rotatedBitmap), true,
       'a right-angle PNG rotation preserves every decoded pixel');
-    assert.equal(await evaluate("return state.currentRotation === 0 && !state.hasChanges && !$('pending-actions');"), true,
-      'rotation commits immediately without a confirmation control');
+    assert.equal(await evaluate("return state.currentRotation === 0 && !state.hasChanges && $('pending-actions').hidden;"), true,
+      'autosaved rotation commits and hides the confirmation control');
     await evaluate("state.viewMode = 'custom'; state.zoom = 1.75; state.panX = 31; state.panY = -22; applyTransform(false); await window.CVWorkspace.activate('tab-2');");
     await loaded();
     let result = await evaluate('return { view: window.CVWorkspace.model.tabs[0].view, rotation: state.currentRotation };');
@@ -221,13 +230,16 @@ app.whenReady().then(async () => {
     await waitFor(() => evaluate('return window.CVWorkspace.model.tabs.length === 3 && !window.CVWorkspace.busy;'), 'queued duplicate cleanup');
     await evaluate("await window.CVWorkspace.activate('tab-3');"); await loaded();
     await evaluate("await window.CVWorkspace.activate('tab-2');"); await loaded();
-    await evaluate('await rotate(90);'); await loaded();
+    await evaluate("state.settings.app.autoSaveRotation=false; await rotate(90);");
+    assert.deepEqual(nativeImage.createFromPath(files[1]).getSize(), { width: 120, height: 80 });
+    await evaluate("$('btn-commit').click();"); await loaded();
     assert.deepEqual(nativeImage.createFromPath(files[1]).getSize(), { width: 80, height: 120 });
     assert.equal(await evaluate("return window.CVWorkspace.model.tabs.find(tab => tab.id === 'tab-1').view.currentRotation;"), 0);
-    await evaluate('await rotate(-90);'); await loaded();
+    await evaluate("state.settings.app.autoSaveRotation=true; await rotate(-90);"); await loaded();
     assert.deepEqual(nativeImage.createFromPath(files[1]).getSize(), { width: 120, height: 80 });
-    assert.deepEqual(nativeImage.createFromPath(files[1]).getBitmap(), bitmap,
-      'consecutive opposite rotations restore every decoded pixel');
+    const restoredBitmap = nativeImage.createFromPath(files[1]).getBitmap();
+    assert.equal(restoredBitmap.equals(bitmap), true,
+      'an opposite autosaved rotation restores every decoded pixel');
 
     // File associations always forward to the resident window, even when an
     // obsolete multi-instance preference was saved by an older version.
@@ -963,4 +975,5 @@ app.whenReady().then(async () => {
     console.log('PASS no-restore: pasted image does not return after restarting with session saving disabled');
   }
   app.exit(0);
-}).catch(error => { console.error(error.stack || error); app.exit(1); });
+}).catch(error => { fs.writeSync(2, (error.stack || error) + '\n'); app.exit(1); });
+setTimeout(() => { fs.writeSync(2, 'Workspace smoke timeout\n'); app.exit(2); }, 85000);

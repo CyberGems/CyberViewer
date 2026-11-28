@@ -183,7 +183,9 @@ Playback can still vary with codec profile, bitrate, sample rate, channel layout
 - YouTube playlist properties show the current position and total count when available. Copy actions provide the source path or link and a concise properties summary.
 
 ### ✏️ Editing
-- **Rotate:** left 90° (`Q`) or right 90° (`E`), saved immediately to the same file as PNG while keeping its current name. This preserves decoded pixels and transparency without another lossy pass, but drops metadata, animation, 16-bit/HDR/wide-gamut data, and advanced color profiles.
+- **Rotate:** left 90° (`Q`) or right 90° (`E`). By default, rotation is a preview: use the floating **Save** button or `Enter` to commit it, and **Discard** or `Escape` to cancel it.
+- **Optional rotation autosave:** enable **Configuration > Interface > Save Rotations Automatically** to write each turn immediately. Saving keeps the current filename and exports PNG at full resolution without resizing or another lossy pass.
+- **Rotation export limits:** decoded pixels and transparency are preserved, but metadata, animation, 16-bit/HDR/wide-gamut data, and advanced color profiles may be lost. Keep an original copy when those properties matter.
 - **Crop:** interactive overlay with handles and optional create-copy mode
 - **Resize:** width and height controls with aspect lock, presets (720p, 1080p, 25%, 50%, 200%), and quality resampling
 - **Adjust:** brightness, contrast, saturation, blur, grayscale, and invert with live A/B preview

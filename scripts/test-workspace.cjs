@@ -24,9 +24,17 @@ for (const phase of ['initial', 'restore', 'overflow', 'session-close', 'no-rest
   }
   const environment = { ...process.env, CV_WORKSPACE_TEST_DIR: dataDir, CV_WORKSPACE_TEST_PHASE: phase };
   delete environment.ELECTRON_RUN_AS_NODE;
-  const result = spawnSync(electron, [runner], { env: environment, windowsHide: true, encoding: 'utf8', timeout: 90000 });
-  const output = (result.stdout || '') + (result.stderr || '');
-  console.log(output);
+  const outputPath = path.join(dataDir, phase + '.log');
+  const outputFd = fs.openSync(outputPath, 'w');
+  let result;
+  try {
+    result = spawnSync(electron, [runner], {
+      env: environment, windowsHide: true, timeout: 90000, stdio: ['ignore', outputFd, outputFd]
+    });
+  } finally {
+    fs.closeSync(outputFd);
+  }
+  console.log(fs.readFileSync(outputPath, 'utf8'));
   if (result.error || result.status !== 0) {
     console.error(result.error || 'Electron smoke test exited with ' + result.status);
     console.error('Isolated test data: ' + dataDir);

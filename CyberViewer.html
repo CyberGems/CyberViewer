@@ -793,8 +793,16 @@
         </button>
         <div class="kbd-sep needs-image"></div>
         <div class="edit-cluster needs-image" id="edit-cluster">
-          <button class="kbd-btn kbd-icon" id="btn-rot-l" data-i18n-title="rot_l_title" data-tooltip="Rotar izquierda (Q)"><svg class="kbd-ico kbd-ico-solo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2-4.6"/><path d="M3 4v5h5"/></svg></button>
-          <button class="kbd-btn kbd-icon" id="btn-rot-r" data-i18n-title="rot_r_title" data-tooltip="Rotar derecha (E)"><svg class="kbd-ico kbd-ico-solo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2-4.6"/><path d="M21 4v5h-5"/></svg></button>
+          <button class="kbd-btn kbd-icon" id="btn-rot-l" data-i18n-title="rot_l_title" data-i18n-aria="rot_l_title" data-tooltip="Rotar izquierda (Q)"><svg class="kbd-ico kbd-ico-solo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2-4.6"/><path d="M3 4v5h5"/></svg></button>
+          <button class="kbd-btn kbd-icon" id="btn-rot-r" data-i18n-title="rot_r_title" data-i18n-aria="rot_r_title" data-tooltip="Rotar derecha (E)"><svg class="kbd-ico kbd-ico-solo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2-4.6"/><path d="M21 4v5h-5"/></svg></button>
+          <div id="pending-actions" class="pending-actions" role="group" data-i18n-aria="rotation_pending_actions" aria-label="Pending rotation actions" hidden>
+            <button type="button" class="pending-btn pending-cancel cyber-tooltip" id="btn-discard" data-i18n-title="discard_title" data-i18n-aria="discard_title" data-tooltip="Cancelar rotación (Esc)" aria-label="Cancelar rotación (Esc)">
+              <svg class="pending-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+            <button type="button" class="pending-btn pending-save cyber-tooltip" id="btn-commit" data-i18n-title="save_title" data-i18n-aria="save_title" data-tooltip="Guardar rotación (Enter)" aria-label="Guardar rotación (Enter)">
+              <svg class="pending-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+            </button>
+          </div>
         </div>
         <button class="kbd-btn needs-image kbd-icon" id="btn-crop" data-i18n-title="crop_title" title="Recortar (C)"><svg class="kbd-ico kbd-ico-solo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg></button>
         <button class="kbd-btn needs-image kbd-icon" id="btn-resize" data-i18n-title="resize_title_btn" title="Redimensionar (R)"><svg class="kbd-ico kbd-ico-solo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3H3v6"/><path d="M15 21h6v-6"/><path d="M3 3l7 7"/><path d="M21 21l-7-7"/></svg></button>
@@ -1347,6 +1355,16 @@
                 </div>
                 <label class="switch">
                   <input type="checkbox" id="cfg-animated-gifs" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="config-row">
+                <div class="config-info">
+                  <div class="config-name" data-i18n="cfg_auto_save_rotation">Guardar rotación automáticamente</div>
+                  <div class="config-desc" data-i18n="cfg_auto_save_rotation_desc">Guarda cada giro como PNG sin pedir confirmación. Se conservan los píxeles y la transparencia, pero pueden perderse metadatos, animación, datos HDR y perfiles avanzados de color.</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="cfg-auto-save-rotation" data-i18n-aria="cfg_auto_save_rotation" aria-label="Guardar rotación automáticamente">
                   <span class="slider"></span>
                 </label>
               </div>

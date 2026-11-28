@@ -183,7 +183,9 @@ La reproducción también puede variar según el perfil del códec, la tasa de b
 - Las propiedades de playlists indican la posición actual y el total cuando se conoce. Las acciones de copia permiten copiar la ruta o enlace de origen y un resumen conciso.
 
 ### ✏️ Edición
-- **Rotar:** 90° a la izquierda (`Q`) o a la derecha (`E`), se guarda de inmediato en el mismo archivo como PNG y conserva su nombre actual. Esto preserva los píxeles decodificados y la transparencia sin otra pasada con pérdida, pero descarta metadatos, animación, datos de 16 bits/HDR/gama amplia y perfiles avanzados de color.
+- **Rotar:** 90° a la izquierda (`Q`) o a la derecha (`E`). Por defecto, la rotación es una vista previa: usa el botón flotante **Guardar** o `Intro` para aplicarla, y **Descartar** o `Escape` para cancelarla.
+- **Autoguardado opcional:** activa **Configuración > Interfaz > Guardar rotaciones automáticamente** para escribir cada giro de inmediato. El guardado conserva el nombre actual y exporta PNG a resolución completa, sin redimensionar ni aplicar otra pasada con pérdida.
+- **Límites de la exportación:** se conservan los píxeles decodificados y la transparencia, pero pueden perderse metadatos, animación, datos de 16 bits/HDR/gama amplia y perfiles avanzados de color. Conserva una copia original si esas propiedades importan.
 - **Recortar:** superposición interactiva con tiradores y modo opcional de creación de copia
 - **Redimensionar:** controles de ancho y alto con bloqueo de proporción, preajustes (720p, 1080p, 25 %, 50 %, 200 %) y remuestreo de calidad
 - **Ajustar:** brillo, contraste, saturación, desenfoque, escala de grises e invertir con vista previa A/B en vivo

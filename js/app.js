@@ -249,6 +249,7 @@ function ttShow(el) {
   // Every portaled tooltip honors the global disable setting.
   if (document.body.classList.contains('no-tooltips')) return;
   if (ttSuppressedWhileOpen(el)) return;
+  if ((el.id === 'btn-rot-l' || el.id === 'btn-rot-r') && $('pending-actions')?.classList.contains('visible')) return;
   const text = ttTextFor(el);
   if (!text) return;
   if (!ttCard) {
@@ -379,6 +380,7 @@ const state = {
       language: 'en',
       favorites: [],
       animateGifs: true,
+      autoSaveRotation: false,
       compactSidebarCards: false,
       sidebarStatePerTab: true,
       showShortcutGuide: true,
@@ -4006,6 +4008,11 @@ function preloadAdjacent(idx) {
   }
 }
 // ── IMAGE ROTATION & SAVE ──
+function isRotationPreviewPending() {
+  return state.current >= 0 && !state.isCropping && state.currentRotation !== 0 &&
+    state.hasChanges && state.settings.app.autoSaveRotation !== true;
+}
+
 async function rotate(deg) {
   if (window.CVVideo.active()) return;
   if (window.CVWorkspace.busy) return;
@@ -4030,7 +4037,7 @@ async function rotate(deg) {
   updateHUDStates();
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
   showModeHud(lang === 'es' ? 'ROTADA ' + state.currentRotation + '°' : 'ROTATED ' + state.currentRotation + '°');
-  await saveCurrent();
+  if (state.settings.app.autoSaveRotation === true) await saveCurrent();
 }
 
 // ── IMAGE FLIP (permanent copy) ──
@@ -4706,7 +4713,6 @@ async function saveCurrent() {
         requestAnimationFrame(() => {
           mainImg.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
         });
-        showToast(I18N[state.settings.app.language || 'en'].toast_changes_saved, 'success');
       } else {
         showToast(result.error || 'ERROR', 'error');
       }
@@ -6489,8 +6495,7 @@ document.addEventListener('keydown', e => {
       e.preventDefault();
       return;
     }
-    // Only a legacy pending preview can be discarded; an automatic save is already committed.
-    if (state.hasChanges && !state.isCropping && !window.CVWorkspace.busy) {
+    if (isRotationPreviewPending()) {
       discardPendingChanges();
       e.preventDefault();
       return;
@@ -6609,7 +6614,7 @@ document.addEventListener('keydown', e => {
   // (Tab focus traversal inside the dialog still works).
   if (document.body.classList.contains('modal-open')) return;
 
-  const pendingRotation = state.currentRotation !== 0 && state.hasChanges;
+  const pendingRotation = isRotationPreviewPending();
   const isCtrl = e.ctrlKey || e.metaKey;
 
   if (window.CVVideo.active() && !isCtrl && !e.altKey && !document.querySelector('.modal-overlay.active') && !$('main-menu').classList.contains('open')) {
@@ -6633,7 +6638,7 @@ document.addEventListener('keydown', e => {
     const key = e.key.toLowerCase();
     if (key === 'enter') {
       e.preventDefault();
-      if (checkImageLoaded()) saveCurrent();
+      if (checkImageLoaded()) void saveCurrent();
       return;
     }
     if (key === 'q' || key === 'e') {
@@ -7214,6 +7219,20 @@ $('btn-rot-r').addEventListener('click', () => {
   if (!checkImageLoaded()) return;
   void rotate(90);
 });
+const btnCommit = $('btn-commit');
+if (btnCommit) {
+  btnCommit.addEventListener('click', () => {
+    if (window.CVWorkspace.busy || !checkImageLoaded()) return;
+    void saveCurrent();
+  });
+}
+const btnDiscard = $('btn-discard');
+if (btnDiscard) {
+  btnDiscard.addEventListener('click', () => {
+    if (window.CVWorkspace.busy || !checkImageLoaded()) return;
+    discardPendingChanges();
+  });
+}
 
 $('btn-copy').addEventListener('click', () => {
   if (!checkImageLoaded()) return;
@@ -8288,6 +8307,7 @@ const CONFIG_CONTROL_ICON_BY_ID = {
   'cfg-sidebar-per-tab': 'panel-left',
   'cfg-statusbar': 'panel-bottom',
   'cfg-animated-gifs': 'image',
+  'cfg-auto-save-rotation': 'rotate-cw',
   'cfg-compact-cards': 'panel-bottom',
   'cfg-show-filename': 'tag',
   'cfg-banner-autohide': 'eye-off',
@@ -8397,6 +8417,7 @@ function openConfig() {
   $('cfg-tabs-cancel-edits').checked = s.tabsCancelPendingEdits !== false;
   $('cfg-drop-center-action').value = s.centerDropAction === 'replace' ? 'replace' : 'new-tab';
   if ($('cfg-animated-gifs')) $('cfg-animated-gifs').checked = s.animateGifs !== false;
+  if ($('cfg-auto-save-rotation')) $('cfg-auto-save-rotation').checked = s.autoSaveRotation === true;
   if ($('cfg-compact-cards')) $('cfg-compact-cards').checked = s.compactSidebarCards === true;
   $('cfg-show-filename').checked = s.showFileName !== false;
   $('cfg-lang').value = s.language || 'en';
@@ -8537,6 +8558,7 @@ function collectConfigSettings() {
     tabsCancelPendingEdits: $('cfg-tabs-cancel-edits').checked,
     centerDropAction: $('cfg-drop-center-action').value === 'replace' ? 'replace' : 'new-tab',
     animateGifs: !!($('cfg-animated-gifs') && $('cfg-animated-gifs').checked),
+    autoSaveRotation: !!($('cfg-auto-save-rotation') && $('cfg-auto-save-rotation').checked),
     compactSidebarCards: !!($('cfg-compact-cards') && $('cfg-compact-cards').checked),
     showFileName: $('cfg-show-filename').checked,
     toggleHotkey: $('cfg-hotkey') ? ($('cfg-hotkey').value.trim() || 'disabled') : 'disabled',
@@ -8604,6 +8626,7 @@ function getFactoryAppSettings() {
     audioEqualizer: window.CVAudioEngine.defaults(),
     showFileName: true,
     animateGifs: true,
+    autoSaveRotation: false,
     dblClickAction: 'fullscreen',
     navZoomMode: 'reset'
   };
@@ -9685,7 +9708,7 @@ if (isElectron) {
 // ── HUD SYNC ──
 function syncRotationPendingState(pending) {
   document.body.classList.toggle('rotation-pending', pending);
-  const allowed = new Set(['btn-rot-l', 'btn-rot-r']);
+  const allowed = new Set(['btn-rot-l', 'btn-rot-r', 'btn-commit', 'btn-discard']);
   document.querySelectorAll('#kbd-hint button, #nav-container button, #sidebar-controls button, #btn-menu, #btn-config, #btn-shortcuts, #titlebar-update-btn, #titlebar-properties-btn').forEach((el) => {
     if (allowed.has(el.id)) return;
     if (pending) {
@@ -9700,6 +9723,21 @@ function syncRotationPendingState(pending) {
       if (!el.disabled) el.removeAttribute('aria-disabled');
     }
   });
+  const bar = $('pending-actions');
+  if (bar) {
+    bar.hidden = !pending;
+    bar.classList.toggle('visible', pending);
+  }
+  const cluster = $('edit-cluster');
+  if (cluster) cluster.classList.toggle('has-pending', pending);
+  const commit = $('btn-commit');
+  const discard = $('btn-discard');
+  if (commit) {
+    commit.disabled = !!window.CVWorkspace.busy;
+    commit.classList.toggle('active', pending);
+  }
+  if (discard) discard.disabled = !!window.CVWorkspace.busy;
+  if (pending) ttHide();
   const menu = $('main-menu');
   if (menu) menu.classList.toggle('rotation-pending', pending);
 }
@@ -9715,7 +9753,7 @@ function updateHUDStates() {
   const cur = state.images[state.current];
   document.body.classList.toggle('current-unsaved', !!(cur && !cur.file.path));
 
-  const pendingRotation = state.currentRotation !== 0 && state.hasChanges;
+  const pendingRotation = isRotationPreviewPending();
   syncRotationPendingState(pendingRotation);
   if (pendingRotation) {
     if (rotL) rotL.classList.add('active');
