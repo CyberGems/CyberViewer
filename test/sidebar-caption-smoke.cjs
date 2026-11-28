@@ -135,7 +135,8 @@ app.whenReady().then(async () => {
       return {
         name: text ? text.textContent : null,
         marquee: !!strip && strip.classList.contains('is-marquee'),
-        overflow: strip && text ? text.scrollWidth - strip.clientWidth : 0,
+        overflow: strip && text ? text.scrollWidth - text.clientWidth : 0,
+        textWidth: text ? text.clientWidth : 0,
         distance: text ? text.style.getPropertyValue('--marquee-distance') : '',
         duration: text ? text.style.getPropertyValue('--marquee-duration') : '',
         stripWidth: strip ? strip.clientWidth : 0
@@ -158,6 +159,12 @@ app.whenReady().then(async () => {
   assert.ok(parseInt(long.distance, 10) < 0, 'distance moves the text leftwards');
   assert.equal(short.marquee, false, 'a name that fits does not scroll');
   assert.equal(short.distance, '', 'a name that fits has no scroll distance');
+  assert.equal(audio.marquee, false, 'the short audio caption does not scroll');
+  assert.equal(audio.distance, '', 'the short audio caption has no scroll distance');
+  assert.ok(captions.filter(c => c.marquee).every(c => c.overflow > 0),
+    'only overflowing captions are marked to scroll');
+  assert.ok(captions.filter(c => !c.marquee).every(c => c.overflow === 0),
+    'captions that fit have no overflow');
 
   // At rest the caption must not move: the overflow is recorded, but no
   // animation runs until the pointer is over the card.

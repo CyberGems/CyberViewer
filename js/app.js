@@ -1888,7 +1888,7 @@ function measureMarqueeNames(scope) {
     if (reduced) continue;
     // A hidden caption (compact cards) has no width: nothing to scroll.
     if (!strip.clientWidth) continue;
-    const overflow = text.scrollWidth - strip.clientWidth + 12;
+    const overflow = text.scrollWidth - text.clientWidth;
     if (overflow <= 0) continue;
     // Scroll exactly the hidden amount at a steady reading pace (~26 px/s). The
     // dwell at each end is short and fixed, so a caption that barely overflows
