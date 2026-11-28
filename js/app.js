@@ -4036,7 +4036,7 @@ async function rotate(deg) {
   syncRotationState();
   updateHUDStates();
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
-  showModeHud(lang === 'es' ? 'ROTADA ' + state.currentRotation + '°' : 'ROTATED ' + state.currentRotation + '°');
+  showModeHud(lang === 'es' ? 'ROTADA ' + state.currentRotation + '°' : 'ROTATED ' + state.currentRotation + '°', true);
   if (state.settings.app.autoSaveRotation === true) await saveCurrent();
 }
 
@@ -5638,6 +5638,7 @@ function updateZoomHUD(opts = {}) {
   if (slider) slider.value = zoomToSlider(displayZoom);
   const zoomHud = $('mode-hud'); // unified view HUD (zoom here, mode names elsewhere)
   if (!zoomHud) return;
+  zoomHud.classList.remove('above-toolbar');
 
   // Floating badge is fullscreen-only
   if (!state.isGhost) {
@@ -7177,16 +7178,17 @@ $('btn-show-folder').addEventListener('click', () => {
 // Transient view-mode banner (window mode): hotkeys B/A change the view and
 // the only feedback otherwise is the statusbar slider. Mirrors the ghost
 // zoom-hud: appears, names the mode, fades away.
-function showModeHud(label) {
+function showModeHud(label, aboveToolbar = false) {
   const hud = $('mode-hud');
   if (!hud || document.body.classList.contains('modal-open')) return;
   // One shared timer with the zoom feedback: a zoom tick cancels a pending
   // mode fade and vice versa, so the last action always wins the HUD.
   hud.textContent = label;
+  hud.classList.toggle('above-toolbar', aboveToolbar);
   hud.classList.add('visible');
   hud.classList.remove('hud-hidden-fade');
   clearTimeout(state.zoomTimer);
-  state.zoomTimer = setTimeout(() => hud.classList.remove('visible'), 950);
+  state.zoomTimer = setTimeout(() => hud.classList.remove('visible', 'above-toolbar'), 950);
 }
 
 $('btn-fit-hud').addEventListener('click', () => {

@@ -13,6 +13,7 @@ describe('optional rotation autosave', () => {
     const rotate = appJs.match(/async function rotate\(deg\) \{[\s\S]*?\n\}/)?.[0];
     assert.ok(rotate, 'rotation handler should exist');
     assert.match(rotate, /if \(state\.settings\.app\.autoSaveRotation === true\) await saveCurrent\(\);/);
+    assert.match(rotate, /showModeHud\([^\n]+, true\);/);
     assert.match(appJs, /autoSaveRotation: false,/);
     assert.match(appJs, /\$\('cfg-auto-save-rotation'\)\.checked = s\.autoSaveRotation === true;/);
     assert.match(appJs, /autoSaveRotation: !!\(\$\('cfg-auto-save-rotation'\) && \$\('cfg-auto-save-rotation'\)\.checked\),/);

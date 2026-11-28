@@ -3231,7 +3231,9 @@
   }
   #mode-hud.visible { opacity: 1; }
   #mode-hud.hud-hidden-fade { opacity: 0 !important; }
+  #mode-hud.above-toolbar { bottom: calc(var(--dock-h, 60px) + 88px); }
   body.statusbar-visible #mode-hud { bottom: 52px; }
+  body.statusbar-visible #mode-hud.above-toolbar { bottom: calc(var(--dock-h, 60px) + 124px); }
   /* Ghost keeps the old zoom-HUD corner (stacked under the exit X) so the
      pill never collides with the floating action bar. */
   body.ghost-mode #mode-hud {
@@ -3240,6 +3242,13 @@
     bottom: auto;
     left: auto;
     transform: none;
+  }
+  body.ghost-mode #mode-hud.above-toolbar {
+    top: auto;
+    right: auto;
+    bottom: 168px;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   #radar-wrapper {
