@@ -182,11 +182,8 @@ app.whenReady().then(async () => {
   assert.equal(resting.animation, 'none', 'a resting caption runs no animation');
   assert.equal(resting.first, resting.second, 'a resting caption does not move');
 
-  await waitFor(() => evaluate('return !restorePointerPending || !!restorePointerAnchor;'),
-    'restore pointer guard settled');
-  await evaluate(`if (restorePointerPending && restorePointerAnchor) {
-    updateRestorePointerGuard({ screenX: restorePointerAnchor.screenX + 3, screenY: restorePointerAnchor.screenY });
-  }`);
+  await evaluate('endRestorePointerGuard();');
+  await waitFor(() => evaluate('return !restorePointerPending;'), 'restore pointer guard settled');
   await waitFor(() => evaluate('return Date.now() >= ttRestoreSuppressUntil;'), 'restore tooltip suppression elapsed');
 
   // On hover the animation starts and advances. :hover only reacts to real
@@ -462,12 +459,21 @@ app.whenReady().then(async () => {
         clientX: rect.left + 20, clientY: rect.top + 20 }));
       await new Promise(r => setTimeout(r, 80));
       const sub = document.querySelector('#custom-ctx-menu .menu-header-sub');
-      ttShow(sub);
-      await new Promise(r => setTimeout(r, 240));
       const card = $('titlebar-tooltip');
+      ttShow(sub);
+      const waitStart = Date.now();
+      while (Date.now() - waitStart < 2000) {
+        if (parseFloat(getComputedStyle(card).opacity) > 0.95) break;
+        await new Promise(r => setTimeout(r, 30));
+      }
+      await new Promise(r => requestAnimationFrame(r));
       const menuRect = $('custom-ctx-menu').getBoundingClientRect();
       const tipRect = card.getBoundingClientRect();
       const style = getComputedStyle(card);
+      const arrowStyle = getComputedStyle(card, '::before');
+      const anchorRect = sub.getBoundingClientRect();
+      const arrowY = parseFloat(card.style.getPropertyValue('--tt-arrow-y'));
+      const anchorCenter = anchorRect.top + anchorRect.height / 2 - tipRect.top;
       const left = Math.max(0, Math.floor(Math.min(menuRect.left, tipRect.left)) - 8);
       const top = Math.max(0, Math.floor(Math.min(menuRect.top, tipRect.top)) - 8);
       const right = Math.min(window.innerWidth, Math.ceil(Math.max(menuRect.right, tipRect.right)) + 8);
@@ -478,6 +484,10 @@ app.whenReady().then(async () => {
         visible: !card.hidden && card.classList.contains('is-visible') && parseFloat(style.opacity) > 0.95,
         color: style.color, background: style.backgroundColor,
         inside: tipRect.left >= 0 && tipRect.top >= 0 && tipRect.right <= window.innerWidth && tipRect.bottom <= window.innerHeight,
+        arrow: { y: arrowY, anchorCenter, pseudoTop: arrowStyle.top,
+                 pseudoLeft: arrowStyle.left, pseudoTransform: arrowStyle.transform,
+                 pseudoBorderRight: arrowStyle.borderRightWidth,
+                 pseudoBorderTop: arrowStyle.borderTopWidth },
         shot: { x: left, y: top, width: right - left, height: bottom - top } };
     `);
     console.log('header tooltip ' + theme + ': ' + JSON.stringify(headerTip));
@@ -485,6 +495,16 @@ app.whenReady().then(async () => {
     assert.equal(headerTip.text, path.join(dataDir, names[0]), theme + ' header tooltip keeps the full path');
     assert.equal(headerTip.inside, true, theme + ' header tooltip stays inside the window');
     assert.ok(headerTip.color && headerTip.background, theme + ' header tooltip uses themed colors');
+    assert.ok(headerTip.arrow.y >= 12 && headerTip.arrow.y <= headerTip.shot.height,
+      theme + ' header tooltip exposes a clamped arrow position');
+    assert.ok(Math.abs(headerTip.arrow.y - headerTip.arrow.anchorCenter) <= 1,
+      theme + ' header tooltip arrow follows the filename center');
+    assert.equal(headerTip.arrow.pseudoTop, (headerTip.arrow.y - 6) + 'px',
+      theme + ' header tooltip arrow is centered on the measured position');
+    assert.equal(headerTip.arrow.pseudoTransform, 'none',
+      theme + ' header tooltip arrow does not rely on a rotated-square transform');
+    assert.ok(parseFloat(headerTip.arrow.pseudoBorderRight) > 0, theme + ' header tooltip uses a triangular arrow');
+    assert.ok(parseFloat(headerTip.arrow.pseudoBorderTop) > 0, theme + ' header tooltip arrow has a centered peak');
     fs.writeFileSync(path.join(dataDir, `header-tooltip-${theme}.png`),
       (await win.webContents.capturePage(headerTip.shot)).toPNG());
     await evaluate('hideCustomContextMenu();');

@@ -93,6 +93,9 @@ test('context menu headers and canvas close-image', async (t) => {
     assert.ok(appJs.includes('ttShow(pathHeader)'), 'a menu opened under the pointer can show its header tooltip immediately');
     assert.ok(!appJs.includes('sub.title = item.subTitleAttr'), 'header paths do not rely on a native title');
     assert.ok(appCss.includes('.tt-portaled.cyber-tooltip::after'), 'portaled tooltips suppress the legacy bubble');
+    assert.ok(appCss.includes('top: calc(var(--tt-arrow-y, 50%) - 6px)'), 'side tooltip arrows center their tip on the anchor');
+    assert.ok(appCss.includes('border-right: 7px solid var(--tt-border)'), 'right-side arrows use the themed border');
+    assert.ok(appCss.includes('border-left: 7px solid var(--tt-border)'), 'left-side arrows use the themed border');
   });
 
   await t.test('sidebar cards expose their full path through the shared tooltip', () => {
