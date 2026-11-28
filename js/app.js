@@ -967,7 +967,7 @@ function clearViewer(opts = {}) {
   state.hasChanges = false;
   exitCropMode(); // clears isCropping, cropState + overlay + body.crop-mode
 
-  updateSaveButton();
+  syncRotationState();
   updateHUDStates();
 
   dropZone.style.display = loading ? 'none' : 'flex';
@@ -3715,7 +3715,7 @@ function showImage(idx, direction, isInitial = false) {
     // Exit any leftover crop mode (e.g. new image opened from the OS while a
     // previous crop was unconfirmed - common with close-to-tray + file association).
     exitCropMode();
-    updateSaveButton();
+    syncRotationState();
 
     mainImg.style.transform = `rotate(${state.visualRotation}deg)`;
 
@@ -3945,7 +3945,7 @@ function preloadAdjacent(idx) {
   }
 }
 // ── IMAGE ROTATION & SAVE ──
-function rotate(deg) {
+async function rotate(deg) {
   if (window.CVVideo.active()) return;
   if (window.CVWorkspace.busy) return;
   if (state.current === -1) return;
@@ -3965,10 +3965,11 @@ function rotate(deg) {
   mainImg.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
   mainImg.style.transform = `rotate(${state.visualRotation}deg)`;
   state.hasChanges = state.currentRotation !== 0;
-  updateSaveButton();
+  syncRotationState();
   updateHUDStates();
   const lang = (state.settings && state.settings.app && state.settings.app.language) || 'en';
   showModeHud(lang === 'es' ? 'ROTADA ' + state.currentRotation + '°' : 'ROTATED ' + state.currentRotation + '°');
+  await saveCurrent();
 }
 
 // ── IMAGE FLIP (permanent copy) ──
@@ -3988,7 +3989,7 @@ async function flipImage(axis) {
       state.hasChanges = false;
       mainImg.style.transition = 'none';
       mainImg.style.transform = 'none';
-      updateSaveButton();
+      syncRotationState();
       updateHUDStates();
     }
 
@@ -4038,24 +4039,10 @@ async function flipImage(axis) {
   });
 }
 
-/**
- * Floating discard/save chip — only for pending *rotation* preview.
- * Clipboard paste is a different flow (save-as / path), so it must not open this chip.
- */
-function updateSaveButton() {
+function syncRotationState() {
   window.CVWorkspace.capture();
   window.CVWorkspace.render();
   window.CVWorkspace.changed();
-  const bar = $('pending-actions');
-  const cluster = $('edit-cluster');
-  if (!bar) return;
-  const pendingRotation = state.current >= 0 && !state.isCropping &&
-    !!state.hasChanges && state.currentRotation !== 0;
-  // Keep the element rendered so the slide-up transition runs; .visible drives
-  // opacity/transform/visibility/pointer-events instead of display.
-  bar.hidden = false;
-  bar.classList.toggle('visible', pendingRotation);
-  if (cluster) cluster.classList.toggle('has-pending', pendingRotation);
 }
 
 /** Silently cancel any pending (unconfirmed) rotation so another action (crop/resize/adjust)
@@ -4066,7 +4053,7 @@ function discardPendingRotationSilently() {
   state.hasChanges = false;
   mainImg.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
   mainImg.style.transform = 'none';
-  updateSaveButton();
+  syncRotationState();
   updateHUDStates();
 }
 
@@ -4084,7 +4071,7 @@ function discardPendingChanges() {
   state.hasChanges = false;
   mainImg.style.transition = 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
   mainImg.style.transform = 'rotate(0deg)';
-  updateSaveButton();
+  syncRotationState();
   updateHUDStates();
 
   if (hadRotation) {
@@ -4153,7 +4140,7 @@ function exitCropMode() {
   if (kbd) kbd.classList.remove('hud-hidden');
   const filename = $('viewer-filename');
   if (filename) filename.classList.remove('hud-hidden-fade');
-  updateSaveButton();
+  syncRotationState();
   updateHUDStates(); // drops body.crop-mode and refreshes HUD states
   if (typeof resetHudTimer === 'function') resetHudTimer();
 }
@@ -4243,7 +4230,7 @@ function calibrateAndShowCrop() {
   
   updateCropUI();
   updateCropSaveEnabled();
-  updateSaveButton();
+  syncRotationState();
   updateHUDStates();
 }
 
@@ -4556,7 +4543,7 @@ $('btn-crop-confirm').onclick = async () => {
         im.w = mainImg.naturalWidth;
         im.h = mainImg.naturalHeight;
         state.hasChanges = false;
-        updateSaveButton();
+        syncRotationState();
         updateHUDStates();
         updateFileStats();
         // Auto-fit de la nueva imagen con dimensiones reales
@@ -4619,7 +4606,7 @@ async function saveCurrent() {
       ctx.rotate(rad);
       ctx.drawImage(mainImg, -iw / 2, -ih / 2);
 
-      // Exportar como PNG base64 (sin pérdida, preserva transparencia)
+      // PNG preserves the decoded pixels and alpha without another lossy pass.
       const dataUrl = canvas.toDataURL('image/png');
       const base64Data = dataUrl.substring(dataUrl.indexOf(',') + 1);
 
@@ -4634,30 +4621,30 @@ async function saveCurrent() {
           await window.electronAPI.registerPaths([result.filePath || fpath]);
         }
 
-        // Escuchar el load de la nueva imagen para actualizar dimensiones en el estado
-        mainImg.onload = () => {
-          // RESETEAR TRANSFORMACIONES SOLO CUANDO LA IMAGEN ESTÁ LISTA
-          state.currentRotation = 0; state.visualRotation = 0;
-          state.hasChanges = false;
-          mainImg.style.transition = 'none';
-          mainImg.style.transform = 'none';
-
-          im.w = mainImg.naturalWidth;
-          im.h = mainImg.naturalHeight;
-          updateSaveButton();
-          updateHUDStates();
-          updateFileStats();
-          fitToWindow(im.w, im.h);
-
-          // Restaurar transición suave después de un frame
-          requestAnimationFrame(() => {
-            mainImg.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-          });
-
-          mainImg.onload = null;
-        };
-
         mainImg.src = mediaUrl(imageDiskPath(im), Date.now());
+        try {
+          await mainImg.decode();
+        } catch (_) {
+          showToast(I18N[state.settings.app.language || 'en'].toast_image_not_ready, 'error');
+          return;
+        }
+        if (state.images[state.current] !== im) return;
+
+        state.currentRotation = 0; state.visualRotation = 0;
+        state.hasChanges = false;
+        mainImg.style.transition = 'none';
+        mainImg.style.transform = 'none';
+
+        im.w = mainImg.naturalWidth;
+        im.h = mainImg.naturalHeight;
+        syncRotationState();
+        updateHUDStates();
+        updateFileStats();
+        fitToWindow(im.w, im.h);
+
+        requestAnimationFrame(() => {
+          mainImg.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+        });
         showToast(I18N[state.settings.app.language || 'en'].toast_changes_saved, 'success');
       } else {
         showToast(result.error || 'ERROR', 'error');
@@ -5329,7 +5316,7 @@ if ($('btn-confirm-adjust')) {
               im.w = mainImg.naturalWidth;
               im.h = mainImg.naturalHeight;
               state.hasChanges = false;
-              updateSaveButton();
+              syncRotationState();
               updateHUDStates();
               updateFileStats();
               fitToWindow(im.w, im.h);
@@ -5451,7 +5438,7 @@ $('btn-confirm-resize').addEventListener('click', async () => {
             im.w = mainImg.naturalWidth;
             im.h = mainImg.naturalHeight;
             state.hasChanges = false;
-            updateSaveButton();
+            syncRotationState();
             updateHUDStates();
             updateFileStats();
             fitToWindow(im.w, im.h);
@@ -6239,7 +6226,7 @@ function setImageError(im) {
     mainImg.classList.remove('loaded');
     mainImg.style.opacity = '0';
   }
-  if (typeof updateSaveButton === 'function') updateSaveButton();
+  if (typeof syncRotationState === 'function') syncRotationState();
   if (typeof updateFileStats === 'function') updateFileStats();
 }
 
@@ -6441,8 +6428,8 @@ document.addEventListener('keydown', e => {
       e.preventDefault();
       return;
     }
-    // Discard pending rotation before other escapes
-    if (state.hasChanges && !state.isCropping) {
+    // Only a legacy pending preview can be discarded; an automatic save is already committed.
+    if (state.hasChanges && !state.isCropping && !window.CVWorkspace.busy) {
       discardPendingChanges();
       e.preventDefault();
       return;
@@ -7160,26 +7147,12 @@ $('btn-fs-hud').addEventListener('click', () => {
 
 $('btn-rot-l').addEventListener('click', () => {
   if (!checkImageLoaded()) return;
-  rotate(-90);
+  void rotate(-90);
 });
 $('btn-rot-r').addEventListener('click', () => {
   if (!checkImageLoaded()) return;
-  rotate(90);
+  void rotate(90);
 });
-const btnCommit = $('btn-commit');
-if (btnCommit) {
-  btnCommit.addEventListener('click', () => {
-    if (!checkImageLoaded()) return;
-    saveCurrent();
-  });
-}
-const btnDiscard = $('btn-discard');
-if (btnDiscard) {
-  btnDiscard.addEventListener('click', () => {
-    if (!checkImageLoaded()) return;
-    discardPendingChanges();
-  });
-}
 
 $('btn-copy').addEventListener('click', () => {
   if (!checkImageLoaded()) return;
@@ -9651,7 +9624,7 @@ if (isElectron) {
 // ── HUD SYNC ──
 function syncRotationPendingState(pending) {
   document.body.classList.toggle('rotation-pending', pending);
-  const allowed = new Set(['btn-rot-l', 'btn-rot-r', 'btn-commit', 'btn-discard']);
+  const allowed = new Set(['btn-rot-l', 'btn-rot-r']);
   document.querySelectorAll('#kbd-hint button, #nav-container button, #sidebar-controls button, #btn-menu, #btn-config, #btn-shortcuts, #titlebar-update-btn, #titlebar-properties-btn').forEach((el) => {
     if (allowed.has(el.id)) return;
     if (pending) {
@@ -9675,7 +9648,6 @@ function updateHUDStates() {
   const rotR = $('btn-rot-r');
   const crop = $('btn-crop');
   const fsBtn = $('btn-fs-hud');
-  const commit = $('btn-commit');
 
   // A pasted image has no folder, so the sidebar cannot scan or list
   // anything for this tab: the toggle is hidden for its lifetime.
@@ -9687,11 +9659,9 @@ function updateHUDStates() {
   if (pendingRotation) {
     if (rotL) rotL.classList.add('active');
     if (rotR) rotR.classList.add('active');
-    if (commit) commit.classList.add('active');
   } else {
     if (rotL) rotL.classList.remove('active');
     if (rotR) rotR.classList.remove('active');
-    if (commit) commit.classList.remove('active');
   }
 
   // RECORTE
@@ -9716,7 +9686,7 @@ function updateHUDStates() {
   // de isCropping (iniciar/cancelar/confirmar/entrar a pantalla completa).
   document.body.classList.toggle('crop-mode', !!state.isCropping);
 
-  updateSaveButton();
+  syncRotationState();
   window.CVVideo.syncTools();
 }
 

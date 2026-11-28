@@ -47,6 +47,7 @@ app.whenReady().then(async () => {
     const file = path.join(dataDir,'clip #ñ %.mp4');
     await evaluate('window.CVVideo.element.muted=true;');
     await open(path.basename(file)); await loaded();
+    const originalVideoTab = await evaluate('return window.CVWorkspace.model.activeId;');
     await waitFor(() => evaluate('return !window.CVVideo.element.paused && window.CVVideo.element.currentTime > .2;'), 'autoplay is enabled by default');
     assert.equal(await evaluate("return $('titlebar-filename').querySelector('.titlebar-filename-extension').textContent;"), '.mp4', 'Local extension keeps its accent');
     assert.equal(await evaluate("return state.settings.app.videoAutoplay && $('video-autoplay').getAttribute('aria-checked') === 'true';"), true);
@@ -160,7 +161,7 @@ app.whenReady().then(async () => {
       const bitmap = nativeImage.createFromPath(require('../lib/paths').cleanFsPath(thumbnail)).toBitmap();
       assert.ok(bitmap.some((value,index) => index % 4 !== 3 && value > 32), name + ' thumbnail contains a decoded frame');
     }
-    await open(path.basename(file)); await loaded();
+    await evaluate('await window.CVWorkspace.activate(' + JSON.stringify(originalVideoTab) + ');'); await loaded();
     assert.ok(await evaluate('return Math.abs(window.CVVideo.element.currentTime-6)<.3;'));
     assert.equal(await evaluate("return !$('video-mute').disabled;"),true, 'A paused restored video must not be reported as lacking playable audio');
     console.log('PASS MOV, MKV, M4V, WebM and playback position across tabs');
@@ -273,8 +274,7 @@ app.whenReady().then(async () => {
     await evaluate("document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'m',bubbles:true}));");
     assert.equal(await evaluate("return document.body.classList.contains('video-idle');"), false, 'Keyboard reveals controls');
     await evaluate("document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'Tab',bubbles:true})); $('video-play').focus();");
-    await delay(500);
-    assert.equal(await evaluate("return !document.body.classList.contains('video-idle') && document.activeElement === $('video-play');"), true, 'Keyboard focus keeps playback controls available');
+    await waitFor(() => evaluate("return !document.body.classList.contains('video-idle') && document.activeElement === $('video-play');"), 'Keyboard focus keeps playback controls available');
     await evaluate("$('video-seek').dispatchEvent(new Event('pointerdown',{bubbles:true}));");
     await delay(500);
     assert.equal(await evaluate("return document.body.classList.contains('video-idle');"), false, 'Seeking gestures keep playback controls available');
@@ -306,8 +306,10 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate('return window.CVVideo.element.hasAttribute("src");'), false);
     assert.equal(await evaluate("return $('btn-rot-l').disabled;"), false);
     assert.equal(await evaluate("return getComputedStyle($('kbd-hint')).display !== 'none' && !document.body.classList.contains('video-idle') && !$('ghost-close').inert;"), true, 'Image chrome and fullscreen exit are restored after video');
-    await evaluate('rotate(90); discardPendingChanges();');
+    await evaluate('await rotate(90);');
+    await waitFor(() => evaluate('return mainImg.complete && mainImg.naturalWidth === 60 && !state.hasChanges && !window.CVWorkspace.busy;'), 'rotated image saved and reloaded');
     assert.equal(await evaluate('return state.hasChanges;'),false);
+    assert.deepEqual(nativeImage.createFromPath(path.join(dataDir,'still.png')).getSize(), { width: 60, height: 80 });
     console.log('PASS image editing restored and inactive video decoder released');
 
     // Silent files have no audio track, so the container probe reports the
@@ -374,13 +376,14 @@ app.whenReady().then(async () => {
     for (const name of ['unindexed.mkv', ...(fs.existsSync(path.join(dataDir,'regression-sample.mkv')) ? ['regression-sample.mkv'] : [])]) {
       await open(name);
       await waitFor(() => evaluate('return !state.transitioning && window.CVVideo.element.videoWidth > 0 && window.CVVideo.element.readyState >= 2 && !window.CVVideo.element.error;'), name + ' first frame');
+      const restoredTab = await evaluate('return window.CVWorkspace.model.activeId;');
       await evaluate('window.CVVideo.element.muted=true; await window.CVVideo.toggle();');
       await waitFor(() => evaluate('return window.CVVideo.element.currentTime > .3 && !window.CVVideo.element.error;'), name + ' playback');
       await evaluate('window.CVVideo.element.pause(); window.CVVideo.element.currentTime=window.CVVideo.element.duration*.7;');
       await waitFor(() => evaluate('const v=window.CVVideo.element;return !v.seeking && Math.abs(v.currentTime-v.duration*.7)<.3 && !v.error;'), name + ' late seek');
       const sampleTime = await evaluate('return window.CVVideo.element.currentTime;');
       await open('autoplay.mp4'); await loaded();
-      await open(name);
+      await evaluate('await window.CVWorkspace.activate(' + JSON.stringify(restoredTab) + ');');
       await waitFor(() => evaluate('return !state.transitioning && window.CVVideo.element.readyState>=2 && !window.CVVideo.element.seeking && !window.CVVideo.element.error;'), name + ' restored tab');
       assert.ok(Math.abs(await evaluate('return window.CVVideo.element.currentTime;')-sampleTime)<.3, name + ' restored playback position');
       const thumbnail = await evaluate('return await window.electronAPI.getThumbnail(' + JSON.stringify(path.join(dataDir,name)) + ',{priority:true});');
@@ -399,20 +402,21 @@ app.whenReady().then(async () => {
     // its previous media state instead of following the autoplay preference.
     await evaluate("window.CVWorkspace.closeTabs(window.CVWorkspace.model.tabs.filter(tab => tab.image.file.name === 'autoplay.mp4').map(tab => tab.id), { discard: true, remember: false });");
     await open('autoplay.mp4'); await loaded();
+    const autoplayTab = await evaluate('return window.CVWorkspace.model.activeId;');
     await waitFor(() => evaluate('return !window.CVVideo.element.paused && window.CVVideo.element.currentTime > .2;'), 'autoplay starts a newly loaded video');
     await evaluate('window.CVVideo.element.pause();');
-    await open(path.basename(file)); await loaded();
+    await evaluate('await window.CVWorkspace.activate(' + JSON.stringify(originalVideoTab) + ');'); await loaded();
     await waitFor(() => evaluate('return window.CVVideo.element.paused;'), 'returning to a tab keeps it paused with retention off');
     await evaluate("openConfig(); $('cfg-keep-media-paused').checked=true; $('cfg-keep-media-paused').dispatchEvent(new Event('change')); closeModal('modal-config'); window.CVVideo.element.pause();");
     assert.equal(await evaluate('return state.settings.app.keepMediaPausedOnTabReturn;'), true);
-    await open('autoplay.mp4'); await loaded();
-    await open(path.basename(file)); await loaded();
+    await evaluate('await window.CVWorkspace.activate(' + JSON.stringify(autoplayTab) + ');'); await loaded();
+    await evaluate('await window.CVWorkspace.activate(' + JSON.stringify(originalVideoTab) + ');'); await loaded();
     const tabPause = await evaluate('return {paused:window.CVVideo.element.paused, setting:state.settings.app.keepMediaPausedOnTabReturn, saved:state.images[state.current].pausedOnTabReturn, tabs:window.CVWorkspace.model.tabs.map(tab=>({name:tab.image.file.name,paused:tab.image.pausedOnTabReturn}))};');
     assert.equal(tabPause.paused, true, 'Optional pause is preserved across video tabs: ' + JSON.stringify(tabPause));
     await evaluate('state.settings.app.videoAutoplay=false; await window.electronAPI.saveSettings(state.settings.app); await window.CVVideo.toggle();');
     await waitFor(() => evaluate('return !window.CVVideo.element.paused;'), 'video plays before leaving tab');
-    await open('autoplay.mp4'); await loaded();
-    await open(path.basename(file)); await loaded();
+    await evaluate('await window.CVWorkspace.activate(' + JSON.stringify(autoplayTab) + ');'); await loaded();
+    await evaluate('await window.CVWorkspace.activate(' + JSON.stringify(originalVideoTab) + ');'); await loaded();
     await waitFor(() => evaluate('return !window.CVVideo.element.paused;'), 'playing video resumes on tab return with new-media autoplay off');
     await evaluate('state.settings.app.videoAutoplay=true; await window.electronAPI.saveSettings(state.settings.app);');
     await evaluate("openConfig(); $('cfg-keep-media-paused').checked=false; $('cfg-keep-media-paused').dispatchEvent(new Event('change')); closeModal('modal-config');");
@@ -434,18 +438,23 @@ app.whenReady().then(async () => {
     fs.writeFileSync(path.join(dataDir,'video-player-en.png'), (await win.webContents.capturePage()).toPNG());
     await evaluate("state.settings.app.language='es'; updateLanguage('es');");
     const snapshot=JSON.parse(fs.readFileSync(path.join(dataDir,'session.json'),'utf8'));
-    assert.ok(Math.abs(snapshot.tabs.find(tab=>tab.path===file).view.videoTime-6)<.3);
+    const snapshotActiveId=await evaluate('return window.CVWorkspace.model.activeId;');
+    assert.ok(Math.abs(snapshot.tabs.find(tab=>tab.id===snapshotActiveId).view.videoTime-6)<.3);
     await evaluate('window.CVWorkspace.suspend();');
     assert.equal(await evaluate('return window.CVVideo.element.hasAttribute("src");'),false);
     await evaluate('await window.CVWorkspace.flush();');
     const suspendedSession=JSON.parse(fs.readFileSync(path.join(dataDir,'session.json'),'utf8'));
-    assert.ok(Math.abs(suspendedSession.tabs.find(tab=>tab.path===file).view.videoTime-6)<.3, 'Suspending preserves the captured position');
+    assert.ok(Math.abs(suspendedSession.tabs.find(tab=>tab.id===snapshotActiveId).view.videoTime-6)<.3, 'Suspending preserves the captured position');
     await evaluate('state.settings.app.videoAutoplay=true; await window.electronAPI.saveSettings(state.settings.app);');
     console.log('PASS saved session position and decoder release on suspend');
   }
   // Decoder errors for the deliberately damaged fixture are expected.
   const unexpected=errors.filter(message=>!/(DEMUXER|FFmpegDemuxer|ERR_REQUEST_RANGE_NOT_SATISFIABLE)/i.test(message));
   assert.deepEqual(unexpected,[]);
-  app.exit(0);
+  // Use the real close path so Chromium can release media before process teardown.
+  if (!win.isDestroyed()) {
+    await new Promise(resolve => { win.once('closed', resolve); win.close(); });
+  }
+  app.quit();
 }).catch(error=>{console.error(error);app.exit(1)});
 setTimeout(()=>{console.error('Video smoke timeout');app.exit(2)},80000);

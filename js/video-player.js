@@ -38,7 +38,7 @@ window.CVVideo = (() => {
     'set-wallpaper', 'set-wallpaper-fill', 'set-wallpaper-fit', 'set-wallpaper-center', 'set-wallpaper-span',
     'start-slideshow', 'slideshow-loop', 'slideshow-interval']);
   const imageButtons = ['btn-rot-l', 'btn-rot-r', 'btn-crop', 'btn-resize', 'btn-adjust',
-    'btn-copy', 'btn-print', 'btn-commit', 'btn-discard', 'btn-slideshow'];
+    'btn-copy', 'btn-print', 'btn-slideshow'];
 
   function syncTools() {
     const video = active();

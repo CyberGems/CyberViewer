@@ -44,6 +44,7 @@ function harness() {
     createAnalyser() { const node = new Analyser(); this.analysers.push(node); return node; }
     resume() { this.state = 'running'; return Promise.resolve(); }
     suspend() { this.state = 'suspended'; return Promise.resolve(); }
+    close() { this.state = 'closed'; return Promise.resolve(); }
   }
   const sandbox = {
     console, AudioContext,
@@ -97,6 +98,22 @@ describe('audio equalizer engine', () => {
     engine.suspend();
     assert.equal(context.state, 'suspended');
     assert.equal(await engine.prepare(), true);
+  });
+
+  it('closes the native context once and stays closed during renderer unload', async () => {
+    const { engine, contexts, navigator } = harness();
+    navigator.userActivation.hasBeenActive = true;
+    engine.load({ enabled: true });
+    await engine.prepare();
+    const context = contexts[0];
+    await Promise.all([engine.shutdown(), engine.shutdown()]);
+    assert.equal(context.state, 'closed');
+    assert.equal(engine.isReady(), false);
+    assert.equal(engine.getAnalyser(), null);
+    assert.deepEqual(JSON.parse(JSON.stringify(engine.inspect())),
+      { ready: false, state: 'closed', preamp: null, bands: [], limiter: null });
+    assert.equal(await engine.prepare(), false);
+    assert.equal(contexts.length, 1);
   });
 
   it('applies presets and neutralizes every DSP stage without reconnecting', async () => {

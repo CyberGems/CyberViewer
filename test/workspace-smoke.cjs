@@ -141,11 +141,25 @@ app.whenReady().then(async () => {
       assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 3);
     }
     await evaluate("await window.CVWorkspace.activate('tab-1');"); await loaded();
-    await evaluate("state.viewMode = 'custom'; state.zoom = 1.75; state.panX = 31; state.panY = -22; applyTransform(false); rotate(90); await window.CVWorkspace.activate('tab-2');");
+    await evaluate("state.viewMode = 'custom'; state.zoom = 1.75; state.panX = 31; state.panY = -22; applyTransform(false); await rotate(90);");
+    await loaded();
+    assert.deepEqual(nativeImage.createFromPath(files[0]).getSize(), { width: 80, height: 120 });
+    const rotatedBitmap = Buffer.alloc(80 * 120 * 4);
+    for (let y = 0; y < 120; y++) {
+      for (let x = 0; x < 80; x++) {
+        const sourceOffset = ((79 - x) * 120 + y) * 4;
+        rotatedBitmap.set(bitmap.subarray(sourceOffset, sourceOffset + 4), (y * 80 + x) * 4);
+      }
+    }
+    assert.deepEqual(nativeImage.createFromPath(files[0]).getBitmap(), rotatedBitmap,
+      'a right-angle PNG rotation preserves every decoded pixel');
+    assert.equal(await evaluate("return state.currentRotation === 0 && !state.hasChanges && !$('pending-actions');"), true,
+      'rotation commits immediately without a confirmation control');
+    await evaluate("state.viewMode = 'custom'; state.zoom = 1.75; state.panX = 31; state.panY = -22; applyTransform(false); await window.CVWorkspace.activate('tab-2');");
     await loaded();
     let result = await evaluate('return { view: window.CVWorkspace.model.tabs[0].view, rotation: state.currentRotation };');
     assert.equal(result.view.zoom, 1.75); assert.equal(result.view.panX, 31); assert.equal(result.view.panY, -22);
-    assert.equal(result.view.currentRotation, 90); assert.equal(result.rotation, 0);
+    assert.equal(result.view.currentRotation, 0); assert.equal(result.rotation, 0);
     await evaluate("window.CVWorkspace.closeTabs(['tab-2']);");
     await loaded();
     await evaluate("await window.CVWorkspace.activate('tab-1');"); await loaded();
@@ -168,7 +182,8 @@ app.whenReady().then(async () => {
     await evaluate('window.CVWorkspace.closeTabs([window.CVWorkspace.model.activeId], { discard: true });');
     await waitFor(() => evaluate('return window.CVWorkspace.model.tabs.length === 3 && !window.CVWorkspace.busy;'), 'uppercase duplicate cleanup');
     await evaluate("await window.CVWorkspace.activate('tab-1');"); await loaded();
-    assert.equal(await evaluate('return state.currentRotation;'), 90);
+    assert.equal(await evaluate('return state.currentRotation;'), 0);
+    assert.equal(await evaluate('return mainImg.naturalWidth;'), 80);
     assert.equal(await evaluate('return state.panX;'), 31);
 
     // 150 background tabs must not create 150 full-resolution image elements.
@@ -196,9 +211,13 @@ app.whenReady().then(async () => {
     await waitFor(() => evaluate('return window.CVWorkspace.model.tabs.length === 3 && !window.CVWorkspace.busy;'), 'queued duplicate cleanup');
     await evaluate("await window.CVWorkspace.activate('tab-3');"); await loaded();
     await evaluate("await window.CVWorkspace.activate('tab-2');"); await loaded();
-    await evaluate('rotate(90); await saveCurrent();'); await loaded();
+    await evaluate('await rotate(90);'); await loaded();
     assert.deepEqual(nativeImage.createFromPath(files[1]).getSize(), { width: 80, height: 120 });
-    assert.equal(await evaluate("return window.CVWorkspace.model.tabs.find(tab => tab.id === 'tab-1').view.currentRotation;"), 90);
+    assert.equal(await evaluate("return window.CVWorkspace.model.tabs.find(tab => tab.id === 'tab-1').view.currentRotation;"), 0);
+    await evaluate('await rotate(-90);'); await loaded();
+    assert.deepEqual(nativeImage.createFromPath(files[1]).getSize(), { width: 120, height: 80 });
+    assert.deepEqual(nativeImage.createFromPath(files[1]).getBitmap(), bitmap,
+      'consecutive opposite rotations restore every decoded pixel');
 
     // File associations always forward to the resident window, even when an
     // obsolete multi-instance preference was saved by an older version.
@@ -222,8 +241,9 @@ app.whenReady().then(async () => {
     await evaluate("await Promise.all(['tab-1', 'tab-2', 'tab-3', 'tab-1', 'tab-2'].map(id => window.CVWorkspace.activate(id)));");
     await loaded();
     assert.equal(await evaluate('return window.CVWorkspace.model.activeId;'), 'tab-2');
-    assert.equal(await evaluate('return mainImg.naturalWidth;'), 80);
-    await evaluate('rotate(90); rotate(90); rotate(90); rotate(90);');
+    assert.equal(await evaluate('return mainImg.naturalWidth;'), 120);
+    await loaded();
+    assert.deepEqual(nativeImage.createFromPath(files[1]).getSize(), { width: 120, height: 80 });
     assert.equal(await evaluate('return state.hasChanges;'), false);
     await evaluate('window._dialogPromise = window.CVWorkspace.dialog(() => new Promise(resolve => { window._releaseDialog = resolve; }));');
     await evaluate('await openImagePath(' + JSON.stringify(files[2]) + ');');
@@ -237,10 +257,14 @@ app.whenReady().then(async () => {
     await evaluate('window.CVWorkspace.closeTabs([window.CVWorkspace.model.activeId], { discard: true });');
     await waitFor(() => evaluate('return window.CVWorkspace.model.tabs.length === 3 && !window.CVWorkspace.busy;'), 'dialog duplicate cleanup');
     await evaluate("await window.CVWorkspace.activate('tab-2');"); await loaded();
-    const originalBytes = fs.readFileSync(files[0]);
-    await evaluate('await saveAsPath(' + JSON.stringify(files[0]) + ');');
-    assert.deepEqual(fs.readFileSync(files[0]), originalBytes);
-    assert.equal(await evaluate('return window.CVWorkspace.model.tabs.length;'), 3);
+    const originalBytes = fs.readFileSync(files[1]);
+    const savedCopyPath = path.join(dataDir, 'saved-copy.png');
+    await evaluate('await saveAsPath(' + JSON.stringify(savedCopyPath) + ');');
+    assert.deepEqual(fs.readFileSync(savedCopyPath), originalBytes);
+    await waitFor(() => evaluate(`return window.CVWorkspace.model.tabs.length === 4 && !window.CVWorkspace.busy &&
+      window.CVWorkspace.model.active.image.file.path === ${JSON.stringify(savedCopyPath)};`), 'saved copy tab');
+    await evaluate('window.CVWorkspace.closeTabs([window.CVWorkspace.model.activeId], { discard: true });');
+    await waitFor(() => evaluate('return window.CVWorkspace.model.tabs.length === 3 && !window.CVWorkspace.busy;'), 'saved copy cleanup');
 
     await evaluate("await window.CVWorkspace.activate('tab-1');"); await loaded();
     const repeatedOpen = await evaluate(`const original = window.CVWorkspace.model.tabs.find(tab => tab.id === 'tab-1');
@@ -283,15 +307,15 @@ app.whenReady().then(async () => {
       await evaluate("await window.CVWorkspace.activate('tab-2');"); await loaded();
     };
     await evaluate('await flipImage("h");');
-    await finishCopy({ width: 80, height: 120 });
+    await finishCopy({ width: 120, height: 80 });
     await evaluate("openResizeModal(); $('resize-width').value = '60'; $('resize-height').value = '40'; $('cfg-resize-copy').checked = true; updateResizeSaveEnabled(state.images[state.current]); $('btn-confirm-resize').click();");
     await finishCopy({ width: 60, height: 40 });
     await evaluate("openAdjustModal(); $('adj-brightness').value = '30'; $('adj-brightness').dispatchEvent(new Event('input')); $('cfg-adjust-copy').checked = true; $('btn-confirm-adjust').click();");
-    await finishCopy({ width: 80, height: 120 });
+    await finishCopy({ width: 120, height: 80 });
     await evaluate('startCrop();');
     await waitFor(() => evaluate('return state.isCropping && cropState.active && cropState.imgRealRect?.w > 0;'), 'crop geometry');
     await evaluate("cropState.x = cropState.imgRealRect.x; cropState.y = cropState.imgRealRect.y; cropState.w = cropState.imgRealRect.w / 2; cropState.h = cropState.imgRealRect.h / 2; updateCropUI(); $('cfg-crop-copy').checked = true; $('btn-crop-confirm').click();");
-    await finishCopy({ width: 40, height: 60 });
+    await finishCopy({ width: 60, height: 40 });
     await evaluate("startCrop(); exitCropMode(); await window.CVWorkspace.activate('tab-3');"); await loaded();
     await delay(300);
     assert.equal(await evaluate('return state.isCropping;'), false);
@@ -317,7 +341,7 @@ app.whenReady().then(async () => {
     const saved = JSON.parse(fs.readFileSync(path.join(dataDir, 'session.json'), 'utf8'));
     assert.equal(saved.tabs.length, 4);
     assert.ok(saved.tabs.find(tab => !tab.path).draftId);
-    assert.equal(saved.tabs.find(tab => tab.id === 'tab-1').view.currentRotation, 90);
+    assert.equal(saved.tabs.find(tab => tab.id === 'tab-1').view.currentRotation, 0);
     fs.writeFileSync(path.join(dataDir, 'expected-session.json'), JSON.stringify(saved));
     console.log('PASS initial: independent views/edits, 153 tabs/search, close/reopen/reorder, single-instance forwarding, rapid switches, save conflicts, rotation/flip/resize/adjust/crop, favorites, clipboard session');
   } else if (phase === 'restore') {
@@ -328,7 +352,8 @@ app.whenReady().then(async () => {
     assert.equal(await evaluate('return window.CVWorkspace.model.active.image.fromClipboard;'), true);
     assert.equal(await evaluate('return mainImg.naturalWidth;'), 120);
     await evaluate("await window.CVWorkspace.activate('tab-1');"); await loaded();
-    assert.equal(await evaluate('return state.currentRotation;'), 90);
+    assert.equal(await evaluate('return state.currentRotation;'), 0);
+    assert.equal(await evaluate('return mainImg.naturalWidth;'), 80);
     assert.equal(await evaluate('return state.zoom;'), 1.75);
     assert.equal(await evaluate('return state.panX;'), 31);
     assert.equal(await evaluate('return state.panY;'), -22);
@@ -384,7 +409,7 @@ app.whenReady().then(async () => {
     await waitFor(() => evaluate("return $('modal-cyber-confirm').classList.contains('active');"), 'quit confirmation');
     await evaluate("$('btn-confirm-cancel').click();");
     assert.equal(win.isDestroyed(), false);
-    console.log('PASS restore: actual restart, clipboard pixels, pending rotation/viewport, missing-file relocation, tray unloading, EN/ES screenshots, disable without data loss, close/quit cancellation');
+    console.log('PASS restore: actual restart, saved rotation/viewport, missing-file relocation, tray unloading, EN/ES screenshots, disable without data loss, close/quit cancellation');
   } else if (phase === 'overflow') {
     await loaded();
     if (!win.isVisible()) win.show();
@@ -901,7 +926,7 @@ app.whenReady().then(async () => {
     await waitFor(() => evaluate('return state.settings.app.restoreSession === false;'), 'disable session before restart');
     await evaluate("closeModal('modal-config'); await window.CVWorkspace.flush();");
     assert.equal(fs.existsSync(path.join(dataDir, 'session.json')), false);
-    assert.equal(await evaluate('return mainImg.naturalWidth;'), 120,
+    assert.equal(await evaluate('return mainImg.naturalWidth;'), 80,
       'disabling session restore keeps the pasted image in the current process');
     console.log('PASS no-restore setup: pasted image remains visible until restart');
   } else if (phase === 'no-restore') {

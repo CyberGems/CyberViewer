@@ -17,6 +17,7 @@ window.CVAudioEngine = (() => {
   let settings = defaults();
   let context = null, source = null, preamp = null, limiter = null, analyser = null;
   let filters = [];
+  let shutdownPromise = null;
 
   function defaults() {
     return { enabled: false, preset: 'flat', preamp: 0, gains: Array(bands.length).fill(0), customPresets: [] };
@@ -130,6 +131,7 @@ window.CVAudioEngine = (() => {
   }
 
   async function prepare() {
+    if (shutdownPromise) return false;
     if (!context) {
       if (!navigator.userActivation?.hasBeenActive) return false;
       buildGraph();
@@ -140,6 +142,17 @@ window.CVAudioEngine = (() => {
 
   function suspend() {
     if (context?.state === 'running') void context.suspend().catch(() => {});
+  }
+
+  function shutdown() {
+    if (shutdownPromise) return shutdownPromise;
+    shutdownPromise = (async () => {
+      const closing = context;
+      context = null; source = null; preamp = null; limiter = null; analyser = null;
+      filters = [];
+      if (closing) await closing.close().catch(() => {});
+    })();
+    return shutdownPromise;
   }
 
   function load(value) {
@@ -256,6 +269,6 @@ window.CVAudioEngine = (() => {
     bands, presets, defaults, normalize, snapshot, prepare, suspend, load,
     setEnabled, setBand, setPreamp, applyPreset, reset,
     getCustomPresets, saveCustomPreset, renameCustomPreset, deleteCustomPreset,
-    isEnabled: () => settings.enabled, isReady: () => !!context, getAnalyser: () => analyser, inspect
+    isEnabled: () => settings.enabled, isReady: () => !!context, getAnalyser: () => analyser, inspect, shutdown
   };
 })();

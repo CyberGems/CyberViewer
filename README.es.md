@@ -112,11 +112,11 @@ La mayoría de los visores de imágenes o están plagados de funciones que nunca
 ## ✨ Funciones principales
 
 ### 🖼️ Visualización
-- **Pestañas de imágenes:** abre varios archivos a la vez, reordena pestañas, busca por nombre o ruta y reabre las cerradas. Cada pestaña conserva su zoom, desplazamiento y rotación pendiente. La navegación por carpeta permanece en la pestaña actual; usa el menú contextual de una miniatura o el clic central para abrir otra pestaña. Si hay cambios sin guardar, la pestaña se conserva al navegar a otra imagen.
+- **Pestañas de imágenes:** abre varios archivos a la vez, reordena pestañas, busca por nombre o ruta y reabre las cerradas. Cada pestaña conserva su zoom y desplazamiento. La navegación por carpeta permanece en la pestaña actual; usa el menú contextual de una miniatura o el clic central para abrir otra pestaña. Si hay cambios sin guardar, la pestaña se conserva al navegar a otra imagen.
 - **Extras de la franja:** doble clic sobre la zona vacía para abrir archivos, clic derecho para el menú con reabrir cerradas y cerrar todas, flechas en los extremos cuando las pestañas desbordan, y el listador con búsqueda y cierre total.
 - **Pestañas de medios:** los iconos opcionales distinguen imágenes, videos, audio y YouTube. Puedes ocultarlos en **Configuración → Interfaz**. **Configuración → General → Conservar reproducción o pausa entre pestañas** viene activado; el medio se reanuda o permanece pausado al volver.
 - **Arrastrar y soltar:** por defecto, soltar en el centro del visor abre pestañas nuevas; también puedes reemplazar la pestaña actual. Soltar sobre la barra abre los archivos en la posición donde los sueltes.
-- **Restauración opcional de sesión:** activa **Configuración → General → Restaurar sesión anterior** para recuperar el orden, la pestaña activa, las vistas, las rotaciones pendientes y las imágenes pegadas al reiniciar. Los archivos ausentes conservan su pestaña y se pueden localizar de nuevo. La sesión se almacena localmente, separada de los respaldos de configuración; desactivar la opción elimina la sesión guardada.
+- **Restauración opcional de sesión:** activa **Configuración → General → Restaurar sesión anterior** para recuperar el orden, la pestaña activa, las vistas y las imágenes pegadas al reiniciar. Los archivos ausentes conservan su pestaña y se pueden localizar de nuevo. La sesión se almacena localmente, separada de los respaldos de configuración; desactivar la opción elimina la sesión guardada.
 - **Apertura ultrarrápida:** protocolo de streaming propio que carga imágenes sin agotar la RAM
 - **Formatos admitidos:** JPG, JPEG, PNG, GIF, WebP, BMP, TIFF, TIF, ICO y AVIF
 - **Navegación de carpetas:** barra lateral de miniaturas con carga diferida, cola de prioridad e indicador de progreso de escaneo. Cada tarjeta lleva el nombre del archivo bajo la vista previa, y un nombre que no cabe se desplaza mientras se pasa el cursor en lugar de quedar cortado, salvo que el movimiento reducido esté activado. Activa **Tarjetas compactas en la barra lateral** en **Configuración → Interfaz**, o desde el menú contextual de una miniatura, para ocultar la franja del nombre y que quepan más archivos a la vez; al pasar el cursor sobre una tarjeta, el nombre reaparece.
@@ -183,7 +183,7 @@ La reproducción también puede variar según el perfil del códec, la tasa de b
 - Las propiedades de playlists indican la posición actual y el total cuando se conoce. Las acciones de copia permiten copiar la ruta o enlace de origen y un resumen conciso.
 
 ### ✏️ Edición
-- **Rotar:** 90° a la izquierda (`Q`) o a la derecha (`E`) con flujo de guardar/descartar
+- **Rotar:** 90° a la izquierda (`Q`) o a la derecha (`E`), se guarda de inmediato en el mismo archivo como PNG y conserva su nombre actual. Esto preserva los píxeles decodificados y la transparencia sin otra pasada con pérdida, pero descarta metadatos, animación, datos de 16 bits/HDR/gama amplia y perfiles avanzados de color.
 - **Recortar:** superposición interactiva con tiradores y modo opcional de creación de copia
 - **Redimensionar:** controles de ancho y alto con bloqueo de proporción, preajustes (720p, 1080p, 25 %, 50 %, 200 %) y remuestreo de calidad
 - **Ajustar:** brillo, contraste, saturación, desenfoque, escala de grises e invertir con vista previa A/B en vivo

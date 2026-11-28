@@ -112,11 +112,11 @@ Most image viewers are either bloated with features you never use or so barebone
 ## ✨ Key Features
 
 ### 🖼️ Viewing
-- **Image tabs:** open multiple files together, reorder tabs, search by name or path, and reopen closed tabs. Each tab keeps its zoom, pan, and pending rotation. Folder navigation stays in the current tab; use the thumbnail context menu or middle-click to open another tab. A tab with unsaved changes stays open when navigating to another image.
+- **Image tabs:** open multiple files together, reorder tabs, search by name or path, and reopen closed tabs. Each tab keeps its zoom and pan. Folder navigation stays in the current tab; use the thumbnail context menu or middle-click to open another tab. A tab with unsaved changes stays open when navigating to another image.
 - **Tab strip extras:** double-click the empty strip to open files, right-click it for a context menu with reopen-closed-tab and close-all, use the edge arrows while the tabs overflow, and open the switcher for a searchable list with a close-all footer.
 - **Media tabs:** optional type icons distinguish images, video, audio, and YouTube. In **Configuration → Interface**, you can hide them. **Configuration → General → Remember playback state between tabs** is on by default, so media resumes or stays paused when you return.
 - **Drag and drop:** the center of the viewer opens dropped files in new tabs by default, or can replace the current tab. Dropping on the tab strip always opens files at the release position.
-- **Optional session restore:** enable **Configuration → General → Restore previous session** to recover tab order, the active image, views, pending rotations, and pasted images after restarting. Missing files stay in their tabs and can be located again. Session data stays local and separate from settings backups; disabling the option removes the saved session.
+- **Optional session restore:** enable **Configuration → General → Restore previous session** to recover tab order, the active image, views, and pasted images after restarting. Missing files stay in their tabs and can be located again. Session data stays local and separate from settings backups; disabling the option removes the saved session.
 - **Lightning-fast open:** custom streaming protocol loads images without hogging RAM
 - **Supported formats:** JPG, JPEG, PNG, GIF, WebP, BMP, TIFF, TIF, ICO, and AVIF
 - **Folder browsing:** thumbnail sidebar with lazy loading, priority queue, and scan progress indicator. Every card carries its file name under the preview, and a name that does not fit scrolls while it is hovered instead of staying cut, unless reduced motion is enabled. Enable **Compact Sidebar Cards** in **Configuration → Interface**, or from the thumbnail context menu, to hide the name strip so more files fit at once; hovering a card then reveals the name.
@@ -183,7 +183,7 @@ Playback can still vary with codec profile, bitrate, sample rate, channel layout
 - YouTube playlist properties show the current position and total count when available. Copy actions provide the source path or link and a concise properties summary.
 
 ### ✏️ Editing
-- **Rotate:** left 90° (`Q`) or right 90° (`E`) with save/discard workflow
+- **Rotate:** left 90° (`Q`) or right 90° (`E`), saved immediately to the same file as PNG while keeping its current name. This preserves decoded pixels and transparency without another lossy pass, but drops metadata, animation, 16-bit/HDR/wide-gamut data, and advanced color profiles.
 - **Crop:** interactive overlay with handles and optional create-copy mode
 - **Resize:** width and height controls with aspect lock, presets (720p, 1080p, 25%, 50%, 200%), and quality resampling
 - **Adjust:** brightness, contrast, saturation, blur, grayscale, and invert with live A/B preview

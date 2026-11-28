@@ -853,7 +853,7 @@
     z-index: 100;
   }
 
-  /* Pending rotation locks unrelated controls until save or cancel. */
+  /* Rotation saves immediately; lock unrelated controls while the write finishes. */
   body.rotation-pending #kbd-hint button.is-disabled,
   body.rotation-pending #nav-container button.is-disabled,
   body.rotation-pending #sidebar-controls button.is-disabled,
@@ -3334,8 +3334,7 @@
     /* Don't inherit grab/pan cursor from #viewer-wrap on empty dock chrome */
     cursor: default;
   }
-  #kbd-hint .kbd-btn,
-  #kbd-hint .pending-btn {
+  #kbd-hint .kbd-btn {
     cursor: pointer;
   }
 
@@ -3955,116 +3954,13 @@
   }
   .kbd-btn:active:not(:disabled):not(.is-disabled) { transform: translateY(0); }
 
-  /* Rotate cluster: chip sits directly above ↺ ↻ */
+  /* Rotate cluster */
   .edit-cluster {
     position: relative;
     display: inline-flex;
     align-items: center;
     gap: 10px;
     flex-shrink: 0;
-  }
-
-  /* ── Floating pending actions (discard / save) ── */
-  .pending-actions {
-    position: absolute;
-    left: 50%;
-    bottom: calc(100% + 12px);
-    transform: translateX(-50%) translateY(14px);
-    z-index: 1200;
-    display: flex;
-    visibility: hidden;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 9px;
-    background: rgba(var(--cyber-shell-deep-rgb), 0.94);
-    border: 1px solid rgba(var(--cyber-accent-rgb), 0.45);
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 20px rgba(var(--cyber-accent-rgb), 0.2);
-    backdrop-filter: blur(12px);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1), transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.28s;
-  }
-  .pending-actions.visible {
-    visibility: visible;
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateX(-50%) translateY(0);
-    transition: opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1), transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s;
-  }
-  body.empty-state .pending-actions {
-    display: none !important;
-  }
-  /* Hide rotate tooltips while commit chip is open (avoids overlap) */
-  .edit-cluster:has(.pending-actions.visible) #btn-rot-l.cyber-tooltip::after,
-  .edit-cluster:has(.pending-actions.visible) #btn-rot-l.cyber-tooltip::before,
-  .edit-cluster:has(.pending-actions.visible) #btn-rot-r.cyber-tooltip::after,
-  .edit-cluster:has(.pending-actions.visible) #btn-rot-r.cyber-tooltip::before,
-  .edit-cluster:has(.pending-actions.visible) #btn-rot-l:hover::after,
-  .edit-cluster:has(.pending-actions.visible) #btn-rot-l:hover::before,
-  .edit-cluster:has(.pending-actions.visible) #btn-rot-r:hover::after,
-  .edit-cluster:has(.pending-actions.visible) #btn-rot-r:hover::before {
-    opacity: 0 !important;
-    visibility: hidden !important;
-  }
-  /* Pending tooltips open upward (default cyber-tooltip), not into the toolbar */
-  .pending-actions .cyber-tooltip::after {
-    bottom: calc(100% + 10px);
-    top: auto;
-    left: 50%;
-    transform: translateX(-50%) translateY(6px);
-    white-space: nowrap;
-  }
-  .pending-actions .cyber-tooltip::before {
-    bottom: calc(100% + 4px);
-    top: auto;
-    left: 50%;
-    transform: translateX(-50%) translateY(6px);
-    border-width: 6px 6px 0;
-    border-color: var(--cyber-tip-edge) transparent transparent transparent;
-  }
-  .pending-actions .cyber-tooltip:hover::after,
-  .pending-actions .cyber-tooltip:hover::before {
-    transform: translateX(-50%) translateY(0);
-  }
-  .pending-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 6px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    border: 1px solid transparent;
-    transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, color 0.18s ease;
-    -webkit-app-region: no-drag;
-  }
-  .pending-ico {
-    width: 17px;
-    height: 17px;
-    display: block;
-  }
-  .pending-cancel {
-    background: rgba(var(--cyber-accent2-rgb), 0.1);
-    border-color: rgba(var(--cyber-accent2-rgb), 0.55);
-    color: var(--cyber-accent2-ink);
-  }
-  .pending-cancel:hover {
-    background: rgba(var(--cyber-accent2-rgb), 0.16);
-    color: var(--cyber-accent2-ink);
-    box-shadow: 0 0 12px rgba(var(--cyber-accent2-rgb), 0.22);
-    transform: translateY(-1px);
-  }
-  .pending-save {
-    background: rgba(var(--cyber-accent-rgb), 0.12);
-    border-color: rgba(var(--cyber-accent-rgb), 0.65);
-    color: var(--cyber-accent-ink);
-  }
-  .pending-save:hover {
-    background: rgba(var(--cyber-accent-rgb), 0.16);
-    color: var(--cyber-accent-ink);
-    box-shadow: 0 0 12px rgba(var(--cyber-accent-rgb), 0.22);
-    transform: translateY(-1px);
   }
 
   .cyber-key-arrow {

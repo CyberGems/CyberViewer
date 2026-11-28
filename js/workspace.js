@@ -1,7 +1,7 @@
 /* global state, I18N, $, mainImg, isElectron, mediaUrl, loadFiles,
    closeImage, clearViewer, mergeNeighbors, folderScanCache,
    folderDirFromPath, buildSidebar, showToast, showCyberConfirm,
-   stopSlideshow, getOriginalZoom, viewerFitSize, updateSaveButton,
+   stopSlideshow, getOriginalZoom, viewerFitSize, syncRotationState,
    updateHUDStates, syncFavoritesToggleButtonState,
    showCustomContextMenu, syncCurrentIndex, setCyberTooltip, ttBind, ttHide, iconSvg,
    setSidebarOpen, sidebarStatePerTab */
@@ -327,7 +327,7 @@ window.CVWorkspace = (() => {
     } else if (state.viewMode === 'original') state.zoom = getOriginalZoom();
     mainImg.style.transform = `rotate(${state.visualRotation}deg)`;
     pendingView = null;
-    updateSaveButton();
+    syncRotationState();
     updateHUDStates();
     return true;
   }
@@ -1211,6 +1211,7 @@ window.CVWorkspace = (() => {
       document.querySelectorAll('.modal-overlay.active').forEach(overlay => overlay.classList.remove('active'));
       const finish = async () => {
         if (state.settings.app.restoreSession && !(await flush())) return;
+        await window.CVAudioEngine.shutdown();
         allowUnload = true;
         window.electronAPI.finishWorkspaceClose();
       };
